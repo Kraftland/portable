@@ -8,3 +8,6 @@ friendlyName=""
 
 # This is the state directory of your application, which is located under "XDG_DATA_HOME"
 stateDirectory=""
+
+# This is the target executable to launch
+launchTarget=""

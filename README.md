@@ -19,3 +19,7 @@ install -Dm755 flatpak-info /usr/lib/portable/flatpak-info
 # Modify before installing
 install -Dm755 config /usr/lib/portable/info/appID/config
 ```
+
+## Runtime
+
+Environment variables are read from stateDirectory/portable.env

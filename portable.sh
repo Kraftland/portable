@@ -9,6 +9,8 @@ fi
 
 busName="${appID}"
 busDir="${XDG_RUNTIME_DIR}/app/${busName}"
+unitName="${friendlyName}"
+proxyName="${friendlyName}-dbus"
 
 function moeDect() {
 	if [[ -f /usr/share/moeOS-Docs/os-release ]]; then
@@ -75,16 +77,16 @@ function inputMethod() {
 }
 
 function importEnv() {
-	if [ -e "${XDG_DATA_HOME}"/WeChat_Data/wechat.env ]; then
-		echo "[Info] ${XDG_DATA_HOME}/WeChat_Data/wechat.env exists"
+	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
+		echo "[Info] ${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
 	else
-		touch "${XDG_DATA_HOME}"/WeChat_Data/wechat.env
+		touch "${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
-	if [[ $(cat "${XDG_DATA_HOME}"/WeChat_Data/wechat.env) ]]; then
+	if [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/portable.env) ]]; then
 		return 0
 	else
-		echo "# Envs" >>"${XDG_DATA_HOME}"/WeChat_Data/wechat.env
-		echo "isWeChatEnvPresent=1" >>"${XDG_DATA_HOME}"/WeChat_Data/wechat.env
+		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
+		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
 }
 
@@ -98,32 +100,6 @@ function cameraDect() {
 }
 
 function execApp() {
-	# Wayland is not available for now
-	if [ -f /usr/lib/wechat/keyBlocker.so ]; then
-		if [ ! ${LD_PRELOAD} ]; then
-			echo "[Info] Key blocker enabled"
-			LD_PRELOAD=/usr/lib/wechat/keyBlocker.so
-		else
-			echo "[Info] Key blocker enabled, appending LD_PRELOAD"
-			LD_PRELOAD="/usr/lib/wechat/keyBlocker.so:${LD_PRELOAD}"
-		fi
-	else
-		LD_PRELOAD=""
-	fi
-	if [[ ${wechatXserverPatch} = 1 ]]; then
-		xhost +
-	fi
-	if [[ $(fc-match emoji) =~ Twemoji ]]; then
-		echo "[Info] Emoji already set to Twemoji"
-	else
-		if [ -f /usr/share/fontconfig/conf.avail/75-twemoji.conf ]; then
-			cp /usr/share/fontconfig/conf.avail/75-twemoji.conf \
-				"${XDG_CONFIG_HOME}"/fontconfig
-			echo "[Info] Using Twemoji as Emoji font, fontconfig has been changed"
-		else
-			echo "[Warn] Emojis may be broken"
-		fi
-	fi
 	if [ ! -S "${busDir}/bus" ]; then
 		echo "[Info] Waiting for D-Bus proxy..."
 		counter=0
@@ -140,34 +116,26 @@ function execApp() {
 	else
 		xhost + #Unlock the XServer for X11 users
 	fi
-	if [ ! ${unitName} ]; then
-		unitName="wechat"
-	fi
-	mkdir -p "${XDG_DATA_HOME}"/WeChat_Data/.config
-	createWrapIfNotExist "${XDG_DOCUMENTS_DIR}"/WeChat
+	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
 	if [ ! ${bwBindPar} ]; then
 		bwBindPar="/$(uuidgen)"
+	else
+		echo "bwBindPar is ${bwBindPar}"
 	fi
-	echo "bwBindPar is ${bwBindPar}"
 	systemd-run \
 	--user \
 	${sdOption} \
-	-p SyslogIdentifier=WeChat \
 	-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 	-u "${unitName}" \
-	-p Description="WeChat" \
-	-p Documentation="https://wiki.archlinuxcn.org/wiki/%E5%BE%AE%E4%BF%A1#%E5%BE%AE%E4%BF%A1_Linux_%E5%8E%9F%E7%94%9F%E7%89%88%E9%87%8D%E6%9E%84" \
+	-p Description="Portable Sandbox" \
+	-p Documentation="https://github.com/Kraftland/portable" \
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
-	-p OOMScoreAdjust=100 \
 	-p KillMode=control-group \
 	-p CPUAccounting=yes \
 	-p StartupCPUWeight=idle \
-	-p CPUSchedulingPriority=1 \
-	-p CPUSchedulingPolicy=idle \
-	-p Nice=19 \
 	-p StartupIOWeight=1 \
 	-p MemoryMax=90% \
 	-p MemoryHigh=80% \
@@ -177,11 +145,10 @@ function execApp() {
 	-p ManagedOOMSwap=kill \
 	-p ManagedOOMMemoryPressure=kill \
 	-p IPAccounting=yes \
-	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p PrivateIPC=yes \
 	-p DevicePolicy=strict \
-	-p EnvironmentFile=/usr/lib/wechat/envs \
-	-p EnvironmentFile="${XDG_DATA_HOME}"/WeChat_Data/wechat.env \
+	-p EnvironmentFile=/usr/lib/portable/info/"${appID}"/config \
+	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
 	-p IPAddressDeny=localhost \
@@ -226,10 +193,8 @@ function execApp() {
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p BindReadOnlyPaths=/dev/null:/proc/cpuinfo \
 	-p BindReadOnlyPaths=/dev/null:/proc/meminfo \
-	-p BindReadOnlyPaths=/opt/wechat/files:/usr/lib/license \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
-	-p BindReadOnlyPaths=/usr/share/wechat/license/etc/os-release:"${osRel}" \
-	-p BindReadOnlyPaths=/usr/lib/wechat/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
+	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-- \
 	bwrap \
@@ -250,8 +215,8 @@ function execApp() {
 			/sandbox/chromium \
 		--ro-bind /usr/lib/flatpak-xdg-utils/xdg-open \
 			/sandbox/firefox \
-		--ro-bind /usr/lib/wechat/mimeapps.list \
-			"${XDG_DATA_HOME}"/WeChat_Data/.config/mimeapps.list \
+		--ro-bind /usr/lib/portable/mimeapps.list \
+			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
 		--proc /proc \
 		--bind /usr /usr \
 		--ro-bind /etc /etc \
@@ -263,30 +228,20 @@ function execApp() {
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
 		--ro-bind "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
-		--bind "${XDG_DATA_HOME}"/WeChat_Data "${HOME}" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
-		--dir "${XDG_DATA_HOME}/WeChat_Data/Shared Directory" \
-		--dir "${HOME}/共享目录" \
-		--dir "${XDG_DOCUMENTS_DIR}/WeChat" \
-		--bind "${XDG_DOCUMENTS_DIR}/WeChat" \
-			"${HOME}/共享目录" \
-		--bind "${XDG_DOCUMENTS_DIR}"/WeChat \
-			"${HOME}/Shared Directory" \
 		--ro-bind-try "${XAUTHORITYpath}" "${XAUTHORITYpath}" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
 				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
 				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
-		--ro-bind /usr/lib/wechat/open \
+		--ro-bind /usr/lib/portable/open \
 			/sandbox/dde-file-manager \
-		--ro-bind /usr/lib/wechat/open \
+		--ro-bind /usr/lib/portable/open \
 			/sandbox/xdg-open \
-		--ro-bind /usr/lib/wechat/open \
+		--ro-bind /usr/lib/portable/open \
 			/sandbox/open \
-		--ro-bind /usr/share/wechat/license/var/ /var/ \
-		--ro-bind /usr/share/wechat/license/etc/lsb-release \
-			/etc/lsb-release \
-		--ro-bind /usr/lib/wechat/user-dirs.dirs \
+		--ro-bind /usr/lib/portable/user-dirs.dirs \
 			"${XDG_CONFIG_HOME}"/user-dirs.dirs \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
 			"${XDG_CONFIG_HOME}"/fontconfig \
@@ -294,11 +249,12 @@ function execApp() {
 			"${XDG_DATA_HOME}/fonts" \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
-		--dir "${XDG_DATA_HOME}/WeChat_Data/Documents" \
-		--bind "${XDG_DATA_HOME}/WeChat_Data" \
-			"${XDG_DATA_HOME}/WeChat_Data" \
-		--tmpfs "${XDG_DATA_HOME}/WeChat_Data"/options \
-		--ro-bind-try /dev/null "${XDG_DATA_HOME}"/WeChat_Data/wechat.env \
+		--dir "${XDG_DATA_HOME}/${stateDirectory}/Documents" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
+			"${XDG_DATA_HOME}/${stateDirectory}" \
+		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
+		--ro-bind-try /dev/null \
+			"${XDG_DATA_HOME}/${stateDirectory}"/portable.env \
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
 		${bwCamPar} \
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
@@ -310,9 +266,6 @@ function execApp() {
 		--disable-userns \
 		-- \
 			"${launchTarget}"
-	if [[ $? = 0 ]]; then
-		echo '[Info] To view logs, launch this script with "--actions connect-tty" or type "journalctl --user -eu wechat"'
-	fi
 }
 
 function warnMulRunning() {
@@ -343,9 +296,9 @@ function warnMulRunning() {
 		fi
 	fi
 	if [[ "${LANG}" =~ 'zh_CN' ]]; then
-		zenity --title "唤醒微信失败" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
+		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
 	else
-		zenity --title "WeChat is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
+		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
 	fi
 	if [ $? = 0 ]; then
 		systemctl --user stop $@
@@ -356,13 +309,13 @@ function warnMulRunning() {
 }
 
 function dbusProxy() {
-	if [[ $(systemctl --user is-failed wechat-dbus-proxy.service) = failed ]]; then
+	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		echo "[Warning] D-Bus proxy failed last time"
-		systemctl --user reset-failed wechat-dbus-proxy.service
+		systemctl --user reset-failed ${proxyName}.service
 	fi
-	if [[ $(systemctl --user is-active wechat-dbus-proxy.service) = active ]]; then
+	if [[ $(systemctl --user is-active ${proxyName}.service) = active ]]; then
 		echo "[Warning] Existing D-Bus proxy detected! Terminating..."
-		systemctl --user kill wechat-dbus-proxy.service
+		systemctl --user kill ${proxyName}.service
 	fi
 	if [ -d "${busDir}" ]; then
 		rm "${busDir}" -r
@@ -371,7 +324,7 @@ function dbusProxy() {
 	echo "Starting D-Bus Proxy @ ${busDir}..."
 	systemd-run \
 		--user \
-		-u wechat-dbus-proxy \
+		-u ${proxyName} \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
@@ -379,7 +332,7 @@ function dbusProxy() {
 			--ro-bind /usr/bin /usr/bin \
 			--ro-bind-try /usr/share /usr/share \
 			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
-			--ro-bind /usr/lib/wechat/flatpak-info \
+			--ro-bind /usr/lib/portable/flatpak-info \
 				/.flatpak-info \
 			-- /usr/bin/xdg-dbus-proxy \
 			"${DBUS_SESSION_BUS_ADDRESS}" \
@@ -407,25 +360,12 @@ function dbusProxy() {
 }
 
 function execAppUnsafe() {
-	source /usr/lib/wechat/envs
-	source "${XDG_DATA_HOME}"/WeChat_Data/wechat.env
+	source "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
-	bwrap \
-		--dev-bind / / \
-		--bind /opt/wechat/files \
-			/usr/lib/license \
-		--ro-bind /usr/share/wechat/license/var/ \
-			/var/ \
-		--ro-bind /usr/share/wechat/license/etc/os-release \
-			"${osRel}" \
-		--ro-bind /usr/share/wechat/license/etc/lsb-release \
-			/etc/lsb-release \
-		--setenv QT_QPA_PLATFORM xcb \
-		--setenv LD_LIBRARY_PATH /opt/wechat/files:/usr/lib/wechat/so:/usr/lib/wechat/so \
-		--setenv QT_AUTO_SCREEN_SCALE_FACTOR 1 \
-		--setenv PATH /sandbox:"${PATH}" \
-		--setenv QT_PLUGIN_PATH "/usr/lib/qt/plugins /opt/wechat/files/wechat" \
+	systemd-run --user \
+		-u ${unitName} \
+		--tty \
 		"${launchTarget}"
 }
 
@@ -480,19 +420,15 @@ function launch() {
 	detectXauth
 	inputMethod
 	moeDect
-	if [[ $(systemctl --user is-failed wechat.service) = failed ]]; then
-		echo "[Warning] WeChat failed last time"
-		systemctl --user reset-failed wechat.service
+	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
+		echo "[Warning] ${appID} failed last time"
+		systemctl --user reset-failed ${unitName}.service
 	fi
-	if [[ $(systemctl --user is-active wechat.service) = active ]]; then
-		warnMulRunning wechat.service
+	if [[ $(systemctl --user is-active ${unitName}.service) = active ]]; then
+		warnMulRunning ${unitName}.service
 	fi
-	if [[ ! ${launchTarget} ]]; then
-		if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
-			launchTarget="/usr/bin/bash"
-		else
-			launchTarget="/opt/wechat/files/wechat"
-		fi
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
+		launchTarget="/usr/bin/bash"
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "connect-tty" ]]; then
 		sdOption="-t"
@@ -502,31 +438,17 @@ function launch() {
 		sdOption=""
 	fi
 	if [[ ${trashAppUnsafe} = 1 ]]; then
-		echo "Launching WeChat UOS (unsafe)..."
+		echo "Launching ${appID} (unsafe)..."
 		execAppUnsafe
 	else
 		dbusProxy
-		echo "Launching WeChat UOS..."
+		echo "Launching ${appID}..."
 		execApp
 	fi
 }
 
 function stopApp() {
-	stopCmd="systemctl --user stop wechat-dbus-proxy wechat"
-	timeSpent=$( { time ${stopCmd}; } 2>&1 \
-		| grep real \
-		| awk \
-		'/real/ {split($2, a, "m"); split(a[2], b, "s"); print a[1] * 60 + b[1]}')
-	if (( $(echo "${timeSpent} > 2" | bc -l) )); then
-		echo "[Warn] WeChat took ${timeSpent}s to stop! Is the system too slow or WeChat screwed?"
-		if (( $(echo "${timeSpent} > 20" | bc -l) )); then
-			notify-send \
-			-i wechat \
-			-u normal \
-			-t 5 \
-			"WeChat" "WeChat is forcibly stopped"
-		fi
-	fi
+	stopCmd="systemctl --user stop ${proxyName} ${unitName}"
 }
 
 if [[ $@ = "--actions quit" ]]; then
