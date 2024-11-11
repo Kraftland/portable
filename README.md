@@ -23,3 +23,5 @@ install -Dm755 config /usr/lib/portable/info/appID/config
 ## Runtime
 
 Environment variables are read from stateDirectory/portable.env
+
+Start portable with environment variable `_portalConfig`, which is pointed to the actual config.
