@@ -127,7 +127,6 @@ function execApp() {
 	systemd-run \
 	--user \
 	${sdOption} \
-	-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 	-u "${unitName}" \
 	-p Description="Portable Sandbox" \
 	-p Documentation="https://github.com/Kraftland/portable" \
@@ -147,7 +146,7 @@ function execApp() {
 	-p IPAccounting=yes \
 	-p PrivateIPC=yes \
 	-p DevicePolicy=strict \
-	-p EnvironmentFile=/usr/lib/portable/info/"${appID}"/config \
+	-p EnvironmentFile="${_portalConfig}" \
 	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
