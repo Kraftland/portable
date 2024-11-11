@@ -3,7 +3,7 @@
 if [ ${_portalConfig} ]; then
 	source "${_portalConfig}"
 else
-	echo "[Critical] No portal config specified!"
+	echo "[Critical] No portable config specified!"
 	exit 1
 fi
 
@@ -370,11 +370,11 @@ function execAppUnsafe() {
 }
 
 function questionFirstLaunch() {
-	if [ ! -f "${XDG_DATA_HOME}"/WeChat_Data/options/sandbox ]; then
+	if [ ! -f "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox ]; then
 		if [[ "${LANG}" =~ 'zh_CN' ]]; then
-			zenity --title "初次启动" --icon=security-medium-symbolic --default-cancel --question --text="允许微信读取 / 修改所有个人数据?"
+			zenity --title "初次启动" --icon=security-medium-symbolic --default-cancel --question --text="允许程序读取 / 修改所有个人数据?"
 		else
-			zenity --title "Welcome" --icon=security-medium-symbolic --default-cancel --question --text="Do you wish WeChat to access and modify all of your data?"
+			zenity --title "Welcome" --icon=security-medium-symbolic --default-cancel --question --text="Do you wish this Application to access and modify all of your data?"
 		fi
 		if [[ $? = 0 ]]; then
 			export trashAppUnsafe=1
@@ -385,33 +385,28 @@ function questionFirstLaunch() {
 			fi
 		else
 			echo "Request canceled by user"
-			mkdir -p "${XDG_DATA_HOME}"/WeChat_Data/options
-			touch "${XDG_DATA_HOME}"/WeChat_Data/options/sandbox
+			mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
+			touch "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
 			return 0
 		fi
-		mkdir -p "${XDG_DATA_HOME}"/WeChat_Data/options
-		echo disableSandbox >>"${XDG_DATA_HOME}"/WeChat_Data/options/sandbox
+		mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
+		echo disableSandbox >>"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
 	fi
-	if [[ $(cat "${XDG_DATA_HOME}"/WeChat_Data/options/sandbox) =~ "disableSandbox" ]]; then
+	if [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox) =~ "disableSandbox" ]]; then
 		export trashAppUnsafe=1
 	fi
 }
 
 function disableSandbox() {
 	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
-		rm "${XDG_DATA_HOME}"/WeChat_Data/options/sandbox
+		rm "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
 		questionFirstLaunch
 	fi
 }
 
 function openDataDir() {
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
-		xdg-open "${XDG_DATA_HOME}"/WeChat_Data
-		exit $?
-	fi
-	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "shareddir" ]]; then
-		mkdir -p "${XDG_DOCUMENTS_DIR}"/WeChat
-		xdg-open "${XDG_DOCUMENTS_DIR}"/WeChat
+		xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
 		exit $?
 	fi
 }
