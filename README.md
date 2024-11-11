@@ -15,6 +15,9 @@ install -Dm755 flatpak-info /usr/lib/portable/flatpak-info
 
 ## Configurations
 
+
+Preferred location:
+
 ```
 # Modify before installing
 install -Dm755 config /usr/lib/portable/info/appID/config
@@ -25,3 +28,7 @@ install -Dm755 config /usr/lib/portable/info/appID/config
 Environment variables are read from stateDirectory/portable.env
 
 Start portable with environment variable `_portalConfig`, which is pointed to the actual config.
+
+### Debugging
+
+Start portable with argument `--actions connect-tty debug-shell`
