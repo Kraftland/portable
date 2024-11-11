@@ -1,6 +1,13 @@
 #!/bin/bash
 
-busName=com.qq.weixin.uos.whatever
+if [ ${_portalConfig} ]; then
+	source "${_portalConfig}"
+else
+	echo "[Critical] No portal config specified!"
+	exit 1
+fi
+
+busName="${appID}"
 busDir="${XDG_RUNTIME_DIR}/app/${busName}"
 
 function moeDect() {
@@ -26,22 +33,7 @@ function sourceXDG() {
 }
 
 function manageDirs() {
-	if [ -d "${HOME}/Documents/TrashBox" ]; then
-		echo "[Warn] Old user data may be present, check ${HOME}/Documents/TrashBox"
-	fi
-	if [ -d "${XDG_DOCUMENTS_DIR}/WeChat_Data/文档" ]; then
-		mv "${XDG_DOCUMENTS_DIR}/WeChat_Data/文档" \
-			"${XDG_DOCUMENTS_DIR}/WeChat_Data/Documents"
-	fi
-	if [ -d "${XDG_DOCUMENTS_DIR}"/WeChat_Data ]; then
-		echo "[Info] Migrating user data..."
-		mv "${XDG_DOCUMENTS_DIR}"/WeChat_Data "${XDG_DATA_HOME}"/WeChat_Data
-	fi
-	if [ -L "${XDG_DOCUMENTS_DIR}"/xwechat_files ]; then
-		echo "[Info] Removing unused links..."
-		rm "${XDG_DOCUMENTS_DIR}"/xwechat_files
-	fi
-	createWrapIfNotExist "${XDG_DATA_HOME}"/WeChat_Data
+	createWrapIfNotExist "${XDG_DATA_HOME}"/${stateDirectory}
 }
 
 function detectXauth() {
