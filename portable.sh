@@ -42,7 +42,7 @@ function detectXauth() {
 	if [ ! ${XAUTHORITY} ]; then
 		echo '[Warn] No ${XAUTHORITY} detected! Do you have any X server running?'
 		export XAUTHORITYpath="/$(uuidgen)/$(uuidgen)"
-		xhost +
+		xhost +localhost
 	else
 		export XAUTHORITYpath="${XAUTHORITY}"
 	fi
@@ -114,7 +114,7 @@ function execApp() {
 	if [ ${XDG_SESSION_TYPE} = wayland ]; then
 		echo "[Info] Skipping Xhost operation"
 	else
-		xhost + #Unlock the XServer for X11 users
+		xhost +localhost #Unlock the XServer for X11 users
 	fi
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
