@@ -338,11 +338,13 @@ function dbusProxy() {
 			"${busDir}/bus" \
 			--filter \
 			--own=org.kde.* \
-			--own=com.belmoussaoui.ashpd.demo \
+			--see=org.kde.kwin \
 			--talk=org.freedesktop.portal.Camera \
 			--call=org.freedesktop.portal.Camera=* \
 			--talk=org.freedesktop.portal.Documents \
 			--call=org.freedesktop.portal.Documents=* \
+			--talk=org.freedesktop.portal.FileChooser \
+			--call=org.freedesktop.portal.FileChooser=* \
 			--talk=org.freedesktop.portal.FileTransfer \
 			--call=org.freedesktop.portal.FileTransfer=* \
 			--talk=org.freedesktop.portal.Notification \
@@ -361,7 +363,18 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.OpenURI.OpenURI=* \
 			--talk=org.freedesktop.portal.OpenURI.OpenFile \
 			--call=org.freedesktop.portal.OpenURI.OpenFile=* \
-			--talk=org.freedesktop.portal.Settings.Read \
+			--talk=org.freedesktop.portal.Fcitx \
+			--call=org.freedesktop.portal.Fcitx=* \
+			--talk=org.freedesktop.portal.Fcitx.* \
+			--call=org.freedesktop.portal.Fcitx.*=* \
+			--talk=org.fcitx.Fcitx.InputMethod1.CreateInputContext \
+			--call=org.fcitx.Fcitx.InputMethod1.CreateInputContext=* \
+			--call=*=/org/freedesktop/portal/inputcontext/* \
+			--talk=org.fcitx.Fcitx.InputContext1 \
+			--call=org.fcitx.Fcitx.InputContext1=* \
+			--talk=org.fcitx.Fcitx.InputContext1.* \
+			--call=org.fcitx.Fcitx.InputContext1.*=* \
+			--call=org.freedesktop.portal.Request=* \
 			--talk=org.freedesktop.portal.Desktop \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/* \
