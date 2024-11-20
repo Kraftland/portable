@@ -215,7 +215,6 @@ function execApp() {
 	-- \
 	bwrap \
 		--tmpfs /tmp \
-		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
 		--dev-bind-try /dev/nvidia0 /dev/nvidia0 \
