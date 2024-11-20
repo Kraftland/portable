@@ -108,8 +108,6 @@ function cameraDect() {
 }
 
 function execApp() {
-	#genXAuth
-	genXAuth
 	if [ ! -S "${busDir}/bus" ]; then
 		echo "[Info] Waiting for D-Bus proxy..."
 		counter=0
