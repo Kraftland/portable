@@ -1,10 +1,10 @@
-# Portable
+# Abstract
 A sandboxing framework, originally designed for WeChat. Still in heavy development.
 
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/example.webp" alt="The moeOS Project" width="1024" />
+  <img src="https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/example.webp" alt="The Portable Project" width="1024" />
   <br>
-  moeOS
+  Portable
   <br>
 </h1>
 
