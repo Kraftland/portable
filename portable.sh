@@ -52,7 +52,7 @@ function detectXauth() {
 }
 
 function genXAuth() {
-	echo "[Info] Processing X Server security restriction..."
+	echo "[Info] Processing X Server security restriction..."detectXauth
 	# Generate hash
 	authHash="$(echo -n ${appID}) | xxd -p"
 	xauth \
@@ -140,11 +140,6 @@ function execApp() {
 	fi
 	cameraDect
 	importEnv
-	if [ ${XDG_SESSION_TYPE} = wayland ]; then
-		echo "[Info] Skipping Xhost operation"
-	else
-		xhost +localhost #Unlock the XServer for X11 users
-	fi
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
