@@ -38,17 +38,25 @@ function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}"/${stateDirectory}
 }
 
-function detectXauth() {
-	if [ ! ${XAUTHORITY} ]; then
-		echo '[Warn] No ${XAUTHORITY} detected! Do you have any X server running?'
-		export XAUTHORITYpath="/$(uuidgen)/$(uuidgen)"
-		xhost +localhost
-	else
-		export XAUTHORITYpath="${XAUTHORITY}"
+function genXAuth() {
+	if [[ ${waylandOnly} = "true" ]]; then
+		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+		return $?
 	fi
-	if [[ ! ${DISPLAY} ]]; then
-		echo '[Warn] No ${DISPLAY} detected! Do you have any X server running?'
-	fi
+	echo "[Info] Processing X Server security restriction..."
+	#authHash="$(xxd -p -l 16 /dev/urandom)"
+	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	xauth -f \
+		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+		add $(xauth list :0)
+	#xauth -f \
+	#	"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+	#	add \
+	#	"${DISPLAY}" \
+	#	. \
+	#	"${authHash}"
+	#xauth merge "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 }
 
 function createWrapIfNotExist() {
@@ -111,11 +119,6 @@ function execApp() {
 	fi
 	cameraDect
 	importEnv
-	if [ ${XDG_SESSION_TYPE} = wayland ]; then
-		echo "[Info] Skipping Xhost operation"
-	else
-		xhost +localhost #Unlock the XServer for X11 users
-	fi
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
@@ -195,6 +198,8 @@ function execApp() {
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
+	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
+	-p Environment=DISPLAY="${DISPLAY}" \
 	-- \
 	bwrap \
 		--tmpfs /tmp \
@@ -210,9 +215,9 @@ function execApp() {
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
 		--dir /sandbox \
-		--ro-bind /usr/lib/flatpak-xdg-utils/xdg-open \
+		--ro-bind /usr/lib/portable/open \
 			/sandbox/chromium \
-		--ro-bind /usr/lib/flatpak-xdg-utils/xdg-open \
+		--ro-bind /usr/lib/portable/open \
 			/sandbox/firefox \
 		--ro-bind /usr/lib/portable/mimeapps.list \
 			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
@@ -229,7 +234,6 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/pulse" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
-		--ro-bind-try "${XAUTHORITYpath}" "${XAUTHORITYpath}" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
 				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
@@ -443,7 +447,7 @@ function openDataDir() {
 }
 
 function launch() {
-	detectXauth
+	genXAuth
 	inputMethod
 	moeDect
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
