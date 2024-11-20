@@ -44,20 +44,20 @@ function genXAuth() {
 		return $?
 	fi
 	echo "[Info] Processing X Server security restriction..."
-	# Generate hash
-	authHash="$(openssl rand -hex 16)"
+	# Generate hash, untrusted seems to create black borders
+	authHash="$(xxd -p -l 16 /dev/urandom)"
 	xauth \
 		generate \
 		"${DISPLAY}" \
 		. \
-		untrusted \
+		trusted \
 		data "${authHash}"
 
-	xauth \
-		add \
-		"${DISPLAY}" \
-		. \
-		"${authHash}"
+	#xauth \
+	#	add \
+	#	"${DISPLAY}" \
+	#	. \
+	#	"${authHash}"
 	rm -f "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	xauth -f \
@@ -215,6 +215,7 @@ function execApp() {
 	-- \
 	bwrap \
 		--tmpfs /tmp \
+		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
 		--dev-bind-try /dev/nvidia0 /dev/nvidia0 \
@@ -269,8 +270,6 @@ function execApp() {
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
 		--ro-bind-try /dev/null \
 			"${XDG_DATA_HOME}/${stateDirectory}"/portable.env \
-		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
-			"${HOME}/.XAuthority" \
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
 		${bwCamPar} \
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
