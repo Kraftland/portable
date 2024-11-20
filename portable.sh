@@ -44,7 +44,6 @@ function genXAuth() {
 		return $?
 	fi
 	echo "[Info] Processing X Server security restriction..."
-	xauth
 	# Generate hash
 	authHash="$(echo -n ${appID}) | xxd -p"
 	xauth \
@@ -67,9 +66,9 @@ function genXAuth() {
 		"${DISPLAY}" \
 		. \
 		"${authHash}"
-	xauth \
-		extract \
-		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	#xauth \
+	#	extract \
+	#	"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 }
 
 function createWrapIfNotExist() {
@@ -212,7 +211,7 @@ function execApp() {
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
-	-p Environment=XAUTHORITY="${HOME}/.XAuthority"
+	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-- \
 	bwrap \
 		--tmpfs /tmp \
@@ -259,7 +258,7 @@ function execApp() {
 		--ro-bind /usr/lib/portable/user-dirs.dirs \
 			"${XDG_CONFIG_HOME}"/user-dirs.dirs \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
-			"${XDG_CONFIG_H"${HOME}/.XAuthority"OME}"/fontconfig \
+			"${XDG_CONFIG_HOME}"/fontconfig \
 		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
 			"${XDG_DATA_HOME}/fonts" \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
