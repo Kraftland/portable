@@ -43,7 +43,6 @@ function genXAuth() {
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
-	xhost -
 	echo "[Info] Processing X Server security restriction..."
 	#authHash="$(xxd -p -l 16 /dev/urandom)"
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
