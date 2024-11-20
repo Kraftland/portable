@@ -51,6 +51,17 @@ function detectXauth() {
 	fi
 }
 
+function genXAuth() {
+	# Generate hash
+	authHash="$(echo -n ${appID}) | xxd -p"
+	xauth \
+		generate \
+		"${DISPLAY}" \
+		. \
+		untrusted \
+		data "${authHash}"
+}
+
 function createWrapIfNotExist() {
 	if [ -d "$@" ]; then
 		return 0
@@ -443,7 +454,7 @@ function openDataDir() {
 }
 
 function launch() {
-	detectXauth
+	genXAuth
 	inputMethod
 	moeDect
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
