@@ -43,6 +43,7 @@ function genXAuth() {
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
+	xhost
 	echo "[Info] Processing X Server security restriction..."
 	# Generate hash, untrusted seems to create black borders
 	authHash="$(xxd -p -l 16 /dev/urandom)"
