@@ -45,7 +45,7 @@ function genXAuth() {
 	fi
 	echo "[Info] Processing X Server security restriction..."
 	# Generate hash
-	authHash="$(echo -n ${appID}) | xxd -p"
+	authHash="$(openssl rand -hex 16)"
 	xauth \
 		generate \
 		"${DISPLAY}" \
