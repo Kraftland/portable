@@ -5,6 +5,8 @@ A sandboxing framework, originally designed for WeChat. Still in heavy developme
 
 ## Portable
 
+Install aur/portable-git or
+
 ```
 install -Dm755 portable.sh /usr/bin/portable
 install -Dm755 open.sh /usr/lib/portable/open
