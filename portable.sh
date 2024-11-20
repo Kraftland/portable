@@ -52,6 +52,7 @@ function detectXauth() {
 }
 
 function genXAuth() {
+	echo "[Info] Processing X Server security restriction..."
 	# Generate hash
 	authHash="$(echo -n ${appID}) | xxd -p"
 	xauth \
@@ -60,6 +61,23 @@ function genXAuth() {
 		. \
 		untrusted \
 		data "${authHash}"
+
+	xauth \
+		add \
+		"${DISPLAY}" \
+		. \
+		"${authHash}"
+	rm -f "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	xauth -f \
+		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+		add \
+		"${DISPLAY}" \
+		. \
+		"${authHash}"
+	xauth \
+		extract \
+		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 }
 
 function createWrapIfNotExist() {
