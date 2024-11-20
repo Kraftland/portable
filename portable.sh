@@ -43,32 +43,21 @@ function genXAuth() {
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
-	xhost
+	xhost -
 	echo "[Info] Processing X Server security restriction..."
-	# Generate hash, untrusted seems to create black borders
-	authHash="$(xxd -p -l 16 /dev/urandom)"
-	xauth \
-		add \
-		"${DISPLAY}" \
-		. \
-		"${authHash}"
-
-	#xauth \
+	#authHash="$(xxd -p -l 16 /dev/urandom)"
+	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	xauth -f \
+		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+		add $(xauth list :0)
+	#xauth -f \
+	#	"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
 	#	add \
 	#	"${DISPLAY}" \
 	#	. \
 	#	"${authHash}"
-	rm -f "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
-	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
-	xauth -f \
-		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
-		add \
-		"${DISPLAY}" \
-		. \
-		"${authHash}"
-	#xauth \
-	#	extract \
-	#	"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	#xauth merge "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 }
 
 function createWrapIfNotExist() {
@@ -120,6 +109,7 @@ function cameraDect() {
 }
 
 function execApp() {
+	#genXAuth
 	genXAuth
 	if [ ! -S "${busDir}/bus" ]; then
 		echo "[Info] Waiting for D-Bus proxy..."
