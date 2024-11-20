@@ -47,11 +47,10 @@ function genXAuth() {
 	# Generate hash, untrusted seems to create black borders
 	authHash="$(xxd -p -l 16 /dev/urandom)"
 	xauth \
-		generate \
+		add \
 		"${DISPLAY}" \
 		. \
-		trusted \
-		data "${authHash}"
+		"${authHash}"
 
 	#xauth \
 	#	add \
@@ -212,6 +211,7 @@ function execApp() {
 	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
+	-p Environment=DISPLAY="${DISPLAY}" \
 	-- \
 	bwrap \
 		--tmpfs /tmp \
