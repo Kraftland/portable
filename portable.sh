@@ -38,21 +38,13 @@ function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}"/${stateDirectory}
 }
 
-function detectXauth() {
-	if [ ! ${XAUTHORITY} ]; then
-		echo '[Warn] No ${XAUTHORITY} detected! Do you have any X server running?'
-		export XAUTHORITYpath="/$(uuidgen)/$(uuidgen)"
-		xhost +localhost
-	else
-		export XAUTHORITYpath="${XAUTHORITY}"
-	fi
-	if [[ ! ${DISPLAY} ]]; then
-		echo '[Warn] No ${DISPLAY} detected! Do you have any X server running?'
-	fi
-}
-
 function genXAuth() {
-	echo "[Info] Processing X Server security restriction..."detectXauth
+	if [[ ${waylandOnly} = "yes" ]]; then
+		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+		return $?
+	fi
+	echo "[Info] Processing X Server security restriction..."
+	xauth
 	# Generate hash
 	authHash="$(echo -n ${appID}) | xxd -p"
 	xauth \

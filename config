@@ -11,3 +11,6 @@ stateDirectory=""
 
 # This is the target executable to launch
 launchTarget=""
+
+# When enabled, do not process XAuth files and enable X access. Generally this should be always on.
+waylandOnly="no"
