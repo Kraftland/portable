@@ -39,7 +39,7 @@ function manageDirs() {
 }
 
 function genXAuth() {
-	if [[ ${waylandOnly} = "yes" ]]; then
+	if [[ ${waylandOnly} = "true" ]]; then
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
@@ -121,6 +121,7 @@ function cameraDect() {
 }
 
 function execApp() {
+	genXAuth
 	if [ ! -S "${busDir}/bus" ]; then
 		echo "[Info] Waiting for D-Bus proxy..."
 		counter=0
