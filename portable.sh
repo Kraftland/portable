@@ -212,6 +212,7 @@ function execApp() {
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
+	-p Environment=XAUTHORITY="${HOME}/.XAuthority"
 	-- \
 	bwrap \
 		--tmpfs /tmp \
@@ -245,7 +246,6 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/pulse" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
-		--ro-bind-try "${XAUTHORITYpath}" "${XAUTHORITYpath}" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
 				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
@@ -259,7 +259,7 @@ function execApp() {
 		--ro-bind /usr/lib/portable/user-dirs.dirs \
 			"${XDG_CONFIG_HOME}"/user-dirs.dirs \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
-			"${XDG_CONFIG_HOME}"/fontconfig \
+			"${XDG_CONFIG_H"${HOME}/.XAuthority"OME}"/fontconfig \
 		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
 			"${XDG_DATA_HOME}/fonts" \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
@@ -270,6 +270,8 @@ function execApp() {
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
 		--ro-bind-try /dev/null \
 			"${XDG_DATA_HOME}/${stateDirectory}"/portable.env \
+		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+			"${HOME}/.XAuthority" \
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
 		${bwCamPar} \
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
