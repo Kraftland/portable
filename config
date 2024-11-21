@@ -17,3 +17,6 @@ waylandOnly="false"
 
 # Environment File for systemd to load, defaults to /dev/null
 #environmentFile=""
+
+#
+#extraBind=

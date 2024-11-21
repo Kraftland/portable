@@ -12,14 +12,6 @@ busDir="${XDG_RUNTIME_DIR}/app/${busName}"
 unitName="${friendlyName}"
 proxyName="${friendlyName}-dbus"
 
-function moeDect() {
-	if [[ -f /usr/share/moeOS-Docs/os-release ]]; then
-		osRel="/usr/share/moeOS-Docs/os-release"
-	else
-		osRel="/usr/lib/os-release"
-	fi
-}
-
 function sourceXDG() {
 	if [[ ! ${XDG_CONFIG_HOME} ]]; then
 		export XDG_CONFIG_HOME="${HOME}"/.config
