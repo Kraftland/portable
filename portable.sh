@@ -96,6 +96,11 @@ function importEnv() {
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
+	if [[ ${environmentFile} ]]; then
+		sdEnvFile="${environmentFile}"
+	else
+		sdEnvFile=/dev/null
+	fi
 }
 
 function cameraDect() {
@@ -197,6 +202,7 @@ function execApp() {
 	-p BindReadOnlyPaths=/dev/null:/proc/meminfo \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
+	-p EnvironmentFile="${sdEnvFile}" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
