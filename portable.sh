@@ -77,13 +77,15 @@ function inputMethod() {
 }
 
 function importEnv() {
+	cat "${_portalConfig}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		echo "[Info] ${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
 	else
 		touch "${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
 	if [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/portable.env) ]]; then
-		return 0
+		cat "${XDG_DATA_HOME}"/${stateDirectory}/portable.env >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+		return $?
 	else
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
@@ -141,8 +143,7 @@ function execApp() {
 	-p IPAccounting=yes \
 	-p PrivateIPC=yes \
 	-p DevicePolicy=strict \
-	-p EnvironmentFile="${_portalConfig}" \
-	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
+	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
 	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
@@ -187,7 +188,6 @@ function execApp() {
 	-p BindReadOnlyPaths=/dev/null:/proc/meminfo \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
-	-p EnvironmentFile="${sdEnvFile}" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
