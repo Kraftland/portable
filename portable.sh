@@ -39,7 +39,7 @@ function genXAuth() {
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	echo "[Info] Detecting display as ${DISPLAY}"
-	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix:" ]]; then
+	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix: " ]]; then
 		echo "[Info] adding new display..."
 		export authHash="$(xxd -p -l 16 /dev/urandom)"
 		xauth \
