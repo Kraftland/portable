@@ -38,7 +38,8 @@ function genXAuth() {
 	echo "[Info] Processing X Server security restriction..."
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
-	if [[ $(xauth list :0 | head -n 1) =~ "$(hostnamectl --static)/unix:" ]]; then
+	echo "[Info] Detecting display as ${DISPLAY}"
+	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix:" ]]; then
 		echo "[Info] adding new display..."
 		export authHash="$(xxd -p -l 16 /dev/urandom)"
 		xauth \
