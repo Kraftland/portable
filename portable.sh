@@ -49,11 +49,11 @@ function genXAuth() {
 			"${authHash}"
 		xauth -f \
 			"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
-			add $(xauth list :0 | head -n 1)
+			add $(xauth list ${DISPLAY} | head -n 1)
 	else
 		xauth -f \
 			"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
-			add $(xauth list :0 | head -n 1)
+			add $(xauth list ${DISPLAY} | head -n 1)
 	fi
 	xauth \
 		-f "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
