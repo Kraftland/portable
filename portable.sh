@@ -467,7 +467,7 @@ function launch() {
 }
 
 function stopApp() {
-	stopCmd="systemctl --user stop ${proxyName} ${unitName}"
+	systemctl --user stop ${proxyName} ${unitName}
 }
 
 if [[ $@ = "--actions quit" ]]; then
