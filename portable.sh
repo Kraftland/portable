@@ -36,19 +36,33 @@ function genXAuth() {
 		return $?
 	fi
 	echo "[Info] Processing X Server security restriction..."
-	#authHash="$(xxd -p -l 16 /dev/urandom)"
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
-	xauth -f \
-		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
-		add $(xauth list :0)
-	#xauth -f \
-	#	"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
-	#	add \
-	#	"${DISPLAY}" \
-	#	. \
-	#	"${authHash}"
-	#xauth merge "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	if [[ $(xauth list :0 | head -n 1) =~ "$(hostnamectl --static)/unix:" ]]; then
+		echo "[Info] adding new display..."
+		export authHash="$(xxd -p -l 16 /dev/urandom)"
+		xauth \
+			add \
+			"${DISPLAY}" \
+			. \
+			"${authHash}"
+		xauth -f \
+			"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+			add $(xauth list :0 | head -n 1)
+	else
+		xauth -f \
+			"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+			add $(xauth list :0 | head -n 1)
+	fi
+	xauth \
+		-f "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
+		list >/dev/null
+	if [ $? = 0 ]; then
+		return 0
+	else
+		echo "[Warn] Turning off X access control for localhost"
+		xauth +localhost
+	fi
 }
 
 function createWrapIfNotExist() {
