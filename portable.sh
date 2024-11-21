@@ -133,6 +133,7 @@ function execApp() {
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
 	-p KillMode=control-group \
+	-p LimitCORE=0 \
 	-p CPUAccounting=yes \
 	-p StartupCPUWeight=idle \
 	-p StartupIOWeight=1 \
@@ -149,6 +150,7 @@ function execApp() {
 	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
+	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p SystemCallFilter=~@clock \
 	-p SystemCallFilter=~@cpu-emulation \
 	-p SystemCallFilter=~@debug \
@@ -194,6 +196,9 @@ function execApp() {
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
+	-p IPAddressDeny=multicast \
+	-p ProtectKernelLogs=yes \
+	-p ProtectHostname=yes \
 	-- \
 	bwrap \
 		--tmpfs /tmp \
