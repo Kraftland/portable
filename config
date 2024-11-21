@@ -15,8 +15,4 @@ launchTarget="gtk3-demo"
 # Takes boolean value. When enabled, do not process XAuth files and enable X access. Generally this should be always on.
 waylandOnly="false"
 
-# Environment File for systemd to load, defaults to /dev/null
-#environmentFile=""
-
-#
-#extraBind=
+# Below you can set envs that will be imported into the application sandbox

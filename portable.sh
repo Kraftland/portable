@@ -88,11 +88,6 @@ function importEnv() {
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
-	if [[ ${environmentFile} ]]; then
-		sdEnvFile="${environmentFile}"
-	else
-		sdEnvFile=/dev/null
-	fi
 }
 
 function cameraDect() {
