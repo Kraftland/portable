@@ -138,7 +138,6 @@ function execApp() {
 	-p StartupIOWeight=1 \
 	-p MemoryMax=90% \
 	-p MemoryHigh=80% \
-	-p LimitCORE=0 \
 	-p CPUWeight=20 \
 	-p IOWeight=20 \
 	-p ManagedOOMSwap=kill \
@@ -150,9 +149,6 @@ function execApp() {
 	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
-	-p IPAddressDeny=localhost \
-	-p IPAddressDeny=link-local \
-	-p IPAddressDeny=multicast \
 	-p SystemCallFilter=~@clock \
 	-p SystemCallFilter=~@cpu-emulation \
 	-p SystemCallFilter=~@debug \
@@ -270,31 +266,26 @@ function execApp() {
 }
 
 function warnMulRunning() {
-	wmctrl -a "微信"
+	id=$(dbus-send \
+		--bus=unix:path="${busDir}/bus" \
+		--dest=org.kde.StatusNotifierWatcher \
+		--type=method_call \
+		--print-reply=literal /StatusNotifierWatcher \
+		org.freedesktop.DBus.Properties.Get \
+		string:org.kde.StatusNotifierWatcher \
+		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
+	echo "[Info] Unique ID: ${id}"
+	dbus-send \
+		--print-reply \
+		--session \
+		--dest=${id} \
+		--type=method_call \
+		/StatusNotifierItem \
+		org.kde.StatusNotifierItem.Activate \
+		int32:114514 \
+		int32:1919810
 	if [[ $? = 0 ]]; then
 		exit 0
-	else
-		id=$(dbus-send \
-			--bus=unix:path="${busDir}/bus" \
-			--dest=org.kde.StatusNotifierWatcher \
-			--type=method_call \
-			--print-reply=literal /StatusNotifierWatcher \
-			org.freedesktop.DBus.Properties.Get \
-			string:org.kde.StatusNotifierWatcher \
-			string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-		echo "[Info] Unique ID: ${id}"
-		dbus-send \
-			--print-reply \
-			--session \
-			--dest=${id} \
-			--type=method_call \
-			/StatusNotifierItem \
-			org.kde.StatusNotifierItem.Activate \
-			int32:114514 \
-			int32:1919810
-		if [[ $? = 0 ]]; then
-			exit 0
-		fi
 	fi
 	if [[ "${LANG}" =~ 'zh_CN' ]]; then
 		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
