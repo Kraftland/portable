@@ -92,7 +92,7 @@ function inputMethod() {
 }
 
 function importEnv() {
-	cat "${_portalConfig}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	cat "${_portalConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		echo "[Info] ${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
 	else
