@@ -47,12 +47,12 @@ function genXAuth() {
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
-	echo "[Info] Processing X Server security restriction..."
+	pecho debug "Processing X Server security restriction..."
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
-	echo "[Info] Detecting display as ${DISPLAY}"
+	pecho debug "Detecting display as ${DISPLAY}"
 	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix: " ]]; then
-		echo "[Info] adding new display..."
+		pecho warn "Adding new display..."
 		export authHash="$(xxd -p -l 16 /dev/urandom)"
 		xauth \
 			add \
@@ -73,7 +73,7 @@ function genXAuth() {
 	if [ $? = 0 ]; then
 		return 0
 	else
-		echo "[Warn] Turning off X access control for localhost"
+		pecho warn "Turning off X access control for localhost"
 		xauth +localhost
 	fi
 }
@@ -118,14 +118,14 @@ function inputMethod() {
 		export GTK_IM_MODULE=gcin
 		export LC_CTYPE=zh_TW.UTF-8
 	else
-		echo '[Warn] Input Method potentially broken! Please set $XMODIFIERS properly'
+		pecho warn 'Input Method potentially broken! Please set $XMODIFIERS properly'
 	fi
 }
 
 function importEnv() {
 	cat "${_portalConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
-		echo "[Info] ${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
+		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
 	else
 		touch "${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
@@ -149,24 +149,24 @@ function cameraDect() {
 
 function execApp() {
 	if [ ! -S "${busDir}/bus" ]; then
-		echo "[Info] Waiting for D-Bus proxy..."
+		pecho warn "Waiting for D-Bus proxy..."
 		counter=0
 		while [ ! -S "${busDir}/bus" ]; do
 			counter=$(expr ${counter} + 1)
 			sleep 0.1s
 		done
-		echo "[Info] D-Bus proxy took $(expr ${counter} / 10)s to launch"
+		pecho info "D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
 	waylandDisplay
 	cameraDect
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
-	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
-	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
+	pecho debug "GTK_IM_MODULE is ${GTK_IM_MODULE}"
+	pecho debug "QT_IM_MODULE is ${QT_IM_MODULE}"
 	if [ ! ${bwBindPar} ]; then
 		bwBindPar="/$(uuidgen)"
 	else
-		echo "bwBindPar is ${bwBindPar}"
+		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
 	systemd-run \
 	--user \
@@ -340,14 +340,14 @@ function warnMulRunning() {
 	if [ $? = 0 ]; then
 		systemctl --user stop $@
 	else
-		echo "[Critical] User denied session termination"
+		pecho crit "User denied session termination"
 		exit $?
 	fi
 }
 
 function dbusProxy() {
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
-		echo "[Warning] D-Bus proxy failed last time"
+		pecho warn "D-Bus proxy failed last time"
 		systemctl --user reset-failed ${proxyName}.service
 	fi
 	if [[ $(systemctl --user is-active ${proxyName}.service) = active ]]; then
@@ -358,7 +358,7 @@ function dbusProxy() {
 		rm "${busDir}" -r
 	fi
 	mkdir "${busDir}" -p
-	echo "Starting D-Bus Proxy @ ${busDir}..."
+	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
 		proxyArg="--log"
 	fi
@@ -452,7 +452,7 @@ function questionFirstLaunch() {
 				zenity --error --title "Sandbox disabled" --icon=security-low-symbolic --text "User data is potentially compromised"
 			fi
 		else
-			echo "Request canceled by user"
+			pecho warn "Request canceled by user"
 			mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
 			touch "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
 			return 0
@@ -483,7 +483,7 @@ function launch() {
 	genXAuth
 	inputMethod
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
-		echo "[Warning] ${appID} failed last time"
+		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed ${unitName}.service
 	fi
 	if [[ $(systemctl --user is-active ${unitName}.service) = active ]]; then
@@ -500,11 +500,11 @@ function launch() {
 		sdOption=""
 	fi
 	if [[ ${trashAppUnsafe} = 1 ]]; then
-		echo "Launching ${appID} (unsafe)..."
+		pecho warn "Launching ${appID} (unsafe)..."
 		execAppUnsafe
 	else
 		dbusProxy
-		echo "Launching ${appID}..."
+		pecho info "Launching ${appID}..."
 		execApp
 	fi
 }
