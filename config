@@ -12,7 +12,7 @@ stateDirectory="Portable_Test_Data"
 # This is the target executable to launch
 launchTarget="gtk3-demo"
 
-# Takes boolean value. When enabled, do not process XAuth files and enable X access. Generally this should be always on.
+# Takes boolean value. When enabled, do not process XAuth files and enable X access. Generally this should be always false.
 waylandOnly="false"
 
 # Below you can set envs that will be imported into the application sandbox
