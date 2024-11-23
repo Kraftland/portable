@@ -66,6 +66,37 @@ function genXAuth() {
 	fi
 }
 
+function pecho() {
+	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		echo "[Debug] $2"
+	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]]; then
+		echo "[Info] $2"
+	elif [[ $1 =~ warn ]]; then
+		echo "[Warn] $2"
+	elif [[ $1 =~ crit ]]; then
+		echo "[Critical] $@"
+	fi
+}
+
+function waylandDisplay() {
+	if [ ${XDG_SESSION_TYPE} = x11 ]; then
+		pecho debug "Skipped wayland detection"
+		wayDisplayBind="/$(uuidgen)/$(uuidgen)"
+		return 0
+	fi
+	if [ ! ${WAYLAND_DISPLAY} ]; then
+		pecho debug "WAYLAND_DISPLAY not set, defaulting to wayland-0"
+		wayDisplayBind="${XDG_RUNTIME_DIR}/wayland-0"
+	fi
+	if [ -f "${WAYLAND_DISPLAY}" ]; then
+		pecho debug "Wayland display is specified as an absolute path"
+		export wayDisplayBind="${WAYLAND_DISPLAY}"
+	elif [[ "${WAYLAND_DISPLAY}" =~ 'wayland-' ]]; then
+		pecho debug "Detected Wayland display as ${WAYLAND_DISPLAY}"
+		export wayDisplayBind="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
+	fi
+}
+
 function createWrapIfNotExist() {
 	if [ -d "$@" ]; then
 		return 0
@@ -126,6 +157,7 @@ function execApp() {
 		done
 		echo "[Info] D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
+	waylandDisplay
 	cameraDect
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
@@ -243,10 +275,8 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/pulse" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
-		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
-				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
-		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
-				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
+		--ro-bind-try "${wayDisplayBind}" \
+				"${wayDisplayBind}" \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/dde-file-manager \
 		--ro-bind /usr/lib/portable/open \
@@ -329,6 +359,9 @@ function dbusProxy() {
 	fi
 	mkdir "${busDir}" -p
 	echo "Starting D-Bus Proxy @ ${busDir}..."
+	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		proxyArg="--log"
+	fi
 	systemd-run \
 		--user \
 		-u ${proxyName} \
@@ -344,6 +377,7 @@ function dbusProxy() {
 			-- /usr/bin/xdg-dbus-proxy \
 			"${DBUS_SESSION_BUS_ADDRESS}" \
 			"${busDir}/bus" \
+			${proxyArg} \
 			--filter \
 			--own=org.kde.* \
 			--talk=org.freedesktop.portal.Camera \
@@ -455,7 +489,6 @@ function openDataDir() {
 function launch() {
 	genXAuth
 	inputMethod
-	moeDect
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
 		echo "[Warning] ${appID} failed last time"
 		systemctl --user reset-failed ${unitName}.service

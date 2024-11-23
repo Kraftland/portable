@@ -43,3 +43,5 @@ Start portable with environment variable `_portalConfig`, which is pointed to th
 ### Debugging
 
 Start portable with argument `--actions connect-tty debug-shell`
+
+Optionally enable debugging output using environment variable `PORTABLE_LOGGING=debug`
