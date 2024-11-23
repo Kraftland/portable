@@ -319,7 +319,7 @@ function warnMulRunning() {
 		org.freedesktop.DBus.Properties.Get \
 		string:org.kde.StatusNotifierWatcher \
 		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	echo "[Info] Unique ID: ${id}"
+	pecho info "Unique ID: ${id}"
 	dbus-send \
 		--print-reply \
 		--session \
@@ -351,7 +351,7 @@ function dbusProxy() {
 		systemctl --user reset-failed ${proxyName}.service
 	fi
 	if [[ $(systemctl --user is-active ${proxyName}.service) = active ]]; then
-		echo "[Warning] Existing D-Bus proxy detected! Terminating..."
+		pecho info "Existing D-Bus proxy detected! Terminating..."
 		systemctl --user kill ${proxyName}.service
 	fi
 	if [ -d "${busDir}" ]; then
@@ -422,14 +422,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--talk=org.freedesktop.portal.Desktop \
 			--own="${busName}" \
-			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/* \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersAsync@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersSync@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetDeviceEventListeners@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetKeystrokeListeners@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.Registry.GetRegisteredEvents@/org/a11y/atspi/registry \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Unembed@/org/a11y/atspi/accessible/root \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root
+			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 }
 
 function execAppUnsafe() {
