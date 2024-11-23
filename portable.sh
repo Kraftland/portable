@@ -66,6 +66,37 @@ function genXAuth() {
 	fi
 }
 
+function pecho() {
+	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		echo "[Debug] $2"
+	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]]; then
+		echo "[Info] $2"
+	elif [[ $1 =~ warn ]]; then
+		echo "[Warn] $2"
+	elif [[ $1 =~ crit ]]; then
+		echo "[Critical] $@"
+	fi
+}
+
+function waylandDisplay() {
+	if [ ${XDG_SESSION_TYPE} = x11 ]; then
+		pecho debug "Skipped wayland detection"
+		wayDisplayBind="/$(uuidgen)/$(uuidgen)"
+		return 0
+	fi
+	if [ ! ${WAYLAND_DISPLAY} ]; then
+		pecho debug "WAYLAND_DISPLAY not set, defaulting to wayland-0"
+		wayDisplayBind="${XDG_RUNTIME_DIR}/wayland-0"
+	fi
+	if [ -f "${WAYLAND_DISPLAY}" ]; then
+		pecho debug "Wayland display is specified as an absolute path"
+		export wayDisplayBind="${WAYLAND_DISPLAY}"
+	elif [[ "${WAYLAND_DISPLAY}" =~ 'wayland-' ]]; then
+		pecho debug "Detected Wayland display as ${WAYLAND_DISPLAY}"
+		export wayDisplayBind="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
+	fi
+}
+
 function createWrapIfNotExist() {
 	if [ -d "$@" ]; then
 		return 0
@@ -126,6 +157,7 @@ function execApp() {
 		done
 		echo "[Info] D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
+	waylandDisplay
 	cameraDect
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
@@ -243,10 +275,8 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/pulse" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
-		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
-				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" \
-		--ro-bind-try "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
-				"${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}.lock" \
+		--ro-bind-try "${wayDisplayBind}" \
+				"${wayDisplayBind}" \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/dde-file-manager \
 		--ro-bind /usr/lib/portable/open \
@@ -289,7 +319,7 @@ function warnMulRunning() {
 		org.freedesktop.DBus.Properties.Get \
 		string:org.kde.StatusNotifierWatcher \
 		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	echo "[Info] Unique ID: ${id}"
+	pecho info "Unique ID: ${id}"
 	dbus-send \
 		--print-reply \
 		--session \
@@ -321,7 +351,7 @@ function dbusProxy() {
 		systemctl --user reset-failed ${proxyName}.service
 	fi
 	if [[ $(systemctl --user is-active ${proxyName}.service) = active ]]; then
-		echo "[Warning] Existing D-Bus proxy detected! Terminating..."
+		pecho info "Existing D-Bus proxy detected! Terminating..."
 		systemctl --user kill ${proxyName}.service
 	fi
 	if [ -d "${busDir}" ]; then
@@ -329,6 +359,9 @@ function dbusProxy() {
 	fi
 	mkdir "${busDir}" -p
 	echo "Starting D-Bus Proxy @ ${busDir}..."
+	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		proxyArg="--log"
+	fi
 	systemd-run \
 		--user \
 		-u ${proxyName} \
@@ -344,6 +377,7 @@ function dbusProxy() {
 			-- /usr/bin/xdg-dbus-proxy \
 			"${DBUS_SESSION_BUS_ADDRESS}" \
 			"${busDir}/bus" \
+			${proxyArg} \
 			--filter \
 			--own=org.kde.* \
 			--talk=org.freedesktop.portal.Camera \
@@ -388,14 +422,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--talk=org.freedesktop.portal.Desktop \
 			--own="${busName}" \
-			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/* \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersAsync@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersSync@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetDeviceEventListeners@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetKeystrokeListeners@/org/a11y/atspi/registry/deviceeventcontroller \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.Registry.GetRegisteredEvents@/org/a11y/atspi/registry \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Unembed@/org/a11y/atspi/accessible/root \
-			--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root
+			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 }
 
 function execAppUnsafe() {
@@ -455,7 +482,6 @@ function openDataDir() {
 function launch() {
 	genXAuth
 	inputMethod
-	moeDect
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
 		echo "[Warning] ${appID} failed last time"
 		systemctl --user reset-failed ${unitName}.service
