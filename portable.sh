@@ -1,9 +1,21 @@
 #!/bin/bash
 
+function pecho() {
+	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		echo "[Debug] $2"
+	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]] || [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		echo "[Info] $2"
+	elif [[ $1 =~ warn ]]; then
+		echo "[Warn] $2"
+	elif [[ $1 =~ crit ]]; then
+		echo "[Critical] $2"
+	fi
+}
+
 if [ ${_portalConfig} ]; then
 	source "${_portalConfig}"
 else
-	echo "[Critical] No portable config specified!"
+	pecho crit "No portable config specified!"
 	exit 1
 fi
 
@@ -15,10 +27,10 @@ proxyName="${friendlyName}-dbus"
 function sourceXDG() {
 	if [[ ! ${XDG_CONFIG_HOME} ]]; then
 		export XDG_CONFIG_HOME="${HOME}"/.config
-		echo "[Info] Guessing XDG Config Home @ ${XDG_CONFIG_HOME}"
+		pecho info "Guessing XDG Config Home @ ${XDG_CONFIG_HOME}"
 	else
 		source "${XDG_CONFIG_HOME}"/user-dirs.dirs
-		echo "[Info] XDG Config Home defined @ ${XDG_CONFIG_HOME}"
+		pecho info "XDG Config Home defined @ ${XDG_CONFIG_HOME}"
 	fi
 	if [[ ! ${XDG_DATA_HOME} ]]; then
 		export XDG_DATA_HOME="${HOME}"/.local/share
@@ -63,18 +75,6 @@ function genXAuth() {
 	else
 		echo "[Warn] Turning off X access control for localhost"
 		xauth +localhost
-	fi
-}
-
-function pecho() {
-	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
-		echo "[Debug] $2"
-	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]]; then
-		echo "[Info] $2"
-	elif [[ $1 =~ warn ]]; then
-		echo "[Warn] $2"
-	elif [[ $1 =~ crit ]]; then
-		echo "[Critical] $@"
 	fi
 }
 
