@@ -307,7 +307,7 @@ function execApp() {
 		--unshare-user \
 		--disable-userns \
 		-- \
-			"${launchTarget}"
+			${launchTarget}
 }
 
 function warnMulRunning() {
@@ -434,7 +434,7 @@ function execAppUnsafe() {
 		-p PassEnvironment=QT_IM_MODULE \
 		-u ${unitName} \
 		--tty \
-		"${launchTarget}"
+		${launchTarget}
 }
 
 function questionFirstLaunch() {
