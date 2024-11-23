@@ -1,6 +1,8 @@
 # Abstract
 A sandboxing framework, originally designed for WeChat. Still in heavy development.
 
+Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
+
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/example.webp" alt="The Portable Project" width="1024" />
   <br>
@@ -14,7 +16,7 @@ A sandboxing framework, originally designed for WeChat. Still in heavy developme
 
 ## Portable
 
-Install aur/portable-git or
+Install aur/portable-git, aur/portable or install files directly
 
 ```
 install -Dm755 portable.sh /usr/bin/portable
@@ -40,6 +42,15 @@ Environment variables are read from `XDG_DATA_HOME/stateDirectory/portable.env`
 
 Start portable with environment variable `_portalConfig`, which is pointed to the actual config.
 
+### Arguments
+
+`--actions f5aaebc6-0014-4d30-beba-72bce57e0650`: Toggle Sandbox, requires user confirmation.
+
+`--actions opendir`: Open the sandbox's home directory
+
+`--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
+
 ### Debugging
 
+#### Entering sandbox
 Start portable with argument `--actions connect-tty debug-shell`
