@@ -275,7 +275,7 @@ function execApp() {
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
 		--ro-bind "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
-		--ro-bind "${XDG_RUNTIME_DIR}/pipewire-0" \
+		--ro-bind-try "${XDG_RUNTIME_DIR}/pipewire-0" \
 			"${XDG_RUNTIME_DIR}/pipewire-0" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
