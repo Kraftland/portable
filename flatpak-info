@@ -1,10 +1,25 @@
 [Application]
-name=anApplicationNameFriendlyWhatever
+name=placeHolderAppName
+runtime=runtime/org.kraftland.host/x86_64/114514
 
 [Instance]
-instance-id=114514
+instance-id=placeholderInstanceId
+instance-path=placeholderPath
+app-path=/usr
+app-commit=e894d778d380b02cce56cd42e326b244df8bbf298f06a1e3573a2f32754a0207
+runtime-path=/
+runtime-commit=6087f25c76665f35dc9790e60a89f1af2481de9b5c35ee71b9b16a86f388bf3c
+runtime-extensions=org.freedesktop.Platform.GL.default=0417ef24351ecbb9208216510d7190ce94aa483f812b713b9b00e4ff5987b968;
+branch=stable
+arch=x86_64
+flatpak-version=1.15.10
 session-bus-proxy=true
 system-bus-proxy=true
 
 [Context]
-devices=dri;all;
+shared=network;ipc;
+sockets=x11;wayland;
+devices=dri;
+
+[Environment]
+IBUS_USE_PORTAL=1

@@ -234,7 +234,6 @@ function execApp() {
 	-p BindReadOnlyPaths=/dev/null:/proc/cpuinfo \
 	-p BindReadOnlyPaths=/dev/null:/proc/meminfo \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
-	-p BindReadOnlyPaths=/usr/lib/portable/flatpak-info:"${XDG_RUNTIME_DIR}/.flatpak-info" \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
@@ -245,6 +244,8 @@ function execApp() {
 	-p ProtectHostname=yes \
 	-- \
 	bwrap \
+		--ro-bind /usr/lib/portable/flatpak-info \
+			/.flatpak-info \
 		--tmpfs /tmp \
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
@@ -273,6 +274,8 @@ function execApp() {
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
+		--ro-bind /usr/lib/portable/flatpak-info \
+			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pipewire-0" \
@@ -349,6 +352,17 @@ function warnMulRunning() {
 	fi
 }
 
+function generateFlatpakInfo() {
+	install /usr/lib/portable/flatpak-info \
+		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+	sed -i "s|placeHolderAppName|${appID}|g" \
+		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+	sed -i "s|placeholderInstanceId|$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')|g" \
+		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}}|g" \
+		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+}
+
 function dbusProxy() {
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
@@ -377,6 +391,8 @@ function dbusProxy() {
 			--ro-bind-try /usr/share /usr/share \
 			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
 			--ro-bind /usr/lib/portable/flatpak-info \
+				"${XDG_RUNTIME_DIR}/.flatpak-info" \
+			--ro-bind /usr/lib/portable/flatpak-info \
 				/.flatpak-info \
 			-- /usr/bin/xdg-dbus-proxy \
 			"${DBUS_SESSION_BUS_ADDRESS}" \
@@ -385,6 +401,15 @@ function dbusProxy() {
 			--filter \
 			--own=org.kde.* \
 			--own=com.belmoussaoui.ashpd.demo \
+			--talk=org.freedesktop.Notifications \
+			--call=org.freedesktop.Notifications.*=* \
+			--talk=org.freedesktop.portal.Flatpak \
+			--call=org.freedesktop.portal.Flatpak=* \
+			--talk=org.freedesktop.portal.Flatpak.* \
+			--call=org.freedesktop.portal.Flatpak.*=* \
+			--talk=org.freedesktop.portal.Desktop \
+			--call=org.freedesktop.portal.Desktop="org.freedesktop.portal.Settings.Read@/org/freedesktop/portal/desktop" \
+			--broadcast="org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.SettingChanged@/org/freedesktop/portal/desktop" \
 			--talk=org.freedesktop.portal.Camera \
 			--call=org.freedesktop.portal.Camera=* \
 			--talk=org.freedesktop.portal.Documents \
@@ -399,6 +424,9 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Print=* \
 			--talk=org.freedesktop.portal.Trash \
 			--call=org.freedesktop.portal.Trash=* \
+			--talk=org.freedesktop.portal.Settings \
+			--call=org.freedesktop.portal.Trash.Read=* \
+			--call=org.freedesktop.portal.Trash.*=Read \
 			--talk=org.freedesktop.FileManager1 \
 			--call=org.freedesktop.FileManager1=* \
 			--talk=org.kde.StatusNotifierWatcher \
@@ -425,9 +453,6 @@ function dbusProxy() {
 			--talk=org.fcitx.Fcitx.InputContext1.* \
 			--call=org.fcitx.Fcitx.InputContext1.*=* \
 			--call=org.freedesktop.portal.Request=* \
-			--talk=org.freedesktop.portal.Desktop \
-			--call=*=/org/freedesktop/portal/desktop \
-			--call=*=/org/freedesktop/portal/desktop/* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 }
