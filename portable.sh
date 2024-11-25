@@ -238,6 +238,8 @@ function execApp() {
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
+	-p Environment=GTK_USE_PORTAL=1 \
+	-p Environment=GDK_DEBUG=portals \
 	-p IPAddressDeny=multicast \
 	-p ProtectKernelLogs=yes \
 	-p ProtectHostname=yes \
@@ -273,6 +275,8 @@ function execApp() {
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
+		--ro-bind-try "${XDG_RUNTIME_DIR}/pipewire-0" \
+			"${XDG_RUNTIME_DIR}/pipewire-0" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
 		--ro-bind-try "${wayDisplayBind}" \
