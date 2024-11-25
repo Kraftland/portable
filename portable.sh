@@ -244,7 +244,7 @@ function execApp() {
 	-p ProtectHostname=yes \
 	-- \
 	bwrap \
-		--ro-bind /usr/lib/portable/flatpak-info \
+		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
@@ -274,7 +274,7 @@ function execApp() {
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
-		--ro-bind /usr/lib/portable/flatpak-info \
+		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
@@ -353,17 +353,19 @@ function warnMulRunning() {
 }
 
 function generateFlatpakInfo() {
+	pecho debug "Generating flatpak-info"
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	sed -i "s|placeHolderAppName|${appID}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	sed -i "s|placeholderInstanceId|$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
-	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}}|g" \
+	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 }
 
 function dbusProxy() {
+	generateFlatpakInfo
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
 		systemctl --user reset-failed ${proxyName}.service
@@ -390,9 +392,9 @@ function dbusProxy() {
 			--ro-bind /usr/bin /usr/bin \
 			--ro-bind-try /usr/share /usr/share \
 			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
-			--ro-bind /usr/lib/portable/flatpak-info \
+			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 				"${XDG_RUNTIME_DIR}/.flatpak-info" \
-			--ro-bind /usr/lib/portable/flatpak-info \
+			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 				/.flatpak-info \
 			-- /usr/bin/xdg-dbus-proxy \
 			"${DBUS_SESSION_BUS_ADDRESS}" \
