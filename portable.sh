@@ -280,6 +280,8 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/pulse" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pipewire-0" \
 			"${XDG_RUNTIME_DIR}/pipewire-0" \
+		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
+			"${XDG_RUNTIME_DIR}"/doc \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
 		--ro-bind-try "${wayDisplayBind}" \
@@ -353,9 +355,10 @@ function warnMulRunning() {
 }
 
 function generateFlatpakInfo() {
-	pecho debug "Generating flatpak-info"
+	pecho debug "Installing flatpak-info..."
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+	pecho debug "Generating flatpak-info..."
 	sed -i "s|placeHolderAppName|${appID}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	sed -i "s|placeholderInstanceId|$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')|g" \
@@ -382,6 +385,7 @@ function dbusProxy() {
 	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
 		proxyArg="--log"
 	fi
+	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	systemd-run \
 		--user \
 		-u ${proxyName} \
