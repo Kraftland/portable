@@ -434,8 +434,8 @@ function execAppUnsafe() {
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
-		-p PassEnvironment=GTK_IM_MODULE \
-		-p PassEnvironment=QT_IM_MODULE \
+		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
+		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
 		-u ${unitName} \
 		--tty \
 		${launchTarget}
