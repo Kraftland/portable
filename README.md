@@ -42,6 +42,18 @@ Environment variables are read from `XDG_DATA_HOME/stateDirectory/portable.env`
 
 Start portable with environment variable `_portalConfig`, which is pointed to the actual config.
 
+## .desktop requirements
+
+The name of your .desktop file should match the appID, like `top.kimiblock.example.desktop`
+
+Your .desktop file should contain the following entries:
+
+```
+X-Flatpak-Tags=aTag;
+X-Flatpak=appID;
+X-Flatpak-RenamedFrom=previousName.desktop;
+```
+
 ### Arguments
 
 `--actions f5aaebc6-0014-4d30-beba-72bce57e0650`: Toggle Sandbox, requires user confirmation.
