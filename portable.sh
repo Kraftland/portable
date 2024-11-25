@@ -384,6 +384,7 @@ function dbusProxy() {
 			${proxyArg} \
 			--filter \
 			--own=org.kde.* \
+			--own=com.belmoussaoui.ashpd.demo \
 			--talk=org.freedesktop.portal.Camera \
 			--call=org.freedesktop.portal.Camera=* \
 			--talk=org.freedesktop.portal.Documents \
@@ -425,6 +426,8 @@ function dbusProxy() {
 			--call=org.fcitx.Fcitx.InputContext1.*=* \
 			--call=org.freedesktop.portal.Request=* \
 			--talk=org.freedesktop.portal.Desktop \
+			--call=*=/org/freedesktop/portal/desktop \
+			--call=*=/org/freedesktop/portal/desktop/* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 }
