@@ -409,10 +409,6 @@ function dbusProxy() {
 			--own=com.belmoussaoui.ashpd.demo \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
-			--talk=org.freedesktop.portal.Flatpak \
-			--call=org.freedesktop.portal.Flatpak=* \
-			--talk=org.freedesktop.portal.Flatpak.* \
-			--call=org.freedesktop.portal.Flatpak.*=* \
 			--talk=org.freedesktop.portal.Desktop \
 			--call=org.freedesktop.portal.Desktop="org.freedesktop.portal.Settings.Read@/org/freedesktop/portal/desktop" \
 			--broadcast="org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.SettingChanged@/org/freedesktop/portal/desktop" \
@@ -432,7 +428,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Print=* \
 			--talk=org.freedesktop.portal.Trash \
 			--call=org.freedesktop.portal.Trash=* \
-			--talk=org.freedesktop.portal.Settings \
 			--call=org.freedesktop.portal.Trash.Read=* \
 			--call=org.freedesktop.portal.Trash.*=Read \
 			--talk=org.freedesktop.FileManager1 \
