@@ -424,6 +424,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.FileChooser=* \
 			--talk=org.freedesktop.portal.FileTransfer \
 			--call=org.freedesktop.portal.FileTransfer=* \
+			--talk=org.freedesktop.portal.FileTransfer.* \
+			--call=org.freedesktop.portal.FileTransfer.*=* \
 			--talk=org.freedesktop.portal.Notification \
 			--call=org.freedesktop.portal.Notification=* \
 			--talk=org.freedesktop.portal.Print \
