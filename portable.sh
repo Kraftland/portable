@@ -258,6 +258,7 @@ function execApp() {
 		--bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
+		--tmpfs /sys/devices/virtual/dmi \
 		--dir /sandbox \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/chromium \
@@ -405,7 +406,7 @@ function dbusProxy() {
 			"${busDir}/bus" \
 			${proxyArg} \
 			--filter \
-			--own=org.kde.* \
+			--own=org.kde.StatusNotifierItem-2-1 \
 			--own=com.belmoussaoui.ashpd.demo \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
