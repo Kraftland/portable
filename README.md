@@ -1,5 +1,7 @@
 # Abstract
-A sandboxing framework, originally designed for WeChat. Still in heavy development.
+Portable is a sandbox framework targeted for Desktop usage. It provides isolation filesystem wise, filtering for D-Bus APIs and blocks unsafe calls. In addition to blocking non-portal usage, it also stops unsafe portals from being used like the location portal and screenshot portal. Portal itself is still in development and have already been applied to Minecraft, WeChat and Discord. 
+
+Running unsafe code is never safe, sandboxing does not change this.
 
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
