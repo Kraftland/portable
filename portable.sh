@@ -258,6 +258,7 @@ function execApp() {
 		--bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
+		--tmpfs /sys/devices/virtual/dmi \
 		--dir /sandbox \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/chromium \
@@ -405,14 +406,10 @@ function dbusProxy() {
 			"${busDir}/bus" \
 			${proxyArg} \
 			--filter \
-			--own=org.kde.* \
+			--own=org.kde.StatusNotifierItem-2-1 \
 			--own=com.belmoussaoui.ashpd.demo \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
-			--talk=org.freedesktop.portal.Flatpak \
-			--call=org.freedesktop.portal.Flatpak=* \
-			--talk=org.freedesktop.portal.Flatpak.* \
-			--call=org.freedesktop.portal.Flatpak.*=* \
 			--talk=org.freedesktop.portal.Desktop \
 			--call=org.freedesktop.portal.Desktop="org.freedesktop.portal.Settings.Read@/org/freedesktop/portal/desktop" \
 			--broadcast="org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.SettingChanged@/org/freedesktop/portal/desktop" \
@@ -432,7 +429,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Print=* \
 			--talk=org.freedesktop.portal.Trash \
 			--call=org.freedesktop.portal.Trash=* \
-			--talk=org.freedesktop.portal.Settings \
 			--call=org.freedesktop.portal.Trash.Read=* \
 			--call=org.freedesktop.portal.Trash.*=Read \
 			--talk=org.freedesktop.FileManager1 \
