@@ -106,6 +106,11 @@ function createWrapIfNotExist() {
 }
 
 function inputMethod() {
+	if [[ ${waylandOnly} = true ]]; then
+		export QT_IM_MODULE=wayland
+		export GTK_IM_MODULE=wayland
+		IBUS_USE_PORTAL=1
+	fi
 	if [[ ${XMODIFIERS} =~ fcitx ]] || [[ ${QT_IM_MODULE} =~ fcitx ]] || [[ ${GTK_IM_MODULE} =~ fcitx ]]; then
 		export QT_IM_MODULE=fcitx
 		export GTK_IM_MODULE=fcitx
