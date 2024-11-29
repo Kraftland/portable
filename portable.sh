@@ -172,7 +172,7 @@ function execApp() {
 	--user \
 	${sdOption} \
 	-u "${unitName}" \
-	-p Description="Portable Sandbox" \
+	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
@@ -208,10 +208,6 @@ function execApp() {
 	-p RestrictAddressFamilies=AF_INET \
 	-p RestrictAddressFamilies=AF_INET6 \
 	-p NoNewPrivileges=yes \
-	-p RestrictNamespaces=~net \
-	-p RestrictNamespaces=~pid \
-	-p RestrictNamespaces=~uts \
-	-p RestrictNamespaces=~ipc \
 	-p ProtectControlGroups=yes \
 	-p KeyringMode=private \
 	-p ProtectClock=yes \
@@ -242,8 +238,9 @@ function execApp() {
 	-p IPAddressDeny=multicast \
 	-p ProtectKernelLogs=yes \
 	-p ProtectHostname=yes \
+	-p PrivateMounts=yes \
 	-- \
-	bwrap \
+	bwrap --new-session \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
@@ -329,7 +326,7 @@ function warnMulRunning() {
 		org.freedesktop.DBus.Properties.Get \
 		string:org.kde.StatusNotifierWatcher \
 		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	pecho info "Unique ID: ${id}"
+	pecho debug "Unique ID: ${id}"
 	dbus-send \
 		--print-reply \
 		--session \
@@ -410,11 +407,31 @@ function dbusProxy() {
 			--own=com.belmoussaoui.ashpd.demo \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
-			--talk=org.freedesktop.portal.Desktop \
-			--call=org.freedesktop.portal.Desktop="org.freedesktop.portal.Settings.Read@/org/freedesktop/portal/desktop" \
-			--broadcast="org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.SettingChanged@/org/freedesktop/portal/desktop" \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.Read \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileTransfer.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileTransfer \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Notification.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Notification \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Fcitx.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Fcitx \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop \
 			--talk=org.freedesktop.portal.Camera \
-			--call=org.freedesktop.portal.Camera=* \
+			--talk=org.freedesktop.portal.Camera.* \
 			--talk=org.freedesktop.portal.Documents \
 			--call=org.freedesktop.portal.Documents=* \
 			--talk=org.freedesktop.portal.FileChooser \
@@ -427,10 +444,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Notification=* \
 			--talk=org.freedesktop.portal.Print \
 			--call=org.freedesktop.portal.Print=* \
-			--talk=org.freedesktop.portal.Trash \
-			--call=org.freedesktop.portal.Trash=* \
-			--call=org.freedesktop.portal.Trash.Read=* \
-			--call=org.freedesktop.portal.Trash.*=Read \
 			--talk=org.freedesktop.FileManager1 \
 			--call=org.freedesktop.FileManager1=* \
 			--talk=org.kde.StatusNotifierWatcher \
@@ -449,13 +462,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.IBus=* \
 			--talk=org.freedesktop.portal.IBus.* \
 			--call=org.freedesktop.portal.IBus.*=* \
-			--talk=org.fcitx.Fcitx.InputMethod1.CreateInputContext \
-			--call=org.fcitx.Fcitx.InputMethod1.CreateInputContext=* \
-			--call=*=/org/freedesktop/portal/inputcontext/* \
-			--talk=org.fcitx.Fcitx.InputContext1 \
-			--call=org.fcitx.Fcitx.InputContext1=* \
-			--talk=org.fcitx.Fcitx.InputContext1.* \
-			--call=org.fcitx.Fcitx.InputContext1.*=* \
 			--call=org.freedesktop.portal.Request=* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
