@@ -429,6 +429,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret.RetrieveSecret \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop \
 			--talk=org.freedesktop.portal.Camera \
 			--talk=org.freedesktop.portal.Camera.* \
