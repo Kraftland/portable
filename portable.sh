@@ -172,7 +172,7 @@ function execApp() {
 	--user \
 	${sdOption} \
 	-u "${unitName}" \
-	-p Description="Portable Sandbox" \
+	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
@@ -208,10 +208,6 @@ function execApp() {
 	-p RestrictAddressFamilies=AF_INET \
 	-p RestrictAddressFamilies=AF_INET6 \
 	-p NoNewPrivileges=yes \
-	-p RestrictNamespaces=~net \
-	-p RestrictNamespaces=~pid \
-	-p RestrictNamespaces=~uts \
-	-p RestrictNamespaces=~ipc \
 	-p ProtectControlGroups=yes \
 	-p KeyringMode=private \
 	-p ProtectClock=yes \
@@ -242,8 +238,9 @@ function execApp() {
 	-p IPAddressDeny=multicast \
 	-p ProtectKernelLogs=yes \
 	-p ProtectHostname=yes \
+	-p PrivateMounts=yes \
 	-- \
-	bwrap \
+	bwrap --new-session \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
@@ -329,7 +326,7 @@ function warnMulRunning() {
 		org.freedesktop.DBus.Properties.Get \
 		string:org.kde.StatusNotifierWatcher \
 		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	pecho info "Unique ID: ${id}"
+	pecho debug "Unique ID: ${id}"
 	dbus-send \
 		--print-reply \
 		--session \
