@@ -158,6 +158,7 @@ function execApp() {
 		pecho info "D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
 	waylandDisplay
+	nvidiaSwitchableGraphics
 	cameraDect
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
@@ -247,10 +248,7 @@ function execApp() {
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
-		--dev-bind-try /dev/nvidia0 /dev/nvidia0 \
-		--dev-bind-try /dev/nvidiactl /dev/nvidiactl \
-		--dev-bind-try /dev/nvidia-modeset /dev/nvidia-modeset \
-		--dev-bind-try /dev/nvidia-uvm /dev/nvidia-uvm \
+		${bwSwitchableGraphicsArg} \
 		--tmpfs /sys \
 		--bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
@@ -315,6 +313,22 @@ function execApp() {
 		--disable-userns \
 		-- \
 			${launchTarget}
+}
+
+function nvidiaSwitchableGraphics() {
+	videoMod=$(lsmod)
+	if [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
+		pecho debug "Not using NVIDIA GPU"
+		bwSwitchableGraphicsArg=""
+	elif [[ ${videoMod} =~ nvidia ]]; then
+		pecho debug "Using NVIDIA GPU"
+		for _card in $(ls /dev/nvidia*); do
+			if [ -e ${_card} ]; then
+				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+			fi
+		done
+		pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
+	fi
 }
 
 function warnMulRunning() {
