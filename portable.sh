@@ -432,6 +432,8 @@ function dbusProxy() {
 			--talk=org.freedesktop.portal.Camera.* \
 			--talk=org.freedesktop.portal.Documents \
 			--call=org.freedesktop.portal.Documents=* \
+			--talk=org.freedesktop.portal.FileChooser \
+			--call=org.freedesktop.portal.FileChooser=* \
 			--talk=org.freedesktop.portal.FileTransfer \
 			--call=org.freedesktop.portal.FileTransfer=* \
 			--talk=org.freedesktop.portal.FileTransfer.* \
@@ -444,6 +446,12 @@ function dbusProxy() {
 			--call=org.freedesktop.FileManager1=* \
 			--talk=org.kde.StatusNotifierWatcher \
 			--call=org.kde.StatusNotifierWatcher=* \
+			--talk=org.freedesktop.portal.OpenURI \
+			--call=org.freedesktop.portal.OpenURI=* \
+			--talk=org.freedesktop.portal.OpenURI.OpenURI \
+			--call=org.freedesktop.portal.OpenURI.OpenURI=* \
+			--talk=org.freedesktop.portal.OpenURI.OpenFile \
+			--call=org.freedesktop.portal.OpenURI.OpenFile=* \
 			--talk=org.freedesktop.portal.Fcitx \
 			--call=org.freedesktop.portal.Fcitx=* \
 			--talk=org.freedesktop.portal.Fcitx.* \
