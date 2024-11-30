@@ -143,15 +143,6 @@ function importEnv() {
 	fi
 }
 
-function cameraDect() {
-	bwCamPar=""
-	for camera in $(ls /dev/video*); do
-		if [ -e ${camera} ]; then
-			bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
-		fi
-	done
-}
-
 function execApp() {
 	if [ ! -S "${busDir}/bus" ]; then
 		pecho warn "Waiting for D-Bus proxy..."
@@ -164,7 +155,6 @@ function execApp() {
 	fi
 	waylandDisplay
 	deviceBinding
-	cameraDect
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	pecho debug "GTK_IM_MODULE is ${GTK_IM_MODULE}"
@@ -319,6 +309,8 @@ function execApp() {
 }
 
 function deviceBinding() {
+	pecho debug "Detecting GPU..."
+	bwSwitchableGraphicsArg=""
 	videoMod=$(lsmod)
 	if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
 		pecho info "Using single NVIDIA GPU"
@@ -339,6 +331,14 @@ function deviceBinding() {
 		done
 		pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
 	fi
+	bwCamPar=""
+	pecho debug "Detecting Camera..."
+	for camera in $(ls /dev/video*); do
+		if [ -e ${camera} ]; then
+			bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
+		fi
+	done
+	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
 }
 
 function warnMulRunning() {
