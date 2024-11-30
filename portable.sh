@@ -143,15 +143,6 @@ function importEnv() {
 	fi
 }
 
-function cameraDect() {
-	bwCamPar=""
-	for camera in $(ls /dev/video*); do
-		if [ -e ${camera} ]; then
-			bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
-		fi
-	done
-}
-
 function execApp() {
 	if [ ! -S "${busDir}/bus" ]; then
 		pecho warn "Waiting for D-Bus proxy..."
@@ -163,8 +154,7 @@ function execApp() {
 		pecho info "D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
 	waylandDisplay
-	nvidiaSwitchableGraphics
-	cameraDect
+	deviceBinding
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	pecho debug "GTK_IM_MODULE is ${GTK_IM_MODULE}"
@@ -254,6 +244,7 @@ function execApp() {
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
+		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
 		--tmpfs /sys \
 		--bind /sys/module/ /sys/module/ \
@@ -318,7 +309,9 @@ function execApp() {
 			${launchTarget}
 }
 
-function nvidiaSwitchableGraphics() {
+function deviceBinding() {
+	pecho debug "Detecting GPU..."
+	bwSwitchableGraphicsArg=""
 	videoMod=$(lsmod)
 	if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
 		pecho info "Using single NVIDIA GPU"
@@ -338,6 +331,21 @@ function nvidiaSwitchableGraphics() {
 			fi
 		done
 		pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
+	fi
+	bwCamPar=""
+	pecho debug "Detecting Camera..."
+	for camera in $(ls /dev/video*); do
+		if [ -e ${camera} ]; then
+			bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
+		fi
+	done
+	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
+	if [[ ${bindInputDevices} = true ]]; then
+		bwInputArg="--dev-bind-try /dev/input{,}"
+		pecho warn "Detected input preference as expose"
+	else
+		bwInputArg=""
+		pecho debug "Not exposing input devices"
 	fi
 }
 
