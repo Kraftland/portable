@@ -204,7 +204,6 @@ function execApp() {
 	-p SystemCallFilter=~@reboot \
 	-p SystemCallFilter=~@swap \
 	-p SystemCallErrorNumber=EPERM \
-	-p ProcSubset=pid \
 	-p RestrictAddressFamilies=AF_UNIX \
 	-p RestrictAddressFamilies=AF_INET \
 	-p RestrictAddressFamilies=AF_INET6 \
@@ -221,6 +220,7 @@ function execApp() {
 	-p RestrictRealtime=yes \
 	-p ProtectSystem=strict \
 	-p ProtectProc=invisible \
+	-p ProcSubset=pid \
 	-p ProtectHome=no \
 	-p PrivateUsers=yes \
 	-p UMask=077 \
@@ -228,8 +228,6 @@ function execApp() {
 	-p RestrictAddressFamilies=~AF_PACKET \
 	-p PrivateTmp=yes \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
-	-p BindReadOnlyPaths=/dev/null:/proc/cpuinfo \
-	-p BindReadOnlyPaths=/dev/null:/proc/meminfo \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
@@ -242,6 +240,12 @@ function execApp() {
 	-p PrivateMounts=yes \
 	-- \
 	bwrap --new-session \
+		--unshare-cgroup-try \
+		--unshare-ipc \
+		--unshare-uts \
+		--unshare-pid \
+		--unshare-user \
+		--disable-userns \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
@@ -262,6 +266,8 @@ function execApp() {
 		--ro-bind /usr/lib/portable/mimeapps.list \
 			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
 		--proc /proc \
+		--bind-try /dev/null /proc/meminfo \
+		--bind-try /dev/null /proc/cpuinfo \
 		--bind /usr /usr \
 		--ro-bind /etc /etc \
 		--ro-bind-try /lib /lib \
@@ -306,11 +312,6 @@ function execApp() {
 		${bwCamPar} \
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
-		--unshare-cgroup-try \
-		--unshare-ipc \
-		--unshare-uts \
-		--unshare-user \
-		--disable-userns \
 		-- \
 			${launchTarget}
 }
