@@ -202,7 +202,6 @@ function execApp() {
 	-p SystemCallFilter=~@reboot \
 	-p SystemCallFilter=~@swap \
 	-p SystemCallErrorNumber=EPERM \
-	-p MemoryDenyWriteExecute=yes \
 	-p RestrictAddressFamilies=AF_UNIX \
 	-p RestrictAddressFamilies=AF_INET \
 	-p RestrictAddressFamilies=AF_INET6 \
