@@ -163,7 +163,7 @@ function execApp() {
 		pecho info "D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
 	waylandDisplay
-	nvidiaSwitchableGraphics
+	deviceBinding
 	cameraDect
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
@@ -318,7 +318,7 @@ function execApp() {
 			${launchTarget}
 }
 
-function nvidiaSwitchableGraphics() {
+function deviceBinding() {
 	videoMod=$(lsmod)
 	if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
 		pecho info "Using single NVIDIA GPU"
