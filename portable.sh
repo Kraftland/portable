@@ -550,7 +550,7 @@ function disableSandbox() {
 
 function openDataDir() {
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
-		xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
+		/usr/lib/flatpak-xdg-utils/xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
 		exit $?
 	fi
 }
