@@ -320,7 +320,14 @@ function execApp() {
 
 function nvidiaSwitchableGraphics() {
 	videoMod=$(lsmod)
-	if [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
+	if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
+		pecho info "Using single NVIDIA GPU"
+		for _card in $(ls /dev/nvidia*); do
+			if [ -e ${_card} ]; then
+				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+			fi
+		done
+	elif [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
 		pecho debug "Not using NVIDIA GPU"
 		bwSwitchableGraphicsArg=""
 	elif [[ ${videoMod} =~ nvidia ]]; then
