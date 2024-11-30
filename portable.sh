@@ -192,6 +192,15 @@ function execApp() {
 	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
+	-p SystemCallFilter=~@clock \
+	-p SystemCallFilter=~@cpu-emulation \
+	-p SystemCallFilter=~@debug \
+	-p SystemCallFilter=~@module \
+	-p SystemCallFilter=~@obsolete \
+	-p SystemCallFilter=~@raw-io \
+	-p SystemCallFilter=~@reboot \
+	-p SystemCallFilter=~@swap \
+	-p SystemCallErrorNumber=EPERM \
 	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
