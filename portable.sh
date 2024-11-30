@@ -244,6 +244,7 @@ function execApp() {
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
+		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
 		--tmpfs /sys \
 		--bind /sys/module/ /sys/module/ \
@@ -339,6 +340,13 @@ function deviceBinding() {
 		fi
 	done
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
+	if [[ ${bindInputDevices} = true ]]; then
+		bwInputArg="--dev-bind-try /dev/input{,}"
+		pecho warn "Detected input preference as expose"
+	else
+		bwInputArg=""
+		pecho debug "Not exposing input devices"
+	fi
 }
 
 function warnMulRunning() {
