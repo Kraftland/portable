@@ -10,9 +10,9 @@ friendlyName="Portable_Test"
 stateDirectory="Portable_Test_Data"
 
 # This is the target executable to launch
-launchTarget="gtk3-demo"
+launchTarget="gtk4-demo"
 
 # Takes boolean value. When enabled, do not process XAuth files and forces wayland input method. Generally this should be true when possible.
-waylandOnly="false"
+waylandOnly="true"
 
 # Below you can set envs that will be imported into the application sandbox
