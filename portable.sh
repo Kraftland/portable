@@ -341,7 +341,7 @@ function deviceBinding() {
 	done
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
 	if [[ ${bindInputDevices} = true ]]; then
-		bwInputArg="--dev-bind-try /dev/input{,}"
+		bwInputArg="--dev-bind-try /dev/input /dev/input"
 		pecho warn "Detected input preference as expose"
 	else
 		bwInputArg=""
