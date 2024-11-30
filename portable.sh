@@ -106,6 +106,11 @@ function createWrapIfNotExist() {
 }
 
 function inputMethod() {
+	if [[ ${waylandOnly} = true ]]; then
+		export QT_IM_MODULE=wayland
+		export GTK_IM_MODULE=wayland
+		IBUS_USE_PORTAL=1
+	fi
 	if [[ ${XMODIFIERS} =~ fcitx ]] || [[ ${QT_IM_MODULE} =~ fcitx ]] || [[ ${GTK_IM_MODULE} =~ fcitx ]]; then
 		export QT_IM_MODULE=fcitx
 		export GTK_IM_MODULE=fcitx
@@ -189,59 +194,60 @@ function execApp() {
 	-p ManagedOOMSwap=kill \
 	-p ManagedOOMMemoryPressure=kill \
 	-p IPAccounting=yes \
-	-p PrivateIPC=yes \
-	-p DevicePolicy=strict \
 	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
-	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p SystemCallFilter=~@clock \
 	-p SystemCallFilter=~@cpu-emulation \
 	-p SystemCallFilter=~@debug \
 	-p SystemCallFilter=~@module \
 	-p SystemCallFilter=~@obsolete \
+	-p SystemCallFilter=~@resources \
 	-p SystemCallFilter=~@raw-io \
 	-p SystemCallFilter=~@reboot \
 	-p SystemCallFilter=~@swap \
 	-p SystemCallErrorNumber=EPERM \
-	-p ProcSubset=pid \
 	-p RestrictAddressFamilies=AF_UNIX \
 	-p RestrictAddressFamilies=AF_INET \
 	-p RestrictAddressFamilies=AF_INET6 \
-	-p NoNewPrivileges=yes \
-	-p ProtectControlGroups=yes \
-	-p KeyringMode=private \
+	-p RestrictAddressFamilies=~AF_PACKET \
+	-p PrivateIPC=yes \
 	-p ProtectClock=yes \
 	-p CapabilityBoundingSet= \
 	-p ProtectKernelModules=yes \
 	-p SystemCallArchitectures=native \
-	-p RestrictNamespaces=no \
 	-p RestrictSUIDSGID=yes \
 	-p LockPersonality=yes \
 	-p RestrictRealtime=yes \
 	-p ProtectSystem=strict \
 	-p ProtectProc=invisible \
+	-p ProcSubset=pid \
 	-p ProtectHome=no \
 	-p PrivateUsers=yes \
 	-p UMask=077 \
-	-p TimeoutStopSec=20s \
-	-p RestrictAddressFamilies=~AF_PACKET \
+	-p DevicePolicy=strict \
+	-p NoNewPrivileges=yes \
+	-p ProtectControlGroups=yes \
 	-p PrivateTmp=yes \
+	-p PrivateMounts=yes \
+	-p KeyringMode=private \
+	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
+	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
-	-p BindReadOnlyPaths=/dev/null:/proc/cpuinfo \
-	-p BindReadOnlyPaths=/dev/null:/proc/meminfo \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
 	-p Environment=GTK_USE_PORTAL=1 \
 	-p Environment=GDK_DEBUG=portals \
-	-p IPAddressDeny=multicast \
-	-p ProtectKernelLogs=yes \
-	-p ProtectHostname=yes \
-	-p PrivateMounts=yes \
 	-- \
 	bwrap --new-session \
+		--unshare-cgroup-try \
+		--unshare-ipc \
+		--unshare-uts \
+		--unshare-pid \
+		--unshare-user \
+		--disable-userns \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
@@ -262,6 +268,8 @@ function execApp() {
 		--ro-bind /usr/lib/portable/mimeapps.list \
 			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
 		--proc /proc \
+		--bind-try /dev/null /proc/meminfo \
+		--bind-try /dev/null /proc/cpuinfo \
 		--bind /usr /usr \
 		--ro-bind /etc /etc \
 		--ro-bind-try /lib /lib \
@@ -306,11 +314,6 @@ function execApp() {
 		${bwCamPar} \
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
-		--unshare-cgroup-try \
-		--unshare-ipc \
-		--unshare-uts \
-		--unshare-user \
-		--disable-userns \
 		-- \
 			${launchTarget}
 }
