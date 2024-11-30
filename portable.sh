@@ -204,6 +204,8 @@ function execApp() {
 	-p RestrictAddressFamilies=AF_UNIX \
 	-p RestrictAddressFamilies=AF_INET \
 	-p RestrictAddressFamilies=AF_INET6 \
+	-p PrivateIPC=yes \
+	-p DevicePolicy=strict \
 	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
