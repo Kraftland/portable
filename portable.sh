@@ -201,6 +201,9 @@ function execApp() {
 	-p SystemCallFilter=~@reboot \
 	-p SystemCallFilter=~@swap \
 	-p SystemCallErrorNumber=EPERM \
+	-p RestrictAddressFamilies=AF_UNIX \
+	-p RestrictAddressFamilies=AF_INET \
+	-p RestrictAddressFamilies=AF_INET6 \
 	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
