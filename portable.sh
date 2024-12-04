@@ -508,6 +508,7 @@ function execAppUnsafe() {
 	systemd-run --user \
 		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
+                -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
 		-u ${unitName} \
 		--tty \
 		${launchTarget}
