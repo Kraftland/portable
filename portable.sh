@@ -256,6 +256,16 @@ function execApp() {
 			/sandbox/chromium \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/firefox \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/dde-file-manager \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/xdg-open \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/open \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/nautilus \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/dolphin \
 		--ro-bind /usr/lib/portable/mimeapps.list \
 			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
 		--proc /proc \
@@ -281,12 +291,6 @@ function execApp() {
 		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${wayDisplayBind}" \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/dde-file-manager \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/xdg-open \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/open \
 		--ro-bind /usr/lib/portable/user-dirs.dirs \
 			"${XDG_CONFIG_HOME}"/user-dirs.dirs \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
