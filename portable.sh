@@ -40,6 +40,8 @@ function sourceXDG() {
 
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}"/${stateDirectory}
+	rm -rf "${XDG_DATA_HOME}"/${stateDirectory}/tmp
+	mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/tmp
 }
 
 function genXAuth() {
@@ -240,7 +242,7 @@ function execApp() {
 		--disable-userns \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
-		--bind /tmp /tmp \
+		--bind "${XDG_DATA_HOME}"/${stateDirectory}/tmp /tmp \
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
@@ -307,6 +309,8 @@ function execApp() {
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			${launchTarget}
+
+
 }
 
 function deviceBinding() {
