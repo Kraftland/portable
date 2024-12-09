@@ -584,8 +584,25 @@ function launch() {
 	else
 		dbusProxy
 		pecho info "Launching ${appID}..."
+		passPid &
 		execApp
 	fi
+}
+
+function passPid() {
+	sleep 0.5s
+	if [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; then
+		pecho warn "Waiting for Application start..."
+		counter=5
+		while [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; do
+			counter=$(expr ${counter} + 1)
+			sleep 0.1s
+		done
+		pecho info "Application service took $(expr ${counter} / 10)s to launch"
+	fi
+	mainPid=$(systemctl --user show -p MainPID "${unitName}.service" | cut -c "9-")
+	pecho info "Main PID identified as ${mainPid}"
+	echo "${mainPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 }
 
 function stopApp() {
