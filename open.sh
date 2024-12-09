@@ -6,22 +6,39 @@ if [[ "$@" =~ "https://" ]] || [[ "$@" =~ "http://" ]]; then
 	exit $?
 fi
 
+if [[ $1 =~ "/" ]]; then
+	origReq="$1"
+fi
+
+if [[ $2 =~ "/" ]]; then
+	origReq="$2"
+fi
+
 if [ ${trashAppUnsafe} ]; then
 	link="$2"
 	xdg-open "$2"
 	exit $?
 else
-	if [[ "$(echo $@ | cut -c '1-8' )" =~ 'file://' ]]; then
-		fakeDirBase="${HOME}"
-		realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-		link=$(echo "$1" | sed "s|${fakeDirBase}|${realDirBase}|g")
-		echo "[Info] received a file open request: $1, translated to ${link}"
-		/usr/lib/flatpak-xdg-utils/xdg-open "${link}"
-		exit $?
+	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
+		if [[ "$origReq" =~ 'file:///tmp' ]]; then
+			echo "file:// link and /tmp path detected!"
+			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
+		else
+		#if [[ $(echo "$origReq" | cut -c '-4') = '/tmp' ]]
+			fakeDirBase="${HOME}"
+			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
+			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
+		fi
+		echo "[Info] received a file open request: $origReq, translated to ${link}"
 	else
-		fakeDirBase="${HOME}"
-		realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-		link=$(echo "$2" | sed "s|${fakeDirBase}|${realDirBase}|g")
+		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
+			echo "/tmp path detected!"
+			export link="/proc/$(cat ~/mainPid)/root${origReq}"
+		else
+			fakeDirBase="${HOME}"
+			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
+			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
+		fi
 	fi
 fi
 
