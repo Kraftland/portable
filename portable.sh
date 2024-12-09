@@ -240,7 +240,7 @@ function execApp() {
 		--disable-userns \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
-		--tmpfs /tmp \
+		--bind /tmp /tmp \
 		--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--dev /dev \
 		--dev-bind /dev/dri /dev/dri \
