@@ -27,7 +27,7 @@ else
 		#if [[ $(echo "$origReq" | cut -c '-4') = '/tmp' ]]
 			fakeDirBase="${HOME}"
 			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
+			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
 		fi
 		echo "[Info] received a file open request: $origReq, translated to ${link}"
 	else
