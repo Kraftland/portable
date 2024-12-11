@@ -237,6 +237,8 @@ function execApp() {
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
 	-p Environment=QT_SCREEN_SCALE_FACTOR="${QT_SCREEN_SCALE_FACTOR}" \
+	-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
+	-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 	-p Environment=GTK_USE_PORTAL=1 \
 	-p Environment=GDK_DEBUG=portals \
 	-- \
