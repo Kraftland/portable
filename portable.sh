@@ -519,7 +519,8 @@ function dbusProxy() {
 }
 
 function execAppUnsafe() {
-	source "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
+	importEnv
+	source "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	echo "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	echo "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
@@ -527,6 +528,7 @@ function execAppUnsafe() {
 		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
                 -p Environment=QT_SCREEN_SCALE_FACTOR="${QT_SCREEN_SCALE_FACTOR}" \
+                -p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 		-u ${unitName} \
 		--tty \
 		${launchTarget}
