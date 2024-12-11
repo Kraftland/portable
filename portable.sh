@@ -141,6 +141,14 @@ function importEnv() {
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
+	if [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env") =~ QT_SCREEN_SCALE_FACTOR ]]; then
+		pecho info "Imported QT SCREEN SCALE FACTOR!"
+		fileName=$(uuidgen)
+		cat "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
+		>/tmp/portable-${fileName}.tmp
+		source /tmp/portable-${fileName}.tmp
+		rm /tmp/portable-${fileName}.tmp
+	fi
 }
 
 function execApp() {
@@ -228,6 +236,7 @@ function execApp() {
 	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=DISPLAY="${DISPLAY}" \
+	-p Environment=QT_SCREEN_SCALE_FACTOR="${QT_SCREEN_SCALE_FACTOR}" \
 	-p Environment=GTK_USE_PORTAL=1 \
 	-p Environment=GDK_DEBUG=portals \
 	-- \
@@ -515,6 +524,7 @@ function execAppUnsafe() {
 		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
 		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
+                -p Environment=QT_SCREEN_SCALE_FACTOR="${QT_SCREEN_SCALE_FACTOR}" \
 		-u ${unitName} \
 		--tty \
 		${launchTarget}
