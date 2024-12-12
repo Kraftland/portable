@@ -1,4 +1,4 @@
-# Abstract
+# What is this
 Portable is a sandbox framework targeted for Desktop usage. It provides isolation to the filesystem, filtering for D-Bus APIs and blocks unsafe calls. In addition to blocking non-portal calls, it also stops unsafe portals from being used like the location portal and screenshot portal. Portal itself is still in development and have already been applied to Minecraft, WeChat and Discord. 
 
 Running untrusted code is never safe, sandboxing does not change this.
