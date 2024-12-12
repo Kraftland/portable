@@ -299,7 +299,12 @@ function execApp() {
 		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 			"${XDG_RUNTIME_DIR}"/doc \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
-		--ro-bind-try "${XDG_DATA_HOME}"/icons "${XDG_DATA_HOME}"/icons \
+		--ro-bind-try "${XDG_DATA_HOME}"/icons \
+			"${XDG_DATA_HOME}"/icons \
+		--ro-bind-try "${XDG_DATA_HOME}"/gtk-4.0 \
+			"${XDG_DATA_HOME}"/gtk-4.0 \
+		--ro-bind-try "${XDG_DATA_HOME}"/gtk-3.0 \
+			"${XDG_DATA_HOME}"/gtk-3.0 \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${wayDisplayBind}" \
 		--ro-bind /usr/lib/portable/user-dirs.dirs \
