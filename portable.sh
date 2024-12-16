@@ -31,7 +31,7 @@ else
 	if [[ -f "/usr/lib/portable/info/${_portableConfig}/config" ]]; then
 		pecho \
 			info \
-			"Configuration specified as global name ${_portableConfig}"
+			"Configuration specified as global name /usr/lib/portable/info/${_portableConfig}/config"
 		source "/usr/lib/portable/info/${_portableConfig}/config"
 	elif [[ -f "$(pwd)/${_portableConfig}" ]]; then
 		pecho \
@@ -44,12 +44,6 @@ else
 			"Specified config cannot be found!"
 		exit 1
 	fi
-fi
-
-
-
-if [ ${_portableConfig} ]; then
-	source "${_portableConfig}"
 fi
 
 busName="${appID}"
