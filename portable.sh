@@ -111,7 +111,7 @@ function waylandDisplay() {
 		wayDisplayBind="/$(uuidgen)/$(uuidgen)"
 		return 0
 	fi
-	if [ ! ${WAYLAND_DISPLAY} ]; then
+	if [ -z ${WAYLAND_DISPLAY} ]; then
 		pecho debug "WAYLAND_DISPLAY not set, defaulting to wayland-0"
 		wayDisplayBind="${XDG_RUNTIME_DIR}/wayland-0"
 	fi
