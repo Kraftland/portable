@@ -1,5 +1,5 @@
 # What is this
-Portable is a sandbox framework targeted for Desktop usage and offers ease of use for packagers. It provides isolation to the filesystem, in addition to blocking non-portal calls, it also stops unsafe portals from being used like the location portal and screenshot portal. Portal itself is still in development and have already been applied to Minecraft, WeChat and Discord. 
+Portable is a sandbox framework targeted for Desktop usage and offers ease of use for packagers. It provides isolation to the filesystem, in addition to blocking non-portal calls, it also stops unsafe portals from being used like the location portal and screenshot portal. Portable itself is still in development and have already been applied to Minecraft, WeChat and Discord. 
 
 **Running untrusted code is never safe, sandboxing does not change this.**
 
