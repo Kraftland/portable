@@ -12,38 +12,38 @@ function pecho() {
 	fi
 }
 
-if [ ${_portalConfig} ] && [ "${_portableConfig}" ]; then
+if [[ ${_portalConfig} ]] && [[ "${_portableConfig}" ]]; then
 	pecho crit "No portable config specified!"
 	exit 1
 fi
 
 if [ ${_portalConfig} ]; then
 	export _portableConfig="${_portalConfig}"
-	pecho warn "Using legacy variable!"
+	pecho warn "Using legacy configuration variable!"
 fi
 
 if [ -f "${_portableConfig}" ]; then
 	pecho \
 		info \
-		"Config specified as absolute path: ${_portableConfig}"
+		"Configuration specified as absolute path: ${_portableConfig}"
 	source "${_portableConfig}"
 else
 	if [[ -f "/usr/lib/portable/info/${_portableConfig}/config" ]]; then
 		pecho \
 			info \
-			"Config specified as global name ${_portableConfig}"
+			"Configuration specified as global name ${_portableConfig}"
 		source "/usr/lib/portable/info/${_portableConfig}/config"
 	elif [[ -f "$(pwd)/${_portableConfig}" ]]; then
 		pecho \
 			info \
-			"Config specified as relative path ${_portableConfig}"
+			"Configuration specified as relative path ${_portableConfig}"
 		source "$(pwd)/${_portableConfig}"
 	else
 		pecho \
 			crit \
 			"Specified config cannot be found!"
 		exit 1
-	if
+	fi
 fi
 
 
