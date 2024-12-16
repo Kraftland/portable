@@ -1,7 +1,7 @@
 # What is this
-Portable is a sandbox framework targeted for Desktop usage. It provides isolation to the filesystem, filtering for D-Bus APIs and blocks unsafe calls. In addition to blocking non-portal calls, it also stops unsafe portals from being used like the location portal and screenshot portal. Portal itself is still in development and have already been applied to Minecraft, WeChat and Discord. 
+Portable is a sandbox framework targeted for Desktop usage and offers ease of use for packagers. It provides isolation to the filesystem, in addition to blocking non-portal calls, it also stops unsafe portals from being used like the location portal and screenshot portal. Portal itself is still in development and have already been applied to Minecraft, WeChat and Discord. 
 
-Running untrusted code is never safe, sandboxing does not change this.
+**Running untrusted code is never safe, sandboxing does not change this.**
 
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
@@ -42,7 +42,7 @@ install -Dm755 config /usr/lib/portable/info/appID/config
 
 Environment variables are read from `XDG_DATA_HOME/stateDirectory/portable.env`
 
-Start portable with environment variable `_portableConfig`, which is pointed to the actual config. It searches absolute path, `/usr/lib/portable/info/${_portableConfig}/config` and `$(pwd)/${_portableConfig}` respectively.
+Start portable with environment variable `_portableConfig`, which is pointed to the actual config. It searches absolute path (if exists), `/usr/lib/portable/info/${_portableConfig}/config` and `$(pwd)/${_portableConfig}` respectively. The legacy `_portalConfig` will work for future releases.
 
 ## .desktop requirements
 
