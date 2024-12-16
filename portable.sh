@@ -28,16 +28,16 @@ if [ -f "${_portableConfig}" ]; then
 		"Config specified as absolute path: ${_portableConfig}"
 	source "${_portableConfig}"
 else
-	if [[ -f "$(pwd)/${_portableConfig}" ]]; then
-		pecho \
-			info \
-			"Config specified as relative path ${_portableConfig}"
-		source "$(pwd)/${_portableConfig}"
-	elif [[ -f "/usr/lib/portable/info/${_portableConfig}/config" ]]; then
+	if [[ -f "/usr/lib/portable/info/${_portableConfig}/config" ]]; then
 		pecho \
 			info \
 			"Config specified as global name ${_portableConfig}"
 		source "/usr/lib/portable/info/${_portableConfig}/config"
+	elif [[ -f "$(pwd)/${_portableConfig}" ]]; then
+		pecho \
+			info \
+			"Config specified as relative path ${_portableConfig}"
+		source "$(pwd)/${_portableConfig}"
 	else
 		pecho \
 			crit \

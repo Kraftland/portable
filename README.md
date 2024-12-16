@@ -42,7 +42,7 @@ install -Dm755 config /usr/lib/portable/info/appID/config
 
 Environment variables are read from `XDG_DATA_HOME/stateDirectory/portable.env`
 
-Start portable with environment variable `_portableConfig`, which is pointed to the actual config.
+Start portable with environment variable `_portableConfig`, which is pointed to the actual config. It searches absolute path, `/usr/lib/portable/info/${_portableConfig}/config` and `$(pwd)/${_portableConfig}` respectively.
 
 ## .desktop requirements
 
