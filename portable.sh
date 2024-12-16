@@ -12,11 +12,44 @@ function pecho() {
 	fi
 }
 
-if [ ${_portalConfig} ]; then
-	source "${_portalConfig}"
-else
+if [ ${_portalConfig} ] && [ "${_portableConfig}" ]; then
 	pecho crit "No portable config specified!"
 	exit 1
+fi
+
+if [ ${_portalConfig} ]; then
+	export _portableConfig="${_portalConfig}"
+	pecho warn "Using legacy variable!"
+fi
+
+if [ -f "${_portableConfig}" ]; then
+	pecho \
+		info \
+		"Config specified as absolute path: ${_portableConfig}"
+	source "${_portableConfig}"
+else
+	if [[ -f "$(pwd)/${_portableConfig}" ]]; then
+		pecho \
+			info \
+			"Config specified as relative path ${_portableConfig}"
+		source "$(pwd)/${_portableConfig}"
+	elif [[ -f "/usr/lib/portable/info/${_portableConfig}/config" ]]; then
+		pecho \
+			info \
+			"Config specified as global name ${_portableConfig}"
+		source "/usr/lib/portable/info/${_portableConfig}/config"
+	else
+		pecho \
+			crit \
+			"Specified config cannot be found!"
+		exit 1
+	if
+fi
+
+
+
+if [ ${_portableConfig} ]; then
+	source "${_portableConfig}"
 fi
 
 busName="${appID}"
@@ -128,7 +161,7 @@ function inputMethod() {
 }
 
 function importEnv() {
-	cat "${_portalConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	cat "${_portableConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
