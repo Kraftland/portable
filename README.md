@@ -71,7 +71,5 @@ Start portable with argument `--actions connect-tty debug-shell`
 
 Optionally enable debugging output using environment variable `PORTABLE_LOGGING=debug`
 
-# Repository mirror (and statements about AUR)
-This repository is available @ [Codeberg](https://codeberg.org/Kimiblock/portable) due to AUR packaging for Chinese users. Apparently posting binaries is not allowed even if it's just shell scripts. We have such efficient people sticking to guidelines but not eliminating duplicated packages, such good mod!
-
-Please submit packages on it, that's entirely not a waste of time.
+# Repository mirror
+This repository is available @ [Codeberg](https://codeberg.org/Kimiblock/portable) due to AUR packaging for Chinese users.
