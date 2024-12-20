@@ -20,25 +20,12 @@ if [ ${trashAppUnsafe} ]; then
 	exit $?
 else
 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-		if [[ "$origReq" =~ 'file:///tmp' ]]; then
-			echo "file:// link and /tmp path detected!"
-			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-		else
-		#if [[ $(echo "$origReq" | cut -c '-4') = '/tmp' ]]
-			fakeDirBase="${HOME}"
-			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
-		fi
+		echo "file:// link and /tmp path detected!"
+		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
 		echo "[Info] received a file open request: $origReq, translated to ${link}"
 	else
-		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
-			echo "/tmp path detected!"
-			export link="/proc/$(cat ~/mainPid)/root${origReq}"
-		else
-			fakeDirBase="${HOME}"
-			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
-		fi
+		echo "/tmp path detected!"
+		export link="/proc/$(cat ~/mainPid)/root${origReq}"
 	fi
 fi
 
@@ -46,29 +33,27 @@ fi
 
 echo "[Info] received a request: $@, translated to ${link}"
 
-if [[ ${portableUsePortal} = 1 ]]; then
+if [[ "$@" =~ "show-item" ]]; then
+	echo "[Info] Initiating D-Bus call..."
+	dbus-send --print-reply --dest=org.freedesktop.FileManager1 \
+		/org/freedesktop/FileManager1 \
+		org.freedesktop.FileManager1.ShowItems \
+		array:string:"file://${link}" \
+		string:fake-dde-show-items
+	if [[ $? = 0 ]]; then
+		exit 0
+	else
+		/usr/lib/flatpak-xdg-utils/xdg-open $(dirname "${link}")
+	fi
+else
+	echo "[Info] Launching application..."
 	/usr/lib/flatpak-xdg-utils/xdg-open $(dirname "${link}")
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
 fi
-echo "[Info] Initiating D-Bus call..."
-dbus-send --print-reply --dest=org.freedesktop.FileManager1 \
-	/org/freedesktop/FileManager1 \
-	org.freedesktop.FileManager1.ShowItems \
-	array:string:"file://${link}" \
-	string:fake-dde-show-items
 
-if [[ $? = 0 ]]; then
-	exit 0
-fi
-
-/usr/lib/flatpak-xdg-utils/xdg-open $(dirname "${link}")
-
-if [[ $? = 0 ]]; then
-	exit 0
-fi
-
+echo "[Warn] Previous action failed!"
 
 if [ -f /usr/bin/dolphin ] && [ ${XDG_CURRENT_DESKTOP} = KDE ]; then
 	/usr/bin/dolphin --select "${link}"
@@ -76,5 +61,4 @@ elif [ -f /usr/bin/nautilus ] && [ ${XDG_CURRENT_DESKTOP} = GNOME ]; then
 	/usr/bin/nautilus $(dirname "${link}")
 else
 	xdg-open $(dirname "${link}")
-fi
 fi
