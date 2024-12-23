@@ -33,11 +33,13 @@ else
 			info \
 			"Configuration specified as global name /usr/lib/portable/info/${_portableConfig}/config"
 		source "/usr/lib/portable/info/${_portableConfig}/config"
+		export _portableConfig="/usr/lib/portable/info/${_portableConfig}/config"
 	elif [[ -f "$(pwd)/${_portableConfig}" ]]; then
 		pecho \
 			info \
 			"Configuration specified as relative path ${_portableConfig}"
 		source "$(pwd)/${_portableConfig}"
+		export _portableConfig="$(pwd)/${_portableConfig}"
 	else
 		pecho \
 			crit \
