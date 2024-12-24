@@ -215,10 +215,7 @@ function execApp() {
 	-p CPUAccounting=yes \
 	-p StartupCPUWeight=idle \
 	-p StartupIOWeight=1 \
-	-p MemoryMax=90% \
-	-p MemoryHigh=80% \
-	-p CPUWeight=20 \
-	-p IOWeight=20 \
+	-p MemoryHigh=90% \
 	-p ManagedOOMSwap=kill \
 	-p ManagedOOMMemoryPressure=kill \
 	-p IPAccounting=yes \
@@ -243,7 +240,6 @@ function execApp() {
 	-p ProtectClock=yes \
 	-p CapabilityBoundingSet= \
 	-p ProtectKernelModules=yes \
-	-p SystemCallArchitectures=native \
 	-p RestrictSUIDSGID=yes \
 	-p LockPersonality=yes \
 	-p RestrictRealtime=yes \
