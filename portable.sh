@@ -619,20 +619,6 @@ function questionFirstLaunch() {
 	fi
 }
 
-function disableSandbox() {
-	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
-		rm "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
-		questionFirstLaunch
-	fi
-}
-
-function openDataDir() {
-	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
-		/usr/lib/flatpak-xdg-utils/xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
-		exit $?
-	fi
-}
-
 function launch() {
 	genXAuth
 	inputMethod
@@ -684,15 +670,25 @@ function stopApp() {
 	systemctl --user stop ${proxyName} ${unitName}
 }
 
+function cmdlineDispatcher() {
+	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
+		rm "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
+		questionFirstLaunch
+	fi
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
+		/usr/lib/flatpak-xdg-utils/xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
+		exit $?
+	fi
+}
+
 if [[ $@ = "--actions quit" ]]; then
 	stopApp $@
 	exit $?
 fi
 
 sourceXDG
-disableSandbox $@
 questionFirstLaunch
-openDataDir $@
+cmdlineDispatcher $@
 manageDirs
 launch $@
 
