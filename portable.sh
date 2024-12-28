@@ -189,13 +189,17 @@ function enterSandbox() {
 	pecho debug "Starting program in sandbox: $@"
 	# Try procps-ng first
 	if [[ -f /usr/bin/pgrep ]]; then
-		pecho debug "Using the procps-ng"
 		childPid=$(pgrep -P $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid"))
+		pecho debug "procps-ng returned child ${childPid}"
+		if [[ $(tr -d '\0' < /proc/${childPid}/cmdline) =~ "bwrap" ]]; then
+			childPid=$(pgrep -P ${childPid})
+			pecho info "PID mismatch! New PID set as ${childPid}"
+		fi
 		nsenter -t ${childPid} \
 			--mount \
 			--preserve-credentials \
 			--ipc \
-			--user $@
+			--user-parent $@
 		return $?
 	fi
 	controlGroupPath="/sys/fs/cgroup/$(systemctl --user show ${unitName} -p ControlGroup | cut -c '15-')"
@@ -677,6 +681,10 @@ function cmdlineDispatcher() {
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
 		/usr/lib/flatpak-xdg-utils/xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
+		exit $?
+	fi
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "inspect" ]]; then
+		enterSandbox /usr/bin/bash
 		exit $?
 	fi
 }
