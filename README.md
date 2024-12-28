@@ -64,6 +64,8 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 `--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
 
+`--actions inspect`: Enters the sandbox.
+
 ### Debugging
 
 #### Entering sandbox

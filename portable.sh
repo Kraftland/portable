@@ -189,10 +189,10 @@ function enterSandbox() {
 	pecho debug "Starting program in sandbox: $@"
 	# Try procps-ng first
 	if [[ -f /usr/bin/pgrep ]]; then
-		childPid=$(pgrep -P $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid"))
+		childPid=$(pgrep -P $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid") | head -n 1)
 		pecho debug "procps-ng returned child ${childPid}"
 		if [[ $(tr -d '\0' < /proc/${childPid}/cmdline) =~ "bwrap" ]]; then
-			childPid=$(pgrep -P ${childPid})
+			childPid=$(pgrep -P ${childPid} | head -n 1)
 			pecho info "PID mismatch! New PID set as ${childPid}"
 		fi
 		nsenter -t ${childPid} \
@@ -426,6 +426,11 @@ function deviceBinding() {
 }
 
 function warnMulRunning() {
+	source "${_portableConfig}"
+	enterSandbox ${launchTarget}
+	if [[ $? = 0 ]]; then
+		exit 0
+	fi
 	id=$(dbus-send \
 		--bus=unix:path="${busDir}/bus" \
 		--dest=org.kde.StatusNotifierWatcher \
@@ -444,10 +449,6 @@ function warnMulRunning() {
 		org.kde.StatusNotifierItem.Activate \
 		int32:114514 \
 		int32:1919810
-	if [[ $? = 0 ]]; then
-		exit 0
-	fi
-	enterSandbox ${launchTarget}
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
