@@ -181,8 +181,11 @@ function importEnv() {
 	fi
 }
 
-# This function expects sandbox running!
 function enterSandbox() {
+	if [ ! $(systemctl --user is-active ${unitName}.service) = active ]; then
+		pecho crit "Application not running"
+		exit 1
+	fi
 	pecho debug "Starting program in sandbox: $@"
 	# Try procps-ng first
 	if [[ -f /usr/bin/pgrep ]]; then
