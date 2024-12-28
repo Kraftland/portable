@@ -183,10 +183,6 @@ function importEnv() {
 
 # This function expects sandbox running!
 function enterSandbox() {
-	cat "${XDG_DATA_HOME}"/"${stateDirectory}"/mainPid
-}
-
-function grabApplicationId() {
 	pecho debug "Starting program in sandbox: $@"
 	# Try procps-ng first
 	if [[ -f /usr/bin/pgrep ]]; then
