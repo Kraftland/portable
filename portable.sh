@@ -181,6 +181,30 @@ function importEnv() {
 	fi
 }
 
+# This function expects sandbox running!
+function enterSandbox() {
+	cat "${XDG_DATA_HOME}"/"${stateDirectory}"/mainPid
+}
+
+function grabApplicationId() {
+	pecho debug "Starting program in sandbox: $@"
+	# Try procps-ng first
+	if [[ -f /usr/bin/pgrep ]]; then
+		pecho debug "Using the procps-ng"
+		childPid=$(pgrep -P $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid"))
+		nsenter -t ${childPid} \
+			--mount \
+			--preserve-credentials \
+			--ipc \
+			--user $@
+		return $?
+	fi
+	controlGroupPath="/sys/fs/cgroup/$(systemctl --user show ${unitName} -p ControlGroup | cut -c '15-')"
+	if [[ $(cat "${controlGroupPath}/pids.max") = $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid") ]]; then
+		pecho crit "Bailing out! Could not determine child PID"
+	fi
+}
+
 function execApp() {
 	if [ ! -S "${busDir}/bus" ]; then
 		pecho warn "Waiting for D-Bus proxy..."
@@ -208,6 +232,7 @@ function execApp() {
 	-u "${unitName}" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
+	-p Slice=app.slice \
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
 	-p KillMode=control-group \
