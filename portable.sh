@@ -199,6 +199,10 @@ function enterSandbox() {
 			--mount \
 			--preserve-credentials \
 			--ipc \
+			--uts \
+			--user \
+			--cgroup \
+			--env \
 			--user-parent $@
 		return $?
 	fi
