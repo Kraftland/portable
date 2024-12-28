@@ -309,6 +309,7 @@ function execApp() {
 		--bind-try /dev/null /proc/meminfo \
 		--bind-try /dev/null /proc/cpuinfo \
 		--bind /usr /usr \
+		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
 		--ro-bind-try /lib /lib \
 		--ro-bind-try /lib64 /lib64 \
