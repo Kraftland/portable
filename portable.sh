@@ -202,10 +202,9 @@ function enterSandbox() {
 			--user-parent $@
 		return $?
 	fi
+	pecho crit "Bailing out! Could not determine child PID"
+	exit 1
 	controlGroupPath="/sys/fs/cgroup/$(systemctl --user show ${unitName} -p ControlGroup | cut -c '15-')"
-	if [[ $(cat "${controlGroupPath}/pids.max") = $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid") ]]; then
-		pecho crit "Bailing out! Could not determine child PID"
-	fi
 }
 
 function execApp() {
