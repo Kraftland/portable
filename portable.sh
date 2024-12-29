@@ -195,20 +195,18 @@ function enterSandbox() {
 			childPid=$(pgrep -P ${childPid} | head -n 1)
 			pecho info "PID mismatch! New PID set as ${childPid}"
 		fi
-		nsenter -t ${childPid} \
-			--mount \
+		nsenter --user \
+			--root \
+			--wd \
+			-t ${childPid} \
 			--preserve-credentials \
-			--ipc \
-			--uts \
-			--user \
-			--cgroup \
 			--env \
-			--user-parent $@
+			$@
 		return $?
 	fi
 	pecho crit "Bailing out! Could not determine child PID"
 	exit 1
-	controlGroupPath="/sys/fs/cgroup/$(systemctl --user show ${unitName} -p ControlGroup | cut -c '15-')"
+	#controlGroupPath="/sys/fs/cgroup/$(systemctl --user show ${unitName} -p ControlGroup | cut -c '15-')"
 }
 
 function execApp() {
@@ -305,7 +303,6 @@ function execApp() {
 		--unshare-uts \
 		--unshare-pid \
 		--unshare-user \
-		--disable-userns \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--bind /tmp /tmp \
