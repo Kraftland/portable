@@ -499,6 +499,14 @@ function dbusProxy() {
 		pecho info "Existing D-Bus proxy detected! Terminating..."
 		systemctl --user kill ${proxyName}.service
 	fi
+	if [[ $(systemctl --user is-failed ${proxyName}-a11y.service) = failed ]]; then
+		pecho warn "D-Bus a11y proxy failed last time"
+		systemctl --user reset-failed ${proxyName}-a11y.service
+	fi
+	if [[ $(systemctl --user is-active ${proxyName}-a11y.service) = active ]]; then
+		pecho info "Existing D-Bus a11y proxy detected! Terminating..."
+		systemctl --user kill ${proxyName}-a11y.service
+	fi
 	rm "${busDir}" -r 2>/dev/null
 	rm ${busDirAy} -r 2>/dev/null
 	mkdir "${busDir}" -p
@@ -720,7 +728,7 @@ function passPid() {
 }
 
 function stopApp() {
-	systemctl --user stop ${proxyName} ${unitName}
+	systemctl --user stop ${proxyName} ${proxyName}-a11y ${unitName}
 }
 
 function cmdlineDispatcher() {
