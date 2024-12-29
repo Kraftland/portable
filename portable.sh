@@ -334,8 +334,13 @@ function execApp() {
 		--ro-bind /usr/lib/portable/mimeapps.list \
 			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
 		--proc /proc \
-		--ro-bind /dev/null /proc/uptime \
-		--ro-bind /dev/null /proc/modules \
+		--ro-bind-try /dev/null /proc/uptime \
+		--ro-bind-try /dev/null /proc/modules \
+		--ro-bind-try /dev/null /proc/cmdline \
+		--ro-bind-try /dev/null /proc/diskstats \
+		--ro-bind-try /dev/null /proc/devices \
+		--ro-bind-try /dev/null /proc/config.gz \
+		--ro-bind-try /dev/null /proc/version \
 		--tmpfs /proc/1 \
 		--bind-try /dev/null /proc/meminfo \
 		--bind-try /dev/null /proc/cpuinfo \
