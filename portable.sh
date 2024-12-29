@@ -660,7 +660,7 @@ function launch() {
 }
 
 function passPid() {
-	sleep 0.5s
+	sleep 0.2s
 	if [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; then
 		pecho warn "Waiting for Application start..."
 		counter=5
