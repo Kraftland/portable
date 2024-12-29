@@ -531,6 +531,8 @@ function dbusProxy() {
 			--own=com.belmoussaoui.ashpd.demo \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
+			--see=org.a11y.Bus \
+			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera \
