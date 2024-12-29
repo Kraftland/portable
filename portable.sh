@@ -50,6 +50,7 @@ fi
 
 busName="${appID}"
 busDir="${XDG_RUNTIME_DIR}/app/${busName}"
+busDirAy="${XDG_RUNTIME_DIR}/app/${busName}-a11y"
 unitName="${friendlyName}"
 proxyName="${friendlyName}-dbus"
 
@@ -497,10 +498,10 @@ function dbusProxy() {
 		pecho info "Existing D-Bus proxy detected! Terminating..."
 		systemctl --user kill ${proxyName}.service
 	fi
-	if [ -d "${busDir}" ]; then
-		rm "${busDir}" -r
-	fi
+	rm "${busDir}" -r 2>/dev/null
+	rm ${busDirAy} -r 2>/dev/null
 	mkdir "${busDir}" -p
+	mkdir -p "${busDirAy}" -p
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
 		proxyArg="--log"
@@ -589,6 +590,34 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
+	systemd-run \
+		--user \
+		-u ${proxyName}-a11y \
+		-- bwrap \
+			--symlink /usr/lib64 /lib64 \
+			--ro-bind /usr/lib /usr/lib \
+			--ro-bind /usr/lib64 /usr/lib64 \
+			--ro-bind /usr/bin /usr/bin \
+			--ro-bind-try /usr/share /usr/share \
+			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
+			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+				"${XDG_RUNTIME_DIR}/.flatpak-info" \
+			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+				/.flatpak-info \
+			-- /usr/bin/xdg-dbus-proxy \
+			unix:path=${XDG_RUNTIME_DIR}/at-spi/bus \
+			"${busDirAy}/bus" \
+			--filter \
+			--sloppy-names \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Unembed@/org/a11y/atspi/accessible/root \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.Registry.GetRegisteredEvents@/org/a11y/atspi/registry \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetKeystrokeListeners@/org/a11y/atspi/registry/deviceeventcontroller \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetDeviceEventListeners@/org/a11y/atspi/registry/deviceeventcontroller \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersSync@/org/a11y/atspi/registry/deviceeventcontroller \
+			--filter=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersAsync@/org/a11y/atspi/registry/deviceeventcontroller
+
+
 }
 
 function execAppUnsafe() {
