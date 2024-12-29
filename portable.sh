@@ -354,6 +354,7 @@ function execApp() {
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
+		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi/bus" \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
@@ -609,7 +610,7 @@ function dbusProxy() {
 			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 				/.flatpak-info \
 			-- /usr/bin/xdg-dbus-proxy \
-			unix:path=${XDG_RUNTIME_DIR}/at-spi/bus \
+			unix:path="${XDG_RUNTIME_DIR}/at-spi/bus" \
 			"${busDirAy}/bus" \
 			--filter \
 			--sloppy-names \
