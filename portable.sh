@@ -590,6 +590,10 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
+	if [ ! -d ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
+		pecho warn "No at-spi bus detected!"
+		return 0
+	fi
 	systemd-run \
 		--user \
 		-u ${proxyName}-a11y \
