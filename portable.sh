@@ -663,7 +663,7 @@ function passPid() {
 	sleep 0.2s
 	if [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; then
 		pecho warn "Waiting for Application start..."
-		counter=5
+		counter=2
 		while [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; do
 			counter=$(expr ${counter} + 1)
 			sleep 0.1s
