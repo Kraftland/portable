@@ -748,7 +748,8 @@ function stopApp() {
 
 function cmdlineDispatcher() {
 	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
-		rm "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
+		rm -f \
+			"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
 		questionFirstLaunch
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
