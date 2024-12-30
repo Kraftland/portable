@@ -661,9 +661,18 @@ function execAppUnsafe() {
 function questionFirstLaunch() {
 	if [ ! -f "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox ]; then
 		if [[ "${LANG}" =~ 'zh_CN' ]]; then
-			zenity --title "初次启动" --icon=security-medium-symbolic --question --text="允许程序读取 / 修改所有个人数据?"
+			/usr/bin/zenity \
+				--default-cancel \
+				--title "初次启动" \
+				--icon=security-medium-symbolic \
+				--question \
+				--text="允许程序读取 / 修改所有个人数据?"
 		else
-			zenity --title "Welcome" --icon=security-medium-symbolic --question --text="Do you wish this Application to access and modify all of your data?"
+			/usr/bin/zenity --default-cancel \
+				--title "Welcome" \
+				--icon=security-medium-symbolic \
+				--question \
+				--text="Do you wish this Application to access and modify all of your data?"
 		fi
 		if [[ $? = 0 ]]; then
 			export trashAppUnsafe=1
