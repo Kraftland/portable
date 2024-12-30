@@ -609,6 +609,7 @@ function dbusProxy() {
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
 		pecho warn "No at-spi bus detected!"
+		touch "${busDirAy}/bus"
 		return 0
 	fi
 	systemd-run \
