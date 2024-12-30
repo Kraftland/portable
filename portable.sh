@@ -97,6 +97,10 @@ function genXAuth() {
 			"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
 			add $(xauth list ${DISPLAY} | head -n 1)
 	fi
+	if [ ! -f "${HOME}/.XAuthority"  ] && [ -z "${XAUTHORITY}" ]; then
+		pecho warn "Could not determine XAuthority file path"
+		xhost +localhost
+	fi
 	xauth \
 		-f "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" \
 		list >/dev/null
