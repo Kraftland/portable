@@ -286,7 +286,6 @@ function execApp() {
 	-p DevicePolicy=strict \
 	-p NoNewPrivileges=yes \
 	-p ProtectControlGroups=yes \
-	-p PrivateTmp=yes \
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
