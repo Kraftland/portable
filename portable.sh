@@ -81,10 +81,6 @@ function genXAuth() {
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	pecho debug "Detecting display as ${DISPLAY}"
-	if [ ! -f "${HOME}/.XAuthority"  ] && [ -z "${XAUTHORITY}" ]; then
-		pecho warn "Could not determine XAuthority file path"
-		xhost +localhost
-	fi
 	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix: " ]]; then
 		pecho warn "Adding new display..."
 		export authHash="$(xxd -p -l 16 /dev/urandom)"
@@ -354,7 +350,6 @@ function execApp() {
 		--bind-try /dev/null /proc/meminfo \
 		--bind-try /dev/null /proc/cpuinfo \
 		--bind /usr /usr \
-		--tmpfs /usr/lib/geoclue-2.0 \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
 		--ro-bind-try /lib /lib \
