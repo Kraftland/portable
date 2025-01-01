@@ -26,7 +26,6 @@ install -Dm755 open.sh /usr/lib/portable/open
 install -Dm755 user-dirs.dirs /usr/lib/portable/user-dirs.dirs
 install -Dm755 mimeapps.list /usr/lib/portable/mimeapps.list
 install -Dm755 flatpak-info /usr/lib/portable/flatpak-info
-install -d /usr/lib/geoclue-2.0
 ```
 
 ## Configurations
