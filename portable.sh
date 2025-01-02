@@ -405,6 +405,14 @@ function execApp() {
 }
 
 function shareFile() {
+	if [[ ${trashAppUnsafe} = 1 ]]; then
+		zenity \
+			--error \
+			--title "Sandbox disabled" \
+			--text "Feature is intended for sandbox users"
+		pecho crit "Sandbox is disabled"
+		exit 1
+	fi
 	fileList=$(zenity --file-selection --multiple | tail -n 1)
 	IFS='|' read -r -a filePaths <<< "${fileList}"
 	for filePath in "${filePaths[@]}"; do
@@ -775,6 +783,9 @@ function cmdlineDispatcher() {
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "inspect" ]]; then
 		enterSandbox /usr/bin/bash
 		exit $?
+	fi
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "share-files" ]]; then
+		shareFile
 	fi
 }
 
