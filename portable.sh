@@ -70,6 +70,10 @@ function sourceXDG() {
 
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}"/${stateDirectory}
+	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}/Shared"
+	ln -sfr \
+		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
+		"${XDG_DATA_HOME}/${stateDirectory}/共享文件"
 }
 
 function genXAuth() {
@@ -398,6 +402,17 @@ function execApp() {
 			${launchTarget}
 
 
+}
+
+function shareFile() {
+	fileList=$(zenity --file-selection --multiple | tail -n 1)
+	IFS='|' read -r -a filePaths <<< "${fileList}"
+	for filePath in "${filePaths[@]}"; do
+		pecho info "User selected path: ${filePath}"
+		cp -a \
+			"${filePath}" \
+			"${XDG_DATA_HOME}/${stateDirectory}/Shared"
+	done
 }
 
 function deviceBinding() {
