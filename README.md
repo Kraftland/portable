@@ -62,7 +62,7 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 `--actions opendir`: Open the sandbox's home directory.
 
-`--actions share-files`: Choose multiple files to share with the sandbox.
+`--actions share-files`: Choose multiple files to share with the sandbox. The file will be temporarily stored in `XDG_DATA_HOME/stateDirectory/Shared`, which is purged each launch.
 
 `--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
 
