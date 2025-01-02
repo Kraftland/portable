@@ -797,7 +797,7 @@ fi
 
 sourceXDG
 questionFirstLaunch
-cmdlineDispatcher $@
 manageDirs
+cmdlineDispatcher $@
 launch $@
 
