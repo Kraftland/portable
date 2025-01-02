@@ -60,7 +60,9 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 `--actions f5aaebc6-0014-4d30-beba-72bce57e0650`: Toggle Sandbox, requires user confirmation.
 
-`--actions opendir`: Open the sandbox's home directory
+`--actions opendir`: Open the sandbox's home directory.
+
+`--actions share-files`: Choose multiple files to share with the sandbox.
 
 `--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
 
