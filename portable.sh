@@ -421,6 +421,7 @@ function shareFile() {
 			"${filePath}" \
 			"${XDG_DATA_HOME}/${stateDirectory}/Shared"
 	done
+	exit 0
 }
 
 function deviceBinding() {
