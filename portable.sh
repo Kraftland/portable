@@ -483,7 +483,7 @@ function deviceBinding() {
 	done
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
 	if [[ ${bindInputDevices} = true ]]; then
-		bwInputArg="--dev-bind-try /dev/input /dev/input"
+		bwInputArg="--dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
 		ls /dev/hidraw* 2>/dev/null 1>/dev/null
 		lsStatus=$?
 		if [ "${lsStatus}" = 0 ]; then
