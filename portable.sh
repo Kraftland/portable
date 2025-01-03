@@ -163,6 +163,19 @@ function inputMethod() {
 		export LC_CTYPE=zh_TW.UTF-8
 	else
 		pecho warn 'Input Method potentially broken! Please set $XMODIFIERS properly'
+		# Guess the true IM based on running processes
+		runningProcess=$(ps -U $(whoami))
+		if [[ ${runningProcess} =~ "ibus-daemon" ]]; then
+			pecho warn "Guessing Input Method as iBus"
+			export QT_IM_MODULE=ibus
+			export GTK_IM_MODULE=ibus
+			export XMODIFIERS=@im=ibus
+		elif [[ ${runningProcess} =~ "fcitx" ]]; then
+			pecho warn "Guessing Input Method as Fcitx"
+			export QT_IM_MODULE=fcitx
+			export GTK_IM_MODULE=fcitx
+			export XMODIFIERS=@im=fcitx
+		fi
 	fi
 }
 
