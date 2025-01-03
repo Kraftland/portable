@@ -484,7 +484,16 @@ function deviceBinding() {
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
 	if [[ ${bindInputDevices} = true ]]; then
 		bwInputArg="--dev-bind-try /dev/input /dev/input"
-		pecho warn "Detected input preference as expose"
+		ls /dev/hidraw* 2>/dev/null 1>/dev/null
+		lsStatus=$?
+		if [ "${lsStatus}" = 0 ]; then
+			for _device in $(ls /dev/hidraw*); do
+				if [ -e ${_card} ]; then
+					bwInputArg="${bwInputArg} --dev-bind ${_device} ${_device}"
+				fi
+			done
+		fi
+		pecho warn "Detected input preference as expose, setting arg: ${bwInputArg}"
 	else
 		bwInputArg=""
 		pecho debug "Not exposing input devices"
