@@ -441,28 +441,43 @@ function shareFile() {
 }
 
 function deviceBinding() {
-	pecho debug "Detecting GPU..."
-	bwSwitchableGraphicsArg=""
-	videoMod=$(lsmod)
-	if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
-		pecho info "Using single NVIDIA GPU"
-		for _card in $(ls /dev/nvidia*); do
-			if [ -e ${_card} ]; then
-				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
-			fi
-		done
-	elif [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
-		pecho debug "Not using NVIDIA GPU"
+	if [[ ${gameMode} = true ]]; then
 		bwSwitchableGraphicsArg=""
-	elif [[ ${videoMod} =~ nvidia ]]; then
-		pecho debug "Using NVIDIA GPU"
-		for _card in $(ls /dev/nvidia*); do
-			if [ -e ${_card} ]; then
-				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
-			fi
-		done
-		pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
+		pecho debug "Binding all GPUs in Game Mode"
+		ls /dev/nvidia* 2>/dev/null 1>/dev/null
+		lsStatus=$?
+		if [ "${lsStatus}" = 0 ]; then
+			pecho debug "Binding NVIDIA GPUs"
+			for _card in $(ls /dev/nvidia*); do
+				if [ -e ${_card} ]; then
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+				fi
+			done
+		fi
+	else
+		pecho debug "Detecting GPU..."
+		bwSwitchableGraphicsArg=""
+		videoMod=$(lsmod)
+		if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
+			pecho info "Using single NVIDIA GPU"
+			for _card in $(ls /dev/nvidia*); do
+				if [ -e ${_card} ]; then
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+				fi
+			done
+		elif [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
+			pecho debug "Not using NVIDIA GPU"
+			bwSwitchableGraphicsArg=""
+		elif [[ ${videoMod} =~ nvidia ]]; then
+			pecho debug "Using NVIDIA GPU"
+			for _card in $(ls /dev/nvidia*); do
+				if [ -e ${_card} ]; then
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+				fi
+			done
+		fi
 	fi
+	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
 	bwCamPar=""
 	pecho debug "Detecting Camera..."
 	for camera in $(ls /dev/video*); do
