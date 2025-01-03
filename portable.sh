@@ -427,6 +427,8 @@ function shareFile() {
 		pecho crit "Sandbox is disabled"
 		exit 1
 	fi
+	export GTK_USE_PORTAL=1
+	export GDK_DEBUG=portals
 	fileList=$(zenity --file-selection --multiple | tail -n 1)
 	IFS='|' read -r -a filePaths <<< "${fileList}"
 	for filePath in "${filePaths[@]}"; do
