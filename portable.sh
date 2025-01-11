@@ -409,7 +409,7 @@ function execApp() {
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
-			${launchTarget}
+			bash -c "${launchTarget}"
 
 
 }
