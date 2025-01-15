@@ -232,8 +232,19 @@ function enterSandbox() {
 		exit 1
 	fi
 	pecho debug "procps-ng returned child ${childPid}"
+	source "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	GTK_IM_MODULE="${GTK_IM_MODULE}"
+	QT_IM_MODULE="${QT_IM_MODULE}"
+	PATH=/sandbox:"${PATH}"
+	XAUTHORITY="${HOME}/.XAuthority"
+	DISPLAY="${DISPLAY}"
+	QT_SCALE_FACTOR="${QT_SCALE_FACTOR}"
+	QT_ENABLE_HIGHDPI_SCALING=1
+	QT_AUTO_SCREEN_SCALE_FACTOR=1
+	GTK_USE_PORTAL=1
+	GDK_DEBUG=portals
 	nsenter --user \
-		--root=/ \
+		--root \
 		--wd \
 		-t ${childPid} \
 		--preserve-credentials \
