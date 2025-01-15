@@ -206,12 +206,16 @@ function importEnv() {
 
 function getChildPid() {
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
-	childPids=$(pgrep --cgroup "${cGroup}")
-	for childPid in ${childPids}; do
+	for childPid in $(pgrep --cgroup "${cGroup}"); do
 		pecho debug "Trying PID ${childPid}"
-		if [[ "$(cat /proc/${childPid}/cmdline | tr '\000' ' ')" =~ "${launchTarget}" ]]; then
-			export childPid=${childPid}
-			return 0
+		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
+		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
+			pecho debug "Detected bwrap, skipping..."
+		else
+			if [[ "${cmdlineArg}" =~ "${launchTarget}" ]]; then
+				export childPid=${childPid}
+				return 0
+			fi
 		fi
 	done
 }
@@ -227,7 +231,7 @@ function enterSandbox() {
 		pecho crit "Failed to determine child PID"
 		exit 1
 	fi
-	pecho debug "procps-ng returned child ${childPids}"
+	pecho debug "procps-ng returned child ${childPid}"
 	nsenter --user \
 		--root \
 		--wd \
