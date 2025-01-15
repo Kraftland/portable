@@ -233,11 +233,10 @@ function enterSandbox() {
 	fi
 	pecho debug "procps-ng returned child ${childPid}"
 	nsenter --user \
-		--root \
+		--root=/ \
 		--wd \
 		-t ${childPid} \
 		--preserve-credentials \
-		--env \
 		$@
 	return $?
 }
