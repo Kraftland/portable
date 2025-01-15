@@ -242,7 +242,6 @@ function enterSandbox() {
 	fi
 	pecho crit "Bailing out! Could not determine child PID"
 	exit 1
-	#controlGroupPath="/sys/fs/cgroup/$(systemctl --user show ${unitName} -p ControlGroup | cut -c '15-')"
 }
 
 function execApp() {
