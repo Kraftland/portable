@@ -204,6 +204,16 @@ function importEnv() {
 	fi
 }
 
+function pidSort() {
+	for childPid in ${childPids}; do
+		pecho debug "Trying PID ${childPid}"
+		if [[ "$(tr -d '\0' < /proc/${childPid}/cmdline)" =~ "${launchTarget}"  ]]; then
+			export childPid=${childPid}
+			return 0
+		fi
+	done
+}
+
 function enterSandbox() {
 	if [ ! $(systemctl --user is-active ${unitName}.service) = active ]; then
 		pecho crit "Application not running"
@@ -212,12 +222,15 @@ function enterSandbox() {
 	pecho debug "Starting program in sandbox: $@"
 	# Try procps-ng first
 	if [[ -f /usr/bin/pgrep ]]; then
-		childPid=$(pgrep -P $(cat "${XDG_DATA_HOME}/${stateDirectory}/mainPid") | head -n 1)
-		pecho debug "procps-ng returned child ${childPid}"
-		if [[ $(tr -d '\0' < /proc/${childPid}/cmdline) =~ "bwrap" ]]; then
-			childPid=$(pgrep -P ${childPid} | head -n 1)
-			pecho info "PID mismatch! New PID set as ${childPid}"
+		cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
+		childPids=$(pgrep --cgroup "${cGroup}")
+		pidSort
+		if [ -z ${childPid} ]; then
+			pecho crit "Failed to determine child PID"
+			exit 1
 		fi
+		pecho debug "procps-ng returned child ${childPids}"
+
 		nsenter --user \
 			--root \
 			--wd \
@@ -409,7 +422,7 @@ function execApp() {
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
-			bash -c "${launchTarget}"
+			${launchTarget}
 
 
 }
