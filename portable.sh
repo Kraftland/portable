@@ -207,7 +207,7 @@ function importEnv() {
 function pidSort() {
 	for childPid in ${childPids}; do
 		pecho debug "Trying PID ${childPid}"
-		if [[ "$(tr -d '\0' < /proc/${childPid}/cmdline)" =~ "${launchTarget}"  ]]; then
+		if [[ "$(cat /proc/${childPid}/cmdline | tr '\000' ' ')" =~ "${launchTarget}" ]]; then
 			export childPid=${childPid}
 			return 0
 		fi
@@ -220,28 +220,22 @@ function enterSandbox() {
 		exit 1
 	fi
 	pecho debug "Starting program in sandbox: $@"
-	# Try procps-ng first
-	if [[ -f /usr/bin/pgrep ]]; then
-		cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
-		childPids=$(pgrep --cgroup "${cGroup}")
-		pidSort
-		if [ -z ${childPid} ]; then
-			pecho crit "Failed to determine child PID"
-			exit 1
-		fi
-		pecho debug "procps-ng returned child ${childPids}"
-
-		nsenter --user \
-			--root \
-			--wd \
-			-t ${childPid} \
-			--preserve-credentials \
-			--env \
-			$@
-		return $?
+	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
+	childPids=$(pgrep --cgroup "${cGroup}")
+	pidSort
+	if [ -z ${childPid} ]; then
+		pecho crit "Failed to determine child PID"
+		exit 1
 	fi
-	pecho crit "Bailing out! Could not determine child PID"
-	exit 1
+	pecho debug "procps-ng returned child ${childPids}"
+	nsenter --user \
+		--root \
+		--wd \
+		-t ${childPid} \
+		--preserve-credentials \
+		--env \
+		$@
+	return $?
 }
 
 function execApp() {
