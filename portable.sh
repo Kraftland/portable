@@ -826,9 +826,8 @@ function passPid() {
 		done
 		pecho info "Application service took $(expr ${counter} / 10)s to launch"
 	fi
-	mainPid=$(systemctl --user show -p MainPID "${unitName}.service" | cut -c "9-")
-	pecho info "Main PID identified as ${mainPid}"
-	echo "${mainPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
+	getChildPid 1>/dev/null
+	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 }
 
 function stopApp() {
