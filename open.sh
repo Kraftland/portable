@@ -20,25 +20,11 @@ if [ ${trashAppUnsafe} ]; then
 	exit $?
 else
 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-		if [[ "$origReq" =~ 'file:///tmp' ]]; then
-			echo "file:// link and /tmp path detected!"
-			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-		else
-		#if [[ $(echo "$origReq" | cut -c '-4') = '/tmp' ]]
-			fakeDirBase="${HOME}"
-			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
-		fi
+		echo "file:// link detected!"
+		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
 		echo "[Info] received a file open request: $origReq, translated to ${link}"
 	else
-		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
-			echo "/tmp path detected!"
-			export link="/proc/$(cat ~/mainPid)/root${origReq}"
-		else
-			fakeDirBase="${HOME}"
-			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
-		fi
+		export link="/proc/$(cat ~/mainPid)/root${origReq}"
 	fi
 fi
 

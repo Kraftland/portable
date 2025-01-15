@@ -816,17 +816,8 @@ function launch() {
 }
 
 function passPid() {
-	sleep 0.2s
-	if [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; then
-		pecho warn "Waiting for Application start..."
-		counter=2
-		while [[ $(systemctl --user is-active "${unitName}.service") =~ 'inactive' ]]; do
-			counter=$(expr ${counter} + 1)
-			sleep 0.1s
-		done
-		pecho info "Application service took $(expr ${counter} / 10)s to launch"
-	fi
-	getChildPid 1>/dev/null
+	sleep 1.5s
+	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 }
 
