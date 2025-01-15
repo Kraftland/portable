@@ -204,7 +204,9 @@ function importEnv() {
 	fi
 }
 
-function pidSort() {
+function getChildPid() {
+	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
+	childPids=$(pgrep --cgroup "${cGroup}")
 	for childPid in ${childPids}; do
 		pecho debug "Trying PID ${childPid}"
 		if [[ "$(cat /proc/${childPid}/cmdline | tr '\000' ' ')" =~ "${launchTarget}" ]]; then
@@ -220,9 +222,7 @@ function enterSandbox() {
 		exit 1
 	fi
 	pecho debug "Starting program in sandbox: $@"
-	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
-	childPids=$(pgrep --cgroup "${cGroup}")
-	pidSort
+	getChildPid
 	if [ -z ${childPid} ]; then
 		pecho crit "Failed to determine child PID"
 		exit 1
