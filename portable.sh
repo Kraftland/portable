@@ -232,24 +232,32 @@ function enterSandbox() {
 		exit 1
 	fi
 	pecho debug "procps-ng returned child ${childPid}"
-	source "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	GTK_IM_MODULE="${GTK_IM_MODULE}"
-	QT_IM_MODULE="${QT_IM_MODULE}"
-	PATH=/sandbox:"${PATH}"
-	XAUTHORITY="${HOME}/.XAuthority"
-	DISPLAY="${DISPLAY}"
-	QT_SCALE_FACTOR="${QT_SCALE_FACTOR}"
-	QT_ENABLE_HIGHDPI_SCALING=1
-	QT_AUTO_SCREEN_SCALE_FACTOR=1
-	GTK_USE_PORTAL=1
-	GDK_DEBUG=portals
-	nsenter --user \
-		--root \
-		--wd \
-		-t ${childPid} \
-		--preserve-credentials \
-		$@
-	return $?
+	systemd-run --tty \
+		-u "${unitName}-subprocess-$(uuidgen)" \
+		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
+		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
+		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
+		-p Environment=PATH=/sandbox:"${PATH}" \
+		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
+		-p Environment=DISPLAY="${DISPLAY}" \
+		-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
+		-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
+		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
+		-p Environment=GTK_USE_PORTAL=1 \
+		-p Environment=GDK_DEBUG=portals \
+		-p DevicePolicy=strict \
+		-p NoNewPrivileges=yes \
+		-p KeyringMode=private \
+		--user \
+		-- nsenter \
+			--user \
+			--root \
+			--wd \
+			-t ${childPid} \
+			--preserve-credentials \
+			$@
+
+	exit 0
 }
 
 function execApp() {
