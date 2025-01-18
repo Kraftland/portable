@@ -841,6 +841,7 @@ function cmdlineDispatcher() {
 	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
 		rm -f \
 			"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
+		rm -r "${XDG_DATA_HOME}"/flatpak/db
 		questionFirstLaunch
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
