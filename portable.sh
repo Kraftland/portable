@@ -202,7 +202,6 @@ function importEnv() {
 		source /tmp/portable-${fileName}.tmp
 		rm /tmp/portable-${fileName}.tmp
 	fi
-	#PW_V4L2_LD_PRELOAD=$(find /usr/lib/ -path "/usr/lib/pipewire*/v4l2/libpw-v4l2.so" 2>/dev/null | head -n 1) # Hardcode for now to not impact performance
 	PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
 	if [ "${LD_PRELOAD}" = "" ]; then
 		export LD_PRELOAD="$PW_V4L2_LD_PRELOAD"
