@@ -78,7 +78,7 @@ function manageDirs() {
 }
 
 function genXAuth() {
-	if [[ ${waylandOnly} = "true" ]]; then
+	if [ ${waylandOnly} = "true" ]; then
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
@@ -202,6 +202,13 @@ function importEnv() {
 		source /tmp/portable-${fileName}.tmp
 		rm /tmp/portable-${fileName}.tmp
 	fi
+	#PW_V4L2_LD_PRELOAD=$(find /usr/lib/ -path "/usr/lib/pipewire*/v4l2/libpw-v4l2.so" 2>/dev/null | head -n 1) # Hardcode for now to not impact performance
+	PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
+	if [ "${LD_PRELOAD}" = "" ]; then
+		export LD_PRELOAD="$PW_V4L2_LD_PRELOAD"
+	else
+		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
+	fi
 }
 
 function getChildPid() {
@@ -245,6 +252,7 @@ function enterSandbox() {
 		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 		-p Environment=GTK_USE_PORTAL=1 \
 		-p Environment=GDK_DEBUG=portals \
+		-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
 		-p KeyringMode=private \
@@ -342,6 +350,7 @@ function execApp() {
 	-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 	-p Environment=GTK_USE_PORTAL=1 \
 	-p Environment=GDK_DEBUG=portals \
+	-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
