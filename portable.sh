@@ -413,8 +413,7 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
-		--ro-bind-try "${XDG_RUNTIME_DIR}/pipewire-0" \
-			"${XDG_RUNTIME_DIR}/pipewire-0" \
+		${pipewireBinding} \
 		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 			"${XDG_RUNTIME_DIR}"/doc \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
@@ -511,7 +510,7 @@ function deviceBinding() {
 	fi
 	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
 	bwCamPar=""
-	if [ ${bindCameras} = true ]; then
+	if [[ ${bindCameras} = "true" ]]; then
 		pecho debug "Detecting Camera..."
 		for camera in $(ls /dev/video*); do
 			if [ -e ${camera} ]; then
@@ -520,7 +519,7 @@ function deviceBinding() {
 		done
 	fi
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
-	if [ ${bindInputDevices} = true ]; then
+	if [[ ${bindInputDevices} = "true" ]]; then
 		bwInputArg="--dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
 		ls /dev/hidraw* 2>/dev/null 1>/dev/null
 		lsStatus=$?
@@ -535,6 +534,9 @@ function deviceBinding() {
 	else
 		bwInputArg=""
 		pecho debug "Not exposing input devices"
+	fi
+	if [[ ${bindPipewire} = "true" ]]; then
+		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
 	fi
 }
 
