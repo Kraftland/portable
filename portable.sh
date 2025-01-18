@@ -511,14 +511,16 @@ function deviceBinding() {
 	fi
 	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
 	bwCamPar=""
-	pecho debug "Detecting Camera..."
-	for camera in $(ls /dev/video*); do
-		if [ -e ${camera} ]; then
-			bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
-		fi
-	done
+	if [ ${bindCameras} = true ]; then
+		pecho debug "Detecting Camera..."
+		for camera in $(ls /dev/video*); do
+			if [ -e ${camera} ]; then
+				bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
+			fi
+		done
+	fi
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
-	if [[ ${bindInputDevices} = true ]]; then
+	if [ ${bindInputDevices} = true ]; then
 		bwInputArg="--dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
 		ls /dev/hidraw* 2>/dev/null 1>/dev/null
 		lsStatus=$?
