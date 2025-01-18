@@ -18,6 +18,9 @@ waylandOnly="false"
 # Takes boolean value.
 bindInputDevices="false"
 
+# Takes boolean value. Binds /dev/video* into the sandbox. Required if target application uses /dev/video* interfaces directly instead of v4l2.
+bindCameras="false"
+
 # Expose all GPUs. Takes boolean value, usually used in games.
 gameMode="false"
 
