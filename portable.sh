@@ -654,10 +654,13 @@ function dbusProxy() {
 			--see=org.a11y.Bus \
 			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
 			--see=org.freedesktop.portal.Flatpak \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll \
 			--call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.RemoteDesktop.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.RemoteDesktop \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.Read \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents.* \
