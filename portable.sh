@@ -654,6 +654,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Email.ComposeEmail \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Account.GetUserInformation \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.RemoteDesktop.* \
