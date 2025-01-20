@@ -842,10 +842,10 @@ function passPid() {
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 
 	sed -i \
-		"s|placeholderMntId|$(readlink /proc/${childPid}/ns/mnt | | sed 's/[^0-9]//g')" \
+		"s|placeholderMntId|$(readlink /proc/${childPid}/ns/mnt | sed 's/[^0-9]//g')" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	sed -i \
-		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | | sed 's/[^0-9]//g')" \
+		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 }
 
