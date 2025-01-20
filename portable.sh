@@ -585,7 +585,7 @@ function generateFlatpakInfo() {
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	pecho debug "Generating flatpak-info..."
-	instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+	export instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
 	sed -i "s|placeHolderAppName|${appID}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	sed -i "s|placeholderInstanceId|${instanceId}|g" \
@@ -596,6 +596,8 @@ function generateFlatpakInfo() {
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 	install /usr/lib/portable/bwrapinfo.json \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	install "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
 
 }
 
@@ -847,6 +849,8 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	install "${XDG_DATA_HOME}/${stateDirectory}/mainPid" \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
 }
 
 function stopApp() {
