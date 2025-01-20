@@ -837,6 +837,16 @@ function passPid() {
 	sleep 1.5s
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
+	sed -i \
+		"s|placeholderChildPid|${childPid}|g" \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+
+	sed -i \
+		"s|placeholderMntId|$(readlink /proc/${childPid}/ns/mnt | | sed 's/[^0-9]//g')" \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	sed -i \
+		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | | sed 's/[^0-9]//g')" \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 }
 
 function stopApp() {
