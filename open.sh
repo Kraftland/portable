@@ -15,48 +15,54 @@ if [[ $2 =~ "/" ]]; then
 fi
 
 if [ ${trashAppUnsafe} ]; then
-	link="$2"
-	xdg-open "$2"
+	link="${origReq}"
+	xdg-open "${origReq}"
 	exit $?
-elif [[ ${XDG_CURRENT_DESKTOP} = KDE ]]; then
-	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-		if [[ "$origReq" =~ 'file:///tmp' ]]; then
-			echo "file:// link and /tmp path detected!"
-			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-		else
-			fakeDirBase="${HOME}"
-			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
-		fi
-	else
-		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
-			echo "/tmp path detected!"
-			export link="/proc/$(cat ~/mainPid)/root${origReq}"
-		else
-			fakeDirBase="${HOME}"
-			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
-		fi
-	fi
-else
-	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-		echo "file:// link detected!"
-		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-	else
-		export link="/proc/$(cat ~/mainPid)/root${origReq}"
-	fi
+# elif [[ ${XDG_CURRENT_DESKTOP} = KDE ]]; then
+# 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
+# 		if [[ "$origReq" =~ 'file:///tmp' ]]; then
+# 			echo "file:// link and /tmp path detected!"
+# 			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
+# 		else
+# 			fakeDirBase="${HOME}"
+# 			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
+# 			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
+# 		fi
+# 	else
+# 		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
+# 			echo "/tmp path detected!"
+# 			export link="/proc/$(cat ~/mainPid)/root${origReq}"
+# 		else
+# 			fakeDirBase="${HOME}"
+# 			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
+# 			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
+# 		fi
+# 	fi
+# else
+# 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
+# 		echo "file:// link detected!"
+# 		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
+# 	else
+# 		export link="/proc/$(cat ~/mainPid)/root${origReq}"
+# 	fi
 fi
 
+if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
+	cp -a "$(echo ${origReq} | sed 's|file://||g')" ~/Shared
+else
+	cp -a ${origReq} ~/Shared
+fi
 
+link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
 
 echo "[Info] received a request: $@, translated to ${link}"
 
-if [[ ${portableUsePortal} = 1 ]]; then
-	/usr/lib/flatpak-xdg-utils/xdg-open $(dirname "${link}")
-	if [[ $? = 0 ]]; then
-		exit 0
-	fi
-fi
+# if [[ ${portableUsePortal} = 1 ]]; then
+# 	/usr/lib/flatpak-xdg-utils/xdg-open $(dirname "${link}")
+# 	if [[ $? = 0 ]]; then
+# 		exit 0
+# 	fi
+# fi
 echo "[Info] Initiating D-Bus call..."
 dbus-send --print-reply --dest=org.freedesktop.FileManager1 \
 	/org/freedesktop/FileManager1 \
