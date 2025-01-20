@@ -836,7 +836,6 @@ function launch() {
 }
 
 function passPid() {
-	#sleep 1.5s
 	while [[ $(systemctl --user show ${unitName} -p ExecMainPID) = "ExecMainPID=0" ]]; do
 		pecho debug "Waiting for application start"
 		sleep 1s
