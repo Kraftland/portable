@@ -252,6 +252,7 @@ function enterSandbox() {
 		-p Environment=GTK_USE_PORTAL=1 \
 		-p Environment=GDK_DEBUG=portals \
 		-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
+		-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
 		-p KeyringMode=private \
@@ -348,6 +349,7 @@ function execApp() {
 	-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 	-p Environment=GTK_USE_PORTAL=1 \
 	-p Environment=GDK_DEBUG=portals \
+	-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 	-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 	-- \
 	bwrap --new-session \
