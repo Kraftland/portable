@@ -836,7 +836,11 @@ function launch() {
 }
 
 function passPid() {
-	sleep 1.5s
+	#sleep 1.5s
+	while [[ $(systemctl --user show ${unitName} -p ExecMainPID) = "ExecMainPID=0" ]]; do
+		pecho debug "Waiting for application start"
+		sleep 1s
+	done
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
