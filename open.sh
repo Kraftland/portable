@@ -18,11 +18,30 @@ if [ ${trashAppUnsafe} ]; then
 	link="$2"
 	xdg-open "$2"
 	exit $?
+elif [[ ${XDG_CURRENT_DESKTOP} = KDE ]]; then
+	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
+		if [[ "$origReq" =~ 'file:///tmp' ]]; then
+			echo "file:// link and /tmp path detected!"
+			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
+		else
+			fakeDirBase="${HOME}"
+			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
+			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
+		fi
+	else
+		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
+			echo "/tmp path detected!"
+			export link="/proc/$(cat ~/mainPid)/root${origReq}"
+		else
+			fakeDirBase="${HOME}"
+			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
+			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
+		fi
+	fi
 else
 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
 		echo "file:// link detected!"
 		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-		echo "[Info] received a file open request: $origReq, translated to ${link}"
 	else
 		export link="/proc/$(cat ~/mainPid)/root${origReq}"
 	fi
