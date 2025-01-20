@@ -1,0 +1,5 @@
+{
+    "child-pid": placeholderChildPid,
+    "mnt-namespace": placeholderMntId,
+    "pid-namespace": placeholderPidId
+}

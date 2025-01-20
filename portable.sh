@@ -585,12 +585,18 @@ function generateFlatpakInfo() {
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	pecho debug "Generating flatpak-info..."
+	instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
 	sed -i "s|placeHolderAppName|${appID}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
-	sed -i "s|placeholderInstanceId|$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')|g" \
+	sed -i "s|placeholderInstanceId|${instanceId}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
 	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
 		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+
+	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	install /usr/lib/portable/bwrapinfo.json \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+
 }
 
 function dbusProxy() {
