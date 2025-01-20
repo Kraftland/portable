@@ -337,7 +337,6 @@ function execApp() {
 	-p ProtectControlGroups=yes \
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
-	-p UnsetEnvironment=XDG_CURRENT_DESKTOP \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
