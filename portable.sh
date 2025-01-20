@@ -263,8 +263,7 @@ function enterSandbox() {
 			-t ${childPid} \
 			--preserve-credentials \
 			$@
-
-	exit 0
+	exit $?
 }
 
 function execApp() {
@@ -543,9 +542,6 @@ function deviceBinding() {
 function warnMulRunning() {
 	source "${_portableConfig}"
 	enterSandbox ${launchTarget}
-	if [[ $? = 0 ]]; then
-		exit 0
-	fi
 	id=$(dbus-send \
 		--bus=unix:path="${busDir}/bus" \
 		--dest=org.kde.StatusNotifierWatcher \
