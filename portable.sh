@@ -403,7 +403,7 @@ function execApp() {
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
 		--symlink /usr/lib /lib \
-		--ro-bind-try /lib64 /lib64 \
+		--symlink /usr/lib /lib64 \
 		--ro-bind-try /bin /bin \
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
