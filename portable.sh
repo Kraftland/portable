@@ -647,12 +647,15 @@ function dbusProxy() {
 			--filter \
 			--own=org.kde.StatusNotifierItem-2-1 \
 			--own=com.belmoussaoui.ashpd.demo \
+			--own=com.steampowered.* \
 			--own="${appID}" \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
 			--see=org.a11y.Bus \
 			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
 			--see=org.freedesktop.portal.Flatpak \
+			--see=org.freedesktop.portal.Request \
+			--call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll \
 			--call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
@@ -686,12 +689,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret.RetrieveSecret \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop \
-			--talk=org.freedesktop.portal.Camera \
-			--talk=org.freedesktop.portal.Camera.* \
 			--talk=org.freedesktop.portal.Documents \
 			--call=org.freedesktop.portal.Documents=* \
-			--talk=org.freedesktop.portal.FileChooser \
-			--call=org.freedesktop.portal.FileChooser=* \
 			--talk=org.freedesktop.portal.FileTransfer \
 			--call=org.freedesktop.portal.FileTransfer=* \
 			--talk=org.freedesktop.portal.FileTransfer.* \
