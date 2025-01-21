@@ -47,6 +47,9 @@ if [ ${trashAppUnsafe} ]; then
 # 	fi
 fi
 
+export origReq="$(realpath ${origReq})"
+export bwBindPar="$(realpath ${bwBindPar})"
+
 if [[ "${origReq}" =~ "${bwBindPar}" ]]; then
 	echo "[Warn] Request is in bwBindPar!"
 	if [[ "$(echo ${origReq} | cut -c '1-8' )" =~ 'file://' ]]; then
@@ -64,9 +67,8 @@ else
 			-sfr \
 			${origReq} ~/Shared
 	fi
+	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
 fi
-
-link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
 
 echo "[Info] received a request: $@, translated to ${link}"
 
