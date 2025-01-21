@@ -628,6 +628,7 @@ function dbusProxy() {
 	systemd-run \
 		--user \
 		-u ${proxyName} \
+		-p ExecStop="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
