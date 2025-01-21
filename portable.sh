@@ -647,6 +647,7 @@ function dbusProxy() {
 			--filter \
 			--own=org.kde.StatusNotifierItem-2-1 \
 			--own=com.belmoussaoui.ashpd.demo \
+			--own="${appID}" \
 			--talk=org.freedesktop.Notifications \
 			--call=org.freedesktop.Notifications.*=* \
 			--see=org.a11y.Bus \
