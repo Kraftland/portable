@@ -231,6 +231,24 @@ function enterSandbox() {
 		pecho crit "Application not running"
 		exit 1
 	fi
+	id=$(dbus-send \
+		--bus=unix:path="${busDir}/bus" \
+		--dest=org.kde.StatusNotifierWatcher \
+		--type=method_call \
+		--print-reply=literal /StatusNotifierWatcher \
+		org.freedesktop.DBus.Properties.Get \
+		string:org.kde.StatusNotifierWatcher \
+		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
+	pecho debug "Unique ID: ${id}"
+	dbus-send \
+		--print-reply \
+		--session \
+		--dest=${id} \
+		--type=method_call \
+		/StatusNotifierItem \
+		org.kde.StatusNotifierItem.Activate \
+		int32:114514 \
+		int32:1919810
 	pecho debug "Starting program in sandbox: $@"
 	getChildPid
 	if [ -z ${childPid} ]; then
@@ -417,7 +435,7 @@ function execApp() {
 		${pipewireBinding} \
 		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 			"${XDG_RUNTIME_DIR}"/doc \
-		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/portable-generated.env \
+		--ro-bind /dev/null \
 			"${XDG_RUNTIME_DIR}"/.flatpak/"${instanceId}-private/run-environ" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
@@ -546,24 +564,6 @@ function deviceBinding() {
 function warnMulRunning() {
 	source "${_portableConfig}"
 	enterSandbox ${launchTarget}
-	id=$(dbus-send \
-		--bus=unix:path="${busDir}/bus" \
-		--dest=org.kde.StatusNotifierWatcher \
-		--type=method_call \
-		--print-reply=literal /StatusNotifierWatcher \
-		org.freedesktop.DBus.Properties.Get \
-		string:org.kde.StatusNotifierWatcher \
-		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	pecho debug "Unique ID: ${id}"
-	dbus-send \
-		--print-reply \
-		--session \
-		--dest=${id} \
-		--type=method_call \
-		/StatusNotifierItem \
-		org.kde.StatusNotifierItem.Activate \
-		int32:114514 \
-		int32:1919810
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
