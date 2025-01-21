@@ -409,6 +409,7 @@ function execApp() {
 		--ro-bind-try /opt /opt \
 		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
 		--bind "${busDirAy}/bus" "${XDG_RUNTIME_DIR}/at-spi/bus" \
+		--dir /run/host \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
