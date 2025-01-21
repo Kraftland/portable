@@ -47,10 +47,23 @@ if [ ${trashAppUnsafe} ]; then
 # 	fi
 fi
 
-if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-	cp -a "$(echo ${origReq} | sed 's|file://||g')" ~/Shared
+if [[ "${origReq}" =~ "${bwBindPar}" ]]; then
+	echo "[Warn] Request is in bwBindPar!"
+	if [[ "$(echo ${origReq} | cut -c '1-8' )" =~ 'file://' ]]; then
+		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
+	else
+		export link="/proc/$(cat ~/mainPid)/root${origReq}"
+	fi
 else
-	cp -a ${origReq} ~/Shared
+	if [[ "$(echo ${origReq} | cut -c '1-8' )" =~ 'file://' ]]; then
+		ln \
+			-sfr \
+			"$(echo ${origReq} | sed 's|file://||g')" ~/Shared
+	else
+		ln \
+			-sfr \
+			${origReq} ~/Shared
+	fi
 fi
 
 link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
