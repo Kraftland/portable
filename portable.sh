@@ -417,6 +417,8 @@ function execApp() {
 		${pipewireBinding} \
 		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 			"${XDG_RUNTIME_DIR}"/doc \
+		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/portable-generated.env \
+			"${XDG_RUNTIME_DIR}"/.flatpak/"${instanceId}-private/run-environ" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"${XDG_DATA_HOME}"/icons \
