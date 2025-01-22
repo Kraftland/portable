@@ -193,6 +193,7 @@ function importEnv() {
 	echo "QT_ENABLE_HIGHDPI_SCALING=1" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	echo "PATH=/sandbox:${PATH}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	echo "DISPLAY=${DISPLAY}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
@@ -272,7 +273,6 @@ function enterSandbox() {
 		-u "${unitName}-subprocess-$(uuidgen)" \
 		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
-		-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
 		-p KeyringMode=private \
@@ -362,7 +362,6 @@ function execApp() {
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
-	-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -474,7 +473,6 @@ function execAppExist() {
 	fi
 	source "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	export XAUTHORITY="${HOME}/.XAuthority"
-	export QT_SCALE_FACTOR="${QT_SCALE_FACTOR}"
 	bwrap --new-session \
 		--unshare-cgroup-try \
 		--unshare-ipc \
@@ -868,7 +866,6 @@ function execAppUnsafe() {
 	systemd-run --user \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
                 -p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
-                -p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
                 -p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 		-u ${unitName} \
 		--tty \
