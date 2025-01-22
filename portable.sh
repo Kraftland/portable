@@ -290,7 +290,7 @@ function enterSandbox() {
 			-t ${childPid} \
 			--preserve-credentials \
 			$@
-	exit $?
+	return $?
 }
 
 function execApp() {
