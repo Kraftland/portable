@@ -208,8 +208,9 @@ function importEnv() {
 	else
 		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
 	fi
-	echo "LD_PRELOAD=${LD_PRELOAD}" \
-		>>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "LD_PRELOAD=${LD_PRELOAD}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'GDK_DEBUG=portals' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'GTK_USE_PORTAL=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 }
 
 getBwRap
@@ -271,9 +272,6 @@ function enterSandbox() {
 		-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
 		-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
 		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
-		-p Environment=GTK_USE_PORTAL=1 \
-		-p Environment=GDK_DEBUG=portals \
-		-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
 		-p KeyringMode=private \
@@ -373,8 +371,6 @@ function execApp() {
 	-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
 	-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
 	-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
-	-p Environment=GTK_USE_PORTAL=1 \
-	-p Environment=GDK_DEBUG=portals \
 	-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 	-- \
 	bwrap --new-session \
@@ -496,8 +492,6 @@ function execAppExist() {
 	export QT_SCALE_FACTOR="${QT_SCALE_FACTOR}"
 	export QT_ENABLE_HIGHDPI_SCALING=1
 	export QT_AUTO_SCREEN_SCALE_FACTOR=1
-	export GTK_USE_PORTAL=1
-	export GDK_DEBUG=portals
 	bwrap --new-session \
 		--unshare-cgroup-try \
 		--unshare-ipc \
@@ -607,8 +601,6 @@ function shareFile() {
 		pecho crit "Sandbox is disabled"
 		exit 1
 	fi
-	export GTK_USE_PORTAL=1
-	export GDK_DEBUG=portals
 	fileList=$(zenity --file-selection --multiple | tail -n 1)
 	IFS='|' read -r -a filePaths <<< "${fileList}"
 	for filePath in "${filePaths[@]}"; do
