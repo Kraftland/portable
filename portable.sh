@@ -180,7 +180,20 @@ function inputMethod() {
 }
 
 function importEnv() {
+	inputMethod
+	genXAuth
 	cat "${_portableConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "LD_PRELOAD=${LD_PRELOAD}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'GDK_DEBUG=portals' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'GTK_USE_PORTAL=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'QT_AUTO_SCREEN_SCALE_FACTOR=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "GTK_IM_MODULE=${GTK_IM_MODULE}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "QT_IM_MODULE=${QT_IM_MODULE}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "QT_ENABLE_HIGHDPI_SCALING=1" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "PATH=/sandbox:${PATH}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "DISPLAY=${DISPLAY}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
@@ -209,8 +222,6 @@ function importEnv() {
 		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
 	fi
 }
-
-getBwRap
 
 function getChildPid() {
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
@@ -261,18 +272,7 @@ function enterSandbox() {
 	systemd-run --tty \
 		-u "${unitName}-subprocess-$(uuidgen)" \
 		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
-		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
-		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
-		-p Environment=PATH=/sandbox:"${PATH}" \
 		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
-		-p Environment=DISPLAY="${DISPLAY}" \
-		-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
-		-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
-		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
-		-p Environment=GTK_USE_PORTAL=1 \
-		-p Environment=GDK_DEBUG=portals \
-		-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
-		-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
 		-p KeyringMode=private \
@@ -307,8 +307,6 @@ function execApp() {
 	deviceBinding
 	importEnv
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
-	pecho debug "GTK_IM_MODULE is ${GTK_IM_MODULE}"
-	pecho debug "QT_IM_MODULE is ${QT_IM_MODULE}"
 	if [ ! ${bwBindPar} ]; then
 		bwBindPar="/$(uuidgen)"
 	else
@@ -333,8 +331,6 @@ function execApp() {
 	-p ManagedOOMMemoryPressure=kill \
 	-p IPAccounting=yes \
 	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
-	-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
-	-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
 	-p SystemCallFilter=~@clock \
 	-p SystemCallFilter=~@cpu-emulation \
 	-p SystemCallFilter=~@debug \
@@ -365,17 +361,7 @@ function execApp() {
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
-	-p BindReadOnlyPaths=-/run/systemd/resolve/stub-resolv.conf \
-	-p Environment=PATH=/sandbox:"${PATH}" \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
-	-p Environment=DISPLAY="${DISPLAY}" \
-	-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
-	-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
-	-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
-	-p Environment=GTK_USE_PORTAL=1 \
-	-p Environment=GDK_DEBUG=portals \
-	-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
-	-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -474,8 +460,13 @@ function execApp() {
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			${launchTarget}
+}
 
-
+function execAppExist() {
+	export sdOption="-P"
+	export unitName="${unitName}-subprocess-$(uuidgen)"
+	execApp
+	return $?
 }
 
 function shareFile() {
@@ -487,8 +478,6 @@ function shareFile() {
 		pecho crit "Sandbox is disabled"
 		exit 1
 	fi
-	export GTK_USE_PORTAL=1
-	export GDK_DEBUG=portals
 	fileList=$(zenity --file-selection --multiple | tail -n 1)
 	IFS='|' read -r -a filePaths <<< "${fileList}"
 	for filePath in "${filePaths[@]}"; do
@@ -571,7 +560,7 @@ function deviceBinding() {
 
 function warnMulRunning() {
 	source "${_portableConfig}"
-	enterSandbox ${launchTarget}
+	execAppExist
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
@@ -773,11 +762,8 @@ function execAppUnsafe() {
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
-		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
-		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
                 -p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
-                -p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
                 -p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 		-u ${unitName} \
 		--tty \
@@ -822,8 +808,6 @@ function questionFirstLaunch() {
 }
 
 function launch() {
-	genXAuth
-	inputMethod
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed ${unitName}.service
