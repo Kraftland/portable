@@ -244,24 +244,6 @@ function enterSandbox() {
 		pecho crit "Application not running"
 		exit 1
 	fi
-	id=$(dbus-send \
-		--bus=unix:path="${busDir}/bus" \
-		--dest=org.kde.StatusNotifierWatcher \
-		--type=method_call \
-		--print-reply=literal /StatusNotifierWatcher \
-		org.freedesktop.DBus.Properties.Get \
-		string:org.kde.StatusNotifierWatcher \
-		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	pecho debug "Unique ID: ${id}"
-	dbus-send \
-		--print-reply \
-		--session \
-		--dest=${id} \
-		--type=method_call \
-		/StatusNotifierItem \
-		org.kde.StatusNotifierItem.Activate \
-		int32:114514 \
-		int32:1919810
 	pecho debug "Starting program in sandbox: $@"
 	getChildPid
 	if [ -z ${childPid} ]; then
@@ -466,7 +448,9 @@ function execAppExist() {
 	export sdOption="-P"
 	export unitName="${unitName}-subprocess-$(uuidgen)"
 	execApp
-	return $?
+	status=$?
+	export unitName="$@"
+	return ${status}
 }
 
 function shareFile() {
@@ -559,8 +543,29 @@ function deviceBinding() {
 }
 
 function warnMulRunning() {
+	id=$(dbus-send \
+		--bus=unix:path="${busDir}/bus" \
+		--dest=org.kde.StatusNotifierWatcher \
+		--type=method_call \
+		--print-reply=literal /StatusNotifierWatcher \
+		org.freedesktop.DBus.Properties.Get \
+		string:org.kde.StatusNotifierWatcher \
+		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
+	pecho debug "Unique ID: ${id}"
+	dbus-send \
+		--print-reply \
+		--session \
+		--dest=${id} \
+		--type=method_call \
+		/StatusNotifierItem \
+		org.kde.StatusNotifierItem.Activate \
+		int32:114514 \
+		int32:1919810
+	if [[ $? = 0 ]]; then
+		exit 0
+	fi
 	source "${_portableConfig}"
-	execAppExist
+	execAppExist "${unitName}"
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
