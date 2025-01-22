@@ -210,6 +210,8 @@ function importEnv() {
 	fi
 }
 
+getBwRap
+
 function getChildPid() {
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
 	for childPid in $(pgrep --cgroup "${cGroup}"); do
@@ -277,8 +279,14 @@ function enterSandbox() {
 		--user \
 		-- nsenter \
 			--user \
-			--root \
-			--wd \
+			--user-parent \
+			--preserve-credentials \
+			-t ${childPid} \
+		nsenter \
+			--mount \
+			--uts \
+			--ipc \
+			--user \
 			-t ${childPid} \
 			--preserve-credentials \
 			$@
