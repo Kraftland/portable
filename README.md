@@ -72,7 +72,8 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 ### Debugging
 
 #### Entering sandbox
-Start portable with argument `--actions connect-tty debug-shell`
+
+To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions connect-tty debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
 Optionally enable debugging output using environment variable `PORTABLE_LOGGING=debug`
 
