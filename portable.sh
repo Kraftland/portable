@@ -474,8 +474,129 @@ function execApp() {
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			${launchTarget}
+}
 
-
+function execAppExist() {
+	genXAuth
+	inputMethod
+	waylandDisplay
+	deviceBinding
+	importEnv
+	if [ ! ${bwBindPar} ]; then
+		bwBindPar="/$(uuidgen)"
+	else
+		pecho warn "bwBindPar is ${bwBindPar}"
+	fi
+	source "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	export GTK_IM_MODULE="${GTK_IM_MODULE}"
+	export QT_IM_MODULE="${QT_IM_MODULE}"
+	export PATH=/sandbox:"${PATH}"
+	export XAUTHORITY="${HOME}/.XAuthority"
+	export DISPLAY="${DISPLAY}"
+	export QT_SCALE_FACTOR="${QT_SCALE_FACTOR}"
+	export QT_ENABLE_HIGHDPI_SCALING=1
+	export QT_AUTO_SCREEN_SCALE_FACTOR=1
+	export GTK_USE_PORTAL=1
+	export GDK_DEBUG=portals
+	export LD_PRELOAD="${LD_PRELOAD}"
+	bwrap --new-session \
+		--unshare-cgroup-try \
+		--unshare-ipc \
+		--unshare-uts \
+		--unshare-pid \
+		--unshare-user \
+		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+			/.flatpak-info \
+		--tmpfs /tmp \
+  		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
+    		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
+		--dev /dev \
+		--dev-bind /dev/dri /dev/dri \
+		${bwInputArg} \
+		${bwSwitchableGraphicsArg} \
+		--tmpfs /sys \
+		--bind /sys/module/ /sys/module/ \
+		--ro-bind /sys/dev/char /sys/dev/char \
+		--ro-bind /sys/devices /sys/devices \
+		--tmpfs /sys/devices/virtual/dmi \
+		--dir /sandbox \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/chromium \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/firefox \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/dde-file-manager \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/xdg-open \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/open \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/nautilus \
+		--ro-bind /usr/lib/portable/open \
+			/sandbox/dolphin \
+		--ro-bind /usr/lib/portable/mimeapps.list \
+			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
+		--proc /proc \
+		--ro-bind-try /dev/null /proc/uptime \
+		--ro-bind-try /dev/null /proc/modules \
+		--ro-bind-try /dev/null /proc/cmdline \
+		--ro-bind-try /dev/null /proc/diskstats \
+		--ro-bind-try /dev/null /proc/devices \
+		--ro-bind-try /dev/null /proc/config.gz \
+		--ro-bind-try /dev/null /proc/version \
+		--tmpfs /proc/1 \
+		--bind-try /dev/null /proc/meminfo \
+		--bind-try /dev/null /proc/cpuinfo \
+		--bind /usr /usr \
+		--tmpfs /usr/share/applications \
+		--ro-bind /etc /etc \
+		--symlink /usr/lib /lib \
+		--symlink /usr/lib /lib64 \
+		--ro-bind-try /bin /bin \
+		--ro-bind-try /sbin /sbin \
+		--ro-bind-try /opt /opt \
+		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
+		--bind "${busDirAy}/bus" "${XDG_RUNTIME_DIR}/at-spi/bus" \
+		--dir /run/host \
+		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+			"${XDG_RUNTIME_DIR}/.flatpak-info" \
+		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
+			"${XDG_RUNTIME_DIR}/pulse" \
+		${pipewireBinding} \
+		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
+			"${XDG_RUNTIME_DIR}"/doc \
+		--ro-bind /dev/null \
+			"${XDG_RUNTIME_DIR}"/.flatpak/"${instanceId}-private/run-environ" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
+		--ro-bind-try "${XDG_DATA_HOME}"/icons \
+			"${XDG_DATA_HOME}"/icons \
+		--ro-bind-try "${XDG_CONFIG_HOME}"/gtk-4.0 \
+			"${XDG_CONFIG_HOME}"/gtk-4.0 \
+		--ro-bind-try "${XDG_CONFIG_HOME}"/gtk-3.0 \
+			"${XDG_CONFIG_HOME}"/gtk-3.0 \
+		--ro-bind-try "${wayDisplayBind}" \
+				"${wayDisplayBind}" \
+		--ro-bind /usr/lib/portable/user-dirs.dirs \
+			"${XDG_CONFIG_HOME}"/user-dirs.dirs \
+		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
+			"${XDG_CONFIG_HOME}"/fontconfig \
+		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
+			"${XDG_DATA_HOME}/fonts" \
+		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
+			"/run/systemd/resolve/stub-resolv.conf" \
+		--dir "${XDG_DATA_HOME}/${stateDirectory}/Documents" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
+			"${XDG_DATA_HOME}/${stateDirectory}" \
+		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
+		--ro-bind-try /dev/null \
+			"${XDG_DATA_HOME}/${stateDirectory}"/portable.env \
+		--bind-try "${bwBindPar}" "${bwBindPar}" \
+		${bwCamPar} \
+		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
+		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
+		-- \
+			bash
+		return $?
 }
 
 function shareFile() {
@@ -571,7 +692,7 @@ function deviceBinding() {
 
 function warnMulRunning() {
 	source "${_portableConfig}"
-	enterSandbox ${launchTarget}
+	execAppExist
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
