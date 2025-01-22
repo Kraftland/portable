@@ -713,8 +713,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Print=* \
 			--talk=org.freedesktop.FileManager1 \
 			--call=org.freedesktop.FileManager1=* \
-			--talk=org.kde.StatusNotifierWatcher \
-			--call=org.kde.StatusNotifierWatcher=* \
 			--talk=org.freedesktop.portal.OpenURI \
 			--call=org.freedesktop.portal.OpenURI=* \
 			--talk=org.freedesktop.portal.OpenURI.OpenURI \
