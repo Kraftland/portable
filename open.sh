@@ -28,9 +28,12 @@ else
 	export origReq="$(realpath ${origReq})"
 fi
 
-export bwBindPar="$(realpath ${bwBindPar})"
+if [ ! -z ${bwBindPar} ]; then
+	export bwBindPar="$(realpath ${bwBindPar})"
+	echo "bwBindPar set to ${bwBindPar}"
+fi
 
-if [[ "${origReq}" =~ "${bwBindPar}" ]] && [ ! -z ${bwBindPar} ]; then
+if [[ "${origReq}" =~ "${bwBindPar}" ]]; then
 	echo "[Warn] Request is in bwBindPar!"
 	export link="/proc/$(cat ~/mainPid)/root${origReq}"
 else
