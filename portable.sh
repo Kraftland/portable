@@ -181,6 +181,10 @@ function inputMethod() {
 
 function importEnv() {
 	cat "${_portableConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "LD_PRELOAD=${LD_PRELOAD}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'GDK_DEBUG=portals' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'GTK_USE_PORTAL=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo 'QT_AUTO_SCREEN_SCALE_FACTOR=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
@@ -208,9 +212,6 @@ function importEnv() {
 	else
 		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
 	fi
-	echo "LD_PRELOAD=${LD_PRELOAD}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo 'GDK_DEBUG=portals' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo 'GTK_USE_PORTAL=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 }
 
 getBwRap
@@ -271,7 +272,6 @@ function enterSandbox() {
 		-p Environment=DISPLAY="${DISPLAY}" \
 		-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
 		-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
-		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
 		-p KeyringMode=private \
@@ -370,8 +370,6 @@ function execApp() {
 	-p Environment=DISPLAY="${DISPLAY}" \
 	-p Environment=QT_SCALE_FACTOR="${QT_SCALE_FACTOR}" \
 	-p Environment=QT_ENABLE_HIGHDPI_SCALING=1 \
-	-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
-	-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -491,7 +489,6 @@ function execAppExist() {
 	export DISPLAY="${DISPLAY}"
 	export QT_SCALE_FACTOR="${QT_SCALE_FACTOR}"
 	export QT_ENABLE_HIGHDPI_SCALING=1
-	export QT_AUTO_SCREEN_SCALE_FACTOR=1
 	bwrap --new-session \
 		--unshare-cgroup-try \
 		--unshare-ipc \
