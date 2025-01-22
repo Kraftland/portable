@@ -208,6 +208,8 @@ function importEnv() {
 	else
 		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
 	fi
+	echo "LD_PRELOAD=${LD_PRELOAD}" \
+		>>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 }
 
 getBwRap
@@ -271,7 +273,6 @@ function enterSandbox() {
 		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 		-p Environment=GTK_USE_PORTAL=1 \
 		-p Environment=GDK_DEBUG=portals \
-		-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 		-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
 		-p DevicePolicy=strict \
 		-p NoNewPrivileges=yes \
@@ -375,7 +376,6 @@ function execApp() {
 	-p Environment=GTK_USE_PORTAL=1 \
 	-p Environment=GDK_DEBUG=portals \
 	-p Environment=XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP}" \
-	-p Environment=LD_PRELOAD="${LD_PRELOAD}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -498,7 +498,6 @@ function execAppExist() {
 	export QT_AUTO_SCREEN_SCALE_FACTOR=1
 	export GTK_USE_PORTAL=1
 	export GDK_DEBUG=portals
-	export LD_PRELOAD="${LD_PRELOAD}"
 	bwrap --new-session \
 		--unshare-cgroup-try \
 		--unshare-ipc \
