@@ -45,6 +45,12 @@ Environment variables are read from `XDG_DATA_HOME/stateDirectory/portable.env`
 
 Start portable with environment variable `_portableConfig`, which is pointed to the actual config. It searches absolute path (if exists), `/usr/lib/portable/info/${_portableConfig}/config` and `$(pwd)/${_portableConfig}` respectively. The legacy `_portalConfig` will work for future releases.
 
+- Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
+
+### Launching multiple instances
+
+Portable itself allows multiple instances. It automatically creates an identical sandbox and launches the application. Application itself may or may not support waking up itself.
+
 ## .desktop requirements
 
 The name of your .desktop file should match the appID, like `top.kimiblock.example.desktop`
@@ -69,13 +75,15 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 `--actions inspect`: Enters the sandbox.
 
+`--actions connect-tty debug-shell`: Start bash in the sandbox instead of the application itself.
+
 ### Debugging
 
 #### Entering sandbox
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions connect-tty debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
-Optionally enable debugging output using environment variable `PORTABLE_LOGGING=debug`
+If the sandbox is already running, then _debug-shell_ is not usable. Instead you may want to use `--actions inspect`. This utilizes nsenter to enter the sandbox's user, mount and other namespaces respectively. This does now exactly mimic a portable sandbox environment, but useful if you want to poke around while the app is running.
 
 # Repository mirror
 This repository is available @ [Codeberg](https://codeberg.org/Kimiblock/portable) due to AUR packaging for Chinese users.
