@@ -33,7 +33,7 @@ if [ ! -z ${bwBindPar} ]; then
 	echo "bwBindPar set to ${bwBindPar}"
 fi
 
-if [[ "${origReq}" =~ "${bwBindPar}" ]]; then
+if [[ "${origReq}" =~ "${bwBindPar}" ]] && [ ! -z ${bwBindPar} ]; then
 	echo "[Warn] Request is in bwBindPar!"
 	export link="/proc/$(cat ~/mainPid)/root${origReq}"
 else
