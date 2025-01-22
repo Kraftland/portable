@@ -664,6 +664,7 @@ function dbusProxy() {
 			--call=org.freedesktop.Notifications.*=* \
 			--see=org.a11y.Bus \
 			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
+			--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus \
 			--see=org.freedesktop.portal.Flatpak \
 			--see=org.freedesktop.portal.Request \
 			--call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping \
