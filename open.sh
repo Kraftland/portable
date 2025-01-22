@@ -7,66 +7,36 @@ if [[ "$@" =~ "https://" ]] || [[ "$@" =~ "http://" ]]; then
 fi
 
 if [[ $1 =~ "/" ]]; then
-	origReq="$1"
+	export origReq="$1"
 fi
 
 if [[ $2 =~ "/" ]]; then
-	origReq="$2"
+	export origReq="$2"
 fi
 
 if [ ${trashAppUnsafe} ]; then
 	link="${origReq}"
 	xdg-open "${origReq}"
 	exit $?
-# elif [[ ${XDG_CURRENT_DESKTOP} = KDE ]]; then
-# 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-# 		if [[ "$origReq" =~ 'file:///tmp' ]]; then
-# 			echo "file:// link and /tmp path detected!"
-# 			export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-# 		else
-# 			fakeDirBase="${HOME}"
-# 			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-# 			export link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g" | sed 's|file://||g')
-# 		fi
-# 	else
-# 		if [[ $(echo "${origReq}" | cut -c '-4') = '/tmp' ]]; then
-# 			echo "/tmp path detected!"
-# 			export link="/proc/$(cat ~/mainPid)/root${origReq}"
-# 		else
-# 			fakeDirBase="${HOME}"
-# 			realDirBase="${XDG_DATA_HOME}/${stateDirectory}"
-# 			link=$(echo "$origReq" | sed "s|${fakeDirBase}|${realDirBase}|g")
-# 		fi
-# 	fi
-# else
-# 	if [[ "$(echo $origReq | cut -c '1-8' )" =~ 'file://' ]]; then
-# 		echo "file:// link detected!"
-# 		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-# 	else
-# 		export link="/proc/$(cat ~/mainPid)/root${origReq}"
-# 	fi
 fi
 
-export origReq="$(realpath ${origReq})"
+if [[ $(echo ${origReq} | cut -c '1-8') =~ 'file://'  ]]; then
+	echo "Received a request with file://: ${origReq}"
+	export origReq="$(echo ${origReq} | sed 's|file:///|/|g')"
+	echo "Decoding path as: ${origReq}"
+else
+	export origReq="$(realpath ${origReq})"
+fi
+
 export bwBindPar="$(realpath ${bwBindPar})"
 
-if [[ "${origReq}" =~ "${bwBindPar}" ]]; then
+if [[ "${origReq}" =~ "${bwBindPar}" ]] && [ ! -z ${bwBindPar} ]; then
 	echo "[Warn] Request is in bwBindPar!"
-	if [[ "$(echo ${origReq} | cut -c '1-8' )" =~ 'file://' ]]; then
-		export link="/proc/$(cat ~/mainPid)/root/$(echo $origReq | sed 's|file:///||g')"
-	else
-		export link="/proc/$(cat ~/mainPid)/root${origReq}"
-	fi
+	export link="/proc/$(cat ~/mainPid)/root${origReq}"
 else
-	if [[ "$(echo ${origReq} | cut -c '1-8' )" =~ 'file://' ]]; then
-		ln \
-			-sfr \
-			"$(echo ${origReq} | sed 's|file://||g')" ~/Shared
-	else
-		ln \
-			-sfr \
-			${origReq} ~/Shared
-	fi
+	ln \
+		-sfr \
+		${origReq} ~/Shared
 	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
 fi
 
