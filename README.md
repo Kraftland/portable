@@ -75,13 +75,13 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 `--actions inspect`: Enters the sandbox.
 
-`--actions connect-tty debug-shell`: Start bash in the sandbox instead of the application itself.
+`--actions debug-shell`: Start bash in the sandbox instead of the application itself.
 
 ### Debugging
 
 #### Entering sandbox
 
-To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions connect-tty debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
+To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
 If the sandbox is already running, then _debug-shell_ is not usable. Instead you may want to use `--actions inspect`. This utilizes nsenter to enter the sandbox's user, mount and other namespaces respectively. This does now exactly mimic a portable sandbox environment, but useful if you want to poke around while the app is running.
 
