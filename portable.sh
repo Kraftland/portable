@@ -245,9 +245,9 @@ function getBwrapPid() {
 		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
 		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
-			pecho debug "Detected bwrap, skipping..."
 			export bwrapPid="${bwPid}"
 			return 0
+		fi
 	done
 }
 
