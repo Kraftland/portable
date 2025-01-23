@@ -839,13 +839,7 @@ function launch() {
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
 	fi
-	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "connect-tty" ]]; then
-		sdOption="-t"
-	elif [[ $@ =~ "--actions" ]] && [[ $@ =~ "pipe-tty" ]]; then
-		sdOption="-P"
-	else
-		sdOption=""
-	fi
+	export sdOption="-P"
 	if [[ ${trashAppUnsafe} = 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
 		execAppUnsafe
