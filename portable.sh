@@ -229,24 +229,13 @@ function getChildPid() {
 		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
 		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
-			pecho debug "Detected bwrap, skipping..."
+			pecho debug "Detected bwrap"
+			export bwrapPid="${childPid}"
 		else
 			if [[ "${cmdlineArg}" =~ "${launchTarget}" ]]; then
 				export childPid=${childPid}
 				return 0
 			fi
-		fi
-	done
-}
-
-function getBwrapPid() {
-	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
-	for bwPid in $(pgrep --cgroup "${cGroup}"); do
-		pecho debug "Trying PID ${childPid}"
-		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
-		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
-			export bwrapPid="${bwPid}"
-			return 0
 		fi
 	done
 }
@@ -859,7 +848,6 @@ function passPid() {
 		sleep 0.1s
 	done
 	getChildPid
-	getBwrapPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
 		"s|placeholderChildPid|${bwrapPid}|g" \
