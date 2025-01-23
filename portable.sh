@@ -311,6 +311,7 @@ function execApp() {
 	--user \
 	${sdOption} \
 	-u "${unitName}" \
+	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p Slice="portable-${unitName}.slice" \
@@ -749,6 +750,7 @@ function dbusProxy() {
 		--user \
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName}-a11y \
+		-p BindsTo="${proxyName}.service" \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
