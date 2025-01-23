@@ -230,7 +230,6 @@ function getChildPid() {
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
 		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
 			pecho debug "Detected bwrap"
-			export bwrapPid="${childPid}"
 		else
 			if [[ "${cmdlineArg}" =~ "${launchTarget}" ]]; then
 				export childPid=${childPid}
@@ -850,7 +849,7 @@ function passPid() {
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
-		"s|placeholderChildPid|${bwrapPid}|g" \
+		"s|placeholderChildPid|$(systemctl --user show ${proxyName} -p MainPID | cut -c '9-')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 
 	sed -i \
