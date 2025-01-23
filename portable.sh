@@ -239,6 +239,18 @@ function getChildPid() {
 	done
 }
 
+function getBwrapPid() {
+	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
+	for bwPid in $(pgrep --cgroup "${cGroup}"); do
+		pecho debug "Trying PID ${childPid}"
+		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
+		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
+			pecho debug "Detected bwrap, skipping..."
+			export bwrapPid="${bwPid}"
+			return 0
+	done
+}
+
 function enterSandbox() {
 	if [ ! $(systemctl --user is-active ${unitName}.service) = active ]; then
 		pecho crit "Application not running"
@@ -851,9 +863,10 @@ function passPid() {
 		sleep 0.1s
 	done
 	getChildPid
+	getBwrapPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
-		"s|placeholderChildPid|${childPid}|g" \
+		"s|placeholderChildPid|${bwrapPid}|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 
 	sed -i \
