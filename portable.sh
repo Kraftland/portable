@@ -252,6 +252,7 @@ function enterSandbox() {
 	fi
 	pecho debug "procps-ng returned child ${childPid}"
 	systemd-run --tty \
+		-p Slice="portable-${unitName}.slice" \
 		-u "${unitName}-subprocess-$(uuidgen)" \
 		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
@@ -300,7 +301,7 @@ function execApp() {
 	-u "${unitName}" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
-	-p Slice=app.slice \
+	-p Slice="portable-${unitName}.slice" \
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
 	-p KillMode=control-group \
@@ -575,7 +576,7 @@ function warnMulRunning() {
 		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
 	fi
 	if [ $? = 0 ]; then
-		systemctl --user stop $@
+		systemctl --user stop "portable-${unitName}.slice"
 	else
 		pecho crit "User denied session termination"
 		exit $?
@@ -632,6 +633,7 @@ function dbusProxy() {
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	systemd-run \
 		--user \
+		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName} \
 		-p ExecStop="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-- bwrap \
@@ -733,6 +735,7 @@ function dbusProxy() {
 	fi
 	systemd-run \
 		--user \
+		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName}-a11y \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
@@ -767,6 +770,7 @@ function execAppUnsafe() {
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
+		-p Slice="portable-${unitName}.slice" \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
                 -p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
                 -p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
@@ -863,7 +867,7 @@ function passPid() {
 }
 
 function stopApp() {
-	systemctl --user stop ${proxyName} ${proxyName}-a11y ${unitName}
+	systemctl --user stop "portable-${unitName}.slice"
 }
 
 function cmdlineDispatcher() {
@@ -887,7 +891,7 @@ function cmdlineDispatcher() {
 }
 
 if [[ $@ = "--actions quit" ]]; then
-	stopApp $@
+	stopApp "portable-${unitName}.slice"
 	exit $?
 fi
 
