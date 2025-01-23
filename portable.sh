@@ -251,8 +251,9 @@ function enterSandbox() {
 		exit 1
 	fi
 	pecho debug "procps-ng returned child ${childPid}"
-	systemd-run --tty \
+	systemd-run -P \
 		-p Slice="portable-${unitName}.slice" \
+		-p BindsTo="${proxyName}.service" \
 		-u "${unitName}-subprocess-$(uuidgen)" \
 		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
 		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
