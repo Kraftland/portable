@@ -639,7 +639,6 @@ function dbusProxy() {
 		-u ${proxyName} \
 		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStopPost="rm -r ${busDir}" \
-		-p ExecStopPost="rm -r ${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
@@ -742,7 +741,7 @@ function dbusProxy() {
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName}-a11y \
 		-p BindsTo="${proxyName}.service" \
-		-p ExecStopPost="rm -r ${busDirAy}/bus" \
+		-p ExecStopPost="rm -r ${busDirAy}" \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
