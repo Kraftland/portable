@@ -844,15 +844,6 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	systemctl \
-		--user \
-		show \
-		${proxyName} \
-		-p MainPID | cut \
-		-c '9-' >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
-	echo "[Unit]" >"${XDG_CONFIG_HOME}/systemd/user/${proxyName}.service.d/portable-post.conf"
-	echo "Requires=${unitName}.service" >>"${XDG_CONFIG_HOME}/systemd/user/${proxyName}.service.d/portable-post.conf"
-	systemctl --user daemon-reload
 }
 
 function stopApp() {
