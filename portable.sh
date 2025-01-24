@@ -278,11 +278,13 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
+	passPid &
 	systemd-run \
 	--user \
 	${sdOption} \
 	-u "${unitName}" \
 	-p BindsTo="${proxyName}.service" \
+	-p ExecStopPost="systemctl --user stop portable-${unitName}.slice" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p Slice="portable-${unitName}.slice" \
@@ -826,7 +828,6 @@ function launch() {
 	else
 		dbusProxy
 		pecho info "Launching ${appID}..."
-		passPid &
 		execApp
 	fi
 }
@@ -848,8 +849,12 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	install "${XDG_DATA_HOME}/${stateDirectory}/mainPid" \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
+	systemctl \
+		--user \
+		show \
+		${proxyName} \
+		-p MainPID | cut \
+		-c '9-' >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
 }
 
 function stopApp() {
