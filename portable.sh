@@ -476,6 +476,10 @@ function shareFile() {
 	exit 0
 }
 
+function addEnv() {
+	echo "$@" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+}
+
 function deviceBinding() {
 	if [[ ${gameMode} = true ]]; then
 		bwSwitchableGraphicsArg=""
@@ -490,10 +494,10 @@ function deviceBinding() {
 				fi
 			done
 			pecho debug "Specifying environment variables for dGPU utilization"
-			echo '__NV_PRIME_RENDER_OFFLOAD=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-			echo '__VK_LAYER_NV_optimus=NVIDIA_only' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-			echo '__GLX_VENDOR_LIBRARY_NAME=nvidia' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-			echo 'VK_LOADER_DRIVERS_SELECT=nvidia_icd.json' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+			addEnv '__NV_PRIME_RENDER_OFFLOAD=1'
+			addEnv '__VK_LAYER_NV_optimus=NVIDIA_only'
+			addEnv '__GLX_VENDOR_LIBRARY_NAME=nvidia'
+			addEnv 'VK_LOADER_DRIVERS_SELECT=nvidia_icd.json'
 		fi
 	else
 		pecho debug "Detecting GPU..."
