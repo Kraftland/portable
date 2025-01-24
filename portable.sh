@@ -288,8 +288,8 @@ function execApp() {
 		pecho info "D-Bus proxy took $(expr ${counter} / 10)s to launch"
 	fi
 	waylandDisplay
-	deviceBinding
 	importEnv
+	deviceBinding
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	if [ ! ${bwBindPar} ]; then
 		bwBindPar="/$(uuidgen)"
