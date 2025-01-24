@@ -620,8 +620,6 @@ function dbusProxy() {
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName} \
 		-p RestartMode=direct \
-		-p Restart=on-failure \
-		-p RestartSec=10s \
 		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStopPost="rm -r ${busDir}" \
 		-- bwrap \
@@ -726,8 +724,6 @@ function dbusProxy() {
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName}-a11y \
 		-p RestartMode=direct \
-		-p Restart=on-failure \
-		-p RestartSec=10s \
 		-p BindsTo="${proxyName}.service" \
 		-p ExecStopPost="rm -r ${busDirAy}" \
 		-- bwrap \
@@ -854,6 +850,9 @@ function passPid() {
 		${proxyName} \
 		-p MainPID | cut \
 		-c '9-' >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
+	echo "[Unit]" >"${XDG_CONFIG_HOME}/systemd/user/${proxyName}.service.d/portable-post.conf"
+	echo "Requires=${unitName}.service" >>"${XDG_CONFIG_HOME}/systemd/user/${proxyName}.service.d/portable-post.conf"
+	systemctl --user daemon-reload
 }
 
 function stopApp() {
