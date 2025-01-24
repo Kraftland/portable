@@ -190,7 +190,7 @@ function importEnv() {
 	else
 		touch "${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
-	if [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/portable.env) ]]; then
+	if [ -s "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		cat "${XDG_DATA_HOME}"/${stateDirectory}/portable.env >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 		return $?
 	else
