@@ -197,14 +197,6 @@ function importEnv() {
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
-	if [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env") =~ QT_SCALE_FACTOR ]]; then
-		pecho info "Imported QT SCREEN SCALE FACTOR!"
-		fileName=$(uuidgen)
-		cat "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
-		>/tmp/portable-${fileName}.tmp
-		source /tmp/portable-${fileName}.tmp
-		rm /tmp/portable-${fileName}.tmp
-	fi
 	PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
 	if [ "${LD_PRELOAD}" = "" ]; then
 		export LD_PRELOAD="$PW_V4L2_LD_PRELOAD"
@@ -278,15 +270,6 @@ function enterSandbox() {
 }
 
 function execApp() {
-	if [ ! -S "${busDir}/bus" ]; then
-		pecho warn "Waiting for D-Bus proxy..."
-		counter=0
-		while [ ! -S "${busDir}/bus" ]; do
-			counter=$(expr ${counter} + 1)
-			sleep 0.1s
-		done
-		pecho info "D-Bus proxy took $(expr ${counter} / 10)s to launch"
-	fi
 	waylandDisplay
 	importEnv
 	deviceBinding
@@ -404,7 +387,7 @@ function execApp() {
 		--ro-bind-try /bin /bin \
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
-		--bind "${busDir}/bus" "${XDG_RUNTIME_DIR}/bus" \
+		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
 		--bind "${busDirAy}/bus" "${XDG_RUNTIME_DIR}/at-spi/bus" \
 		--dir /run/host \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
