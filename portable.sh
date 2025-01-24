@@ -619,6 +619,8 @@ function dbusProxy() {
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName} \
 		-p RestartMode=direct \
+		-p Restart=on-failure \
+		-p RestartSec=10s \
 		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStopPost="rm -r ${busDir}" \
 		-- bwrap \
@@ -723,6 +725,8 @@ function dbusProxy() {
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName}-a11y \
 		-p RestartMode=direct \
+		-p Restart=on-failure \
+		-p RestartSec=10s \
 		-p BindsTo="${proxyName}.service" \
 		-p ExecStopPost="rm -r ${busDirAy}" \
 		-- bwrap \
