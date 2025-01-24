@@ -388,7 +388,7 @@ function execApp() {
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
 		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
-		--bind "${busDirAy}/bus" "${XDG_RUNTIME_DIR}/at-spi/bus" \
+		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
 		--dir /run/host \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
