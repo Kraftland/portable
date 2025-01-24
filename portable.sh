@@ -607,8 +607,6 @@ function dbusProxy() {
 		pecho warn "D-Bus a11y proxy failed last time"
 		systemctl --user reset-failed ${proxyName}-a11y.service
 	fi
-	rm "${busDir}" -r 2>/dev/null
-	rm ${busDirAy} -r 2>/dev/null
 	mkdir "${busDir}" -p
 	mkdir -p "${busDirAy}" -p
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
@@ -620,6 +618,7 @@ function dbusProxy() {
 		--user \
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName} \
+		-p RestartMode=direct \
 		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStopPost="rm -r ${busDir}" \
 		-- bwrap \
@@ -723,6 +722,7 @@ function dbusProxy() {
 		--user \
 		-p Slice="portable-${unitName}.slice" \
 		-u ${proxyName}-a11y \
+		-p RestartMode=direct \
 		-p BindsTo="${proxyName}.service" \
 		-p ExecStopPost="rm -r ${busDirAy}" \
 		-- bwrap \
