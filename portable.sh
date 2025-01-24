@@ -184,16 +184,6 @@ function importEnv() {
 	genXAuth
 	cat "${_portableConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "LD_PRELOAD=${LD_PRELOAD}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo 'GDK_DEBUG=portals' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo 'GTK_USE_PORTAL=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo 'QT_AUTO_SCREEN_SCALE_FACTOR=1' >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "GTK_IM_MODULE=${GTK_IM_MODULE}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "QT_IM_MODULE=${QT_IM_MODULE}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "QT_ENABLE_HIGHDPI_SCALING=1" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "PATH=/sandbox:${PATH}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "DISPLAY=${DISPLAY}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	echo "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	if [ -e "${XDG_DATA_HOME}"/${stateDirectory}/portable.env ]; then
 		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
@@ -221,6 +211,16 @@ function importEnv() {
 	else
 		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
 	fi
+	addEnv "LD_PRELOAD=${LD_PRELOAD}"
+	addEnv 'GDK_DEBUG=portals'
+	addEnv 'GTK_USE_PORTAL=1'
+	addEnv 'QT_AUTO_SCREEN_SCALE_FACTOR=1'
+	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}"
+	addEnv "QT_IM_MODULE=${QT_IM_MODULE}"
+	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
+	addEnv "PATH=/sandbox:${PATH}"
+	addEnv "DISPLAY=${DISPLAY}"
+	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
 }
 
 function getChildPid() {
@@ -621,17 +621,9 @@ function dbusProxy() {
 		pecho warn "D-Bus proxy failed last time"
 		systemctl --user reset-failed ${proxyName}.service
 	fi
-	if [[ $(systemctl --user is-active ${proxyName}.service) = active ]]; then
-		pecho info "Existing D-Bus proxy detected! Terminating..."
-		systemctl --user kill ${proxyName}.service
-	fi
 	if [[ $(systemctl --user is-failed ${proxyName}-a11y.service) = failed ]]; then
 		pecho warn "D-Bus a11y proxy failed last time"
 		systemctl --user reset-failed ${proxyName}-a11y.service
-	fi
-	if [[ $(systemctl --user is-active ${proxyName}-a11y.service) = active ]]; then
-		pecho info "Existing D-Bus a11y proxy detected! Terminating..."
-		systemctl --user kill ${proxyName}-a11y.service
 	fi
 	rm "${busDir}" -r 2>/dev/null
 	rm ${busDirAy} -r 2>/dev/null
