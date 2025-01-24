@@ -284,7 +284,6 @@ function execApp() {
 	${sdOption} \
 	-u "${unitName}" \
 	-p BindsTo="${proxyName}.service" \
-	-p ExecStopPost="systemctl --user stop portable-${unitName}.slice" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p Slice="portable-${unitName}.slice" \
