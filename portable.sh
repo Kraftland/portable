@@ -196,12 +196,12 @@ function importEnv() {
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
-	PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
-	if [ "${LD_PRELOAD}" = "" ]; then
-		export LD_PRELOAD="$PW_V4L2_LD_PRELOAD"
-	else
-		export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
-	fi
+	#PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
+	#if [ "${LD_PRELOAD}" = "" ]; then
+	#	export LD_PRELOAD="$PW_V4L2_LD_PRELOAD"
+	#else
+	#	export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
+	#fi
 	addEnv "LD_PRELOAD=${LD_PRELOAD}"
 	addEnv 'GDK_DEBUG=portals'
 	addEnv 'GTK_USE_PORTAL=1'
