@@ -212,6 +212,8 @@ function importEnv() {
 	addEnv "PATH=/sandbox:${PATH}"
 	addEnv "DISPLAY=${DISPLAY}"
 	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
+	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
+	echo "source ~/portable-generated.env" >"${XDG_DATA_HOME}"/${stateDirectory}/.bashrc
 }
 
 function getChildPid() {
