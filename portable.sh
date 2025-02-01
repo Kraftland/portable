@@ -379,7 +379,6 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/config.gz \
 		--ro-bind-try /dev/null /proc/version \
 		--tmpfs /proc/1 \
-		--bind-try /dev/null /proc/meminfo \
 		--bind-try /dev/null /proc/cpuinfo \
 		--bind /usr /usr \
 		--tmpfs /usr/share/applications \
