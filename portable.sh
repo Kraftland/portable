@@ -624,6 +624,7 @@ function dbusProxy() {
 		-p RestartMode=direct \
 		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStopPost="rm -r ${busDir}" \
+		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
