@@ -621,8 +621,8 @@ function dbusProxy() {
 		-p Slice="portable-${friendlyName}.slice" \
 		-u ${proxyName} \
 		-p RestartMode=direct \
-		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
-		-p ExecStopPost="rm -r ${busDir}" \
+		-p ExecStop="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
+		-p ExecStop="rm -r ${busDir}" \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
@@ -727,7 +727,7 @@ function dbusProxy() {
 		-u ${proxyName}-a11y \
 		-p RestartMode=direct \
 		-p BindsTo="${proxyName}.service" \
-		-p ExecStopPost="rm -r ${busDirAy}" \
+		-p ExecStop="rm -r ${busDirAy}" \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
