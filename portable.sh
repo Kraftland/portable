@@ -429,6 +429,7 @@ function execApp() {
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			${launchTarget}
+	stopApp
 }
 
 function execAppExist() {
@@ -571,7 +572,7 @@ function warnMulRunning() {
 		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
 	fi
 	if [ $? = 0 ]; then
-		systemctl --user stop "portable-${friendlyName}.slice"
+		stopApp
 	else
 		pecho crit "User denied session termination"
 		exit $?
@@ -849,6 +850,8 @@ function passPid() {
 }
 
 function stopApp() {
+	systemctl --user stop "${friendlyName}-dbus"
+	systemctl --user stop "${friendlyName}-dbus-a11y"
 	systemctl --user stop "portable-${friendlyName}.slice"
 }
 
