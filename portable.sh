@@ -245,7 +245,7 @@ function enterSandbox() {
 	fi
 	pecho debug "procps-ng returned child ${childPid}"
 	systemd-run -P \
-		-p Slice="portable-${unitName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-p BindsTo="${proxyName}.service" \
 		-u "${unitName}-subprocess-$(uuidgen)" \
 		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
@@ -288,7 +288,7 @@ function execApp() {
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
-	-p Slice="portable-${unitName}.slice" \
+	-p Slice="portable-${friendlyName}.slice" \
 	-p ExitType=cgroup \
 	-p OOMPolicy=stop \
 	-p KillMode=control-group \
@@ -571,7 +571,7 @@ function warnMulRunning() {
 		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
 	fi
 	if [ $? = 0 ]; then
-		systemctl --user stop "portable-${unitName}.slice"
+		systemctl --user stop "portable-${friendlyName}.slice"
 	else
 		pecho crit "User denied session termination"
 		exit $?
@@ -618,7 +618,7 @@ function dbusProxy() {
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	systemd-run \
 		--user \
-		-p Slice="portable-${unitName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-u ${proxyName} \
 		-p RestartMode=direct \
 		-p ExecStopPost="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
@@ -723,7 +723,7 @@ function dbusProxy() {
 	fi
 	systemd-run \
 		--user \
-		-p Slice="portable-${unitName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-u ${proxyName}-a11y \
 		-p RestartMode=direct \
 		-p BindsTo="${proxyName}.service" \
@@ -761,7 +761,7 @@ function execAppUnsafe() {
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
-		-p Slice="portable-${unitName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
                 -p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
                 -p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
@@ -849,7 +849,7 @@ function passPid() {
 }
 
 function stopApp() {
-	systemctl --user stop "portable-${unitName}.slice"
+	systemctl --user stop "portable-${friendlyName}.slice"
 }
 
 function cmdlineDispatcher() {
@@ -873,7 +873,7 @@ function cmdlineDispatcher() {
 }
 
 if [[ $@ = "--actions quit" ]]; then
-	stopApp "portable-${unitName}.slice"
+	stopApp "portable-${friendlyName}.slice"
 	exit $?
 fi
 
