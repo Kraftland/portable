@@ -280,6 +280,16 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
+	if [ ! -S "${XDG_RUNTIME_DIR}"/app/"${appID}"/bus ]; then
+		_ready=0
+		pecho info "Waiting for D-Bus proxy"
+		while [ ${ready} = 0 ]; do
+			sleep 0.1s
+			if [ -S "${XDG_RUNTIME_DIR}"/app/"${appID}"/bus ]; then
+				export ready=1
+			fi
+		done
+	fi
 	passPid &
 	systemd-run \
 	--user \
@@ -400,6 +410,8 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}"/doc \
 		--ro-bind /dev/null \
 			"${XDG_RUNTIME_DIR}"/.flatpak/"${instanceId}-private/run-environ" \
+		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
+			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"${XDG_DATA_HOME}"/icons \
@@ -428,7 +440,7 @@ function execApp() {
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
-			${launchTarget}
+			/usr/bin/bash -c "sleep 0.1s && ${launchTarget}"
 	stopApp
 }
 
@@ -833,7 +845,7 @@ function launch() {
 function passPid() {
 	pecho debug "Waiting for application start"
 	while [[ $(systemctl --user show ${unitName} -p ExecMainPID) = "ExecMainPID=0" ]]; do
-		sleep 0.1s
+		sleep 0.01s
 	done
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
