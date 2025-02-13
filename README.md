@@ -38,6 +38,7 @@ install -Dm755 user-dirs.dirs /usr/lib/portable/user-dirs.dirs
 install -Dm755 mimeapps.list /usr/lib/portable/mimeapps.list
 install -Dm755 flatpak-info /usr/lib/portable/flatpak-info
 install -Dm755 bwrapinfo.json /usr/lib/portable/bwrapinfo.json
+install -Dm755 portable-helper.sh /usr/lib/portable/helper
 ```
 
 ## Configurations

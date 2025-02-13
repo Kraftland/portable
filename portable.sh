@@ -221,13 +221,10 @@ function getChildPid() {
 	for childPid in $(pgrep --cgroup "${cGroup}"); do
 		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
-		if [[ ${cmdlineArg} =~ '/usr/bin/bwrap' ]]; then
+		if [[ ${cmdlineArg} =~ '/usr/lib/portable/helper' ]]; then
 			pecho debug "Detected bwrap"
-		else
-			if [[ "${cmdlineArg}" =~ "${launchTarget}" ]]; then
-				export childPid=${childPid}
-				return 0
-			fi
+			export childPid=${childPid}
+			return 0
 		fi
 	done
 }
@@ -279,16 +276,6 @@ function execApp() {
 		bwBindPar="/$(uuidgen)"
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
-	fi
-	if [ ! -S "${XDG_RUNTIME_DIR}"/app/"${appID}"/bus ]; then
-		_ready=0
-		pecho info "Waiting for D-Bus proxy"
-		while [ ${ready} = 0 ]; do
-			sleep 0.1s
-			if [ -S "${XDG_RUNTIME_DIR}"/app/"${appID}"/bus ]; then
-				export ready=1
-			fi
-		done
 	fi
 	passPid &
 	systemd-run \
@@ -342,6 +329,7 @@ function execApp() {
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
+	-p Environment=instanceId="${instanceId}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -440,7 +428,7 @@ function execApp() {
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
-			/usr/bin/bash -c "sleep 0.1s && ${launchTarget}"
+			/usr/bin/bash -c "sleep 0.01s && ${launchTarget}"
 	stopApp
 }
 
@@ -609,6 +597,7 @@ function generateFlatpakInfo() {
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	install "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
+	pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 
 }
 
