@@ -78,12 +78,15 @@ function manageDirs() {
 }
 
 function genXAuth() {
+	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	if [ ${waylandOnly} = "true" ]; then
+		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+		return $?
+	elif [ ${waylandOnly} = "adaptive" ] && [ ${XDG_SESSION_TYPE} = "wayland" ]; then
 		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 		return $?
 	fi
 	pecho debug "Processing X Server security restriction..."
-	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	pecho debug "Detecting display as ${DISPLAY}"
 	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix: " ]]; then
@@ -145,7 +148,11 @@ function createWrapIfNotExist() {
 }
 
 function inputMethod() {
-	if [[ ${waylandOnly} = true ]]; then
+	if [ ${waylandOnly} = true ]; then
+		export QT_IM_MODULE=wayland
+		export GTK_IM_MODULE=wayland
+		IBUS_USE_PORTAL=1
+	elif [ ${waylandOnly} = "adaptive" ] && [ ${XDG_SESSION_TYPE} = "wayland" ]; then
 		export QT_IM_MODULE=wayland
 		export GTK_IM_MODULE=wayland
 		IBUS_USE_PORTAL=1
