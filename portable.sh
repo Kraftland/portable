@@ -839,10 +839,12 @@ function launch() {
 }
 
 function passPid() {
+	if [ -f "${busDir}/startSignal" ]; then
+		rm "${busDir}/startSignal" 2>/dev/null
+	fi
+	touch "${busDir}/startSignal"
 	pecho debug "Waiting for application start"
-	while [[ $(systemctl --user show ${unitName} -p ExecMainPID) = "ExecMainPID=0" ]]; do
-		sleep 0.01s
-	done
+	inotifywait "${busDir}/startSignal"
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
