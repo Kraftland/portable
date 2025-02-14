@@ -229,7 +229,7 @@ function getChildPid() {
 		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
 		if [[ ${cmdlineArg} =~ '/usr/lib/portable/helper' ]]; then
-			pecho debug "Detected bwrap"
+			pecho debug "Detected helper"
 			export childPid=${childPid}
 			return 0
 		fi
@@ -284,6 +284,7 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
+	rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 	passPid &
 	systemd-run \
 	--user \
@@ -337,6 +338,7 @@ function execApp() {
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=instanceId="${instanceId}" \
+	-p Environment=busDir=${busDir} \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -435,7 +437,7 @@ function execApp() {
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
-			/usr/bin/bash -c "sleep 0.01s && ${launchTarget}"
+			/usr/lib/portable/helper ${launchTarget}
 	stopApp
 }
 
@@ -839,18 +841,19 @@ function launch() {
 }
 
 function passPid() {
-	if [ -f "${busDir}/startSignal" ]; then
-		rm "${busDir}/startSignal" 2>/dev/null
-	fi
-	touch "${busDir}/startSignal"
 	pecho debug "Waiting for application start"
-	inotifywait\
-		--quiet \
-		"${busDir}/startSignal"
+	_started=0
+	while [ "${_started}" = 0 ]; do
+		sleep 0.05s
+		if [ -f "${XDG_DATA_HOME}/${stateDirectory}/startSignal" ]; then
+			pecho debug "Getting PID..."
+			_started=1
+		fi
+	done
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
-		"s|placeholderChildPid|$(systemctl --user show ${proxyName} -p MainPID | cut -c '9-')|g" \
+		"s|placeholderChildPid|${childPid}|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 
 	sed -i \
