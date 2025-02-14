@@ -852,6 +852,7 @@ function passPid() {
 	done
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
+	echo "${childPid}" >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
