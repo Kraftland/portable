@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 function waitForStart() {
-	touch ~/startSignal
+	echo 1 >~/startSignal
 	inotifywait \
 		-e modify \
 		--quiet \
@@ -11,3 +11,5 @@ function waitForStart() {
 waitForStart
 
 $@
+
+rm ~/startSignal

@@ -851,14 +851,10 @@ function launch() {
 
 function passPid() {
 	pecho debug "Waiting for application start"
-	_started=0
-	while [ "${_started}" = 0 ]; do
-		sleep 0.05s
-		if [ -f "${XDG_DATA_HOME}/${stateDirectory}/startSignal" ]; then
-			pecho debug "Getting PID..."
-			_started=1
-		fi
-	done
+	inotifywait \
+		-e modify \
+		--quiet \
+		"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	echo "${childPid}" >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
