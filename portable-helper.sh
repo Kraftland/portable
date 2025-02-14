@@ -4,7 +4,7 @@ function waitForStart() {
 	touch ~/startSignal
 	while true; do
 		sleep 0.05s
-		grep --silent placeholderPidId "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+		grep --silent placeholderPidId "${XDG_RUNTIME_DIR}/.flatpak/*/bwrapinfo.json"
 		if [ $? = 1 ]; then
 			echo "Starting Application..."
 			return 0
