@@ -844,7 +844,9 @@ function passPid() {
 	fi
 	touch "${busDir}/startSignal"
 	pecho debug "Waiting for application start"
-	inotifywait "${busDir}/startSignal"
+	inotifywait\
+		--quiet \
+		"${busDir}/startSignal"
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
