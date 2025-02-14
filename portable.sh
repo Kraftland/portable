@@ -229,9 +229,13 @@ function getChildPid() {
 		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
 		if [[ ${cmdlineArg} =~ '/usr/lib/portable/helper' ]]; then
-			pecho debug "Detected helper"
-			export childPid=${childPid}
-			return 0
+			if [[ $(echo "${cmdlineArg}" | cut -c '-14') =~ "bwrap" ]]; then
+				pecho debug "Detected bwrap"
+			else
+				pecho debug "Detected helper"
+				export childPid=${childPid}
+				return 0
+			fi
 		fi
 	done
 }
@@ -409,6 +413,8 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}"/.flatpak/"${instanceId}-private/run-environ" \
 		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
 			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
+		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
+			"${XDG_RUNTIME_DIR}/flatpak-runtime-directory" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"${XDG_DATA_HOME}"/icons \
@@ -656,6 +662,7 @@ function dbusProxy() {
 			--own=com.steampowered.* \
 			--own="${appID}" \
 			--talk=org.freedesktop.Notifications \
+			--talk=org.kde.StatusNotifierWatcher \
 			--call=org.freedesktop.Notifications.*=* \
 			--see=org.a11y.Bus \
 			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
