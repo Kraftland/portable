@@ -658,6 +658,10 @@ function dbusProxy() {
 			${proxyArg} \
 			--filter \
 			--own=org.kde.StatusNotifierItem-2-1 \
+			--own=org.kde.StatusNotifierItem-3-1 \
+			--own=org.kde.StatusNotifierItem-4-1 \
+			--own=org.kde.StatusNotifierItem-5-1 \
+			--own=org.kde.StatusNotifierItem-6-1 \
 			--own=com.belmoussaoui.ashpd.demo \
 			--own=com.steampowered.* \
 			--own="${appID}" \
@@ -715,8 +719,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Print=* \
 			--talk=org.freedesktop.FileManager1 \
 			--call=org.freedesktop.FileManager1=* \
-			--talk=org.kde.StatusNotifierWatcher \
-			--call=org.kde.StatusNotifierWatcher=* \
 			--talk=org.freedesktop.portal.OpenURI \
 			--call=org.freedesktop.portal.OpenURI=* \
 			--talk=org.freedesktop.portal.OpenURI.OpenURI \
@@ -870,6 +872,7 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	echo 2 >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 }
 
 function stopApp() {
