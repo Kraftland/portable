@@ -288,8 +288,8 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
-	rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal"
-	passPid &
+	rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal" 2>/dev/null
+	passPid
 	systemd-run \
 	--user \
 	${sdOption} \
@@ -850,12 +850,8 @@ function launch() {
 }
 
 function passPid() {
-	pecho debug "Waiting for application start"
-	inotifywait \
-		-e modify \
-		--quiet \
-		"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
-	getChildPid
+	#getChildPid
+	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	echo "${childPid}" >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
 	sed -i \
@@ -868,7 +864,7 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	echo 2 >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
+	#echo 2 >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 }
 
 function stopApp() {
