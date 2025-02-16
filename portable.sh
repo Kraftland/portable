@@ -343,6 +343,7 @@ function execApp() {
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir=${busDir} \
+	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
