@@ -283,7 +283,7 @@ function execApp() {
 	importEnv
 	deviceBinding
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
-	if [ ! -f ${bwBindPar} ]; then
+	if [ -z ${bwBindPar} ] && [ -f ${bwBindPar} ]; then
 		bwBindPar="/$(uuidgen)"
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
