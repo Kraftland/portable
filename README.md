@@ -29,7 +29,7 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 ## Portable
 
-Install aur/portable-git, aur/portable or install files directly
+Install aur/portable-git, aur/portable or install the following files directly
 
 ```
 install -Dm755 portable.sh /usr/bin/portable
@@ -43,31 +43,20 @@ install -Dm755 portable-helper.sh /usr/lib/portable/helper
 
 ## Configurations
 
+1. Download the config file from [here](https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/config) and modify it.
 
-Preferred location:
+2. Install the config file:
 
-```
+```bash
 # Modify before installing
-install -Dm755 config /usr/lib/portable/info/appID/config
+install -Dm755 config /usr/lib/portable/info/${appID}/config
 ```
 
-## Runtime
+### Modifying the .desktop entry
 
-Environment variables are read from `XDG_DATA_HOME/stateDirectory/portable.env`
+- The file name of your .desktop file **must** match the appID, like `top.kimiblock.example.desktop`
 
-Start portable with environment variable `_portableConfig`, which is pointed to the actual config. It searches absolute path (if exists), `/usr/lib/portable/info/${_portableConfig}/config` and `$(pwd)/${_portableConfig}` respectively. The legacy `_portalConfig` will work for future releases.
-
-- Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
-
-### Launching multiple instances
-
-Portable itself allows multiple instances. It automatically creates an identical sandbox and launches the application. Application itself may or may not support waking up itself.
-
-## .desktop requirements
-
-The name of your .desktop file should match the appID, like `top.kimiblock.example.desktop`
-
-Your .desktop file should contain the following entries:
+- Your .desktop file *should* contain the following entries:
 
 ```
 X-Flatpak-Tags=aTag;
@@ -75,17 +64,33 @@ X-Flatpak=appID;
 X-Flatpak-RenamedFrom=previousName.desktop;
 ```
 
-### Arguments
+## Environment Variables
+
+Environment variables are sourced from `XDG_DATA_HOME/stateDirectory/portable.env`.
+
+You can also specify environment variables in the config file.
+
+## Starting portable
+
+Start portable with environment variable `_portableConfig`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${_portableConfig}`. It searches for each of them respectively.
+
+- Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
+
+### Launching multiple instances
+
+Portable itself allows multiple instances. It automatically creates an identical sandbox and launches the application. Application itself may or may not support waking up itself. It is advised to set `SingleMainWindow=true` for applications that doesn't have well multi-instance support.
+
+### CLI arguments
 
 `--actions f5aaebc6-0014-4d30-beba-72bce57e0650`: Toggle Sandbox, requires user confirmation.
 
 `--actions opendir`: Open the sandbox's home directory.
 
-`--actions share-files`: Choose multiple files to share with the sandbox. The file will be temporarily stored in `XDG_DATA_HOME/stateDirectory/Shared`, which is purged each launch.
+`--actions share-files`: Choose multiple files to share with the sandbox. The file will be temporarily stored in `XDG_DATA_HOME/stateDirectory/Shared`, which will be purged each launch.
 
 `--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
 
-`--actions debug-shell`: Start bash in the sandbox instead of the application itself.
+`--actions debug-shell`: Start a debugging bash shell inside the sandbox. This works regardless whether the app is running.
 
 ### Debugging
 
