@@ -97,3 +97,4 @@ Portable itself allows multiple instances. It automatically creates an identical
 #### Entering sandbox
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
+
