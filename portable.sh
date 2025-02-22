@@ -883,10 +883,6 @@ function cmdlineDispatcher() {
 		/usr/lib/flatpak-xdg-utils/xdg-open "${XDG_DATA_HOME}"/${stateDirectory}
 		exit $?
 	fi
-	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "inspect" ]]; then
-		enterSandbox /usr/bin/bash
-		exit $?
-	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "share-files" ]]; then
 		shareFile
 	fi
