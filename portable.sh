@@ -240,44 +240,6 @@ function getChildPid() {
 	done
 }
 
-function enterSandbox() {
-	if [ ! $(systemctl --user is-active ${unitName}.service) = active ]; then
-		pecho crit "Application not running"
-		exit 1
-	fi
-	pecho debug "Starting program in sandbox: $@"
-	getChildPid
-	if [ -z ${childPid} ]; then
-		pecho crit "Failed to determine child PID"
-		exit 1
-	fi
-	pecho debug "procps-ng returned child ${childPid}"
-	systemd-run -P \
-		-p Slice="portable-${friendlyName}.slice" \
-		-p BindsTo="${proxyName}.service" \
-		-u "${unitName}-subprocess-$(uuidgen)" \
-		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
-		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
-		-p DevicePolicy=strict \
-		-p NoNewPrivileges=yes \
-		-p KeyringMode=private \
-		--user \
-		-- nsenter \
-			--user \
-			--user-parent \
-			--preserve-credentials \
-			-t ${childPid} \
-		nsenter \
-			--mount \
-			--uts \
-			--ipc \
-			--user \
-			-t ${childPid} \
-			--preserve-credentials \
-			$@
-	return $?
-}
-
 function execApp() {
 	waylandDisplay
 	importEnv
