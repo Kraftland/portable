@@ -250,7 +250,6 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
-	#rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal" 2>/dev/null
 	passPid
 	systemd-run \
 	--user \
@@ -411,9 +410,9 @@ function execAppExist() {
 	export unitName="${unitName}-subprocess-$(uuidgen)"
 	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
 	execApp
-	status=$?
-	export unitName="$@"
-	return ${status}
+	if [[ $? = 0 ]]; then
+		exit 0
+	fi
 }
 
 function shareFile() {
@@ -537,10 +536,10 @@ function warnMulRunning() {
 		exit 0
 	fi
 	source "${_portableConfig}"
-	execAppExist "${unitName}"
-	if [[ $? = 0 ]]; then
-		exit 0
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
+		export launchTarget="/usr/bin/bash"
 	fi
+	execAppExist "${unitName}"
 	if [[ "${LANG}" =~ 'zh_CN' ]]; then
 		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
 	else
@@ -788,17 +787,17 @@ function questionFirstLaunch() {
 }
 
 function launch() {
+	export sdOption="-P"
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed ${unitName}.service
 	fi
 	if [[ $(systemctl --user is-active ${unitName}.service) = active ]]; then
-		warnMulRunning ${unitName}.service
+		warnMulRunning $@
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
 	fi
-	export sdOption="-P"
 	if [[ ${trashAppUnsafe} = 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
 		execAppUnsafe
