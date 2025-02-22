@@ -447,8 +447,8 @@ function execApp() {
 }
 
 function execAppExist() {
-	export sdOption="-P"
 	export unitName="${unitName}-subprocess-$(uuidgen)"
+	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
 	execApp
 	status=$?
 	export unitName="$@"
@@ -849,7 +849,6 @@ function launch() {
 }
 
 function passPid() {
-	#getChildPid
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	echo "${childPid}" >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
@@ -863,7 +862,6 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	#echo 2 >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 }
 
 function stopApp() {
