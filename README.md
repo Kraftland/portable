@@ -85,8 +85,6 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 `--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
 
-`--actions inspect`: Enters the sandbox.
-
 `--actions debug-shell`: Start bash in the sandbox instead of the application itself.
 
 ### Debugging
@@ -95,7 +93,7 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
-If the sandbox is already running, then _debug-shell_ is not usable. Instead you may want to use `--actions inspect`. This utilizes nsenter to enter the sandbox's user, mount and other namespaces respectively. This does now exactly mimic a portable sandbox environment, but useful if you want to poke around while the app is running.
+If the sandbox is already running, then _debug-shell_ is not usable.
 
 # Repository mirror
 This repository is available @ [Codeberg](https://codeberg.org/Kimiblock/portable) due to AUR packaging for Chinese users.

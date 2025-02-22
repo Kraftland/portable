@@ -240,44 +240,6 @@ function getChildPid() {
 	done
 }
 
-function enterSandbox() {
-	if [ ! $(systemctl --user is-active ${unitName}.service) = active ]; then
-		pecho crit "Application not running"
-		exit 1
-	fi
-	pecho debug "Starting program in sandbox: $@"
-	getChildPid
-	if [ -z ${childPid} ]; then
-		pecho crit "Failed to determine child PID"
-		exit 1
-	fi
-	pecho debug "procps-ng returned child ${childPid}"
-	systemd-run -P \
-		-p Slice="portable-${friendlyName}.slice" \
-		-p BindsTo="${proxyName}.service" \
-		-u "${unitName}-subprocess-$(uuidgen)" \
-		-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
-		-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
-		-p DevicePolicy=strict \
-		-p NoNewPrivileges=yes \
-		-p KeyringMode=private \
-		--user \
-		-- nsenter \
-			--user \
-			--user-parent \
-			--preserve-credentials \
-			-t ${childPid} \
-		nsenter \
-			--mount \
-			--uts \
-			--ipc \
-			--user \
-			-t ${childPid} \
-			--preserve-credentials \
-			$@
-	return $?
-}
-
 function execApp() {
 	waylandDisplay
 	importEnv
@@ -288,7 +250,6 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
-	#rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal" 2>/dev/null
 	passPid
 	systemd-run \
 	--user \
@@ -449,9 +410,9 @@ function execAppExist() {
 	export unitName="${unitName}-subprocess-$(uuidgen)"
 	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
 	execApp
-	status=$?
-	export unitName="$@"
-	return ${status}
+	if [[ $? = 0 ]]; then
+		exit 0
+	fi
 }
 
 function shareFile() {
@@ -575,10 +536,10 @@ function warnMulRunning() {
 		exit 0
 	fi
 	source "${_portableConfig}"
-	execAppExist "${unitName}"
-	if [[ $? = 0 ]]; then
-		exit 0
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
+		export launchTarget="/usr/bin/bash"
 	fi
+	execAppExist "${unitName}"
 	if [[ "${LANG}" =~ 'zh_CN' ]]; then
 		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
 	else
@@ -826,17 +787,17 @@ function questionFirstLaunch() {
 }
 
 function launch() {
+	export sdOption="-P"
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed ${unitName}.service
 	fi
 	if [[ $(systemctl --user is-active ${unitName}.service) = active ]]; then
-		warnMulRunning ${unitName}.service
+		warnMulRunning $@
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
 	fi
-	export sdOption="-P"
 	if [[ ${trashAppUnsafe} = 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
 		execAppUnsafe
