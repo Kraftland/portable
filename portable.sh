@@ -288,7 +288,7 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
-	rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal" 2>/dev/null
+	#rm "${XDG_DATA_HOME}/${stateDirectory}/startSignal" 2>/dev/null
 	passPid
 	systemd-run \
 	--user \
