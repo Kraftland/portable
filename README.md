@@ -92,8 +92,3 @@ X-Flatpak-RenamedFrom=previousName.desktop;
 #### Entering sandbox
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
-
-If the sandbox is already running, then _debug-shell_ is not usable.
-
-# Repository mirror
-This repository is available @ [Codeberg](https://codeberg.org/Kimiblock/portable) due to AUR packaging for Chinese users.
