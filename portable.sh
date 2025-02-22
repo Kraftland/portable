@@ -443,7 +443,6 @@ function execApp() {
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			/usr/lib/portable/helper ${launchTarget}
-	stopApp
 }
 
 function execAppExist() {
@@ -845,6 +844,7 @@ function launch() {
 		dbusProxy
 		pecho info "Launching ${appID}..."
 		execApp
+		stopApp
 	fi
 }
 
