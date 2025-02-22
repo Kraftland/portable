@@ -472,6 +472,7 @@ function deviceBinding() {
 		elif [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
 			pecho debug "Not using NVIDIA GPU"
 			bwSwitchableGraphicsArg=""
+			addEnv 'VK_LOADER_DRIVERS_DISABLE="nvidia_icd.json"'
 		elif [[ ${videoMod} =~ nvidia ]]; then
 			pecho debug "Using NVIDIA GPU"
 			for _card in $(ls /dev/nvidia*); do
