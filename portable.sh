@@ -385,8 +385,6 @@ function execApp() {
 			"${XDG_CONFIG_HOME}"/gtk-3.0 \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${wayDisplayBind}" \
-		--ro-bind /usr/lib/portable/user-dirs.dirs \
-			"${XDG_CONFIG_HOME}"/user-dirs.dirs \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
 			"${XDG_CONFIG_HOME}"/fontconfig \
 		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
