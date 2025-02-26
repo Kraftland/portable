@@ -98,3 +98,17 @@ Portable itself allows multiple instances. It automatically creates an identical
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
+
+---
+
+# Pools
+
+Pools is a user friendly sandbox generator. To create and enter a user sandbox, simply execute portable-pools with your sandbox name.
+
+Example: Create a test sandbox:
+
+```bash
+portable-pools test
+
+╰─>Portable Sandbox·top.kimiblock.test·🧐⤔
+```
