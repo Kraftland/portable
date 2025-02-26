@@ -1,1 +1,62 @@
 #!/usr/bin/bash
+
+function pecho() {
+	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		echo "[Debug] $2"
+	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]] || [[ ${PORTABLE_LOGGING} = "debug" ]]; then
+		echo "[Info] $2"
+	elif [[ $1 =~ warn ]]; then
+		echo "[Warn] $2"
+	elif [[ $1 =~ crit ]]; then
+		echo "[Critical] $2"
+	fi
+}
+
+function cmdlineDispatcher() {
+	if [ -z "$1" ]; then
+		pecho crit "Usage: portable-pools [Container Name, only ASCII characters without space allowed]"
+	fi
+}
+
+function sourceXDG() {
+	if [[ ! ${XDG_CONFIG_HOME} ]]; then
+		export XDG_CONFIG_HOME="${HOME}"/.config
+		pecho debug "Guessing XDG Config Home @ ${XDG_CONFIG_HOME}"
+	else
+		source "${XDG_CONFIG_HOME}"/user-dirs.dirs
+		pecho debug "XDG Config Home defined @ ${XDG_CONFIG_HOME}"
+	fi
+	if [[ ! ${XDG_DATA_HOME} ]]; then
+		export XDG_DATA_HOME="${HOME}"/.local/share
+	fi
+	export XDG_DOCUMENTS_DIR="$(xdg-user-dir DOCUMENTS)"
+}
+
+function initialStart() {
+	sourceXDG
+	if [ ! -d "${XDG_CONFIG_HOME}"/portable-pools ]
+		pecho info "Welcome to portable-pools"
+		mkdir -p "${XDG_CONFIG_HOME}"/portable-pools
+	fi
+}
+
+function generatePortableInfo() {
+	if [ -f "${XDG_CONFIG_HOME}"/portable-pools/"$1"/config  ]; then
+		pecho debug "Skipping generation"
+		return 0
+	fi
+	pecho debug "Starting generation..."
+	echo '''#!/usr/bin/bash
+appID="top.kimiblock.placeHolder"
+friendlyName="placeHolder"
+stateDirectory="placeHolder_Data"
+launchTarget="/usr/bin/bash"
+waylandOnly="adaptive"
+''' >"${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
+	sed -i "s|placeHolder|$1|g" "${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
+
+}
+
+initialStart $@
+cmdlineDispatcher $@
+generatePortableInfo $@
