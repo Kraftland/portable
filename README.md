@@ -34,7 +34,7 @@ Install aur/portable-git, aur/portable or install the following files directly
 ```
 install -Dm755 portable.sh /usr/bin/portable
 install -Dm755 open.sh /usr/lib/portable/open
-install -Dm755 user-dirs.dirs /usr/lib/portable/user-dirs.dirs
+install -Dm755 portable-pools /usr/bin/portable-pools
 install -Dm755 mimeapps.list /usr/lib/portable/mimeapps.list
 install -Dm755 flatpak-info /usr/lib/portable/flatpak-info
 install -Dm755 bwrapinfo.json /usr/lib/portable/bwrapinfo.json
@@ -98,3 +98,17 @@ Portable itself allows multiple instances. It automatically creates an identical
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
+
+---
+
+# Pools
+
+Pools is a user friendly sandbox generator. To create and enter a user sandbox, simply execute portable-pools with your sandbox name.
+
+Example: Create a test sandbox:
+
+```bash
+portable-pools test
+
+╰─>Portable Sandbox·top.kimiblock.test·🧐⤔
+```
