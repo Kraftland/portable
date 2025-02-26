@@ -10,7 +10,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 - Storage efficient compared to Flatpak: Using host system as the "runtime".
 - Hybrid GPU workarounds are automatically applied to prevent waking up discrete GPUs, often caused by Vulkan and Electron applications.
 
-Portable itself is still in development and have already been applied to [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch), WeChat, Wemeet, Obsidian, QQ and Discord.
+Portable itself is still in development and has already been applied to [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch), WeChat, Wemeet, Prism Launcher, Obsidian, Z-Library, WiliWili, WPS, Genshin, QQ and Discord.
 
 **Running untrusted code is never safe, sandboxing does not change this.**
 
@@ -98,3 +98,17 @@ Portable itself allows multiple instances. It automatically creates an identical
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
+
+---
+
+# Pools
+
+Pools is a user friendly sandbox generator. To create and enter a user sandbox, simply execute portable-pools with your sandbox name.
+
+Example: Create a test sandbox:
+
+```bash
+portable-pools test
+
+╰─>Portable Sandbox·top.kimiblock.test·🧐⤔
+```
