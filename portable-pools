@@ -34,7 +34,7 @@ function sourceXDG() {
 
 function initialStart() {
 	sourceXDG
-	if [ ! -d "${XDG_CONFIG_HOME}"/portable-pools ]
+	if [ ! -d "${XDG_CONFIG_HOME}"/portable-pools ]; then
 		pecho info "Welcome to portable-pools"
 		mkdir -p "${XDG_CONFIG_HOME}"/portable-pools
 	fi
@@ -46,6 +46,7 @@ function generatePortableInfo() {
 		return 0
 	fi
 	pecho debug "Starting generation..."
+	mkdir -p "${XDG_CONFIG_HOME}"/portable-pools/"$1"
 	echo '''#!/usr/bin/bash
 appID="top.kimiblock.placeHolder"
 friendlyName="placeHolder"
@@ -58,7 +59,7 @@ waylandOnly="adaptive"
 }
 
 function invokePortable() {
-	_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
+	_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"$1"/config portable
 }
 
 initialStart $@
