@@ -54,9 +54,14 @@ launchTarget="/usr/bin/bash"
 waylandOnly="adaptive"
 ''' >"${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
 	sed -i "s|placeHolder|$1|g" "${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
+	pecho debug "Generation Done!"
+}
 
+function invokePortable() {
+	_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
 }
 
 initialStart $@
 cmdlineDispatcher $@
 generatePortableInfo $@
+invokePortable $@
