@@ -250,6 +250,9 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
+	if [ -f "${XDG_DATA_HOME}"/${stateDirectory}/options/newHome ]; then
+		HOME="${XDG_DATA_HOME}/${stateDirectory}"
+	fi
 	passPid
 	systemd-run \
 	--user \
@@ -303,7 +306,9 @@ function execApp() {
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=instanceId="${instanceId}" \
-	-p Environment=busDir=${busDir} \
+	-p Environment=busDir="${busDir}" \
+	-p Environment=HOME="${HOME}" \
+	-p WorkingDirectory="${HOME}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -750,6 +755,11 @@ function execAppUnsafe() {
 }
 
 function questionFirstLaunch() {
+	if [ ! -d "${XDG_DATA_HOME}"/${stateDirectory}/options ]; then
+		mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
+		touch "${XDG_DATA_HOME}"/${stateDirectory}/options/newHome
+		pecho debug "Using new home"
+	fi
 	if [ ! -f "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox ]; then
 		if [[ "${LANG}" =~ 'zh_CN' ]]; then
 			/usr/bin/zenity \
