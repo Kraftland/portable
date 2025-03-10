@@ -317,6 +317,7 @@ function execApp() {
   		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
     		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
 		--dev /dev \
+		--mqueue /dev/mqueue \
 		--dev-bind /dev/dri /dev/dri \
 		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
@@ -376,7 +377,6 @@ function execApp() {
 			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
 		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
 			"${XDG_RUNTIME_DIR}/flatpak-runtime-directory" \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"${XDG_DATA_HOME}"/icons \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/gtk-4.0 \
@@ -393,10 +393,9 @@ function execApp() {
 			"/run/systemd/resolve/stub-resolv.conf" \
 		--tmpfs "${HOME}"/options \
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
-		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${XDG_DATA_HOME}/${stateDirectory}" \
+		--symlink "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
 		${bwCamPar} \
-		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
+		--setenv XDG_DOCUMENTS_DIR "${HOME}/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			/usr/lib/portable/helper ${launchTarget}
