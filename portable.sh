@@ -826,8 +826,13 @@ function passPid() {
 
 function stopApp() {
 	systemctl --user stop "${friendlyName}-dbus"
-	systemctl --user stop "${friendlyName}-dbus-a11y"
-	systemctl --user stop "portable-${friendlyName}.slice"
+	systemctl \
+		--user stop \
+		"${friendlyName}-dbus-a11y" \
+		2>/dev/null
+	systemctl \
+		--user stop \
+		"portable-${friendlyName}.slice"
 }
 
 function resetDocuments() {
