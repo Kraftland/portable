@@ -317,6 +317,7 @@ function execApp() {
   		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
     		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
 		--dev /dev \
+		--mqueue /dev/mqueue \
 		--dev-bind /dev/dri /dev/dri \
 		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
