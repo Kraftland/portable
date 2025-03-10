@@ -830,11 +830,15 @@ function stopApp() {
 	systemctl --user stop "portable-${friendlyName}.slice"
 }
 
+function resetDocuments() {
+	rm -r "${XDG_DATA_HOME}"/flatpak/db/documents
+	systemctl --user restart xdg-document-portal.service
+}
+
 function cmdlineDispatcher() {
 	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
 		rm -f \
 			"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
-		rm -r "${XDG_DATA_HOME}"/flatpak/db
 		questionFirstLaunch
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "opendir" ]]; then
@@ -843,6 +847,9 @@ function cmdlineDispatcher() {
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "share-files" ]]; then
 		shareFile
+	fi
+	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "reset-documents" ]]; then
+		resetDocuments
 	fi
 }
 
