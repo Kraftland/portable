@@ -322,7 +322,7 @@ function execApp() {
 		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
 		--tmpfs /sys \
-		--bind /sys/module/ /sys/module/ \
+		--ro-bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
 		--tmpfs /sys/devices/virtual/dmi \
