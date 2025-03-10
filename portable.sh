@@ -391,8 +391,6 @@ function execApp() {
 			"${XDG_DATA_HOME}/fonts" \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
-			"${XDG_DATA_HOME}/${stateDirectory}" \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
 		--ro-bind-try /dev/null \
 			"${XDG_DATA_HOME}/${stateDirectory}"/portable.env \
