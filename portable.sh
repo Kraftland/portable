@@ -392,6 +392,7 @@ function execApp() {
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
+		--tmpfs "${HOME}"/options \
 		--ro-bind-try /dev/null \
 			"${XDG_DATA_HOME}/${stateDirectory}"/portable.env \
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
