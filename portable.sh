@@ -513,26 +513,30 @@ function deviceBinding() {
 }
 
 function warnMulRunning() {
-	id=$(dbus-send \
-		--bus=unix:path="${busDir}/bus" \
-		--dest=org.kde.StatusNotifierWatcher \
-		--type=method_call \
-		--print-reply=literal /StatusNotifierWatcher \
-		org.freedesktop.DBus.Properties.Get \
-		string:org.kde.StatusNotifierWatcher \
-		string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-	pecho debug "Unique ID: ${id}"
-	dbus-send \
-		--print-reply \
-		--session \
-		--dest=${id} \
-		--type=method_call \
-		/StatusNotifierItem \
-		org.kde.StatusNotifierItem.Activate \
-		int32:114514 \
-		int32:1919810
-	if [[ $? = 0 ]]; then
-		exit 0
+	if [ "${dbusWake}" = true ]; then
+		id=$(dbus-send \
+			--bus=unix:path="${busDir}/bus" \
+			--dest=org.kde.StatusNotifierWatcher \
+			--type=method_call \
+			--print-reply=literal /StatusNotifierWatcher \
+			org.freedesktop.DBus.Properties.Get \
+			string:org.kde.StatusNotifierWatcher \
+			string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
+		pecho debug "Unique ID: ${id}"
+		dbus-send \
+			--print-reply \
+			--session \
+			--dest=${id} \
+			--type=method_call \
+			/StatusNotifierItem \
+			org.kde.StatusNotifierItem.Activate \
+			int32:114514 \
+			int32:1919810
+		if [[ $? = 0 ]]; then
+			exit 0
+		fi
+	else
+		pecho info "Skipping D-Bus wake"
 	fi
 	source "${_portableConfig}"
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
