@@ -550,7 +550,7 @@ function warnMulRunning() {
 		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
 	fi
 	if [ $? = 0 ]; then
-		stopApp
+		stopApp force
 	else
 		pecho crit "User denied session termination"
 		exit $?
@@ -832,11 +832,16 @@ function passPid() {
 }
 
 function stopApp() {
-	sleep 1s
-	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ '-subprocess-' ]] || [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~  "${friendlyName}.service" ]]; then
-		pecho warn "[Warn] Not stopping the slice because one or more instance are still running"
-		return 0
+	if [[ $@ =~ "force" ]]; then
+		pecho info "Stopping the application on user request"
+	else
+		sleep 1s
+		if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ '-subprocess-' ]] || [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~  "${friendlyName}.service" ]]; then
+			pecho warn "[Warn] Not stopping the slice because one or more instance are still running"
+			return 0
+		fi
 	fi
+
 	systemctl --user stop "${friendlyName}-dbus"
 	systemctl \
 		--user stop \
@@ -871,7 +876,7 @@ function cmdlineDispatcher() {
 }
 
 if [[ $@ = "--actions quit" ]]; then
-	stopApp "portable-${friendlyName}.slice"
+	stopApp force
 	exit $?
 fi
 
