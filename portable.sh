@@ -660,6 +660,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Notification \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.NetworkMonitor.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.NetworkMonitor \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Fcitx.* \
