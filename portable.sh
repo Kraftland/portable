@@ -407,6 +407,7 @@ function execAppExist() {
 	export unitName="${unitName}-subprocess-$(uuidgen)"
 	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
 	execApp
+	stopApp
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
@@ -829,6 +830,11 @@ function passPid() {
 }
 
 function stopApp() {
+	sleep 1s
+	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ '-subprocess-' ]] || [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~  "${friendlyName}.service" ]]; then
+		pecho warn "[Warn] Not stopping the slice because one or more instance are still running"
+		return 0
+	fi
 	systemctl --user stop "${friendlyName}-dbus"
 	systemctl \
 		--user stop \
