@@ -1,12 +1,15 @@
 #!/usr/bin/bash
 
-#function waitForStart() {
-	#echo 1 >~/startSignal
-	#inotifywait \
-	#	-e modify \
-	#	--quiet \
-	#	~/startSignal
-#}
+function waitForStart() {
+	inotifywait \
+		-e modify \
+		--quiet \
+		~/startSignal
+}
+
+#waitForStart
+
+echo "yes" >~/startSignal
 
 #waitForStart
 

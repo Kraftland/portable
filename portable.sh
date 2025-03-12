@@ -225,6 +225,7 @@ function importEnv() {
 
 function getChildPid() {
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
+	pecho debug "Getting PID from unit ${unitName}'s control group $(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')"
 	for childPid in $(pgrep --cgroup "${cGroup}"); do
 		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(cat /proc/${childPid}/cmdline | tr '\000' ' ')
@@ -250,7 +251,8 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
-	passPid
+	echo "false" >"${XDG_DATA_HOME}"/"${stateDirectory}"/startSignal
+	passPid &
 	systemd-run \
 	--user \
 	${sdOption} \
@@ -816,8 +818,17 @@ function launch() {
 }
 
 function passPid() {
-	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
+	if [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/startSignal") = "yes" ]]; then
+		pecho debug "Application started before passPid()"
+	else
+		inotifywait \
+			-e modify \
+			"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
+	fi
+	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
+	unset childPid
+	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	echo "${childPid}" >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
