@@ -29,7 +29,8 @@ if [[ $(echo ${origReq} | cut -c '1-8') =~ 'file://'  ]]; then
 	export origReq="$(echo ${origReq} | sed 's|file:///|/|g')"
 	echo "Decoding path as: ${origReq}"
 else
-	export origReq="$(realpath ${origReq})"
+	export origReq=$(realpath "${origReq}")
+	echo "Interpreting origReq as ${origReq}"
 fi
 
 if [ ! -z ${bwBindPar} ]; then
@@ -46,7 +47,7 @@ elif [[ "${origReq}" =~ "/tmp" ]]; then
 else
 	ln \
 		-sfr \
-		${origReq} ~/Shared
+		"${origReq}" ~/Shared
 	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
 fi
 
