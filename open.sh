@@ -45,10 +45,10 @@ elif [[ "${origReq}" =~ "/tmp" ]]; then
 	echo "[Info] Detected /tmp!"
 	procOpen
 else
+	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename "${origReq}")"
 	ln \
 		-sfr \
-		"${origReq}" ~/Shared/$(basename ${origReq})
-	link="${XDG_DATA_HOME}"/"${stateDirectory}"/Shared/$(basename "${origReq}")
+		"${origReq}" ~/Shared/
 fi
 
 echo "[Info] received a request: $@, translated to ${link}"
