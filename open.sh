@@ -47,8 +47,8 @@ elif [[ "${origReq}" =~ "/tmp" ]]; then
 else
 	ln \
 		-sfr \
-		"${origReq}" ~/Shared
-	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename ${origReq})"
+		"${origReq}" ~/Shared/$(basename ${origReq})
+	link="${XDG_DATA_HOME}"/"${stateDirectory}"/Shared/$(basename "${origReq}")
 fi
 
 echo "[Info] received a request: $@, translated to ${link}"
