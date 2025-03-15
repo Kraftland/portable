@@ -9,14 +9,14 @@ function waitForStart() {
 
 #waitForStart
 
+function _sleep() {
+	while true; do
+		sleep 3650d
+	done
+}
+
 echo "yes" >~/startSignal
 
-#waitForStart
+_sleep &
 
-$@ &
-
-while true; do
-	sleep 3650d
-done
-
-#rm ~/startSignal
+$@
