@@ -465,6 +465,7 @@ function deviceBinding() {
 		videoMod=$(lsmod)
 		if [ $(ls /dev/dri/renderD* -la | wc -l) = 1 ] && [[ ${videoMod} =~ nvidia ]]; then
 			pecho info "Using single NVIDIA GPU"
+			addEnv 'GSK_RENDERER=ngl'
 			for _card in $(ls /dev/nvidia*); do
 				if [ -e ${_card} ]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
@@ -476,6 +477,7 @@ function deviceBinding() {
 			addEnv 'VK_LOADER_DRIVERS_DISABLE="nvidia_icd.json"'
 		elif [[ ${videoMod} =~ nvidia ]]; then
 			pecho debug "Using NVIDIA GPU"
+			addEnv 'GSK_RENDERER=ngl'
 			for _card in $(ls /dev/nvidia*); do
 				if [ -e ${_card} ]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
