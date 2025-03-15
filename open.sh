@@ -44,6 +44,9 @@ if [[ "${origReq}" =~ "${bwBindPar}" ]] && [ ! -z ${bwBindPar} ]; then
 elif [[ "${origReq}" =~ "/tmp" ]]; then
 	echo "[Info] Detected /tmp!"
 	procOpen
+elif [[ "${origReq}" =~ "/run/user/$(id -u)/doc" ]]; then
+	echo "[Info] Detected run path!"
+	procOpen
 else
 	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename "${origReq}")"
 	ln \
