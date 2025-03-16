@@ -472,8 +472,20 @@ function deviceBinding() {
 				fi
 			done
 		elif [[ ${videoMod} =~ i915 ]] || [[ ${videoMod} =~ xe ]] || [[ ${videoMod} =~ amdgpu ]]; then
-			pecho debug "Not using NVIDIA GPU"
-			bwSwitchableGraphicsArg=""
+			if [[ ${videoMod} =~ nvidia ]]; then
+				pecho debug "Activating hybrid GPU detection"
+				bwSwitchableGraphicsArg="--tmpfs /dev/dri"
+				for device in $(ls /sys/class/drm/renderD12* -d); do
+					if [[ $(cat "${device}/device/vendor") = 0x10de ]]; then
+						pecho debug "Device $(basename ${device}) detected as NVIDIA GPU"
+					else
+						bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind /dev/dri/$(basename ${device}) /dev/dri/$(basename ${device})"
+						pecho debug "Device $(basename ${device}) binded"
+					fi
+				done
+			else
+				pecho debug "Not using NVIDIA GPU"
+			fi
 			addEnv 'VK_LOADER_DRIVERS_DISABLE="nvidia_icd.json"'
 		elif [[ ${videoMod} =~ nvidia ]]; then
 			pecho debug "Using NVIDIA GPU"
