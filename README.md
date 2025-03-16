@@ -12,7 +12,12 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 
 Portable itself is still in development and has already been applied to [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch), WeChat, Wemeet, Prism Launcher, Obsidian, Z-Library, WiliWili, WPS, Genshin, QQ and Discord.
 
-**Running untrusted code is never safe, sandboxing does not change this.**
+# Limitations:
+
+1. **Running untrusted code is never safe, sandboxing does not change this.**
+2. WebKitGTK on a hybrid graphics laptop may require gameMode=on, otherwise may display a blank screen.
+3. Steam will not work due to the requirement of Flatpak spawn portal.
+4. Some applications directly calling the open file portal or FileManager1.
 
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
