@@ -825,8 +825,8 @@ function passPid() {
 	else
 		inotifywait \
 			-e modify \
-			-q \
-			"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
+			--quiet \
+			"${XDG_DATA_HOME}/${stateDirectory}/startSignal" 1>/dev/null
 	fi
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
@@ -843,6 +843,7 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	echo "finish" >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 }
 
 function stopApp() {
@@ -851,7 +852,7 @@ function stopApp() {
 	else
 		sleep 1s
 		if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ '-subprocess-' ]] || [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~  "${friendlyName}.service" ]]; then
-			pecho warn "[Warn] Not stopping the slice because one or more instance are still running"
+			pecho warn "Not stopping the slice because one or more instance are still running"
 			return 0
 		fi
 	fi
