@@ -825,6 +825,7 @@ function passPid() {
 	else
 		inotifywait \
 			-e modify \
+			-q \
 			"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
 	fi
 	getChildPid

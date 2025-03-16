@@ -11,7 +11,7 @@ function waitForStart() {
 
 function _sleep() {
 	while true; do
-		sleep 3650d
+		sleep 1m
 	done
 }
 
