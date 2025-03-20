@@ -329,7 +329,7 @@ function execApp() {
 		--ro-bind /sys/devices /sys/devices \
 		--tmpfs /sys/devices/virtual/dmi \
 		--dir /sys/class \
-		--symlink /dev/dr/ /sys/class/drm \
+		--symlink /dev/dri/ /sys/class/drm \
 		--dir /sandbox \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/chromium \
