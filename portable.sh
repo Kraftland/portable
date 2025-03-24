@@ -360,6 +360,7 @@ function execApp() {
 		--bind /usr /usr \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
+		--tmpfs /etc/kernel \
 		--symlink /usr/lib /lib \
 		--symlink /usr/lib /lib64 \
 		--ro-bind-try /bin /bin \
