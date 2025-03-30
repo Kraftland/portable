@@ -100,6 +100,8 @@ Portable itself allows multiple instances. It automatically creates an identical
 
 `--actions debug-shell`: Start a debugging bash shell inside the sandbox. This works regardless whether the app is running.
 
+Arguments for the application can be passed by putting your arguments in the end of the list of arguments and separate it with `--`
+
 ### Debugging
 
 #### Entering sandbox
