@@ -888,6 +888,24 @@ function resetDocuments() {
 }
 
 function cmdlineDispatcher() {
+	local cmdlineArgs=("$@")
+	local indexSep=-1
+
+	for i in "${!cmdlineArgs[@]}"; do
+		if [[ "${cmdlineArgs[${i}]}" == "--" ]]; then
+			indexSep=${i}
+			break # break the loop at separater
+		fi
+		continue
+	done
+
+	local appArgs=()
+	if [[ ${indexSep} -ge 0 ]]; then
+		appArgs=("${cmdlineArgs[@]:$((indexSep + 1))}")
+	fi
+	export targetArgs="${appArgs[@]}"
+	pecho info "Application argument interpreted as: ${targetArgs}"
+
 	if [[ $@ =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ $@ =~ "--actions" ]]; then
 		rm -f \
 			"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
