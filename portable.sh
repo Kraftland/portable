@@ -242,6 +242,7 @@ function getChildPid() {
 }
 
 function execApp() {
+	desktopWorkaround
 	waylandDisplay
 	importEnv
 	deviceBinding
@@ -445,7 +446,7 @@ function addEnv() {
 function desktopWorkaround() {
 	if [ "${XDG_CURRENT_DESKTOP}" = KDE ]; then
 		pecho debug "Applying workaround for KDE..."
-		rm "${XDG_DATA_HOME}/flatpak/db/background"
+		rm "${XDG_DATA_HOME}/flatpak/db/background" 2>/dev/null
 	fi
 }
 
