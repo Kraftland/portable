@@ -442,6 +442,13 @@ function addEnv() {
 	echo "$@" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 }
 
+function desktopWorkaround() {
+	if [ "${XDG_CURRENT_DESKTOP}" = KDE ]; then
+		pecho debug "Applying workaround for KDE..."
+		rm "${XDG_DATA_HOME}/flatpak/db/background"
+	fi
+}
+
 function deviceBinding() {
 	if [[ ${gameMode} = true ]]; then
 		bwSwitchableGraphicsArg=""
