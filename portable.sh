@@ -374,10 +374,10 @@ function execApp() {
 		--ro-bind-try /bin /bin \
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
+		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" /run \
 		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
 		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
 		--dir /run/host \
-		${bwRunParam} \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
@@ -638,6 +638,7 @@ function dbusProxy() {
 		-p RestartMode=direct \
 		-p ExecStop="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStop="rm -r ${busDir}" \
+		-p ExecStop="${XDG_RUNTIME_DIR}/portable/${appID}" \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
