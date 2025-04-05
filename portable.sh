@@ -639,6 +639,7 @@ function dbusProxy() {
 		-p ExecStop="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="${XDG_RUNTIME_DIR}/portable/${appID}" \
+		-p ExecStop="killall xdg-dbus-proxy" \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
