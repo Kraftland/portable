@@ -258,6 +258,7 @@ function execApp() {
 	waylandDisplay
 	importEnv
 	deviceBinding
+	defineRunPath
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	if [ -z ${bwBindPar} ] && [ -f ${bwBindPar} ]; then
 		bwBindPar="/$(uuidgen)"
