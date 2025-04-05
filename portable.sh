@@ -243,7 +243,7 @@ function getChildPid() {
 
 function defineRunPath() {
 	unset localRun
-	if [ -f "${XDG_DATA_HOME}/${stateDirectory}/mainPid" ] && [ -f "/proc/$(cat ${XDG_DATA_HOME}/${stateDirectory}/mainPid)/cmdline" ];
+	if [ -f "${XDG_DATA_HOME}/${stateDirectory}/mainPid" ] && [ -f "/proc/$(cat ${XDG_DATA_HOME}/${stateDirectory}/mainPid)/cmdline" ]; then
 		local pidCurrent=$(cat ${XDG_DATA_HOME}/${stateDirectory}/mainPid)
 		pecho debug "Detected existing sandbox PID ${pidCurrent}, reusing /run directory"
 		export bwRunParam="--bind /proc/${pidCurrent}/root/run /proc/${pidCurrent}/root/run"
