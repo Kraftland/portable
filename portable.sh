@@ -241,6 +241,13 @@ function getChildPid() {
 	done
 }
 
+function defineRunPath() {
+	unset localRun
+	if [ -f "${XDG_DATA_HOME}/${stateDirectory}/mainPid" ] && [ -f "/proc/$(cat ${XDG_DATA_HOME}/${stateDirectory}/mainPid)/cmdline" ];
+		pecho debug "Detected existing sandbox PID, reusing /run directory"
+	fi
+}
+
 function execApp() {
 	desktopWorkaround
 	waylandDisplay
