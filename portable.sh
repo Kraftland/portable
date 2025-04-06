@@ -636,7 +636,6 @@ function dbusProxy() {
 		-p Slice="portable-${friendlyName}.slice" \
 		-u ${proxyName} \
 		-p RestartMode=direct \
-		-p ExecStop="rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r" \
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
 		-p ExecStop="killall xdg-dbus-proxy" \
@@ -898,6 +897,7 @@ function stopApp() {
 	systemctl \
 		--user stop \
 		"portable-${friendlyName}.slice"
+	rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r
 }
 
 function resetDocuments() {
