@@ -339,6 +339,8 @@ function execApp() {
 		--dir /sys/class \
 		--symlink /dev/dri/ /sys/class/drm \
 		--dir /sandbox \
+		--ro-bind /usr/bin/true \
+			/sandbox/sudo \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/chromium \
 		--ro-bind /usr/lib/portable/open \
