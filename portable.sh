@@ -641,7 +641,7 @@ function dbusProxy() {
 		-p RestartMode=direct \
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
-		-p ExecStop="killall xdg-dbus-proxy" \
+		-p ExecStop="kill -9 $(cat ${XDG_DATA_HOME}/${stateDirectory}/mainPid)" \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
