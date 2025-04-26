@@ -635,7 +635,7 @@ function dbusProxy() {
 	fi
 	if [ ${XDG_CURRENT_DESKTOP} = "GNOME" ]; then
 		local featureSet="GlobalShortcuts ScreenShot"
-		pecho info "Enabling GNOME exclusive features"
+		pecho info "Enabling GNOME exclusive features: ${featureSet}"
 		export extraDbusArgs="--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
 	else
 		pecho info "Disabling GNOME exclusive features"
