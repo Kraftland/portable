@@ -13,7 +13,7 @@ stateDirectory="Portable_Test_Data"
 launchTarget="gtk4-demo"
 
 # Takes a boolean value or string "adaptive". When true, do not process XAuth files and forces wayland input method. "adaptive" enables this option on Wayland and vice versa. Generally this should be adaptive when possible.
-waylandOnly="adaptive"
+waylandOnly="false"
 
 # Takes boolean value.
 bindInputDevices="false"
