@@ -1,6 +1,6 @@
 [Application]
 name=placeHolderAppName
-runtime=runtime/org.kraftland.host/x86_64/114514
+runtime=runtime/org.kraftland.host/x86_64/1145141919810
 
 [Instance]
 instance-id=placeholderInstanceId
@@ -12,9 +12,10 @@ runtime-commit=6087f25c76665f35dc9790e60a89f1af2481de9b5c35ee71b9b16a86f388bf3c
 runtime-extensions=org.freedesktop.Platform.GL.default=0417ef24351ecbb9208216510d7190ce94aa483f812b713b9b00e4ff5987b968;
 branch=stable
 arch=x86_64
-flatpak-version=1.15.10
+flatpak-version=1.16.0
 session-bus-proxy=true
 system-bus-proxy=true
+extra-args=--usb-list=;--usb-list=;
 
 [Context]
 shared=network;ipc;
@@ -23,3 +24,6 @@ devices=dri;
 
 [Environment]
 IBUS_USE_PORTAL=1
+
+[USB Devices]
+enumerable-devices=all;
