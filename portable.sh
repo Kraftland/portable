@@ -633,6 +633,14 @@ function dbusProxy() {
 	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
 		proxyArg="--log"
 	fi
+	if [ ${XDG_CURRENT_DESKTOP} = "GNOME" ]; then
+		local featureSet="GlobalShortcuts ScreenShot"
+		pecho info "Enabling GNOME exclusive features"
+		export extraDbusArgs="--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
+	else
+		pecho info "Disabling GNOME exclusive features"
+		export extraDbusArgs="--see=org.freedesktop.portal.Flatpak"
+	fi
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	systemd-run \
 		--user \
@@ -665,7 +673,6 @@ function dbusProxy() {
 			--own=org.kde.StatusNotifierItem-5-1 \
 			--own=org.kde.StatusNotifierItem-6-1 \
 			--own=com.belmoussaoui.ashpd.demo \
-			--own=com.steampowered.* \
 			--own="${appID}" \
 			--talk=org.freedesktop.Notifications \
 			--talk=org.kde.StatusNotifierWatcher \
@@ -712,6 +719,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret.RetrieveSecret \
+			${extraDbusArgs} \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop \
 			--talk=org.freedesktop.portal.Documents \
 			--call=org.freedesktop.portal.Documents=* \
