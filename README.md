@@ -19,6 +19,7 @@ Portable itself is still in development and has already been applied to [Minecra
 3. Steam will not work due to the requirement of Flatpak spawn portal.
 4. Some applications directly calling the open file portal or `FileManager1` will not be path-translated by portable, resulting in broken open function.
 5. On KDE Plasma, the background portal is unstable and might require `--actions reset-documents` if one has previously used GNOME. Otherwise the application can be terminated after launch. And window grouping will not work properly unless your desktop file name exactly matches certain arguments.
+6. The USB Portal is not fully tested, it may fail on some devices.
 
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
