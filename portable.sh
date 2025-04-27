@@ -71,10 +71,10 @@ function sourceXDG() {
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}"/${stateDirectory}
 	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/Shared"
+	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/Shared" &
 	ln -sfr \
 		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
-		"${XDG_DATA_HOME}/${stateDirectory}/共享文件"
+		"${XDG_DATA_HOME}/${stateDirectory}/共享文件" &
 }
 
 function genXAuth() {
