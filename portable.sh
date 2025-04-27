@@ -649,7 +649,7 @@ function dbusProxy() {
 		-p RestartMode=direct \
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
-		-p ExecStop="kill -9 $(cat ${XDG_DATA_HOME}/${stateDirectory}/mainPid)" \
+		-p KillMode=control-group \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
@@ -877,7 +877,7 @@ function passPid() {
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	unset childPid
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
-	echo "${childPid}" >"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/pid"
+	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
