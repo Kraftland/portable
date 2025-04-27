@@ -458,7 +458,7 @@ function desktopWorkaround() {
 		--dest=org.freedesktop.impl.portal.PermissionStore \
 		/org/freedesktop/impl/portal/PermissionStore \
 		org.freedesktop.impl.portal.PermissionStore.SetPermission \
-		string:"background" boolean:true string:"background" string:"${appID}" array:string:"yes"
+		string:"background" boolean:true string:"background" string:"${appID}" array:string:"yes" &
 }
 
 function deviceBinding() {
