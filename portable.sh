@@ -78,12 +78,12 @@ function manageDirs() {
 }
 
 function genXAuth() {
-	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" 2>/dev/null
 	if [ ${waylandOnly} = "true" ]; then
-		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" &
 		return $?
 	elif [ ${waylandOnly} = "adaptive" ] && [ ${XDG_SESSION_TYPE} = "wayland" ]; then
-		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
+		touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" &
 		return $?
 	fi
 	pecho debug "Processing X Server security restriction..."
@@ -860,7 +860,7 @@ function launch() {
 		dbusProxy
 		pecho info "Launching ${appID}..."
 		execApp
-		stopApp
+		stopApp &
 	fi
 }
 
@@ -901,15 +901,9 @@ function stopApp() {
 			return 0
 		fi
 	fi
-
-	systemctl --user stop "${friendlyName}-dbus"
 	systemctl \
 		--user stop \
-		"${friendlyName}-dbus-a11y" \
-		2>/dev/null
-	systemctl \
-		--user stop \
-		"portable-${friendlyName}.slice"
+		"portable-${friendlyName}.slice" &
 	rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r
 }
 
