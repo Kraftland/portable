@@ -802,6 +802,13 @@ function execAppUnsafe() {
 		${launchTarget}
 }
 
+function enableSandboxFunc() {
+	pecho info "Sandboxing confirmed"
+	mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
+	touch "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
+	return 0
+}
+
 function questionFirstLaunch() {
 	if [ ! -f "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox ]; then
 		if [[ "${LANG}" =~ 'zh_CN' ]]; then
@@ -818,22 +825,41 @@ function questionFirstLaunch() {
 				--text="Enable sandbox for: ${appID}?"
 		fi
 		if [[ $? = 1 ]]; then
-			export trashAppUnsafe=1
 			if [[ "${LANG}" =~ 'zh_CN' ]]; then
-				zenity --error --title "沙盒已禁用" --icon=security-low-symbolic --text "用户数据不再被保护"
+				zenity \
+					--question \
+					--default-cancel \
+					--title "确认操作" \
+					--icon=security-low-symbolic \
+					--text "用户数据将不再被保护"
 			else
-				zenity --error --title "Sandbox disabled" --icon=security-low-symbolic --text "User data is potentially compromised"
+				zenity \
+					--question \
+					--default-cancel \
+					--title "Confirm action" \
+					--icon=security-low-symbolic \
+					--text "User data may be compromised"
+			fi
+			if [[ $? = 1 ]]; then
+				pecho info "User enabled sandbox late"
+				enableSandboxFunc &
+				return 0
+			else
+				pecho warn "User disabled sandbox!"
+				mkdir \
+					-p \
+					"${XDG_DATA_HOME}"/${stateDirectory}/options
+				echo \
+					disableSandbox \
+					>>"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox &
+				export \
+					trashAppUnsafe=1
 			fi
 		else
-			pecho info "Sandboxing confirmed"
-			mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
-			touch "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox &
+			enableSandboxFunc &
 			return 0
 		fi
-		mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
-		echo disableSandbox >>"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox &
-	fi
-	if [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox) =~ "disableSandbox" ]]; then
+	elif [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox) =~ "disableSandbox" ]]; then
 		export trashAppUnsafe=1
 	fi
 }
