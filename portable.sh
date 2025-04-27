@@ -806,19 +806,18 @@ function questionFirstLaunch() {
 	if [ ! -f "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox ]; then
 		if [[ "${LANG}" =~ 'zh_CN' ]]; then
 			/usr/bin/zenity \
-				--default-cancel \
-				--title "初次启动" \
+				--title "${friendlyName}" \
 				--icon=security-medium-symbolic \
 				--question \
-				--text="允许程序读取 / 修改所有个人数据?"
+				--text="对应用程序 ${appID} 启用沙盒?"
 		else
-			/usr/bin/zenity --default-cancel \
-				--title "Welcome" \
+			/usr/bin/zenity \
+				--title "${friendlyName}" \
 				--icon=security-medium-symbolic \
 				--question \
-				--text="Do you wish this Application to access and modify all of your data?"
+				--text="Enable sandbox for: ${appID}?"
 		fi
-		if [[ $? = 0 ]]; then
+		if [[ $? = 1 ]]; then
 			export trashAppUnsafe=1
 			if [[ "${LANG}" =~ 'zh_CN' ]]; then
 				zenity --error --title "沙盒已禁用" --icon=security-low-symbolic --text "用户数据不再被保护"
@@ -826,13 +825,13 @@ function questionFirstLaunch() {
 				zenity --error --title "Sandbox disabled" --icon=security-low-symbolic --text "User data is potentially compromised"
 			fi
 		else
-			pecho warn "Request canceled by user"
+			pecho info "Sandboxing confirmed"
 			mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
-			touch "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
+			touch "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox &
 			return 0
 		fi
 		mkdir -p "${XDG_DATA_HOME}"/${stateDirectory}/options
-		echo disableSandbox >>"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox
+		echo disableSandbox >>"${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox &
 	fi
 	if [[ $(cat "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox) =~ "disableSandbox" ]]; then
 		export trashAppUnsafe=1
