@@ -2,13 +2,13 @@
 
 function pecho() {
 	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
-		echo "[Debug] $2"
+		echo "[Debug] $2" &
 	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]] || [[ ${PORTABLE_LOGGING} = "debug" ]]; then
-		echo "[Info] $2"
+		echo "[Info] $2" &
 	elif [[ $1 =~ warn ]]; then
-		echo "[Warn] $2"
+		echo "[Warn] $2" &
 	elif [[ $1 =~ crit ]]; then
-		echo "[Critical] $2"
+		echo "[Critical] $2" &
 	fi
 }
 
@@ -625,7 +625,7 @@ function dbusProxy() {
 	fi
 	if [[ $(systemctl --user is-failed ${proxyName}-a11y.service) = failed ]]; then
 		pecho warn "D-Bus a11y proxy failed last time"
-		systemctl --user reset-failed ${proxyName}-a11y.service
+		systemctl --user reset-failed ${proxyName}-a11y.service &
 	fi
 	mkdir "${busDir}" -p
 	mkdir -p "${busDirAy}" -p
@@ -845,7 +845,7 @@ function launch() {
 	export sdOption="-P"
 	if [[ $(systemctl --user is-failed ${unitName}.service) = failed ]]; then
 		pecho warn "${appID} failed last time"
-		systemctl --user reset-failed ${unitName}.service
+		systemctl --user reset-failed ${unitName}.service &
 	fi
 	if [[ $(systemctl --user is-active ${unitName}.service) = active ]]; then
 		warnMulRunning $@
