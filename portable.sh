@@ -914,8 +914,7 @@ function stopApp() {
 }
 
 function resetDocuments() {
-	rm -r "${XDG_DATA_HOME}"/flatpak/db/documents
-	systemctl --user restart xdg-document-portal.service
+	flatpak permission-reset "${appID}"
 }
 
 function cmdlineDispatcher() {
