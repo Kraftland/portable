@@ -355,8 +355,6 @@ function execApp() {
 			/sandbox/nautilus \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/dolphin \
-		--ro-bind /usr/lib/portable/mimeapps.list \
-			"${XDG_DATA_HOME}/${stateDirectory}/.config/mimeapps.list" \
 		--proc /proc \
 		--ro-bind-try /dev/null /proc/uptime \
 		--ro-bind-try /dev/null /proc/modules \
