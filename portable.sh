@@ -421,7 +421,7 @@ function execAppExist() {
 	export unitName="${unitName}-subprocess-$(uuidgen)"
 	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
 	execApp
-	stopApp &
+	stopApp
 	if [[ $? = 0 ]]; then
 		exit 0
 	fi
