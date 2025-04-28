@@ -682,6 +682,7 @@ function dbusProxy() {
 			--see=org.freedesktop.portal.Request \
 			--call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close \
 			--call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Email.ComposeEmail \
