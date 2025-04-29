@@ -616,6 +616,7 @@ function generateFlatpakInfo() {
 }
 
 function dbusProxy() {
+	systemctl --user clean "${friendlyName}*" &
 	generateFlatpakInfo
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
@@ -644,10 +645,10 @@ function dbusProxy() {
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
 		-u ${proxyName} \
-		-p RestartMode=direct \
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
 		-p KillMode=control-group \
+		-p ExitType=cgroup \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
@@ -889,8 +890,8 @@ function launch() {
 }
 
 function passPid() {
-	if [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/startSignal") = "yes" ]]; then
-		pecho debug "Application started before passPid()"
+	if [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/startSignal") = "app-started" ]]; then
+		pecho warn "Application started before passPid()"
 	else
 		inotifywait \
 			-e modify \

@@ -7,9 +7,17 @@ function waitForStart() {
 		~/startSignal 1>/dev/null
 }
 
-echo "yes" >~/startSignal
+function startLoop() {
+	inotifywait \
+		-e modify \
+		--quiet \
+		~/startSignal 1>/dev/null
+	$(cat ~/startSignal)
+}
+
+echo "app-started" >~/startSignal
 
 waitForStart
 
-$@
+$@ &
 
