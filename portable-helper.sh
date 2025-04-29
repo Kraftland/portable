@@ -24,9 +24,9 @@ function startLoop() {
 
 echo "app-started" >~/startSignal
 
-waitForStart
-
 startLoop &
+
+waitForStart
 
 $@
 

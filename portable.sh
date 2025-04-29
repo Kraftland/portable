@@ -655,7 +655,6 @@ function dbusProxy() {
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
 		-p KillMode=control-group \
-		-p ExitType=cgroup \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
@@ -678,6 +677,11 @@ function dbusProxy() {
 			--own=org.kde.StatusNotifierItem-4-1 \
 			--own=org.kde.StatusNotifierItem-5-1 \
 			--own=org.kde.StatusNotifierItem-6-1 \
+			--own=org.kde.StatusNotifierItem-7-1 \
+			--own=org.kde.StatusNotifierItem-8-1 \
+			--own=org.kde.StatusNotifierItem-9-1 \
+			--own=org.kde.StatusNotifierItem-10-1 \
+			--own=org.kde.StatusNotifierItem-11-1 \
 			--own=com.belmoussaoui.ashpd.demo \
 			--own="${appID}" \
 			--talk=org.freedesktop.Notifications \
@@ -910,7 +914,6 @@ function passPid() {
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	unset childPid
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
-	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
