@@ -585,7 +585,7 @@ function warnMulRunning() {
 		execAppExist
 	else
 		execAppExistDirect ${launchTarget} ${targetArgs}
-		return 0
+		exit $?
 	fi
 	if [[ "${LANG}" =~ 'zh_CN' ]]; then
 		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
