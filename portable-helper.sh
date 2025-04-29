@@ -19,5 +19,5 @@ echo "app-started" >~/startSignal
 
 waitForStart
 
-$@ &
+$@
 
