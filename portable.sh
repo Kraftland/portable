@@ -417,6 +417,10 @@ function execApp() {
 			/usr/lib/portable/helper ${launchTarget} ${targetArgs}
 }
 
+function execAppExistDirect() {
+	echo "${launchTarget}" >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
+}
+
 function execAppExist() {
 	export unitName="${unitName}-subprocess-$(uuidgen)"
 	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
@@ -578,8 +582,11 @@ function warnMulRunning() {
 	source "${_portableConfig}"
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
 		export launchTarget="/usr/bin/bash"
+		execAppExist
+	else
+		execAppExistDirect ${launchTarget} ${targetArgs}
+		return 0
 	fi
-	execAppExist "${unitName}"
 	if [[ "${LANG}" =~ 'zh_CN' ]]; then
 		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
 	else
@@ -877,6 +884,7 @@ function launch() {
 	fi
 	if [[ $@ =~ "--actions" ]] && [[ $@ =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
+		#export startType=subprocess
 	fi
 	if [[ ${trashAppUnsafe} = 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
@@ -885,7 +893,7 @@ function launch() {
 		dbusProxy
 		pecho info "Launching ${appID}..."
 		execApp
-		stopApp &
+		stopApp
 	fi
 }
 
@@ -917,6 +925,7 @@ function passPid() {
 }
 
 function stopApp() {
+	pecho info "Stopping application..."
 	if [[ $@ =~ "force" ]]; then
 		pecho info "Stopping the application on user request"
 	else
@@ -926,9 +935,10 @@ function stopApp() {
 			return 0
 		fi
 	fi
+	#systemctl --user stop "${friendlyName}-dbus"
 	systemctl \
 		--user stop \
-		"portable-${friendlyName}.slice" &
+		"portable-${friendlyName}.slice"
 	rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r
 }
 
