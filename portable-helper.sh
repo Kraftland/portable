@@ -8,16 +8,21 @@ function waitForStart() {
 }
 
 function startLoop() {
-	inotifywait \
-		-e modify \
-		--quiet \
-		~/startSignal 1>/dev/null
-	$(cat ~/startSignal)
+	while true; do
+		inotifywait \
+			-e modify \
+			--quiet \
+			~/startSignal 1>/dev/null
+		echo "Starting application"
+		$(cat ~/startSignal) &
+	done
 }
 
 echo "app-started" >~/startSignal
 
 waitForStart
+
+startLoop &
 
 $@
 
