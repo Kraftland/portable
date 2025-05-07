@@ -25,6 +25,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
     - Bottles (aur/bottles-bwrap)
     - QQ (aur/linuxqq-portable)
     - Discord (aur/discord-bwrap)
+    - Larksuite (aur/larksuite-portable)
 
 # Limitations:
 
