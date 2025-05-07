@@ -10,7 +10,21 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 - Storage efficient compared to Flatpak: Using host system as the "runtime".
 - Hybrid GPU workarounds are automatically applied to prevent waking up discrete GPUs, often caused by Vulkan and Electron applications.
 
-Portable itself is still in development and has already been applied to [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch), WeChat, Wemeet, Prism Launcher, Obsidian, Z-Library, WiliWili, WPS, Genshin, QQ and Discord.
+## Available for
+
+- [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch)
+- AUR
+    - WeChat (aur/wechat)
+    - Wemeet (aur/wemeet-bwrap)
+    - Prism Launcher (aur/prismlauncher-bwrap)
+    - Obsidian (aur/obsidian-bwrap)
+    - Z-Library (aur/z-library-bwrap)
+    - Wiliwili (aur/wiliwili-wayland)
+    - WPS (aur/wps-office-cn-bwrap)
+    - Genshin Impact Launcher
+    - Bottles (aur/bottles-bwrap)
+    - QQ (aur/linuxqq-portable)
+    - Discord (aur/discord-bwrap)
 
 # Limitations:
 
