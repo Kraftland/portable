@@ -314,6 +314,7 @@ function execApp() {
 	-p Environment=XAUTHORITY="${HOME}/.XAuthority" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir=${busDir} \
+	-p "${sdNetArg}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -321,7 +322,6 @@ function execApp() {
 		--unshare-uts \
 		--unshare-pid \
 		--unshare-user \
-		${bwNetArg} \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
@@ -551,12 +551,11 @@ function deviceBinding() {
 	fi
 	if [[ ${bindNetwork} = "false" ]]; then
 		pecho info "Network access disabled via config"
-		export bwNetArg="--unshare-net"
+		export sdNetArg="PrivateNetwork=yes"
 	else
-		unset bwNetArg
+		export sdNetArg="PrivateNetwork=no"
 		pecho debug "Network access allowed"
 	fi
- 	pecho debug "Generated Network bind parameter: ${bwNetArg}"
 	if [[ ${bindPipewire} = "true" ]]; then
 		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
 	fi
