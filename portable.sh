@@ -321,6 +321,7 @@ function execApp() {
 		--unshare-uts \
 		--unshare-pid \
 		--unshare-user \
+		${bwNetArg} \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
 		--tmpfs /tmp \
@@ -383,7 +384,6 @@ function execApp() {
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
 		${pipewireBinding} \
-		${bwNetArg} \ 
 		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 			"${XDG_RUNTIME_DIR}"/doc \
 		--ro-bind /dev/null \
@@ -549,11 +549,11 @@ function deviceBinding() {
 		bwInputArg=""
 		pecho debug "Not exposing input devices"
 	fi
-	bwNetArg=""
 	if [[ ${bindNetwork} = "false" ]]; then
-		pecho debug "Network access disabled via config"
-		bwNetArg="--unshare-net --ro-bind /dev/null /etc/resolv.conf"
+		pecho info "Network access disabled via config"
+		export bwNetArg="--unshare-net"
 	else
+		unset bwNetArg
 		pecho debug "Network access allowed"
 	fi
  	pecho debug "Generated Network bind parameter: ${bwNetArg}"

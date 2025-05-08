@@ -30,7 +30,7 @@ gameMode="false"
 # Wake the application using D-Bus calls towards StatusNotifiers.
 dbusWake="false"
 
-# Exposes netowrk and DNS config
+# Enables Network access within the sandbox. Defaults to true.
 bindNetwork="false"
 
 # Below you can set envs that will be imported into the application sandbox
