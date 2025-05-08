@@ -550,7 +550,7 @@ function deviceBinding() {
 		pecho debug "Not exposing input devices"
 	fi
 	bwNetArg=""
-	if [[ "${bindNetwork}" = "false" ]]; then
+	if [[ ${bindNetwork} = "false" ]]; then
 		pecho debug "Network access disabled via config"
 		bwNetArg="--unshare-net --ro-bind /dev/null /etc/resolv.conf"
 	else
