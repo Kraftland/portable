@@ -383,6 +383,7 @@ function execApp() {
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
 		${pipewireBinding} \
+		${bwNetArg} \ 
 		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
 			"${XDG_RUNTIME_DIR}"/doc \
 		--ro-bind /dev/null \
@@ -548,6 +549,14 @@ function deviceBinding() {
 		bwInputArg=""
 		pecho debug "Not exposing input devices"
 	fi
+	bwNetArg=""
+	if [[ "${bindNetwork}" = "false" ]]; then
+		pecho debug "Network access disabled via config"
+		bwNetArg="--unshare-net --ro-bind /dev/null /etc/resolv.conf"
+	else
+		pecho debug "Network access allowed"
+	fi
+ 	pecho debug "Generated Network bind parameter: ${bwNetArg}"
 	if [[ ${bindPipewire} = "true" ]]; then
 		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
 	fi
