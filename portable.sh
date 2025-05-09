@@ -394,6 +394,8 @@ function execApp() {
 		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
 			"${XDG_RUNTIME_DIR}/flatpak-runtime-directory" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
+			"${XDG_DATA_HOME}/${stateDirectory}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"${XDG_DATA_HOME}"/icons \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/gtk-4.0 \
