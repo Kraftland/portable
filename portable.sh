@@ -242,6 +242,21 @@ function getChildPid() {
 	done
 }
 
+# Function used to escape paths for sed processing.
+function pathEscape() {
+	local str="$@"
+	local delimiter="|"
+	# Escape the delimiter and &
+	str="${str//${delimiter}/\\${delimiter}}"
+	str="${str//&/\\&}"
+	echo "$str"
+}
+
+# Translates path based on ~ to state directory
+function pathTranslation() {
+	sed "s|$(pathEscape ${HOME})|$(pathEscape ${XDG_DATA_HOME}/${stateDirectory})|g"
+}
+
 function defineRunPath() {
 	if [ ! -d ${XDG_RUNTIME_DIR}/portable/${appID} ]; then
 		mkdir -p ${XDG_RUNTIME_DIR}/portable/${appID}
@@ -398,22 +413,23 @@ function execApp() {
 			"${XDG_DATA_HOME}/${stateDirectory}" \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"${XDG_DATA_HOME}"/icons \
-		--ro-bind-try "${XDG_CONFIG_HOME}"/gtk-4.0 \
-			"${XDG_CONFIG_HOME}"/gtk-4.0 \
-		--ro-bind-try "${XDG_CONFIG_HOME}"/gtk-3.0 \
-			"${XDG_CONFIG_HOME}"/gtk-3.0 \
+		--ro-bind-try "${XDG_DATA_HOME}"/icons \
+			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons" \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${wayDisplayBind}" \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
 			"${XDG_CONFIG_HOME}"/fontconfig \
+		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
+			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig" \
 		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
 			"${XDG_DATA_HOME}/fonts" \
+		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
+			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts" \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
 		--tmpfs "${HOME}"/options \
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${XDG_DATA_HOME}/${stateDirectory}" \
 		${bwCamPar} \
 		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
 		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
