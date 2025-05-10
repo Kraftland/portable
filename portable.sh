@@ -503,6 +503,11 @@ function deviceBinding() {
 			addEnv '__GLX_VENDOR_LIBRARY_NAME=nvidia'
 			addEnv 'VK_LOADER_DRIVERS_SELECT=nvidia_icd.json'
 			addEnv 'DRI_PRIME=1'
+		else
+			pecho info "No NVIDIA GPU could be found!"
+			pecho info "Using mesa feature... unsetting all related environment variables"
+			addEnv 'VK_LOADER_DRIVERS_DISABLE='
+			addEnv 'DRI_PRIME=1'
 		fi
 	else
 		pecho debug "Detecting GPU..."
