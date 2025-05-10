@@ -196,6 +196,13 @@ function importEnv() {
 	addEnv "XDG_DATA_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/share" &
 	addEnv "XDG_STATE_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/state" &
 	addEnv "XDG_CACHE_HOME=${XDG_DATA_HOME}/${stateDirectory}/cache" &
+	addEnv "XDG_DESKTOP_DIR=${XDG_DATA_HOME}/${stateDirectory}/Desktop" &
+	addEnv "XDG_DOWNLOAD_DIR=${XDG_DATA_HOME}/${stateDirectory}/Downloads" &
+	addEnv "XDG_TEMPLATES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Templates" &
+	addEnv "XDG_PUBLICSHARE_DIR=${XDG_DATA_HOME}/${stateDirectory}/Public" &
+	addEnv "XDG_MUSIC_DIR=${XDG_DATA_HOME}/${stateDirectory}/Music" &
+	addEnv "XDG_PICTURES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Pictures" &
+	addEnv "XDG_VIDEOS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Videos" &
 	addEnv "LD_PRELOAD=${LD_PRELOAD}" &
 	addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
 	addEnv 'GDK_DEBUG=portals' &
