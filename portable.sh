@@ -191,6 +191,11 @@ function importEnv() {
 	genXAuth
 	cat "${_portableConfig}" >"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
 	printf "\n\n" >>"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	addEnv "XDG_CONFIG_HOME=$(echo ${XDG_CONFIG_HOME} | pathTranslation)" &
+	addEnv "XDG_DOCUMENTS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Documents" &
+	addEnv "XDG_DATA_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/share" &
+	addEnv "XDG_STATE_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/state" &
+	addEnv "XDG_CACHE_HOME=${XDG_DATA_HOME}/${stateDirectory}/cache" &
 	addEnv "LD_PRELOAD=${LD_PRELOAD}" &
 	addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
 	addEnv 'GDK_DEBUG=portals' &
@@ -432,8 +437,6 @@ function execApp() {
 		--bind-try "${bwBindPar}" "${bwBindPar}" \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
 		${bwCamPar} \
-		--setenv XDG_DOCUMENTS_DIR "$HOME/Documents" \
-		--setenv XDG_DATA_HOME "${XDG_DATA_HOME}" \
 		-- \
 			/usr/lib/portable/helper ${launchTarget} ${targetArgs}
 }
