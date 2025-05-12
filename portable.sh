@@ -283,8 +283,9 @@ function execApp() {
 	defineRunPath
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	if [ -z ${bwBindPar} ] && [ -f ${bwBindPar} ]; then
-		bwBindPar="/$(uuidgen)"
+		bwBindPar=""
 	else
+		export bwBindPar="--bind "${bwBindPar}" "${bwBindPar}""
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
 	echo "false" >"${XDG_DATA_HOME}"/"${stateDirectory}"/startSignal
@@ -353,7 +354,8 @@ function execApp() {
 		--unshare-user \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
-		--tmpfs /tmp \
+		--overlay-src "${XDG_RUNTIME_DIR}/portable/${appID}" \
+		--tmp-overlay /tmp \
   		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
     		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
 		--dev /dev \
@@ -441,7 +443,7 @@ function execApp() {
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
 		--tmpfs "${HOME}"/options \
-		--bind-try "${bwBindPar}" "${bwBindPar}" \
+		${bwBindPar} \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}"/options \
 		${bwCamPar} \
 		-- \
