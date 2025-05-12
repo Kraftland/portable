@@ -288,7 +288,8 @@ function execApp() {
 		export bwBindPar="--bind "${bwBindPar}" "${bwBindPar}""
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
-	echo "false" >"${XDG_DATA_HOME}"/"${stateDirectory}"/startSignal
+	echo "false" >"${XDG_RUNTIME_DIR}/portable/${appID}"/startSignal
+	sync "${XDG_RUNTIME_DIR}/portable/${appID}"/startSignal
 	passPid &
 	systemd-run \
 	--user \
@@ -451,7 +452,7 @@ function execApp() {
 }
 
 function execAppExistDirect() {
-	echo "${launchTarget}" >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
+	echo "${launchTarget}" >"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
 
 function execAppExist() {
@@ -947,13 +948,13 @@ function launch() {
 }
 
 function passPid() {
-	if [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/startSignal") = "app-started" ]]; then
+	if [[ $(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal") = "app-started" ]]; then
 		pecho warn "Application started before passPid()"
 	else
 		inotifywait \
 			-e modify \
 			--quiet \
-			"${XDG_DATA_HOME}/${stateDirectory}/startSignal" 1>/dev/null
+			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
 	fi
 	getChildPid
 	echo "${childPid}" >"${XDG_DATA_HOME}/${stateDirectory}/mainPid"
@@ -969,7 +970,7 @@ function passPid() {
 	sed -i \
 		"s|placeholderPidId|$(readlink /proc/${childPid}/ns/pid | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	echo "finish" >"${XDG_DATA_HOME}/${stateDirectory}/startSignal"
+	echo "finish" >"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
 
 function stopApp() {

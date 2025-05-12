@@ -4,7 +4,7 @@ function waitForStart() {
 	inotifywait \
 		-e modify \
 		--quiet \
-		~/startSignal 1>/dev/null
+		/run/startSignal 1>/dev/null
 }
 
 function startLoop() {
@@ -12,17 +12,17 @@ function startLoop() {
 		inotifywait \
 			-e modify \
 			--quiet \
-			~/startSignal 1>/dev/null
-		_launch="$(cat ~/startSignal)"
+			/run/startSignal 1>/dev/null
+		_launch="$(cat /run/startSignal)"
 		if [[ ${_launch} = terminate ]]; then
 			break
 		fi
 		echo "Starting application"
-		$(cat ~/startSignal) &
+		$(cat /run/startSignal) &
 	done
 }
 
-echo "app-started" >~/startSignal
+echo "app-started" >/run/startSignal
 
 startLoop &
 
@@ -33,7 +33,7 @@ $@
 if [ $(ps aux | wc -l) = "7" ]; then
 	echo "No more application running, terminating..."
 	#kill %1
-	echo terminate >~/startSignal
+	echo terminate >/run/startSignal
 	exit 0
 else
 	echo "Warning! There're still processes running in the background."
