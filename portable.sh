@@ -285,7 +285,7 @@ function execApp() {
 	if [ -z ${bwBindPar} ] && [ -f ${bwBindPar} ]; then
 		bwBindPar=""
 	else
-		export bwBindPar="--bind "${bwBindPar}" "${bwBindPar}""
+		export bwBindPar="--dev-bind "${bwBindPar}" "${bwBindPar}""
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
 	echo "false" >"${XDG_RUNTIME_DIR}/portable/${appID}"/startSignal
@@ -328,7 +328,7 @@ function execApp() {
 	-p RestrictSUIDSGID=yes \
 	-p LockPersonality=yes \
 	-p RestrictRealtime=yes \
-	-p ProtectSystem=strict \
+	-p ProtectSystem=full \
 	-p ProtectProc=invisible \
 	-p ProcSubset=pid \
 	-p ProtectHome=no \
@@ -355,8 +355,7 @@ function execApp() {
 		--unshare-user \
 		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 			/.flatpak-info \
-		--overlay-src "${XDG_RUNTIME_DIR}/portable/${appID}" \
-		--tmp-overlay /tmp \
+		--dir /tmp \
   		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
     		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
 		--dev /dev \
