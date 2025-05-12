@@ -451,7 +451,7 @@ function execApp() {
 }
 
 function execAppExistDirect() {
-	echo "${launchTarget}" >"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	echo "${launchTarget} ${targetArgs}" >"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
 
 function execAppExist() {
