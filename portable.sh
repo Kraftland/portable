@@ -346,6 +346,7 @@ function execApp() {
 	-p Environment=busDir=${busDir} \
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
+	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \

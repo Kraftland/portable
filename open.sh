@@ -10,11 +10,13 @@ if [[ "$@" =~ "https://" ]] || [[ "$@" =~ "http://" ]]; then
 	exit $?
 fi
 
-if [[ $1 =~ "/" ]]; then
+if [[ -e "$1" ]]; then
+	echo "Arg1: $1"
 	export origReq="$1"
 fi
 
-if [[ $2 =~ "/" ]]; then
+if [[ -e "$2" ]]; then
+	echo "Arg2: $2"
 	export origReq="$2"
 fi
 
@@ -33,17 +35,17 @@ else
 	echo "Interpreting origReq as ${origReq}"
 fi
 
-if [[ "${origReq}" =~ "${bwBindPar}" ]] && [ ! -z ${bwBindPar} ]; then
-	echo "[Info] Detected bwBindPar!"
-	procOpen
-elif [[ "${origReq}" =~ "/tmp" ]]; then
+if [[ "${origReq}" =~ "/tmp" ]]; then
 	echo "[Info] Detected /tmp!"
 	procOpen
 elif [[ "${origReq}" =~ "/run/user" ]]; then
 	echo "[Info] Detected run path!"
 	procOpen
+elif [[ "$(dirname "${origReq}")" = "${HOME}" ]]; then
+	echo "[Info] Detected sandbox home"
+	link="${origReq}"
 else
-	link="${XDG_DATA_HOME}/${stateDirectory}/Shared/$(basename "${origReq}")"
+	link="${HOME}/Shared/$(basename "${origReq}")"
 	ln \
 		-sfr \
 		"${origReq}" ~/Shared/
