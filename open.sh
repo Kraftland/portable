@@ -33,11 +33,6 @@ else
 	echo "Interpreting origReq as ${origReq}"
 fi
 
-if [ ! -z ${bwBindPar} ]; then
-	export bwBindPar="$(realpath ${bwBindPar})"
-	echo "bwBindPar set to ${bwBindPar}"
-fi
-
 if [[ "${origReq}" =~ "${bwBindPar}" ]] && [ ! -z ${bwBindPar} ]; then
 	echo "[Info] Detected bwBindPar!"
 	procOpen
