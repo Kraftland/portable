@@ -139,3 +139,7 @@ portable-pools test
 
 ╰─>Portable Sandbox·top.kimiblock.test·🧐⤔
 ```
+
+# Code of Conduct
+
+Portable and any of its social environment follows the [Kraftland Code of Conduct](https://blog.kimiblock.top/notice/#Code-of-Conduct). Please be sure not to violate such ruleset.
