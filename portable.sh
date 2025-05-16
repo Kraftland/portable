@@ -203,7 +203,12 @@ function importEnv() {
 	addEnv "XDG_MUSIC_DIR=${XDG_DATA_HOME}/${stateDirectory}/Music" &
 	addEnv "XDG_PICTURES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Pictures" &
 	addEnv "XDG_VIDEOS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Videos" &
-	addEnv "LD_PRELOAD=${LD_PRELOAD}" &
+	if [[ "${pwCam}" = "true" ]]; then
+		pecho debug "Enabling pw-v4l2 preload..."
+		addEnv "LD_PRELOAD=${LD_PRELOAD} $(ls /usr/lib/pipewire-* -d | head -n 1)/v4l2/libpw-v4l2.so" &
+	else
+		addEnv "LD_PRELOAD=${LD_PRELOAD}" &
+	fi
 	addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
 	addEnv 'GDK_DEBUG=portals' &
 	addEnv 'GTK_USE_PORTAL=1' &
@@ -228,11 +233,6 @@ function importEnv() {
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
 	#PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
-	#if [ "${LD_PRELOAD}" = "" ]; then
-	#	export LD_PRELOAD="$PW_V4L2_LD_PRELOAD"
-	#else
-	#	export LD_PRELOAD="${LD_PRELOAD} ${PW_V4L2_LD_PRELOAD}"
-	#fi
 	echo "source ~/portable-generated.env" >"${XDG_DATA_HOME}"/${stateDirectory}/.bashrc
 }
 

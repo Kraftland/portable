@@ -21,7 +21,7 @@ bindInputDevices="false"
 # Takes boolean value. Binds /dev/video* into the sandbox. Required if target application uses /dev/video* interfaces directly instead of v4l2.
 bindCameras="false"
 
-# Takes boolean value. Binds PipeWire socket into the sandbox. Required if target application doesn't use Portals.
+# Takes boolean value. Binds PipeWire socket into the sandbox. Required if target application doesn't use Portals. Please be aware that such operation may impact the integrity of host.
 bindPipewire="false"
 
 # Expose all GPUs. Takes boolean value, usually used in games.
@@ -32,5 +32,8 @@ dbusWake="false"
 
 # Enables Network access within the sandbox. Defaults to true.
 bindNetwork="false"
+
+# Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true!
+pwCam="false"
 
 # Below you can set envs that will be imported into the application sandbox
