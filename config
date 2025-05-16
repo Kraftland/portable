@@ -36,4 +36,7 @@ bindNetwork="false"
 # Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true!
 pwCam="false"
 
+# Use zink for GL -> Vulkan translation
+useZink="true"
+
 # Below you can set envs that will be imported into the application sandbox

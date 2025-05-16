@@ -209,6 +209,13 @@ function importEnv() {
 	else
 		addEnv "LD_PRELOAD=${LD_PRELOAD}" &
 	fi
+	if [[ "${useZink}" = "true" ]]; then
+		addEnv "__GLX_VENDOR_LIBRARY_NAME=mesa" &
+		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink" &
+		addEnv "GALLIUM_DRIVER=zink" &
+		addEnv "LIBGL_KOPPER_DRI2=1" &
+		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json" &
+	fi
 	addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
 	addEnv 'GDK_DEBUG=portals' &
 	addEnv 'GTK_USE_PORTAL=1' &
@@ -232,7 +239,6 @@ function importEnv() {
 		echo "# Envs" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 		echo "isPortableEnvPresent=1" >>"${XDG_DATA_HOME}"/${stateDirectory}/portable.env
 	fi
-	#PW_V4L2_LD_PRELOAD="/usr/lib/pipewire-0.3/v4l2/libpw-v4l2.so"
 	echo "source ~/portable-generated.env" >"${XDG_DATA_HOME}"/${stateDirectory}/.bashrc
 }
 
