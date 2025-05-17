@@ -297,6 +297,7 @@ function execApp() {
 	echo "false" >"${XDG_RUNTIME_DIR}/portable/${appID}"/startSignal
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}"/startSignal
 	passPid &
+	termExec
 	systemd-run \
 	--user \
 	${sdOption} \
@@ -459,6 +460,10 @@ function execApp() {
 
 function execAppExistDirect() {
 	echo "${launchTarget} ${targetArgs}" >"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+}
+
+function termExec() {
+	trap "stopApp force" SIGTERM SIGINT SIGHUP SIGQUIT
 }
 
 function execAppExist() {
