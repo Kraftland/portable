@@ -709,8 +709,6 @@ function dbusProxy() {
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
 		-u ${proxyName} \
-		-p ExecStop="rm -r ${busDir}" \
-		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
 		-p KillMode=control-group \
 		-p Wants='xdg-document-portal.service xdg-desktop-portal.service' \
 		-p After='xdg-document-portal.service xdg-desktop-portal.service' \
@@ -831,7 +829,6 @@ function dbusProxy() {
 		-u ${proxyName}-a11y \
 		-p RestartMode=direct \
 		-p BindsTo="${proxyName}.service" \
-		-p ExecStop="rm -r ${busDirAy}" \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
@@ -997,11 +994,13 @@ function stopApp() {
 			return 0
 		fi
 	fi
-	#systemctl --user stop "${friendlyName}-dbus"
 	systemctl \
 		--user stop \
 		"portable-${friendlyName}.slice"
-	rm ${XDG_RUNTIME_DIR}/.flatpak/${instanceId} -r
+	rm -r "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	rm -r "${busDir}"
+	rm -r "${XDG_RUNTIME_DIR}/portable/${appID}"
+	rm -r "${busDirAy}"
 }
 
 function resetDocuments() {
