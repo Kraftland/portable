@@ -712,6 +712,8 @@ function dbusProxy() {
 		-p ExecStop="rm -r ${busDir}" \
 		-p ExecStop="rm -r ${XDG_RUNTIME_DIR}/portable/${appID}" \
 		-p KillMode=control-group \
+		-p Wants='xdg-document-portal.service xdg-desktop-portal.service' \
+		-p After='xdg-document-portal.service xdg-desktop-portal.service' \
 		-p SuccessExitStatus=SIGKILL \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
