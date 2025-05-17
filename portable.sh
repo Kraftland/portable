@@ -300,7 +300,6 @@ function execApp() {
 	desktopWorkaround &
 	importEnv
 	deviceBinding
-	defineRunPath
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	if [ -z ${bwBindPar} ] && [ -f ${bwBindPar} ]; then
 		bwBindPar=""
@@ -695,6 +694,7 @@ function generateFlatpakInfo() {
 }
 
 function dbusProxy() {
+	defineRunPath
 	generateFlatpakInfo
 	waylandDisplay
 	systemctl --user clean "${friendlyName}" &
