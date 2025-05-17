@@ -145,6 +145,7 @@ function waylandContext() {
 		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
 			pecho debug "Wayland security context available"
 			export securityContext=1
+			export wayDisplayBind="${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		else
 			pecho warn "Wayland security context not available"
 		fi
@@ -694,12 +695,13 @@ function generateFlatpakInfo() {
 }
 
 function dbusProxy() {
+	generateFlatpakInfo
 	waylandDisplay
 	systemctl --user clean "${friendlyName}" &
 	systemctl --user clean "${proxyName}".service &
 	systemctl --user clean "${proxyName}"-a11y.service &
+	systemctl --user clean "${proxyName}"-wayland-proxy.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
-	generateFlatpakInfo
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
 		systemctl --user reset-failed ${proxyName}.service
@@ -838,6 +840,20 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
+
+	if [[ "${securityContext}" = 1 ]]; then
+		systemd-run \
+			--user \
+			-p Slice="portable-${friendlyName}.slice" \
+			-u "${proxyName}"-wayland-proxy.service \
+			-p BindsTo="${proxyName}.service" \
+			-- way-secure \
+				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock" \
+				-e top.kimiblock.portable \
+				-a "${appID}" \
+				-i "${instanceId}"
+	fi
+
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
