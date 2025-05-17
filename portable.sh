@@ -122,7 +122,7 @@ function genXAuth() {
 
 function waylandDisplay() {
 	if [ ${XDG_SESSION_TYPE} = x11 ]; then
-		pecho debug "Skipped wayland detection"
+		pecho warn "Running on X11, be warned!"
 		wayDisplayBind="/$(uuidgen)/$(uuidgen)"
 		return 0
 	fi
@@ -138,6 +138,18 @@ function waylandDisplay() {
 		export wayDisplayBind="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
 	fi
 	waylandContext
+}
+
+function waylandContext() {
+	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
+		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
+			pecho debug "Wayland security context available"
+		else
+			pecho warn "Wayland security context not available"
+		fi
+	else
+		pecho warn "Security Context is not available. Report packaging issues!"
+	fi
 }
 
 function createWrapIfNotExist() {
@@ -355,6 +367,7 @@ function execApp() {
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
+	-p WAYLAND_DISPLAY="${wayDisplayBind}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -608,18 +621,6 @@ function deviceBinding() {
 	fi
 	if [[ ${bindPipewire} = "true" ]]; then
 		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
-	fi
-}
-
-function waylandContext() {
-	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
-		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
-			pecho debug "Wayland security context available"
-		else
-			pecho warn "Wayland security context not available"
-		fi
-	else
-		pecho warn "Security Context is not available. Report packaging issues!"
 	fi
 }
 
