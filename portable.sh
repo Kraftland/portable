@@ -137,6 +137,7 @@ function waylandDisplay() {
 		pecho debug "Detected Wayland display as ${WAYLAND_DISPLAY}"
 		export wayDisplayBind="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
 	fi
+	waylandContext
 }
 
 function createWrapIfNotExist() {
@@ -607,6 +608,18 @@ function deviceBinding() {
 	fi
 	if [[ ${bindPipewire} = "true" ]]; then
 		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
+	fi
+}
+
+function waylandContext() {
+	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
+		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
+			pecho debug "Wayland security context available"
+		else
+			pecho warn "Wayland security context not available"
+		fi
+	else
+		pecho warn "Security Context is not available. Report packaging issues!"
 	fi
 }
 
