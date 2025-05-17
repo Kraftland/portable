@@ -845,7 +845,7 @@ function dbusProxy() {
 		systemd-run \
 			--user \
 			-p Slice="portable-${friendlyName}.slice" \
-			-u "${proxyName}"-wayland-proxy.service \
+			-u "${proxyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
 			-- way-secure \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock" \
