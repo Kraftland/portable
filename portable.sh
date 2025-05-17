@@ -144,6 +144,7 @@ function waylandContext() {
 	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
 		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
 			pecho debug "Wayland security context available"
+			export securityContext=1
 		else
 			pecho warn "Wayland security context not available"
 		fi
@@ -296,7 +297,6 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	waylandDisplay
 	importEnv
 	deviceBinding
 	defineRunPath
@@ -694,7 +694,11 @@ function generateFlatpakInfo() {
 }
 
 function dbusProxy() {
-	systemctl --user clean "${friendlyName}*" &
+	waylandDisplay
+	systemctl --user clean "${friendlyName}" &
+	systemctl --user clean "${proxyName}".service &
+	systemctl --user clean "${proxyName}"-a11y.service &
+	systemctl --user clean "${friendlyName}-subprocess*".service &
 	generateFlatpakInfo
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
