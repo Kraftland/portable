@@ -697,10 +697,10 @@ function dbusProxy() {
 	defineRunPath
 	generateFlatpakInfo
 	waylandDisplay
-	systemctl --user clean "${friendlyName}" &
-	systemctl --user clean "${proxyName}".service &
-	systemctl --user clean "${proxyName}"-a11y.service &
-	systemctl --user clean "${proxyName}"-wayland-proxy.service &
+	systemctl --user clean "${friendlyName}*" &
+	systemctl --user clean "${proxyName}*".service &
+	systemctl --user clean "${proxyName}*"-a11y.service &
+	systemctl --user clean "${proxyName}*"-wayland-proxy.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
