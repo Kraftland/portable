@@ -782,6 +782,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Email.ComposeEmail \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.Lookup \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.Lookup.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ScreenCast \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ScreenCast.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Account.GetUserInformation \
