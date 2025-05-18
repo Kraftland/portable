@@ -1036,10 +1036,10 @@ function stopApp() {
 	systemctl \
 		--user stop \
 		"portable-${friendlyName}.slice"
-	rm -r "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	rm -r "${busDir}"
-	rm -r "${XDG_RUNTIME_DIR}/portable/${appID}"
-	rm -r "${busDirAy}"
+	rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	rm -rf "${busDir}"
+	rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
+	rm -rf "${busDirAy}"
 }
 
 function resetDocuments() {
