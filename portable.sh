@@ -843,7 +843,6 @@ function dbusProxy() {
 			--talk=org.freedesktop.portal.IBus.* \
 			--call=org.freedesktop.portal.IBus.*=* \
 			--call=org.freedesktop.portal.Request=* \
-			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 
 	if [[ "${securityContext}" = 1 ]]; then
