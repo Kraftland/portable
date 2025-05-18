@@ -696,7 +696,9 @@ function generateFlatpakInfo() {
 	install "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
 	pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-
+	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
+	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
+	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
 }
 
 function dbusProxy() {
