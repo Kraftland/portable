@@ -715,8 +715,8 @@ function dbusProxy() {
 		pecho warn "D-Bus a11y proxy failed last time"
 		systemctl --user reset-failed ${proxyName}-a11y.service &
 	fi
-	mkdir "${busDir}" -p
-	mkdir -p "${busDirAy}" -p
+	mkdir -p "${busDir}"
+	mkdir -p "${busDirAy}"
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	if [[ ${PORTABLE_LOGGING} = "debug" ]]; then
 		proxyArg="--log"

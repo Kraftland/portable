@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 # This is your Application ID, avoid conflict
-appID="top.kimiblock.example"
+appID="top.kimiblock.example111"
 
 # This is a friendly name of an application. It should only contain ASCII characters and not spaces.
 friendlyName="Portable_Test"
@@ -31,15 +31,15 @@ gameMode="false"
 dbusWake="false"
 
 # Enables Network access within the sandbox. Defaults to true.
-bindNetwork="false"
+bindNetwork="true"
 
 # Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true!
 pwCam="false"
 
 # Use zink for GL -> Vulkan translation
-useZink="true"
+useZink="false"
 
 # Enable compatibility workarounds for Qt5. Defaults to true.
-qt5Compat="false"
+qt5Compat="true"
 
 # Below you can set envs that will be imported into the application sandbox
