@@ -122,7 +122,7 @@ function genXAuth() {
 
 function waylandDisplay() {
 	if [ ${XDG_SESSION_TYPE} = x11 ]; then
-		pecho debug "Skipped wayland detection"
+		pecho warn "Running on X11, be warned!"
 		wayDisplayBind="/$(uuidgen)/$(uuidgen)"
 		return 0
 	fi
@@ -136,6 +136,21 @@ function waylandDisplay() {
 	elif [[ "${WAYLAND_DISPLAY}" =~ 'wayland-' ]]; then
 		pecho debug "Detected Wayland display as ${WAYLAND_DISPLAY}"
 		export wayDisplayBind="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
+	fi
+	waylandContext
+}
+
+function waylandContext() {
+	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
+		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
+			pecho debug "Wayland security context available"
+			export securityContext=1
+			export wayDisplayBind="${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
+		else
+			pecho warn "Wayland security context not available"
+		fi
+	else
+		pecho warn "Security Context is not available. Report packaging issues!"
 	fi
 }
 
@@ -283,10 +298,8 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	waylandDisplay
 	importEnv
 	deviceBinding
-	defineRunPath
 	mkdir -p "${XDG_DATA_HOME}"/"${stateDirectory}"/.config
 	if [ -z ${bwBindPar} ] && [ -f ${bwBindPar} ]; then
 		bwBindPar=""
@@ -354,6 +367,7 @@ function execApp() {
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
+	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -680,8 +694,14 @@ function generateFlatpakInfo() {
 }
 
 function dbusProxy() {
-	systemctl --user clean "${friendlyName}*" &
+	defineRunPath
 	generateFlatpakInfo
+	waylandDisplay
+	systemctl --user clean "${friendlyName}*" &
+	systemctl --user clean "${proxyName}*".service &
+	systemctl --user clean "${proxyName}*"-a11y.service &
+	systemctl --user clean "${proxyName}*"-wayland-proxy.service &
+	systemctl --user clean "${friendlyName}-subprocess*".service &
 	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
 		pecho warn "D-Bus proxy failed last time"
 		systemctl --user reset-failed ${proxyName}.service
@@ -818,6 +838,20 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--own="${busName}" \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
+
+	if [[ "${securityContext}" = 1 ]]; then
+		systemd-run \
+			--user \
+			-p Slice="portable-${friendlyName}.slice" \
+			-u "${proxyName}"-wayland-proxy \
+			-p BindsTo="${proxyName}.service" \
+			-- way-secure \
+				-e top.kimiblock.portable \
+				-a "${appID}" \
+				-i "${instanceId}" \
+				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
+	fi
+
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
