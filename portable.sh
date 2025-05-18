@@ -390,6 +390,7 @@ function execApp() {
 		--dev-bind /dev/dri /dev/dri \
 		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
+		--dev-bind-try /dev/udmabuf /dev/udmabuf \
 		--tmpfs /sys \
 		--ro-bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
