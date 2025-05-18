@@ -224,6 +224,12 @@ function importEnv() {
 	else
 		addEnv "LD_PRELOAD=${LD_PRELOAD}" &
 	fi
+	if [[ "${qt5Compat}" = "false" ]]; then
+		pecho debug "Skipping Qt 5 compatibility workarounds" &
+	else
+		pecho debug "Enabling Qt 5 compatibility workarounds" &
+		addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
+	fi
 	if [[ "${useZink}" = "true" ]]; then
 		addEnv "__GLX_VENDOR_LIBRARY_NAME=mesa" &
 		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink" &
@@ -231,7 +237,6 @@ function importEnv() {
 		addEnv "LIBGL_KOPPER_DRI2=1" &
 		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json" &
 	fi
-	addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
 	addEnv 'GDK_DEBUG=portals' &
 	addEnv 'GTK_USE_PORTAL=1' &
 	addEnv 'QT_AUTO_SCREEN_SCALE_FACTOR=1' &

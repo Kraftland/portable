@@ -39,4 +39,7 @@ pwCam="false"
 # Use zink for GL -> Vulkan translation
 useZink="true"
 
+# Enable compatibility workarounds for Qt5. Defaults to true.
+qt5Compat="false"
+
 # Below you can set envs that will be imported into the application sandbox
