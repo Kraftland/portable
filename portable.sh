@@ -1038,7 +1038,7 @@ function stopApp() {
 		"portable-${friendlyName}.slice"
 	rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 	rm -rf "${busDir}"
-	rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
+	#rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
 	rm -rf "${busDirAy}"
 }
 
