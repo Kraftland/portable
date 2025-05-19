@@ -145,6 +145,7 @@ function waylandContext() {
 		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
 			pecho debug "Wayland security context available"
 			export securityContext=1
+			export allowSecurityContext=1
 			export wayDisplayBind="${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		else
 			pecho warn "Wayland security context not available"
