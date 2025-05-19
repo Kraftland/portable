@@ -699,6 +699,28 @@ function generateFlatpakInfo() {
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
 	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
+	if [ -f "/usr/share/applications/${appID}.desktop" ]; then
+		pecho debug "Application desktop file detected"
+	else
+		pecho warn ".desktop file missing!"
+		echo '''[Desktop Entry]
+Name=placeholderName
+Exec=env _portableConfig=placeholderConfig portable
+Terminal=false
+Type=Application
+Icon=image-missing
+Comment=Application info missing
+Categories=Utility;''' >"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
+	sed -i \
+		"s|placeholderConfig|$(pathEscape "${_portableConfig}")|g" \
+		"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
+	sed -i \
+		"s|placeholderName|$(pathEscape "${appID}")|g" \
+		"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
+	install -Dm600 \
+		"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file" \
+		"${XDG_DATA_HOME}/applications/${appID}.desktop"
+	fi
 }
 
 function dbusProxy() {
@@ -1044,6 +1066,9 @@ function stopApp() {
 	rm -rf "${busDir}"
 	#rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
 	rm -rf "${busDirAy}"
+	rm -rf \
+		"${XDG_DATA_HOME}/applications/${appID}.desktop"\
+		2>/dev/null
 }
 
 function resetDocuments() {
