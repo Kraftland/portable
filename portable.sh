@@ -848,7 +848,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 
-	if [[ "${securityContext}" = 1 ]]; then
+	if [[ "${securityContext}" = 1 ]] || [[ ${allowSecurityContext} = 1 ]]; then
 		systemd-run \
 			--user \
 			-p Slice="portable-${friendlyName}.slice" \
