@@ -1,5 +1,5 @@
 # What is this
-Portable is a sandbox framework targeted for Desktop usage and offers ease of use for distro packagers. It offers many useful features for users and packagers:
+Portable is a sandbox framework targeted for Desktop usage and offers ease of use for distro packagers, which should work on any FHS compliant system. It offers many useful features for users and packagers:
 
 - Background Portal support.
 - Wayland Security Context support.
