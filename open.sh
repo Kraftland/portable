@@ -41,7 +41,7 @@ if [[ "${origReq}" =~ "/tmp" ]]; then
 elif [[ "${origReq}" =~ "/run/user" ]]; then
 	echo "[Info] Detected run path!"
 	procOpen
-elif [[ "$(dirname "${origReq}")" = "${HOME}" ]]; then
+elif [[ "$(dirname "${origReq}")" =~ "${HOME}" ]]; then
 	echo "[Info] Detected sandbox home"
 	link="${origReq}"
 else
