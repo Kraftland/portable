@@ -10,12 +10,12 @@ if [[ "$@" =~ "https://" ]] || [[ "$@" =~ "http://" ]]; then
 	exit $?
 fi
 
-if [[ -e "$1" ]]; then
+if [[ -e "$1" ]] || [[ -e "$(echo "$1" | sed 's|file:///|/|g')" ]]; then
 	echo "Arg1: $1"
 	export origReq="$1"
 fi
 
-if [[ -e "$2" ]]; then
+if [[ -e "$2" ]] || [[ -e "$(echo "$2" | sed 's|file:///|/|g')" ]]; then
 	echo "Arg2: $2"
 	export origReq="$2"
 fi
