@@ -150,7 +150,7 @@ function waylandContext() {
 			pecho warn "Wayland security context not available"
 		fi
 	else
-		pecho warn "Security Context is not available. Report packaging issues!"
+		pecho warn "Security Context is not available due to missing dependencies"
 	fi
 }
 
