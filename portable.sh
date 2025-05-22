@@ -740,12 +740,10 @@ function dbusProxy() {
 	resetUnit "${friendlyName}"
 	resetUnit "${proxyName}-a11y"
 	resetUnit "${friendlyName}-wayland-proxy"
-	resetUnit "${friendlyName}-socat"
 	systemctl --user clean "${friendlyName}*" &
 	systemctl --user clean "${proxyName}*".service &
 	systemctl --user clean "${proxyName}*"-a11y.service &
 	systemctl --user clean "${friendlyName}*"-wayland-proxy.service &
-	systemctl --user clean "${friendlyName}*"-socat.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
 	mkdir -p "${busDir}"
 	mkdir -p "${busDirAy}"
