@@ -372,7 +372,7 @@ function execApp() {
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
-	-p PassEnvironment=WAYLAND_DISPLAY \
+	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -882,7 +882,7 @@ function dbusProxy() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
-			-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
+			-p PassEnvironment=WAYLAND_DISPLAY \
 			-- \
 			way-secure \
 				-e top.kimiblock.portable \
