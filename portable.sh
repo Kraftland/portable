@@ -891,7 +891,11 @@ function dbusProxy() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
-			-- bash -c "&& way-secure -e top.kimiblock.portable -a "${appID}" -i "${instanceId}" --socket-fd 0"
+			-- way-secure\
+				-e top.kimiblock.portable\
+				-a "${appID}" \
+				-i "${instanceId}" \
+				--socket-fd 0
 	fi
 
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
