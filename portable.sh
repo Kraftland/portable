@@ -141,7 +141,7 @@ function waylandDisplay() {
 }
 
 function waylandContext() {
-	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ] && [ -x /usr/bin/s6-ipcserver-socketbinder ]; then
+	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ] && [ -x /usr/bin/socat ]; then
 		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
 			pecho debug "Wayland security context available"
 			export securityContext=1
@@ -876,8 +876,7 @@ function dbusProxy() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${proxyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
-			-- s6-ipcserver-socketbinder \
-				"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock" \
+			-- socat -d -d UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork FD:0 \
 				way-secure \
 				-e top.kimiblock.portable \
 				-a "${appID}" \
