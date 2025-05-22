@@ -882,6 +882,7 @@ function dbusProxy() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
+			-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
 			-- \
 			way-secure \
 				-e top.kimiblock.portable \
