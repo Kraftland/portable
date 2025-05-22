@@ -739,11 +739,13 @@ function dbusProxy() {
 	resetUnit "${proxyName}"
 	resetUnit "${friendlyName}"
 	resetUnit "${proxyName}-a11y"
-	resetUnit "${proxyName}-wayland-proxy"
+	resetUnit "${friendlyName}-wayland-proxy"
+	resetUnit "${friendlyName}-socat"
 	systemctl --user clean "${friendlyName}*" &
 	systemctl --user clean "${proxyName}*".service &
 	systemctl --user clean "${proxyName}*"-a11y.service &
-	systemctl --user clean "${proxyName}*"-wayland-proxy.service &
+	systemctl --user clean "${friendlyName}*"-wayland-proxy.service &
+	systemctl --user clean "${friendlyName}*"-socat.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
 	mkdir -p "${busDir}"
 	mkdir -p "${busDirAy}"
@@ -879,9 +881,17 @@ function dbusProxy() {
 		systemd-run \
 			--user \
 			-p Slice="portable-${friendlyName}.slice" \
-			-u "${proxyName}"-wayland-proxy \
+			-u "${friendlyName}"-socat \
 			-p BindsTo="${proxyName}.service" \
-			-- bash -c "socat -d -d UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork FD:0 & && way-secure -e top.kimiblock.portable -a "${appID}" -i "${instanceId}" --socket-fd 0"
+			-- socat -d -d \
+			UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork \
+			FD:0
+		systemd-run \
+			--user \
+			-p Slice="portable-${friendlyName}.slice" \
+			-u "${friendlyName}"-wayland-proxy \
+			-p BindsTo="${proxyName}.service" \
+			-- bash -c "&& way-secure -e top.kimiblock.portable -a "${appID}" -i "${instanceId}" --socket-fd 0"
 	fi
 
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
