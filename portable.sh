@@ -876,6 +876,7 @@ function dbusProxy() {
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 
 	if [[ "${securityContext}" = 1 ]] || [[ ${allowSecurityContext} = 1 ]]; then
+		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
 			--user \
 			-p Slice="portable-${friendlyName}.slice" \
