@@ -881,7 +881,7 @@ function dbusProxy() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
-			-- bash -c "socat -d -d UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork FD:0 & way-secure -e top.kimiblock.portable -a "${appID}" -i "${instanceId}" --socket-fd 0 & wait"
+			-- bash -c "socat -d -d UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork EXEC:"way-secure -e top.kimiblock.portable -a "${appID}" -i "${instanceId}" --socket-fd 0",fdin=0"
 	fi
 
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
