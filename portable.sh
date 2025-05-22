@@ -435,6 +435,8 @@ function execApp() {
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" /run \
+		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
+			"${XDG_RUNTIME_DIR}/portable/${appID}" \
 		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
 		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
 		--dir /run/host \
