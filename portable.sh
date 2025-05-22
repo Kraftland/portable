@@ -883,6 +883,7 @@ function dbusProxy() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-socat \
 			-p BindsTo="${proxyName}.service" \
+			-p SuccessExitStatus=14 \
 			-- socat -d -d \
 			UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork \
 			FD:0
