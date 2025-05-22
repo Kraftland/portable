@@ -882,7 +882,11 @@ function dbusProxy() {
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
 			-- \
-			"way-secure -e top.kimiblock.portable -a ${appID} -i ${instanceId} --socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock""
+			way-secure \
+				-e top.kimiblock.portable \
+				-a ${appID} \
+				-i ${instanceId} \
+				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock
 	fi
 
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
