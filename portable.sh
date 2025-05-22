@@ -372,7 +372,7 @@ function execApp() {
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
-	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
+	-p PassEnvironment=WAYLAND_DISPLAY \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
