@@ -881,22 +881,9 @@ function dbusProxy() {
 		systemd-run \
 			--user \
 			-p Slice="portable-${friendlyName}.slice" \
-			-u "${friendlyName}"-socat \
-			-p BindsTo="${proxyName}.service" \
-			-p SuccessExitStatus=14 \
-			-- socat -d -d \
-			UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork \
-			FD:0
-		systemd-run \
-			--user \
-			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
-			-- way-secure\
-				-e top.kimiblock.portable\
-				-a "${appID}" \
-				-i "${instanceId}" \
-				--socket-fd 0
+			-- bash -c "socat -d -d UNIX-LISTEN:"${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock",reuseaddr,fork FD:0 & way-secure -e top.kimiblock.portable -a "${appID}" -i "${instanceId}" --socket-fd 0 & wait"
 	fi
 
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
