@@ -886,7 +886,7 @@ function dbusProxy() {
 				-e top.kimiblock.portable \
 				-a ${appID} \
 				-i ${instanceId} \
-				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock
+				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
 
 	if [ ! -S ${XDG_RUNTIME_DIR}/at-spi/bus ]; then
