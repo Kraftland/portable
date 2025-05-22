@@ -141,7 +141,7 @@ function waylandDisplay() {
 }
 
 function waylandContext() {
-	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ] && [ -x /usr/bin/socat ]; then
+	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
 		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
 			pecho debug "Wayland security context available"
 			export securityContext=1
