@@ -725,23 +725,26 @@ Categories=Utility;''' >"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
 	fi
 }
 
+function resetUnit() {
+	if [[ $(systemctl --user is-failed ${1}.service) = failed ]]; then
+		pecho warn "${1} failed last time"
+		systemctl --user reset-failed ${1}.service
+	fi
+}
+
 function dbusProxy() {
 	defineRunPath
 	generateFlatpakInfo
 	waylandDisplay
+	resetUnit "${proxyName}"
+	resetUnit "${friendlyName}"
+	resetUnit "${proxyName}-a11y"
+	resetUnit "${proxyName}-wayland-proxy"
 	systemctl --user clean "${friendlyName}*" &
 	systemctl --user clean "${proxyName}*".service &
 	systemctl --user clean "${proxyName}*"-a11y.service &
 	systemctl --user clean "${proxyName}*"-wayland-proxy.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
-	if [[ $(systemctl --user is-failed ${proxyName}.service) = failed ]]; then
-		pecho warn "D-Bus proxy failed last time"
-		systemctl --user reset-failed ${proxyName}.service
-	fi
-	if [[ $(systemctl --user is-failed ${proxyName}-a11y.service) = failed ]]; then
-		pecho warn "D-Bus a11y proxy failed last time"
-		systemctl --user reset-failed ${proxyName}-a11y.service &
-	fi
 	mkdir -p "${busDir}"
 	mkdir -p "${busDirAy}"
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
