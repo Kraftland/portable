@@ -941,7 +941,7 @@ function execAppUnsafe() {
 		-p Slice="portable-${friendlyName}.slice" \
                 -p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
                 -p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
-                -p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
+                -p EnvironmentFile=-"${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
 		-u ${unitName} \
 		--tty \
 		${launchTarget}
