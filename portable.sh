@@ -797,6 +797,8 @@ function dbusProxy() {
 			--own=com.belmoussaoui.ashpd.demo \
 			--own="${appID}" \
 			--own="${appID}".* \
+			--own="org.mpris.MediaPlayer2.${appID##*.}" \
+			--own="org.mpris.MediaPlayer2.${appID##*.}".* \
 			--talk=org.freedesktop.Notifications \
 			--talk=org.kde.StatusNotifierWatcher \
 			--call=org.freedesktop.Notifications.*=* \
