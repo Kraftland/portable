@@ -10,6 +10,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 - Packaging Friendly as portable only requires a config file to function.
 - Storage efficient compared to Flatpak: Using host system as the "runtime".
 - Hybrid GPU workarounds are automatically applied to prevent waking up discrete GPUs, often caused by Vulkan and Electron applications.
+- Input Method automatic detection.
 
 ## Available for
 
@@ -27,6 +28,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
     - QQ (aur/linuxqq-portable)
     - Discord (aur/discord-bwrap)
     - Larksuite (aur/larksuite-portable)
+    - Firefox (aur/firefox-portable)
 
 # Limitations:
 
