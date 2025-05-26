@@ -164,13 +164,17 @@ function createWrapIfNotExist() {
 
 function inputMethod() {
 	if [ ${waylandOnly} = true ]; then
+		pecho debug "Using Wayland Input Method"
 		export QT_IM_MODULE=wayland
 		export GTK_IM_MODULE=wayland
 		IBUS_USE_PORTAL=1
-	elif [ ${waylandOnly} = "adaptive" ] && [ ${XDG_SESSION_TYPE} = "wayland" ]; then
+		return 0
+	elif [[ ${waylandOnly} =~ "adaptive" ]] && [[ ${XDG_SESSION_TYPE} =~ "wayland" ]]; then
+		pecho debug "Using Wayland Input Method"
 		export QT_IM_MODULE=wayland
 		export GTK_IM_MODULE=wayland
 		IBUS_USE_PORTAL=1
+		return 0
 	fi
 	if [[ ${XMODIFIERS} =~ fcitx ]] || [[ ${QT_IM_MODULE} =~ fcitx ]] || [[ ${GTK_IM_MODULE} =~ fcitx ]]; then
 		export QT_IM_MODULE=fcitx
