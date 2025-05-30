@@ -664,10 +664,14 @@ function warnMulRunning() {
 			org.kde.StatusNotifierItem.Activate \
 			int32:114514 \
 			int32:1919810
-		if [[ $? = 0 ]]; then
-			exit 0
-		else
+		status=$?
+		if [[ ${status} = 1 ]]; then
 			appANR
+		elif [[ ${status} -gt 0 ]]
+			appANR
+			exit ${status}
+		else
+			exit ${status}
 		fi
 	else
 		pecho info "Skipping D-Bus wake"
