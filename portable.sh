@@ -667,7 +667,7 @@ function warnMulRunning() {
 		status=$?
 		if [[ ${status} = 1 ]]; then
 			appANR
-		elif [[ ${status} -gt 0 ]]
+		elif [[ ${status} -gt 0 ]]; then
 			appANR
 			exit ${status}
 		else
