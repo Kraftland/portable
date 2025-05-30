@@ -636,6 +636,14 @@ function deviceBinding() {
 	fi
 }
 
+function appANR() {
+	if [[ "${LANG}" =~ 'zh_CN' ]]; then
+		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
+	else
+		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
+	fi
+}
+
 function warnMulRunning() {
 	if [ "${dbusWake}" = true ]; then
 		id=$(dbus-send \
@@ -658,6 +666,8 @@ function warnMulRunning() {
 			int32:1919810
 		if [[ $? = 0 ]]; then
 			exit 0
+		else
+			appANR
 		fi
 	else
 		pecho info "Skipping D-Bus wake"
@@ -670,11 +680,7 @@ function warnMulRunning() {
 		execAppExistDirect ${launchTarget} ${targetArgs}
 		exit $?
 	fi
-	if [[ "${LANG}" =~ 'zh_CN' ]]; then
-		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
-	else
-		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
-	fi
+	appANR
 	if [ $? = 0 ]; then
 		stopApp force
 	else
