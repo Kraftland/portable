@@ -89,7 +89,7 @@ function genXAuth() {
 	pecho debug "Processing X Server security restriction..."
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	pecho debug "Detecting display as ${DISPLAY}"
-	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(hostnamectl --static)/unix: " ]]; then
+	if [[ $(xauth list ${DISPLAY} | head -n 1) =~ "$(cat /etc/hostname)/unix: " ]]; then
 		pecho warn "Adding new display..."
 		export authHash="$(xxd -p -l 16 /dev/urandom)"
 		xauth \
@@ -750,10 +750,6 @@ function dbusProxy() {
 	defineRunPath
 	generateFlatpakInfo
 	waylandDisplay
-	resetUnit "${proxyName}"
-	resetUnit "${friendlyName}"
-	resetUnit "${proxyName}-a11y"
-	resetUnit "${friendlyName}-wayland-proxy"
 	systemctl --user clean "${friendlyName}*" &
 	systemctl --user clean "${proxyName}*".service &
 	systemctl --user clean "${proxyName}*"-a11y.service &
@@ -973,6 +969,10 @@ function enableSandboxFunc() {
 }
 
 function questionFirstLaunch() {
+	resetUnit "${proxyName}"
+	resetUnit "${friendlyName}" &
+	resetUnit "${proxyName}-a11y" &
+	resetUnit "${friendlyName}-wayland-proxy"
 	if [ ! -f "${XDG_DATA_HOME}"/${stateDirectory}/options/sandbox ]; then
 		if [[ "${LANG}" =~ 'zh_CN' ]]; then
 			/usr/bin/zenity \
