@@ -142,7 +142,7 @@ function waylandDisplay() {
 
 function waylandContext() {
 	if [ -x /usr/bin/wayland-info ] && [ -x /usr/bin/way-secure ]; then
-		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]]; then
+		if [[ "${XDG_SESSION_TYPE}" = wayland ]] && [[ "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" ]] && [[ ${allowSecurityContext} = 1 ]]; then
 			pecho debug "Wayland security context available"
 			export securityContext=1
 			export wayDisplayBind="${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
@@ -888,7 +888,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Request=* \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
 
-	if [[ "${securityContext}" = 1 ]] || [[ ${allowSecurityContext} = 1 ]]; then
+	if [[ "${securityContext}" = 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
 			--user \
