@@ -323,6 +323,7 @@ function execApp() {
 	systemd-run \
 	--user \
 	${sdOption} \
+	--send-sighup \
 	-u "${unitName}" \
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
