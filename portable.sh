@@ -324,6 +324,8 @@ function execApp() {
 	--user \
 	${sdOption} \
 	--send-sighup \
+	--service-type=exec \
+	--wait \
 	-u "${unitName}" \
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
