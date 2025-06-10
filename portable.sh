@@ -89,7 +89,7 @@ function genXAuth() {
 	pecho debug "Processing X Server security restriction..."
 	touch "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority"
 	pecho debug "Detecting display as ${DISPLAY}"
-	if [[ $(xauth list "${DISPLAY}" | head -n 1) =~ "$(cat /etc/hostname)/unix: " ]]; then
+	if [[ $(xauth list "${DISPLAY}" | head -n 1) =~ "$(hostname)/unix: " ]]; then
 		pecho warn "Adding new display..."
 		authHash="$(xxd -p -l 16 /dev/urandom)"
 		xauth add "${DISPLAY}" . "${authHash}"
@@ -491,7 +491,7 @@ function termExec() {
 
 function execAppExist() {
 	unitName="${unitName}-subprocess-$(uuidgen)"
-	instanceId=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | grep instance-id | cut -c '13-')
+	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
 	stopApp
 	if [[ $? -eq 0 ]]; then
@@ -535,11 +535,9 @@ function deviceBinding() {
 	if [[ "${gameMode}" = "true" ]]; then
 		bwSwitchableGraphicsArg=""
 		pecho debug "Binding all GPUs in Game Mode"
-		ls /dev/nvidia* 2>/dev/null 1>/dev/null
-		lsStatus=$?
-		if [[ $? -eq 0 ]]; then
+		if ls /dev/nvidia* &> /dev/null; then
 			pecho debug "Binding NVIDIA GPUs"
-			for _card in $(ls /dev/nvidia*); do
+			for _card in /dev/nvidia*; do
 				if [[ -e "${_card}" ]]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
 				fi
@@ -560,10 +558,10 @@ function deviceBinding() {
 		pecho debug "Detecting GPU..."
 		bwSwitchableGraphicsArg=""
 		videoMod=$(lsmod)
-		if [[ $(ls /dev/dri/renderD* -la | wc -l) -eq 1 && ${videoMod} =~ nvidia ]]; then
+		if [[ $(lspci -nn | grep -c '\[03..\]:') -eq 1 && "${videoMod}" =~ "nvidia" ]]; then
 			pecho info "Using single NVIDIA GPU"
 			addEnv "GSK_RENDERER=ngl"
-			for _card in $(ls /dev/nvidia*); do
+			for _card in /dev/nvidia*; do
 				if [[ -e "${_card}" ]]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
 				fi
@@ -572,12 +570,14 @@ function deviceBinding() {
 			if [[ "${videoMod}" =~ "nvidia" ]]; then
 				pecho debug "Activating hybrid GPU detection"
 				bwSwitchableGraphicsArg="--tmpfs /dev/dri"
-				for device in $(ls /sys/class/drm/renderD12* -d); do
-					if [[ $(cat "${device}/device/vendor") = 0x10de ]]; then
-						pecho debug "Device $(basename "${device}") detected as NVIDIA GPU"
-					else
-						bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind /dev/dri/$(basename "${device}") /dev/dri/$(basename "${device}")"
-						pecho debug "Device $(basename "${device}") binded"
+				for device in /sys/class/drm/renderD12*; do
+					if [[ -e "${device}" ]]; then
+						if [[ $(cat "${device}/device/vendor") = 0x10de ]]; then
+							pecho debug "Device $(basename "${device}") detected as NVIDIA GPU"
+						else
+							bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind /dev/dri/$(basename "${device}") /dev/dri/$(basename "${device}")"
+							pecho debug "Device $(basename "${device}") binded"
+						fi
 					fi
 				done
 			else
@@ -587,7 +587,7 @@ function deviceBinding() {
 		elif [[ "${videoMod}" =~ "nvidia" ]]; then
 			pecho debug "Using NVIDIA GPU"
 			addEnv "GSK_RENDERER=ngl"
-			for _card in $(ls /dev/nvidia*); do
+			for _card in /dev/nvidia*; do
 				if [[ -e "${_card}" ]]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
 				fi
@@ -598,24 +598,20 @@ function deviceBinding() {
 	bwCamPar=""
 	if [[ "${bindCameras}" = "true" ]]; then
 		pecho debug "Detecting Camera..."
-		for camera in $(ls /dev/video*); do
-			if [[ -e "${camera}" ]]; then
-				bwCamPar="${bwCamPar} --dev-bind ${camera} ${camera}"
+		for _camera in /dev/video*; do
+			if [[ -e "${_camera}" ]]; then
+				bwCamPar="${bwCamPar} --dev-bind ${_camera} ${_camera}"
 			fi
 		done
 	fi
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
 	if [[ "${bindInputDevices}" = "true" ]]; then
 		bwInputArg="--dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
-		ls /dev/hidraw* 2>/dev/null 1>/dev/null
-		lsStatus=$?
-		if [[ ${lsStatus} -eq 0 ]]; then
-			for _device in $(ls /dev/hidraw*); do
-				if [[ -e "${_card}" ]]; then
-					bwInputArg="${bwInputArg} --dev-bind ${_device} ${_device}"
-				fi
-			done
-		fi
+		for _device in /dev/hidraw*; do
+			if [[ -e "${_device}" ]]; then
+				bwInputArg="${bwInputArg} --dev-bind ${_device} ${_device}"
+			fi
+		done
 		pecho warn "Detected input preference as expose, setting arg: ${bwInputArg}"
 	else
 		bwInputArg=""
@@ -724,23 +720,25 @@ function generateFlatpakInfo() {
 		pecho debug "Application desktop file detected"
 	else
 		pecho warn ".desktop file missing!"
-		echo '''[Desktop Entry]
-Name=placeholderName
-Exec=env _portableConfig=placeholderConfig portable
-Terminal=false
-Type=Application
-Icon=image-missing
-Comment=Application info missing
-Categories=Utility;''' >"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-	sed -i \
-		"s|placeholderConfig|$(pathEscape "${_portableConfig}")|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-	sed -i \
-		"s|placeholderName|$(pathEscape "${appID}")|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-	install -Dm600 \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file" \
-		"${XDG_DATA_HOME}/applications/${appID}.desktop"
+		cat <<- 'EOF' > "${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
+		[Desktop Entry]
+		Name=placeholderName
+		Exec=env _portableConfig=placeholderConfig portable
+		Terminal=false
+		Type=Application
+		Icon=image-missing
+		Comment=Application info missing
+		Categories=Utility;
+		EOF
+		sed -i \
+			"s|placeholderConfig|$(pathEscape "${_portableConfig}")|g" \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
+		sed -i \
+			"s|placeholderName|$(pathEscape "${appID}")|g" \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
+		install -Dm600 \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file" \
+			"${XDG_DATA_HOME}/applications/${appID}.desktop"
 	fi
 }
 
