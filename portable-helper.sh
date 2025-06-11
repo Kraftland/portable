@@ -37,5 +37,23 @@ if [ $(ps aux | wc -l) = "7" ]; then
 	exit 0
 else
 	echo "Warning! There're still processes running in the background."
-	_state=$(notify-send "Application running in background!" "Terminate as required")
+
+	_state=$(notify-send --expire-time=10000 --wait --action="kill"="Gracefully Terminate" --action="ignore"="Ignore" "Application running in background!" "Terminate as required")
+	if [[ ${_state} = "kill" ]]; then
+		echo "User opted to kill processes"
+		kill %1
+		for pid in /proc/[0-9]*; do
+			pid="${pid#/proc/}"
+			echo "Terminating process ${pid}" &
+			if [[ $(cat /proc/${pid}/cmdline | tr '\000' ' ') =~ "/usr/lib/portable/helper" ]] || [[ ${pid} = 1 ]]; then
+				echo "Skipping self..."
+				continue
+			fi
+			kill "${pid}" &
+		done
+		sleep 1s
+		exit 0
+	else
+		echo "User denied termination"
+	fi
 fi
