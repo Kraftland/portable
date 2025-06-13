@@ -720,6 +720,10 @@ function generateFlatpakInfo() {
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
 	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
+	echo "instanceId=${instanceId}" > "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	echo "appID=${appID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	echo "busDir=${busDir}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	echo "busDirAy=${busDirAy}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	if [ -f "/usr/share/applications/${appID}.desktop" ]; then
 		pecho debug "Application desktop file detected"
 	else
@@ -1093,17 +1097,27 @@ function stopApp() {
 		fi
 	fi
 	pecho info "Stopping application..."
+	if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/control" ]]; then
+		pecho debug "Sourcing configuration..." &
+		source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	else
+		pecho warn "Control file missing! Using available parameters. Did you upgrade portable?" &
+	fi
+	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]] && [[ -n "${busDirAy}" ]]; then
+		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
+		rm -rf "${busDir}"
+		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
+		rm -rf "${busDirAy}"
+		rm -rf \
+			"${XDG_DATA_HOME}/applications/${appID}.desktop"\
+			2>/dev/null
+	else
+		pecho warn "Clean shutdown not possible due to missing information."
+	fi
 	systemctl \
 		--user stop \
 		"portable-${friendlyName}.slice"
-	rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
-	rm -rf "${busDir}"
-	rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
-	rm -rf "${busDirAy}"
-	rm -rf \
-		"${XDG_DATA_HOME}/applications/${appID}.desktop"\
-		2>/dev/null
 }
 
 function resetDocuments() {
