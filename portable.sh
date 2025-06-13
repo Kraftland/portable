@@ -387,7 +387,7 @@ function execApp() {
 		--unshare-uts \
 		--unshare-pid \
 		--unshare-user \
-		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 			/.flatpak-info \
 		--dir /tmp \
   		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
@@ -447,7 +447,7 @@ function execApp() {
 		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
 		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
 		--dir /run/host \
-		--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
@@ -467,6 +467,8 @@ function execApp() {
 			"${XDG_DATA_HOME}"/icons \
 		--ro-bind-try "${XDG_DATA_HOME}"/icons \
 			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons" \
+		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
+			"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info" \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${wayDisplayBind}" \
 		--ro-bind-try "${XDG_CONFIG_HOME}"/fontconfig \
@@ -497,7 +499,7 @@ function termExec() {
 
 function execAppExist() {
 	export unitName="${unitName}-subprocess-$(uuidgen)"
-	export instanceId=$(cat "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info | grep instance-id | cut -c '13-')
+	export instanceId=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | grep instance-id | cut -c '13-')
 	execApp
 	stopApp
 	if [[ $? = 0 ]]; then
@@ -699,20 +701,20 @@ function warnMulRunning() {
 function generateFlatpakInfo() {
 	pecho debug "Installing flatpak-info..."
 	install /usr/lib/portable/flatpak-info \
-		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	pecho debug "Generating flatpak-info..."
 	export instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
 	sed -i "s|placeHolderAppName|${appID}|g" \
-		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeholderInstanceId|${instanceId}|g" \
-		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
-		"${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info
+		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 	install /usr/lib/portable/bwrapinfo.json \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	install "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
 	pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
@@ -788,9 +790,9 @@ function dbusProxy() {
 			--ro-bind /usr/bin /usr/bin \
 			--ro-bind-try /usr/share /usr/share \
 			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
-			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+			--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 				"${XDG_RUNTIME_DIR}/.flatpak-info" \
-			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+			--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 				/.flatpak-info \
 			-- /usr/bin/xdg-dbus-proxy \
 			"${DBUS_SESSION_BUS_ADDRESS}" \
@@ -925,9 +927,9 @@ function dbusProxy() {
 			--ro-bind /usr/bin /usr/bin \
 			--ro-bind-try /usr/share /usr/share \
 			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
-			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+			--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 				"${XDG_RUNTIME_DIR}/.flatpak-info" \
-			--ro-bind "${XDG_DATA_HOME}/${stateDirectory}"/flatpak-info \
+			--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 				/.flatpak-info \
 			-- /usr/bin/xdg-dbus-proxy \
 			unix:path="${XDG_RUNTIME_DIR}/at-spi/bus" \
