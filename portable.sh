@@ -1081,16 +1081,16 @@ function passPid() {
 }
 
 function stopApp() {
-	pecho info "Stopping application..."
 	if [[ $@ =~ "force" ]]; then
-		pecho info "Stopping the application on user request"
+		pecho info "Force stop is called"
 	else
 		sleep 1s
 		if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ '-subprocess-' ]] || [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~  "${friendlyName}.service" ]]; then
-			pecho warn "Not stopping the slice because one or more instance are still running"
+			pecho warn "Not stopping the slice because one or more instances are still running"
 			return 0
 		fi
 	fi
+	pecho info "Stopping application..."
 	systemctl \
 		--user stop \
 		"portable-${friendlyName}.slice"
@@ -1115,7 +1115,7 @@ function cmdlineDispatcher() {
 	for i in "${!cmdlineArgs[@]}"; do
 		if [[ "${cmdlineArgs[${i}]}" == "--" ]]; then
 			indexSep=${i}
-			break # break the loop at separater
+			break # break the loop at separator
 		fi
 		continue
 	done
