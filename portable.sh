@@ -1015,7 +1015,7 @@ function questionFirstLaunch() {
 			enableSandboxFunc &
 			return 0
 		fi
-	elif [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox") = "disableSandbox" ]]; then
+	elif [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox") =~ "disableSandbox" ]]; then
 		export trashAppUnsafe=1
 	fi
 }
