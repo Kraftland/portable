@@ -23,27 +23,21 @@ if [[ "${_portalConfig}" ]]; then
 fi
 
 if [[ -f "${_portableConfig}" ]]; then
-	pecho \
-		info \
-		"Configuration specified as absolute path: ${_portableConfig}"
+	pecho info "Configuration specified as absolute path: ${_portableConfig}"
 	source "${_portableConfig}"
 else
 	if [[ -f "/usr/lib/portable/info/${_portableConfig}/config" ]]; then
-		pecho \
-			info \
+		pecho info \
 			"Configuration specified as global name /usr/lib/portable/info/${_portableConfig}/config"
 		source "/usr/lib/portable/info/${_portableConfig}/config"
 		export _portableConfig="/usr/lib/portable/info/${_portableConfig}/config"
 	elif [[ -f "$(pwd)/${_portableConfig}" ]]; then
-		pecho \
-			info \
+		pecho info \
 			"Configuration specified as relative path ${_portableConfig}"
 		source "$(pwd)/${_portableConfig}"
 		export _portableConfig="$(pwd)/${_portableConfig}"
 	else
-		pecho \
-			crit \
-			"Specified config cannot be found!"
+		pecho crit "Specified config cannot be found!"
 		exit 1
 	fi
 fi
@@ -102,7 +96,7 @@ function genXAuth() {
 			add "$(xauth list "${DISPLAY}" | head -n 1)"
 	fi
 	if [[ ! -f "${HOME}/.XAuthority" && -z "${XAUTHORITY}" ]]; then
-		# pecho warn "Could not determine XAuthority file path"
+		pecho warn "Could not determine XAuthority file path"
 		xhost +localhost
 	fi
 	if xauth -f \
@@ -182,7 +176,7 @@ function inputMethod() {
 		export GTK_IM_MODULE=gcin
 		export LC_CTYPE=zh_TW.UTF-8
 	else
-		pecho warn "Input Method potentially broken! Please set $XMODIFIERS properly"
+		pecho warn "Input Method potentially broken! Please set \$XMODIFIERS properly"
 		# Guess the true IM based on running processes
 		runningProcess=$(ps -U "$(whoami)")
 		if [[ "${runningProcess}" =~ "ibus-daemon" ]]; then
@@ -261,6 +255,7 @@ function importEnv() {
 }
 
 function getChildPid() {
+	local cGroup cmdlineArg
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
 	pecho debug "Getting PID from unit ${unitName}'s control group $(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')"
 	for childPid in $(pgrep --cgroup "${cGroup}"); do
@@ -306,7 +301,7 @@ function execApp() {
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
 	else
-		pecho debug "bwBindPar is ${bwBindPar}"
+		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
@@ -478,11 +473,11 @@ function execApp() {
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
 		${bwCamPar} \
 		-- \
-			/usr/lib/portable/helper "${launchTarget}" "${targetArgs}"
+			/usr/lib/portable/helper "${launchTarget}" "${targetArgs[@]}"
 }
 
 function execAppExistDirect() {
-	echo "${launchTarget} ${targetArgs}" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	echo "${launchTarget}" "${targetArgs[@]}" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
 
 function termExec() {
@@ -558,7 +553,7 @@ function deviceBinding() {
 		pecho debug "Detecting GPU..."
 		bwSwitchableGraphicsArg=""
 		videoMod=$(lsmod)
-		if [[ $(lspci -nn | grep -c '\[03..\]:') -eq 1 && "${videoMod}" =~ "nvidia" ]]; then
+		if [[ $(find /dev/dri/renderD* -maxdepth 0 -type c 2>/dev/null | wc -l) -eq 1 && "${videoMod}" =~ "nvidia" ]]; then
 			pecho info "Using single NVIDIA GPU"
 			addEnv "GSK_RENDERER=ngl"
 			for _card in /dev/nvidia*; do
@@ -678,7 +673,7 @@ function warnMulRunning() {
 		export launchTarget="/usr/bin/bash"
 		execAppExist
 	else
-		execAppExistDirect "${launchTarget}" "${targetArgs}"
+		execAppExistDirect
 		exit "$?"
 	fi
 	appANR
@@ -721,14 +716,14 @@ function generateFlatpakInfo() {
 	else
 		pecho warn ".desktop file missing!"
 		cat <<- 'EOF' > "${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-		[Desktop Entry]
-		Name=placeholderName
-		Exec=env _portableConfig=placeholderConfig portable
-		Terminal=false
-		Type=Application
-		Icon=image-missing
-		Comment=Application info missing
-		Categories=Utility;
+			[Desktop Entry]
+			Name=placeholderName
+			Exec=env _portableConfig=placeholderConfig portable
+			Terminal=false
+			Type=Application
+			Icon=image-missing
+			Comment=Application info missing
+			Categories=Utility;
 		EOF
 		sed -i \
 			"s|placeholderConfig|$(pathEscape "${_portableConfig}")|g" \
@@ -903,7 +898,7 @@ function dbusProxy() {
 			way-secure \
 				-e top.kimiblock.portable \
 				-a "${appID}" \
-				-i "${}" \
+				-i "${instanceId}" \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
 
