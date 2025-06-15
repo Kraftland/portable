@@ -724,6 +724,7 @@ function generateFlatpakInfo() {
 	echo "appID=${appID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	echo "busDir=${busDir}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	echo "busDirAy=${busDirAy}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	echo "friendlyName=${friendlyName}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	if [ -f "/usr/share/applications/${appID}.desktop" ]; then
 		pecho debug "Application desktop file detected"
 	else
