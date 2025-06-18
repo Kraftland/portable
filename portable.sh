@@ -475,7 +475,7 @@ function execApp() {
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
 		${bwCamPar} \
 		-- \
-			/usr/lib/portable/helper "${launchTarget}" "${targetArgs[@]}"
+			/usr/lib/portable/helper ${launchTarget} "${targetArgs[@]}"
 }
 
 function execAppExistDirect() {
