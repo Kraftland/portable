@@ -17,10 +17,11 @@ function startLoop() {
 		if [[ ${_launch} =~ terminate ]]; then
 			break
 		elif [[ ${_launch} = finish ]]; then
-			return 0
+			echo "Finished Start"
+		else
+			echo "Starting application"
+			$(cat /run/startSignal) &
 		fi
-		echo "Starting application"
-		$(cat /run/startSignal) &
 	done
 }
 
