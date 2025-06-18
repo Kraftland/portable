@@ -477,6 +477,8 @@ function execApp() {
 		${bwCamPar} \
 		-- \
 			/usr/lib/portable/helper ${launchTarget} "${targetArgs[@]}"
+
+		stopApp
 }
 
 function terminateOnRequest() {
