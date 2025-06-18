@@ -309,6 +309,7 @@ function execApp() {
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	passPid &
 	termExec
+	terminateOnRequest &
 	systemd-run \
 	--user \
 	${sdOption} \
@@ -478,6 +479,20 @@ function execApp() {
 			/usr/lib/portable/helper ${launchTarget} "${targetArgs[@]}"
 }
 
+function terminateOnRequest() {
+	while true; do
+		inotifywait \
+			-e modify \
+			--quiet \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
+		if [[ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal")" =~ "terminate-now" ]]; then
+			stopApp force
+			exit 0
+			break
+		fi
+	done
+}
+
 function execAppExistDirect() {
 	echo "${launchTarget}" "${targetArgs[@]}" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
@@ -490,10 +505,7 @@ function execAppExist() {
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
-	stopApp
-	if [[ $? -eq 0 ]]; then
-		exit 0
-	fi
+	exit $?
 }
 
 function shareFile() {
@@ -1042,7 +1054,6 @@ function launch() {
 		dbusProxy
 		pecho info "Launching ${appID}..."
 		execApp
-		stopApp
 	fi
 }
 
@@ -1075,10 +1086,16 @@ function passPid() {
 function stopApp() {
 	if [[ "$*" =~ "force" ]]; then
 		pecho info "Force stop is called"
+		#sleep 0.5s
+		systemctl \
+			--user kill -sSIGKILL \
+			"portable-${friendlyName}.slice"
 	else
 		sleep 1s
-		if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ "-subprocess-" ]] || \
-			[[ $(systemctl --user list-units --state active --no-pager "${friendlyName}*") =~ "${friendlyName}.service" ]]; then
+		if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"*) =~ "${friendlyName}.service" ]] && [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"*) =~ "subprocess" ]]; then
+			pecho warn "Not stopping the slice because one or more instance are still running"
+			return 0
+		elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -gt 1 ]]; then
 			pecho warn "Not stopping the slice because one or more instance are still running"
 			return 0
 		fi
@@ -1104,7 +1121,8 @@ function stopApp() {
 	fi
 	systemctl \
 		--user stop \
-		"portable-${friendlyName}.slice"
+		"portable-${friendlyName}.slice" &
+	exit $?
 }
 
 function resetDocuments() {

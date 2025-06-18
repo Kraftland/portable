@@ -14,18 +14,25 @@ function startLoop() {
 			--quiet \
 			/run/startSignal 1>/dev/null
 		_launch="$(cat /run/startSignal)"
-		if [[ ${_launch} = terminate ]]; then
+		if [[ ${_launch} =~ terminate ]]; then
 			break
+		elif [[ ${_launch} = finish ]]; then
+			return 0
 		fi
 		echo "Starting application"
 		$(cat /run/startSignal) &
 	done
 }
 
+function stopApp() {
+	echo "terminate-now" >/run/startSignal
+	return $?
+}
+
 echo "app-started" >/run/startSignal
 
 startLoop &
-
+trap "stopApp" SIGTERM SIGINT SIGHUP SIGQUIT
 waitForStart
 
 cmd=$1
@@ -35,7 +42,7 @@ shift
 if [[ $(ps aux | wc -l) = "7" ]]; then
 	echo "No more application running, terminating..."
 	#kill %1
-	echo terminate >/run/startSignal
+	echo terminate-now >/run/startSignal
 	exit 0
 else
 	echo "Warning! There're still processes running in the background."
@@ -43,18 +50,7 @@ else
 	_state=$(notify-send --expire-time=10000 --wait --action="kill"="Gracefully Terminate" --action="ignore"="Ignore" "Application running in background!" "Terminate as required")
 	if [[ ${_state} = "kill" ]]; then
 		echo "User opted to kill processes"
-		kill %1
-		for pid in /proc/[0-9]*; do
-			pid="${pid#/proc/}"
-			echo "Terminating process ${pid}" &
-			if [[ $(cat /proc/${pid}/cmdline | tr '\000' ' ') =~ "/usr/lib/portable/helper" ]] || [[ ${pid} = 1 ]]; then
-				echo "Skipping self..."
-				continue
-			fi
-			kill "${pid}" &
-		done
-		sleep 1s
-		exit 0
+		stopApp
 	else
 		echo "User denied termination"
 	fi
