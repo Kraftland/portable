@@ -312,6 +312,11 @@ function execApp() {
 	else
 		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
+	if [[ -d /proc/driver ]]; then
+		procDriverBind="--tmpfs /proc/driver"
+	else
+		unset procDriverBind
+	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	passPid &
@@ -427,6 +432,10 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/devices \
 		--ro-bind-try /dev/null /proc/config.gz \
 		--ro-bind-try /dev/null /proc/version \
+		--ro-bind-try /dev/null /proc/mounts \
+		--ro-bind-try /dev/null /proc/loadavg \
+		--ro-bind-try /dev/null /proc/filesystems \
+		${procDriverBind} \
 		--tmpfs /proc/1 \
 		--bind-try /dev/null /proc/cpuinfo \
 		--bind /usr /usr \
