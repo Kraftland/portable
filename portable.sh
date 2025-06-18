@@ -73,7 +73,7 @@ function manageDirs() {
 
 function genXAuth() {
 	rm "${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" 2>/dev/null
-	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" 2>/dev/null &
+	rm "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" 2>/dev/null
 	ln -srf \
 		"${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
 		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" &
