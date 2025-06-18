@@ -198,8 +198,11 @@ function inputMethod() {
 function importEnv() {
 	inputMethod
 	genXAuth
-	cat "${_portableConfig}" > "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
-	printf "\n\n" >> "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	cat "${_portableConfig}" > "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
+	ln -srf \
+		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
+		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
+	printf "\n\n" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	addEnv "XDG_CONFIG_HOME=$(echo "${XDG_CONFIG_HOME}" | pathTranslation)" &
 	addEnv "XDG_DOCUMENTS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Documents" &
 	addEnv "XDG_DATA_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/share" &
@@ -222,33 +225,33 @@ function importEnv() {
 		pecho debug "Skipping Qt 5 compatibility workarounds" &
 	else
 		pecho debug "Enabling Qt 5 compatibility workarounds" &
-		addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal" &
+		addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal"
 	fi
 	if [[ "${useZink}" = "true" ]]; then
-		addEnv "__GLX_VENDOR_LIBRARY_NAME=mesa" &
-		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink" &
-		addEnv "GALLIUM_DRIVER=zink" &
-		addEnv "LIBGL_KOPPER_DRI2=1" &
-		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json" &
+		addEnv "__GLX_VENDOR_LIBRARY_NAME=mesa"
+		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink"
+		addEnv "GALLIUM_DRIVER=zink"
+		addEnv "LIBGL_KOPPER_DRI2=1"
+		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json"
 	fi
-	addEnv "GDK_DEBUG=portals" &
-	addEnv "GTK_USE_PORTAL=1" &
-	addEnv "QT_AUTO_SCREEN_SCALE_FACTOR=1" &
-	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}" &
-	addEnv "QT_IM_MODULE=${QT_IM_MODULE}" &
-	addEnv "QT_ENABLE_HIGHDPI_SCALING=1" &
-	addEnv "PATH=/sandbox:${PATH}" &
-	addEnv "DISPLAY=${DISPLAY}" &
-	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}" &
-	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '" &
-	printf "\n\n" >> "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	addEnv "GDK_DEBUG=portals"
+	addEnv "GTK_USE_PORTAL=1"
+	addEnv "QT_AUTO_SCREEN_SCALE_FACTOR=1"
+	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}"
+	addEnv "QT_IM_MODULE=${QT_IM_MODULE}"
+	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
+	addEnv "PATH=/sandbox:${PATH}"
+	addEnv "DISPLAY=${DISPLAY}"
+	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
+	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
+	printf "\n\n" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	if [[ -e "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
 		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
 	else
 		touch "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	fi
 	if [[ -s "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
-		cat "${XDG_DATA_HOME}/${stateDirectory}/portable.env" >> "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+		cat "${XDG_DATA_HOME}/${stateDirectory}/portable.env" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	else
 		echo "# Envs" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 		echo "isPortableEnvPresent=1" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
@@ -332,7 +335,7 @@ function execApp() {
 	-p ManagedOOMSwap=kill \
 	-p ManagedOOMMemoryPressure=kill \
 	-p IPAccounting=yes \
-	-p EnvironmentFile="${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" \
+	-p EnvironmentFile="${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
 	-p SystemCallFilter=~@clock \
 	-p SystemCallFilter=~@cpu-emulation \
 	-p SystemCallFilter=~@debug \
@@ -531,7 +534,7 @@ function shareFile() {
 }
 
 function addEnv() {
-	echo "$@" >> "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	echo "$@" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 }
 
 function desktopWorkaround() {
@@ -960,7 +963,7 @@ function dbusProxy() {
 function execAppUnsafe() {
 	#importEnv
 	inputMethod
-	source "${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env"
+	source "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
@@ -1094,13 +1097,19 @@ function stopApp() {
 			"portable-${friendlyName}.slice"
 	else
 		sleep 1s
-		if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"*) =~ "${friendlyName}.service" ]] && [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"*) =~ "subprocess" ]]; then
+		local sdOut
+		sdOut=$(systemctl --user list-units --state active --no-pager "${friendlyName}"*)
+		if [[ "${sdOut}" =~ "${friendlyName}.service" ]] && [[ "${sdOut}" =~ "subprocess" ]]; then
 			pecho warn "Not stopping the slice because one or more instance are still running"
 			return 0
 		elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -gt 1 ]]; then
 			pecho warn "Not stopping the slice because one or more instance are still running"
 			return 0
 		fi
+	fi
+	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
+		pecho debug "Application already stopped!"
+		exit 0
 	fi
 	pecho info "Stopping application..."
 	if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/control" ]]; then
@@ -1123,7 +1132,7 @@ function stopApp() {
 	fi
 	systemctl \
 		--user stop \
-		"portable-${friendlyName}.slice" &
+		"portable-${friendlyName}.slice"
 	exit $?
 }
 
