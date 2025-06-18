@@ -52,6 +52,9 @@ else
 		echo "User opted to kill processes"
 		stopApp
 	else
-		echo "User denied termination"
+		echo "User denied termination, staying in background indefinitely..."
+		while true; do
+			sleep 3650d
+		done
 	fi
 fi
