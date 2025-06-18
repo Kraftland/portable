@@ -143,4 +143,11 @@ portable-pools test
 
 # Code of Conduct
 
-Portable and any of its social environment follows the [Kraftland Code of Conduct](https://blog.kimiblock.top/notice/#Code-of-Conduct). Please be sure not to violate such ruleset.
+Portable and any of its social environment follows the [Kraftland Code of Conduct](https://blog.kimiblock.top/notice/#Code-of-Conduct). Please be sure not to violate such rule set.
+
+# Version Scheme
+Portable follows a major.minor.patch version scheme. We thrives to provide a stable experiences with no breaking changes, however, if said change is necessary, will land in a major release.
+
+The patch release is exclusive for bug fixes. Whereas minor releases contain new features. If a feature or a set of features needs time to test or is important enough, we conduct a major release.
+
+Portable has and always will be only supporting the latest release. Generally users can upgrade without manual intervention, but between major releases it's advised to run `systemctl --user stop portable.slice` to stop the portable framework.
