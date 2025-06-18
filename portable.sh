@@ -375,7 +375,7 @@ function execApp() {
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
-	-p Environment=XAUTHORITY="${HOME}/.Xauthority" \
+	-p Environment=XAUTHORITY="${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir="${busDir}" \
 	-p "${sdNetArg}" \
