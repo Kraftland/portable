@@ -40,7 +40,7 @@ cmd=$1
 shift
 "$cmd" "$@"
 
-if [[ $(ps aux | wc -l) -le 5 ]]; then
+if [[ $(ps aux | wc -l) -le 7 ]]; then
 	echo "No more application running, terminating..."
 	#kill %1
 	echo terminate-now >/run/startSignal
