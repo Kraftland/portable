@@ -1141,11 +1141,12 @@ function stopApp() {
 	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
 		pecho debug "Application already stopped!"
 		exit 0
+	else
+		systemctl \
+			--user stop \
+			"portable-${friendlyName}.slice"
+		exit $?
 	fi
-	systemctl \
-		--user stop \
-		"portable-${friendlyName}.slice"
-	exit $?
 }
 
 function resetDocuments() {
