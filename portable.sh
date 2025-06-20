@@ -1115,7 +1115,7 @@ function stopApp() {
 			pecho warn "Not stopping the slice because one or more instance are still running"
 			return 0
 		elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -gt 1 ]]; then
-			pecho warn "Not stopping the slice because one or more instance are still running"
+			pecho warn "Not stopping the slice because one or more instances are still running"
 			return 0
 		fi
 	fi
