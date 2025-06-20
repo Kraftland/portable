@@ -1119,10 +1119,6 @@ function stopApp() {
 			return 0
 		fi
 	fi
-	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
-		pecho debug "Application already stopped!"
-		exit 0
-	fi
 	pecho info "Stopping application..."
 	if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/control" ]]; then
 		pecho debug "Sourcing configuration..." &
@@ -1141,6 +1137,10 @@ function stopApp() {
 			2>/dev/null
 	else
 		pecho warn "Clean shutdown not possible due to missing information."
+	fi
+	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
+		pecho debug "Application already stopped!"
+		exit 0
 	fi
 	systemctl \
 		--user stop \
