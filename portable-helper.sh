@@ -48,7 +48,7 @@ if [[ $(ps aux | wc -l) -le 7 ]]; then
 else
 	echo "Warning! There're still processes running in the background."
 
-	_state=$(notify-send --expire-time=10000 --wait --action="kill"="Gracefully Terminate" --action="ignore"="Ignore" "Application running in background!" "Terminate as required")
+	_state=$(notify-send --expire-time=20000 --wait --action="kill"="Gracefully Terminate" --action="ignore"="Ignore" "Application running in background!" "Terminate as required")
 	if [[ ${_state} = "kill" ]]; then
 		echo "User opted to kill processes"
 		stopApp
