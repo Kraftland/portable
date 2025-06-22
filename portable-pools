@@ -59,7 +59,7 @@ waylandOnly="adaptive"
 }
 
 function invokePortable() {
-	_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"$1"/config portable
+	_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"$1"/config portable --actions debug-shell
 }
 
 initialStart $@

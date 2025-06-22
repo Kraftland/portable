@@ -260,7 +260,7 @@ function importEnv() {
 		echo "# Envs" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 		echo "isPortableEnvPresent=1" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	fi
-	echo "source ~/portable-generated.env" > "${XDG_DATA_HOME}/${stateDirectory}/.bashrc"
+	echo "source /run/portable-generated.env" > "${XDG_DATA_HOME}/${stateDirectory}/.bashrc"
 }
 
 function getChildPid() {
