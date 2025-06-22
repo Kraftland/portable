@@ -1120,11 +1120,25 @@ function stopApp() {
 		fi
 	fi
 	pecho info "Stopping application..."
+	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
+		pecho debug "Application already stopped!"
+		local alreadyStopped=1
+		exit 0
+	else
+		systemctl \
+			--user stop \
+			"portable-${friendlyName}.slice"
+		#exit $?
+	fi
 	if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/control" ]]; then
 		pecho debug "Sourcing configuration..." &
 		source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	else
-		pecho warn "Control file missing! Using available parameters. Did you upgrade portable?" &
+		if [[ ${alreadyStopped} -eq 1 ]]; then
+			pecho debug "Not showing warning because application is already stopped" &
+		else
+			pecho warn "Control file missing! Using available parameters. Did you upgrade portable?" &
+		fi
 	fi
 	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]] && [[ -n "${busDirAy}" ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
@@ -1135,17 +1149,10 @@ function stopApp() {
 		rm -rf \
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"\
 			2>/dev/null
-	else
-		pecho warn "Clean shutdown not possible due to missing information."
-	fi
-	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
-		pecho debug "Application already stopped!"
 		exit 0
 	else
-		systemctl \
-			--user stop \
-			"portable-${friendlyName}.slice"
-		exit $?
+		pecho warn "Clean shutdown not possible due to missing information."
+		exit 1
 	fi
 }
 
