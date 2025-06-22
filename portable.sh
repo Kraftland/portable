@@ -1123,7 +1123,6 @@ function stopApp() {
 	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
 		pecho debug "Application already stopped!"
 		local alreadyStopped=1
-		exit 0
 	else
 		systemctl \
 			--user stop \
