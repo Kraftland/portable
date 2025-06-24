@@ -1102,10 +1102,9 @@ function passPid() {
 
 function stopApp() {
 	if [[ "$*" =~ "force" ]]; then
-		pecho info "Force stop is called"
-		#sleep 0.5s
+		pecho info "Force stop is called, killing slice" &
 		systemctl \
-			--user kill -sSIGKILL \
+			--user kill \
 			"portable-${friendlyName}.slice"
 	else
 		sleep 1s
@@ -1122,35 +1121,39 @@ function stopApp() {
 	pecho info "Stopping application..."
 	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
 		pecho debug "Application already stopped!"
-		local alreadyStopped=1
+		alreadyStopped=1
 	else
 		systemctl \
 			--user stop \
 			"portable-${friendlyName}.slice"
-		#exit $?
 	fi
-	if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/control" ]]; then
-		pecho debug "Sourcing configuration..." &
-		source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	if [[ "$?" -eq 0 ]]; then
+		pecho debug "Sourced configuration..." &
 	else
 		if [[ ${alreadyStopped} -eq 1 ]]; then
 			pecho debug "Not showing warning because application is already stopped" &
 		else
-			pecho warn "Control file missing! Using available parameters. Did you upgrade portable?" &
+			pecho warn "Control file missing! Did you upgrade portable?" &
 		fi
 	fi
-	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]] && [[ -n "${busDirAy}" ]]; then
+	if [[ ! -z "${appID}" ]] && [[ ! -z "${instanceId}" ]] && [[ ! -z "${busDir}" ]]; then
+		pecho debug "Cleaning leftovers..." &
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
 		rm -rf "${busDir}"
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
-		rm -rf "${busDirAy}"
+		if [[ ! -z "${busDirAy}" ]]; then
+			rm -rf "${busDirAy}"
+		fi
 		rm -rf \
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"\
 			2>/dev/null
+		#kill 0
 		exit 0
 	else
 		pecho warn "Clean shutdown not possible due to missing information."
+		#kill 0
 		exit 1
 	fi
 }
@@ -1194,12 +1197,11 @@ function cmdlineDispatcher() {
 	fi
 }
 
+set -m
+sourceXDG
 if [[ "$*" = "--actions quit" ]]; then
 	stopApp force
-	exit "$?"
 fi
-
-sourceXDG
 questionFirstLaunch
 manageDirs
 cmdlineDispatcher "$@"
