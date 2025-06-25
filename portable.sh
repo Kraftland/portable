@@ -1105,30 +1105,31 @@ function stopApp() {
 		pecho info "Force stop is called, killing slice" &
 		systemctl \
 			--user kill \
-			"portable-${friendlyName}.slice"
+			-sSIGKILL \
+			"${friendlyName}.service"
 	else
 		sleep 1s
 		local sdOut
 		sdOut=$(systemctl --user list-units --state active --no-pager "${friendlyName}"*)
 		if [[ "${sdOut}" =~ "${friendlyName}.service" ]] && [[ "${sdOut}" =~ "subprocess" ]]; then
-			pecho warn "Not stopping the slice because one or more instance are still running"
-			return 0
-		elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -gt 1 ]]; then
-			pecho warn "Not stopping the slice because one or more instances are still running"
-			return 0
+			pecho crit "Not stopping the slice because one or more instance are still running"
+			exit 1
+		elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -ge 2 ]]; then
+			pecho crit "Not stopping the slice because two or more subprocesses are still running"
+			exit 1
 		fi
 	fi
-	pecho info "Stopping application..."
-	if [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l) -eq 0 ]]; then
+	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l)" -eq 0 ]]; then
 		pecho debug "Application already stopped!"
 		alreadyStopped=1
 	else
+		pecho info "Stopping application..." &
 		systemctl \
 			--user stop \
-			"portable-${friendlyName}.slice"
+			"portable-${friendlyName}.slice" &
 	fi
-	source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	if [[ "$?" -eq 0 ]]; then
+	source "${XDG_RUNTIME_DIR}/portable/${appID}/control" 2>/dev/null
+	if [[ $? -eq 0 ]]; then
 		pecho debug "Sourced configuration..." &
 	else
 		if [[ ${alreadyStopped} -eq 1 ]]; then
@@ -1149,11 +1150,9 @@ function stopApp() {
 		rm -rf \
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"\
 			2>/dev/null
-		#kill 0
 		exit 0
 	else
 		pecho warn "Clean shutdown not possible due to missing information."
-		#kill 0
 		exit 1
 	fi
 }
