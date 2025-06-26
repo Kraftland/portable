@@ -29,6 +29,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
     - Discord (aur/discord-bwrap)
     - Larksuite (aur/larksuite-portable)
     - Firefox (aur/firefox-portable)
+    - Baidu Netdisk (aur/baidunetdisk-portable)
 
 # Limitations:
 
