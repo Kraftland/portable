@@ -1101,8 +1101,13 @@ function passPid() {
 }
 
 function stopApp() {
-	if [[ "$*" =~ "force" ]]; then
-		pecho info "Force stop is called, killing slice" &
+	if [[ "$*" =~ "external" ]]; then
+		systemctl \
+			--user stop \
+			"${friendlyName}.service"
+		exit 0
+	elif [[ "$*" =~ "force" ]]; then
+		pecho info "Force stop is called, killing service" &
 		systemctl \
 			--user kill \
 			-sSIGKILL \
@@ -1126,7 +1131,7 @@ function stopApp() {
 		pecho info "Stopping application..." &
 		systemctl \
 			--user stop \
-			"portable-${friendlyName}.slice" &
+			"portable-${friendlyName}.slice"
 	fi
 	source "${XDG_RUNTIME_DIR}/portable/${appID}/control" 2>/dev/null
 	if [[ $? -eq 0 ]]; then
@@ -1138,13 +1143,13 @@ function stopApp() {
 			pecho warn "Control file missing! Did you upgrade portable?" &
 		fi
 	fi
-	if [[ ! -z "${appID}" ]] && [[ ! -z "${instanceId}" ]] && [[ ! -z "${busDir}" ]]; then
+	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]]; then
 		pecho debug "Cleaning leftovers..." &
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
 		rm -rf "${busDir}"
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
-		if [[ ! -z "${busDirAy}" ]]; then
+		if [[ -n "${busDirAy}" ]]; then
 			rm -rf "${busDirAy}"
 		fi
 		rm -rf \
@@ -1199,7 +1204,7 @@ function cmdlineDispatcher() {
 set -m
 sourceXDG
 if [[ "$*" = "--actions quit" ]]; then
-	stopApp force
+	stopApp external
 fi
 questionFirstLaunch
 manageDirs
