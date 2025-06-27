@@ -850,7 +850,6 @@ function dbusProxy() {
 			--see=org.freedesktop.portal.Request \
 			--call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping \
 			--talk=com.canonical.AppMenu.Registrar \
-			--call='com.canonical.dbusmenu=*@/MenuBar/*' \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close \
 			--call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak \
