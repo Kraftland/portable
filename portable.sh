@@ -319,9 +319,9 @@ function execApp() {
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-	passPid &
 	termExec
 	terminateOnRequest &
+	passPid &
 	systemd-run \
 	--user \
 	${sdOption} \
@@ -499,6 +499,9 @@ function execApp() {
 
 function terminateOnRequest() {
 	while true; do
+		if [[ ! -r "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
+			pecho crit "startSignal is missing"
+		fi
 		inotifywait \
 			-e modify \
 			--quiet \
