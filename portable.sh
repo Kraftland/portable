@@ -500,7 +500,8 @@ function execApp() {
 function terminateOnRequest() {
 	while true; do
 		if [[ ! -r "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
-			pecho crit "startSignal is missing"
+			pecho warn "startSignal is missing! Stopping application"
+			stopApp
 		fi
 		inotifywait \
 			-e modify \
