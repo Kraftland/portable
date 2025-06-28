@@ -326,7 +326,7 @@ function execApp() {
 	--user \
 	${sdOption} \
 	--send-sighup \
-	--service-type=exec \
+	--service-type=notify \
 	--wait \
 	-u "${unitName}" \
 	-p BindsTo="${proxyName}.service" \
@@ -334,6 +334,8 @@ function execApp() {
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p Slice="portable-${friendlyName}.slice" \
 	-p ExitType=cgroup \
+	-p NotifyAccess=all \
+	-p TimeoutStartSec=infinity \
 	-p OOMPolicy=stop \
 	-p KillMode=control-group \
 	-p LimitCORE=0 \
@@ -447,7 +449,8 @@ function execApp() {
 		--ro-bind-try /bin /bin \
 		--ro-bind-try /sbin /sbin \
 		--ro-bind-try /opt /opt \
-		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" /run \
+		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
+			/run \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			"${XDG_RUNTIME_DIR}/portable/${appID}" \
 		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
@@ -490,6 +493,8 @@ function execApp() {
 		--tmpfs "${HOME}/options" \
 		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
+		--bind "${XDG_RUNTIME_DIR}/systemd/notify" \
+			"${XDG_RUNTIME_DIR}/systemd/notify" \
 		${bwCamPar} \
 		-- \
 			/usr/lib/portable/helper ${launchTarget} "${targetArgs[@]}"

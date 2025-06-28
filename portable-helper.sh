@@ -13,14 +13,17 @@ function startLoop() {
 			-e modify \
 			--quiet \
 			/run/startSignal 1>/dev/null
+		systemd-notify --reloading
 		_launch="$(cat /run/startSignal)"
 		if [[ ${_launch} =~ terminate ]]; then
 			break
 		elif [[ ${_launch} = finish ]]; then
 			echo "Finished Start"
 		else
-			echo "Starting application"
+			echo "Starting auxiliary application"
 			$(cat /run/startSignal) &
+			systemd-notify --ready
+			systemd-notify --status="Started auxiliary Application"
 		fi
 	done
 }
@@ -36,6 +39,9 @@ startLoop &
 trap "stopApp" SIGTERM SIGINT SIGHUP SIGQUIT
 waitForStart
 
+systemd-notify --ready
+systemd-notify --status="Started main Application"
+
 cmd=$1
 shift
 "$cmd" "$@"
@@ -47,12 +53,14 @@ if [[ $(ps aux | wc -l) -le 7 ]]; then
 	exit 0
 else
 	echo "Warning! There're still processes running in the background."
-
-	_state=$(notify-send --expire-time=20000 --wait --action="kill"="Gracefully Terminate" --action="ignore"="Ignore" "Application running in background!" "Terminate as required")
+	systemd-notify --status="Main application exited"
+	_state=$(notify-send --expire-time=20000 --wait --action="kill"="Terminate" --action="ignore"="Dismiss" "Application running in background!" "Terminate as required")
 	if [[ ${_state} = "kill" ]]; then
+		systemd-notify --stopping
 		echo "User opted to kill processes"
 		stopApp
 	else
+		systemd-notify --status="User denied termination, staying in background indefinitely..."
 		echo "User denied termination, staying in background indefinitely..."
 		while true; do
 			sleep 3650d
