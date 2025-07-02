@@ -484,6 +484,10 @@ function execApp() {
 			"${XDG_CONFIG_HOME}/fontconfig" \
 		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
 			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig" \
+		--ro-bind-try "${XDG_CONFIG_HOME}/gtk-3.0/gtk.css" \
+			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css" \
+		--ro-bind-try "${XDG_CONFIG_HOME}/gtk-4.0/gtk.css" \
+			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css" \
 		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
 			"${XDG_DATA_HOME}/fonts" \
 		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
