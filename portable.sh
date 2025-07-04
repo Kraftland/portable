@@ -376,6 +376,7 @@ function execApp() {
 	-p ProtectControlGroups=yes \
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
+	-p MountFlags=private \
 	-p TimeoutStopSec=20s \
 	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
