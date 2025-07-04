@@ -358,6 +358,7 @@ function execApp() {
 	-p SystemCallFilter=~@reboot \
 	-p SystemCallFilter=~@swap \
 	-p SystemCallErrorNumber=EPERM \
+	-p SyslogIdentifier="portable-${appID}" \
 	-p SystemCallLog='@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup' \
 	-p SystemCallLog='~@sandbox' \
 	-p PrivateIPC=yes \
