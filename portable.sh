@@ -337,6 +337,7 @@ function execApp() {
 	-p NotifyAccess=all \
 	-p TimeoutStartSec=infinity \
 	-p OOMPolicy=stop \
+	-p SecureBits=noroot-locked\
 	-p KillMode=control-group \
 	-p LimitCORE=0 \
 	-p CPUAccounting=yes \
