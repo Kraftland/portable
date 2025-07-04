@@ -333,7 +333,6 @@ function execApp() {
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
 	-p Slice="portable-${friendlyName}.slice" \
-	-p --background='42' \
 	-p ExitType=cgroup \
 	-p NotifyAccess=all \
 	-p TimeoutStartSec=infinity \
