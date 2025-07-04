@@ -347,6 +347,7 @@ function execApp() {
 	-p ManagedOOMSwap=kill \
 	-p ManagedOOMMemoryPressure=kill \
 	-p IPAccounting=yes \
+	-p MemoryPressureWatch=yes \
 	-p EnvironmentFile="${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
 	-p SystemCallFilter=~@clock \
 	-p SystemCallFilter=~@cpu-emulation \
