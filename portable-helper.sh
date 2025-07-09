@@ -40,8 +40,8 @@ echo "app-started" >/run/startSignal
 startLoop &
 waitForStart
 
-systemd-notify --ready
-systemd-notify --status="Started main Application"
+systemd-notify --ready &
+systemd-notify --status="Sandbox startup complete" &
 
 cmd=$1
 shift
