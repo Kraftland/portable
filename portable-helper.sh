@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+trap "stopApp" SIGTERM SIGINT SIGHUP SIGQUIT
+
 function waitForStart() {
 	inotifywait \
 		-e modify \
@@ -36,7 +38,6 @@ function stopApp() {
 echo "app-started" >/run/startSignal
 
 startLoop &
-trap "stopApp" SIGTERM SIGINT SIGHUP SIGQUIT
 waitForStart
 
 systemd-notify --ready
