@@ -404,7 +404,6 @@ function execApp() {
 		--dev /dev \
 		--mqueue /dev/mqueue \
 		--dev-bind /dev/dri /dev/dri \
-		${bwInputArg} \
 		${bwSwitchableGraphicsArg} \
 		--dev-bind-try /dev/udmabuf /dev/udmabuf \
 		--tmpfs /sys \
@@ -414,6 +413,7 @@ function execApp() {
 		--tmpfs /sys/devices/virtual/dmi \
 		--dir /sys/class \
 		--symlink /dev/dri/ /sys/class/drm \
+		${bwInputArg} \
 		--dir /sandbox \
 		--ro-bind /usr/bin/true \
 			/sandbox/sudo \
@@ -651,7 +651,7 @@ function deviceBinding() {
 	fi
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
 	if [[ "${bindInputDevices}" = "true" ]]; then
-		bwInputArg="--dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
+		bwInputArg="--dev-bind-try /sys/class/leds /sys/class/leds --dev-bind-try /sys/class/input /sys/class/input --dev-bind-try /sys/class/hidraw /sys/class/hidraw --dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
 		for _device in /dev/hidraw*; do
 			if [[ -e "${_device}" ]]; then
 				bwInputArg="${bwInputArg} --dev-bind ${_device} ${_device}"
