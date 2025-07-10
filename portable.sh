@@ -819,6 +819,8 @@ function dbusProxy() {
 		extraDbusArgs=""
 	fi
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
+	# Unused Policy: --call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak
+	# Unused: --call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping
 	systemd-run \
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
@@ -864,14 +866,11 @@ function dbusProxy() {
 			--see=org.a11y.Bus \
 			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
 			--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus \
-			--see=org.freedesktop.portal.Flatpak \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot \
 			--see=org.freedesktop.portal.Request \
-			--call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping \
 			--talk=com.canonical.AppMenu.Registrar \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close \
-			--call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Email.ComposeEmail \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb \
