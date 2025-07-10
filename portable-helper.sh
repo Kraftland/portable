@@ -1,5 +1,15 @@
 #!/usr/bin/bash
 
+if [[ "$0" =~ "flatpak-spawn" ]]; then
+	echo "Acting as flatpak-spawn..."
+	while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
+		shift
+	done
+	echo "Decoded cmdline: $@"
+	echo "$@" >/run/startSignal
+	exit 0
+fi
+
 trap "stopApp" SIGTERM SIGINT SIGHUP SIGQUIT
 
 function waitForStart() {
