@@ -431,10 +431,6 @@ function execApp() {
 			/sandbox/nautilus \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/dolphin \
-		--ro-bind-try /usr/lib/portable/helper \
-			/usr/bin/flatpak-spawn \
-		--ro-bind /usr/lib/portable/helper \
-			/sandbox/flatpak-spawn \
 		--proc /proc \
 		--ro-bind-try /dev/null /proc/uptime \
 		--ro-bind-try /dev/null /proc/modules \
