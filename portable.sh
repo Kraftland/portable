@@ -813,10 +813,10 @@ function dbusProxy() {
 	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
 		local featureSet="GlobalShortcuts ScreenShot"
 		pecho info "Enabling GNOME exclusive features: ${featureSet}"
-		extraDbusArgs="--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
+		extraDbusArgs="--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
 	else
 		pecho info "Disabling GNOME exclusive features"
-		extraDbusArgs="--see=org.freedesktop.portal.Flatpak"
+		extraDbusArgs=""
 	fi
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	systemd-run \
@@ -865,6 +865,7 @@ function dbusProxy() {
 			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
 			--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus \
 			--see=org.freedesktop.portal.Flatpak \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot \
 			--see=org.freedesktop.portal.Request \
 			--call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping \
 			--talk=com.canonical.AppMenu.Registrar \

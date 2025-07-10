@@ -39,7 +39,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 3. Steam will not work due to the requirement of Flatpak spawn portal.
 4. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
 5. Due to some desktop portal implementations being insecure (without requiring user consent), some features will only be available on GNOME
-    - The Screenshot and Global Shortcuts portals are only available on GNOME
+    - The Global Shortcuts portals is only available on GNOME
 
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
