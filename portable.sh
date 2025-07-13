@@ -369,7 +369,6 @@ function execApp() {
 	-p RestrictSUIDSGID=yes \
 	-p LockPersonality=yes \
 	-p RestrictRealtime=yes \
-	-p ProtectSystem=full \
 	-p ProtectProc=invisible \
 	-p ProcSubset=pid \
 	-p ProtectHome=no \
