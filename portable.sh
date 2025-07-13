@@ -365,7 +365,6 @@ function execApp() {
 	-p PrivateIPC=yes \
 	-p ProtectClock=yes \
 	-p CapabilityBoundingSet= \
-	-p ProtectKernelModules=yes \
 	-p RestrictSUIDSGID=yes \
 	-p LockPersonality=yes \
 	-p RestrictRealtime=yes \
@@ -413,7 +412,9 @@ function execApp() {
 		--dir /sys/class \
 		--symlink /dev/dri/ /sys/class/drm \
 		${bwInputArg} \
-		--bind /usr /usr \
+		--overlay-src /usr \
+		--tmp-overlay /usr \
+		--tmpfs /usr/lib/modules \
 		--dir /sandbox \
 		--ro-bind /usr/bin/true \
 			/sandbox/sudo \
