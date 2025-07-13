@@ -64,17 +64,6 @@ function sourceXDG() {
 
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
-	while true; do
-		overlayID=$(xxd -p -l 20 /dev/urandom)
-		if [[ ! -d "${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}" ]]; then
-			mkdir -p \
-				"${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}"
-			break
-		fi
-	done
-	pecho debug "Using ID ${overlayID} for overlayfs workdir" &
-	mkdir -p \
-		"${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/store/usr"
 	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
 	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/Shared" &
 	ln -sfr \
@@ -754,6 +743,17 @@ function warnMulRunning() {
 }
 
 function generateFlatpakInfo() {
+	while true; do
+		overlayID=$(xxd -p -l 20 /dev/urandom)
+		if [[ ! -d "${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}" ]]; then
+			mkdir -p \
+				"${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}"
+			break
+		fi
+	done
+	pecho debug "Using ID ${overlayID} for overlayfs workdir" &
+	mkdir -p \
+		"${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/store/usr"
 	pecho debug "Installing flatpak-info..."
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
