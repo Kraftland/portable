@@ -14,7 +14,7 @@ elif [[ "$0" =~ pkexec ]]; then
 		shift
 	done
 	echo "Decoded cmdline: $@"
-	echo "$@" >/run/startSignal
+	echo "fakeroot $@" >/run/startSignal
 	exit 0
 fi
 
