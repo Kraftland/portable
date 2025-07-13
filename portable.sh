@@ -405,6 +405,7 @@ function execApp() {
 		--unshare-uts \
 		--unshare-pid \
 		--unshare-user \
+		--tmpfs / \
 		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 			/.flatpak-info \
 		--dir /tmp \
