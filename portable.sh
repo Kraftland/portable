@@ -414,6 +414,7 @@ function execApp() {
 		--dir /sys/class \
 		--symlink /dev/dri/ /sys/class/drm \
 		${bwInputArg} \
+		--bind /usr /usr \
 		--dir /sandbox \
 		--ro-bind /usr/bin/true \
 			/sandbox/sudo \
@@ -431,10 +432,8 @@ function execApp() {
 			/sandbox/nautilus \
 		--ro-bind /usr/lib/portable/open \
 			/sandbox/dolphin \
-		--ro-bind-try /usr/lib/portable/helper \
-			/usr/bin/flatpak-spawn \
 		--ro-bind /usr/lib/portable/helper \
-			/sandbox/flatpak-spawn \
+			/usr/lib/flatpak-xdg-utils/flatpak-spawn \
 		--ro-bind-try /usr/lib/portable/helper \
 			/usr/bin/pkexec \
 		--ro-bind /usr/lib/portable/helper \
@@ -453,7 +452,6 @@ function execApp() {
 		${procDriverBind} \
 		--tmpfs /proc/1 \
 		--bind-try /dev/null /proc/cpuinfo \
-		--bind /usr /usr \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
 		--tmpfs /etc/kernel \
