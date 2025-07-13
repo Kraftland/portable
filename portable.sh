@@ -435,6 +435,10 @@ function execApp() {
 			/usr/bin/flatpak-spawn \
 		--ro-bind /usr/lib/portable/helper \
 			/sandbox/flatpak-spawn \
+		--ro-bind-try /usr/lib/portable/helper \
+			/usr/bin/pkexec \
+		--ro-bind /usr/lib/portable/helper \
+			/sandbox/pkexec \
 		--proc /proc \
 		--ro-bind-try /dev/null /proc/uptime \
 		--ro-bind-try /dev/null /proc/modules \

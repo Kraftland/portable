@@ -8,6 +8,14 @@ if [[ "$0" =~ "flatpak-spawn" ]]; then
 	echo "Decoded cmdline: $@"
 	echo "$@" >/run/startSignal
 	exit 0
+elif [[ "$0" =~ pkexec ]]; then
+	echo "Acting as pkexec..."
+	while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
+		shift
+	done
+	echo "Decoded cmdline: $@"
+	echo "$@" >/run/startSignal
+	exit 0
 fi
 
 trap "stopApp" SIGTERM SIGINT SIGHUP SIGQUIT
