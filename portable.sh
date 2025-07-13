@@ -64,6 +64,17 @@ function sourceXDG() {
 
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
+	while true; do
+		overlayID=$(xxd -p -l 20 /dev/urandom)
+		if [[ ! -d "${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}" ]]; then
+			mkdir -p \
+				"${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}"
+			break
+		fi
+	done
+	pecho debug "Using ID ${overlayID} for overlayfs workdir" &
+	mkdir -p \
+		"${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/store/usr"
 	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
 	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/Shared" &
 	ln -sfr \
@@ -768,6 +779,7 @@ function generateFlatpakInfo() {
 	echo "busDir=${busDir}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	echo "busDirAy=${busDirAy}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	echo "friendlyName=${friendlyName}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	echo "overlayID=${overlayID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	if [[ -f "/usr/share/applications/${appID}.desktop" ]]; then
 		pecho debug "Application desktop file detected"
 	else
@@ -1168,11 +1180,12 @@ function stopApp() {
 			pecho warn "Control file missing! Did you upgrade portable?" &
 		fi
 	fi
-	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]]; then
+	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]] && [[ -n "${overlayID}" ]]; then
 		pecho debug "Cleaning leftovers..." &
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
 		rm -rf "${busDir}"
+		rm -rf "${XDG_DATA_HOME}/${stateDirectory}/.portable/overlay/work/${overlayID}"
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
 		if [[ -n "${busDirAy}" ]]; then
 			rm -rf "${busDirAy}"
