@@ -392,7 +392,6 @@ function execApp() {
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
-	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir="${busDir}" \
@@ -445,6 +444,8 @@ function execApp() {
 			/sandbox/dolphin \
 		--ro-bind /usr/lib/portable/helper \
 			/usr/lib/flatpak-xdg-utils/flatpak-spawn \
+		--ro-bind /usr/bin/true \
+			/usr/bin/lsblk \
 		--ro-bind-try /usr/lib/portable/helper \
 			/usr/bin/pkexec \
 		--ro-bind /usr/lib/portable/helper \
