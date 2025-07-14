@@ -42,4 +42,7 @@ useZink="false"
 # Enable compatibility workarounds for Qt5. Defaults to true.
 qt5Compat="true"
 
+# If not empty, will own the org.mpris.MediaPlayer2.mprisName bus name instead of "org.mpris.MediaPlayer2.${appID##*.}"
+mprisName="testie"
+
 # Below you can set envs that will be imported into the application sandbox
