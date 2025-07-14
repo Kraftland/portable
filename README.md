@@ -31,6 +31,8 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
     - Firefox (aur/firefox-portable)
     - Thunderbird (aur/thunderbird-portable)
     - Baidu Netdisk (aur/baidunetdisk-portable)
+    - DaVinci Resolve (aur/davinci-resolve-portable)
+    - Zen Browser (aur/zen-browser-portable)
 
 # Limitations:
 
