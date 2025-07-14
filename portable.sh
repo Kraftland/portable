@@ -827,6 +827,11 @@ function dbusProxy() {
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	# Unused Policy: --call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak
 	# Unused: --call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping
+	if [[ -n "${mprisName}" ]]; then
+		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
+	else
+		local mprisBus="org.mpris.MediaPlayer2.${appID##*.}"
+	fi
 	systemd-run \
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
@@ -864,8 +869,8 @@ function dbusProxy() {
 			--own=com.belmoussaoui.ashpd.demo \
 			--own="${appID}" \
 			--own="${appID}".* \
-			--own="org.mpris.MediaPlayer2.${appID##*.}" \
-			--own="org.mpris.MediaPlayer2.${appID##*.}".* \
+			--own="${mprisBus}" \
+			--own="${mprisBus}".* \
 			--talk=org.freedesktop.Notifications \
 			--talk=org.kde.StatusNotifierWatcher \
 			--call=org.freedesktop.Notifications.*=* \
