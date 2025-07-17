@@ -365,11 +365,9 @@ function execApp() {
 	-p PrivateIPC=yes \
 	-p ProtectClock=yes \
 	-p CapabilityBoundingSet= \
-	-p ProtectKernelModules=yes \
 	-p RestrictSUIDSGID=yes \
 	-p LockPersonality=yes \
 	-p RestrictRealtime=yes \
-	-p ProtectSystem=full \
 	-p ProtectProc=invisible \
 	-p ProcSubset=pid \
 	-p ProtectHome=no \
@@ -381,7 +379,6 @@ function execApp() {
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
-	-p BindReadOnlyPaths=/usr/bin/true:/usr/bin/lsblk \
 	-p Environment=XAUTHORITY="${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir="${busDir}" \
@@ -438,6 +435,8 @@ function execApp() {
 			/usr/bin/pkexec \
 		--ro-bind /usr/lib/portable/helper \
 			/sandbox/pkexec \
+		--ro-bind /usr/bin/true \
+			/usr/bin/lsblk \
 		--proc /proc \
 		--ro-bind-try /dev/null /proc/uptime \
 		--ro-bind-try /dev/null /proc/modules \
