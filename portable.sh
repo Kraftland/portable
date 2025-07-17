@@ -508,6 +508,14 @@ function execApp() {
 		--tmpfs "${HOME}/options" \
 		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
+		--tmpfs "${HOME}/.var" \
+		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/.var" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
+			"${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}" \
+		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
+			"${HOME}/.var/app/${appID}" \
+		--tmpfs "${HOME}/.var/app/${appID}/options" \
+		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options" \
 		--bind "${XDG_RUNTIME_DIR}/systemd/notify" \
 			"${XDG_RUNTIME_DIR}/systemd/notify" \
 		${bwCamPar} \
