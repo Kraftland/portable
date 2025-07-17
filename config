@@ -33,7 +33,7 @@ dbusWake="false"
 # Enables Network access within the sandbox. Defaults to true.
 bindNetwork="true"
 
-# Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true!
+# Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true! Unstable for now
 pwCam="false"
 
 # Use zink for GL -> Vulkan translation

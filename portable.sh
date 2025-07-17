@@ -8,7 +8,7 @@ function pecho() {
 	elif [[ "$1" = "warn" ]]; then
 		echo "[Warn] $2" &
 	elif [[ "$1" = "crit" ]]; then
-		echo "[Critical] $2" &
+		echo "[Critical] $2"
 	fi
 }
 
@@ -47,6 +47,49 @@ busDir="${XDG_RUNTIME_DIR}/app/${busName}"
 busDirAy="${XDG_RUNTIME_DIR}/app/${busName}-a11y"
 unitName="${friendlyName}"
 proxyName="${friendlyName}-dbus"
+
+function sanityCheck() {
+	pecho debug "Running sanity checks..." &
+	mountCheck
+	configCheck
+}
+
+function mountCheck() {
+	local mounts="$(systemd-run --user -P -- findmnt -R)"
+	if [[ "${mounts}" =~ "/usr/bin/" ]]; then
+		pecho crit "Mountpoints inside /usr/bin! Please unmount them for at least the user service manager"
+		exit 1
+	fi
+}
+
+function confEmpty() {
+	local varName="$1"
+	local varVal="${!varName}"
+	if [[ -z "${varVal}" ]]; then
+		pecho crit "Config option $1 is empty!"
+		exit 1
+	fi
+}
+
+function confBool() {
+	local varName="$1"
+	local varVal="${!varName}"
+	if [[ "${varVal}" = true ]] || [[ "${varVal}" = false ]]; then
+		pecho warn "Config option ${1} should be boolean!"
+		exit 1
+	fi
+}
+
+function configCheck() {
+	mainPid=$
+	for value in appID friendlyName stateDirectory launchTarget; do
+		confEmpty ${value}
+	done
+	for value in bindInputDevices bindCameras bindPipewire gameMode dbusWake bindNetwork pwCam useZink qt5Compat; do
+		confBool "${value}"
+	done
+	unset value
+}
 
 function sourceXDG() {
 	if [[ ! "${XDG_CONFIG_HOME}" ]]; then
@@ -797,7 +840,6 @@ function resetUnit() {
 }
 
 function dbusProxy() {
-	defineRunPath
 	generateFlatpakInfo
 	waylandDisplay
 	systemctl --user clean "${friendlyName}*" &
@@ -1228,6 +1270,8 @@ function cmdlineDispatcher() {
 
 set -m
 sourceXDG
+defineRunPath
+sanityCheck
 if [[ "$*" = "--actions quit" ]]; then
 	stopApp external
 fi
