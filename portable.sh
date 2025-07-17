@@ -76,7 +76,6 @@ function confBool() {
 	local varVal="${!varName}"
 	if [[ "${varVal}" = true ]] || [[ "${varVal}" = false ]]; then
 		pecho warn "Config option ${1} should be boolean!"
-		exit 1
 	fi
 }
 
