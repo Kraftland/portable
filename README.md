@@ -46,7 +46,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/example.webp" alt="The Portable Project" width="1024" />
+  <img src="https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/share/example.webp" alt="The Portable Project" width="1024" />
   <br>
   Demo
   <br>
@@ -60,13 +60,12 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 Install aur/portable-git, aur/portable or install the following files directly
 
-```
-install -Dm755 portable.sh /usr/bin/portable
-install -Dm755 open.sh /usr/lib/portable/open
-install -Dm755 portable-pools /usr/bin/portable-pools
-install -Dm755 flatpak-info /usr/lib/portable/flatpak-info
-install -Dm755 bwrapinfo.json /usr/lib/portable/bwrapinfo.json
-install -Dm755 portable-helper.sh /usr/lib/portable/helper
+```bash
+	cd portable
+	install -Dm755 portable.sh /usr/bin/portable
+	install -t "/usr/lib/portable" -Dm755 "lib"/*
+	install -t "/usr/share/portable" -Dm755 "share"/*
+	install -Dm755 portable-pools /usr/bin/portable-pools
 ```
 
 ## Configurations
