@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+	echo "Acting as pkexec..."
+	while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
+		shift
+	done
+	echo "Decoded cmdline: $@"
+	echo "fakeroot $@" >/run/startSignal
+	exit 0
