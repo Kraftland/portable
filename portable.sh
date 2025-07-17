@@ -479,8 +479,8 @@ function execApp() {
 		--tmpfs /etc/kernel \
 		--symlink /usr/lib /lib \
 		--symlink /usr/lib /lib64 \
-		--ro-bind-try /bin /bin \
-		--ro-bind-try /sbin /sbin \
+		--symlink /usr/bin /bin \
+		--symlink /usr/bin /sbin \
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			/run \
