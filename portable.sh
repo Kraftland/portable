@@ -412,6 +412,9 @@ function execApp() {
 		--symlink /dev/dri/ /sys/class/drm \
 		${bwInputArg} \
 		--bind /usr /usr \
+		--overlay-src /usr/bin \
+		--overlay-src /usr/lib/portable/overlay-usr \
+		--tmp-overlay /usr/bin \
 		--dir /sandbox \
 		--ro-bind /usr/bin/true \
 			/sandbox/sudo \
@@ -431,8 +434,6 @@ function execApp() {
 			/sandbox/dolphin \
 		--ro-bind /usr/lib/portable/helper \
 			/usr/lib/flatpak-xdg-utils/flatpak-spawn \
-		--ro-bind-try /usr/lib/portable/helper \
-			/usr/bin/pkexec \
 		--ro-bind /usr/lib/portable/helper \
 			/sandbox/pkexec \
 		--ro-bind /usr/bin/true \
