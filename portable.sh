@@ -244,7 +244,7 @@ function importEnv() {
 	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}"
 	addEnv "QT_IM_MODULE=${QT_IM_MODULE}"
 	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
-	addEnv "PATH=/sandbox:${PATH}"
+	#addEnv "PATH=/sandbox:${PATH}"
 	addEnv "DISPLAY=${DISPLAY}"
 	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
 	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
@@ -415,29 +415,8 @@ function execApp() {
 		--overlay-src /usr/bin \
 		--overlay-src /usr/lib/portable/overlay-usr \
 		--tmp-overlay /usr/bin \
-		--dir /sandbox \
-		--ro-bind /usr/bin/true \
-			/sandbox/sudo \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/chromium \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/firefox \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/dde-file-manager \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/xdg-open \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/open \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/nautilus \
-		--ro-bind /usr/lib/portable/open \
-			/sandbox/dolphin \
 		--ro-bind /usr/lib/portable/helper \
 			/usr/lib/flatpak-xdg-utils/flatpak-spawn \
-		--ro-bind /usr/lib/portable/helper \
-			/sandbox/pkexec \
-		--ro-bind /usr/bin/true \
-			/usr/bin/lsblk \
 		--proc /proc \
 		--ro-bind-try /dev/null /proc/uptime \
 		--ro-bind-try /dev/null /proc/modules \
