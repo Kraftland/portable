@@ -507,8 +507,14 @@ function execApp() {
 			"/run/systemd/resolve/stub-resolv.conf" \
 		--tmpfs "${HOME}/options" \
 		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
+		--perms 0000 \
+		--size 1 \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
+		--perms 0000 \
+		--size 1 \
 		--tmpfs "${HOME}/.var" \
+		--perms 0000 \
+		--size 1 \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/.var" \
 		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
 			"${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}" \
