@@ -505,6 +505,8 @@ function execApp() {
 			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts" \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
+		--size 1 \
+		--perms 0000 \
 		--tmpfs "${HOME}/options" \
 		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
 		--perms 0000 \
