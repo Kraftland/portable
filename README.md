@@ -63,7 +63,8 @@ Install aur/portable-git, aur/portable or install the following files directly
 ```bash
 	cd portable
 	install -Dm755 portable.sh /usr/bin/portable
-	install -t "/usr/lib/portable" -Dm755 "lib"/*
+	install -d "/usr/lib/"
+    cp -r "lib" "/usr/lib/portable"
 	install -t "/usr/share/portable" -Dm755 "share"/*
 	install -Dm755 portable-pools /usr/bin/portable-pools
 ```
