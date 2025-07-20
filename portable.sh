@@ -52,6 +52,58 @@ function sanityCheck() {
 	pecho debug "Running sanity checks..." &
 	mountCheck
 	configCheck
+	bindCheck
+}
+
+function bindCheck() {
+	if [[ -z "${bwBindPar}" ]]; then
+		return 0
+	fi
+	if [[ -e "${bwBindPar}" ]]; then
+		local fileCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type f | wc -l)
+		local dirCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type d | wc -l)
+		if [[ "${fileCnt}" -gt 1 ]]; then
+			local trailingF="files"
+		else
+			local trailingF="file"
+		fi
+		if [[ "${dirCnt}" -gt 1 ]]; then
+			local trailingD="directories"
+		else
+			local trailingD="directory"
+		fi
+		if [[ "${LANG}" =~ "zh_CN" ]]; then
+			/usr/bin/zenity \
+				--title "暴露路径" \
+				--icon=folder-open-symbolic \
+				--question \
+				--text="${bwBindPar}: ${fileCnt} 个文件, ${dirCnt} 个子目录"
+			if [[ $? -eq 1 ]]; then
+				unset bwBindPar
+			fi
+		else
+			/usr/bin/zenity \
+				--title "Expose path" \
+				--icon=folder-open-symbolic \
+				--question \
+				--text="${bwBindPar}: ${fileCnt} ${trailingF}, ${dirCnt} ${trailingD}"
+			if [[ $? -eq 1 ]]; then
+				unset bwBindPar
+			fi
+		fi
+	else
+		if [[ "${LANG}" =~ "zh_CN" ]]; then
+			/usr/bin/zenity \
+				--title "${friendlyName}" \
+				--warning \
+				--text="设定的共享路径不存在"
+		else
+			/usr/bin/zenity \
+				--title "${friendlyName}" \
+				--warning \
+				--text="Specified shared path does not exist."
+		fi
+	fi
 }
 
 function mountCheck() {
@@ -75,7 +127,10 @@ function confBool() {
 	local varName="$1"
 	local varVal="${!varName}"
 	if [[ "${varVal}" = true ]] || [[ "${varVal}" = false ]]; then
+		return 0
+	else
 		pecho warn "Config option ${1} should be boolean!"
+		return 1
 	fi
 }
 
