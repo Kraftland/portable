@@ -27,7 +27,7 @@ bindPipewire="false"
 # Expose all GPUs. Takes boolean value, usually used in games.
 gameMode="false"
 
-# Wake the application using D-Bus calls towards StatusNotifiers.
+# Wake the application using D-Bus calls towards StatusNotifiers. Deprecated.
 dbusWake="false"
 
 # Enables Network access within the sandbox. Defaults to true.
