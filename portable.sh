@@ -904,6 +904,14 @@ function resetUnit() {
 	fi
 }
 
+function addDbusArg() {
+	if [[ -z "${extraDbusArgs}" ]]; then
+		extraDbusArgs="$@"
+	else
+		extraDbusArgs="${extraDbusArgs} $@"
+	fi
+}
+
 function dbusProxy() {
 	generateFlatpakInfo
 	waylandDisplay
@@ -930,6 +938,11 @@ function dbusProxy() {
 	# Unused Policy: --call=org.freedesktop.portal.Flatpak=*@/org/freedesktop/portal/Flatpak
 	# Unused: --call=org.freedesktop.portal.Flatpak=org.freedesktop.DBus.Peer.Ping
 	if [[ -n "${mprisName}" ]]; then
+		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
+	else
+		local mprisBus="org.mpris.MediaPlayer2.${appID##*.}"
+	fi
+	if [[ -n "${allowInhibit}" ]]; then
 		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
 	else
 		local mprisBus="org.mpris.MediaPlayer2.${appID##*.}"
