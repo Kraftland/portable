@@ -135,8 +135,10 @@ function confBool() {
 	local varVal="${!varName}"
 	if [[ "${varVal}" = "true" ]] || [[ "${varVal}" = "false" ]]; then
 		return 0
+	elif [[ -z "${varVal}" ]]; then
+		pecho info "Config option ${1} unspecified"
 	else
-		pecho warn "Config option ${1} should be boolean!"
+		pecho warn "Config option ${1} should be boolean"
 		return 1
 	fi
 }
