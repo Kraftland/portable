@@ -60,33 +60,40 @@ function bindCheck() {
 		return 0
 	fi
 	if [[ -e "${bwBindPar}" ]]; then
-		local fileCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type f | wc -l)
-		local dirCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type d | wc -l)
-		if [[ "${fileCnt}" -gt 1 ]]; then
-			local trailingF="files"
+		if [[ -d "${bwBindPar}" ]]; then
+			local fileCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type f | wc -l)
+			local dirCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type d | wc -l)
+			if [[ "${fileCnt}" -gt 1 ]]; then
+				local trailingF="files"
+			else
+				local trailingF="file"
+			fi
+			if [[ "${dirCnt}" -gt 1 ]]; then
+				local trailingD="directories"
+			else
+				local trailingD="directory"
+			fi
 		else
+			local fileCnt=1
 			local trailingF="file"
-		fi
-		if [[ "${dirCnt}" -gt 1 ]]; then
-			local trailingD="directories"
-		else
+			local dirCnt=0
 			local trailingD="directory"
 		fi
 		if [[ "${LANG}" =~ "zh_CN" ]]; then
 			/usr/bin/zenity \
-				--title "暴露路径" \
+				--title "${friendlyName}" \
 				--icon=folder-open-symbolic \
 				--question \
-				--text="${bwBindPar}: ${fileCnt} 个文件, ${dirCnt} 个子目录"
+				--text="是否暴露路径 ${bwBindPar}: ${fileCnt} 个文件, ${dirCnt} 个子目录"
 			if [[ $? -eq 1 ]]; then
 				unset bwBindPar
 			fi
 		else
 			/usr/bin/zenity \
-				--title "Expose path" \
+				--title "${friendlyName}" \
 				--icon=folder-open-symbolic \
 				--question \
-				--text="${bwBindPar}: ${fileCnt} ${trailingF}, ${dirCnt} ${trailingD}"
+				--text="Expose ${bwBindPar}, containing ${fileCnt} ${trailingF}, ${dirCnt} ${trailingD}?"
 			if [[ $? -eq 1 ]]; then
 				unset bwBindPar
 			fi
@@ -587,7 +594,6 @@ function execApp() {
 		--size 1 \
 		--perms 0000 \
 		--tmpfs "${HOME}/options" \
-		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
 		--perms 0000 \
 		--size 1 \
 		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
@@ -606,6 +612,7 @@ function execApp() {
 		--bind "${XDG_RUNTIME_DIR}/systemd/notify" \
 			"${XDG_RUNTIME_DIR}/systemd/notify" \
 		${bwCamPar} \
+		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
 		-- \
 			/usr/lib/portable/helper ${launchTarget} "${targetArgs[@]}"
 
