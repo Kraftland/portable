@@ -943,7 +943,7 @@ function dbusProxy() {
 		local mprisBus="org.mpris.MediaPlayer2.${appID##*.}"
 	fi
 	if [[ -n "${allowInhibit}" ]]; then
-		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.*"
+		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
 	fi
 	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
 	systemd-run \
