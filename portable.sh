@@ -927,12 +927,10 @@ function dbusProxy() {
 		proxyArg="--log"
 	fi
 	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
-		local featureSet="GlobalShortcuts ScreenShot"
+		local featureSet="GlobalShortcuts"
 		pecho info "Enabling GNOME exclusive features: ${featureSet}"
-		extraDbusArgs="--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
-	else
-		pecho info "Disabling GNOME exclusive features"
-		extraDbusArgs=""
+		addDbusArg \
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
 	fi
 	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	if [[ -n "${mprisName}" ]]; then
