@@ -470,6 +470,9 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/mounts \
 		--ro-bind-try /dev/null /proc/loadavg \
 		--ro-bind-try /dev/null /proc/filesystems \
+		--ro-bind-try /dev/null /proc/partitions \
+		--ro-bind-try /dev/null /proc/stat \
+		--ro-bind-try /dev/null /proc/vmstat \
 		${procDriverBind} \
 		--tmpfs /proc/1 \
 		--bind-try /dev/null /proc/cpuinfo \
