@@ -48,6 +48,22 @@ busDirAy="${XDG_RUNTIME_DIR}/app/${busName}-a11y"
 unitName="${friendlyName}"
 proxyName="${friendlyName}-dbus"
 
+function readyNotify() {
+	# Notifies readiness, only usable after defineRunPath()
+	# $1 can be: wait, set
+	# $2 is the item name
+	if [[ $1 = "set" ]]; then
+		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready"
+	elif [[ $1 = "wait" ]]; then
+		while [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready" ]]; do
+			inotifywait \
+			-e create \
+			--quiet \
+			"${XDG_RUNTIME_DIR}/portable/${appID}" 1>/dev/null
+		done
+	fi
+}
+
 function sanityCheck() {
 	pecho debug "Running sanity checks..." &
 	mountCheck
