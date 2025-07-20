@@ -126,7 +126,7 @@ function confEmpty() {
 function confBool() {
 	local varName="$1"
 	local varVal="${!varName}"
-	if [[ "${varVal}" = true ]] || [[ "${varVal}" = false ]]; then
+	if [[ "${varVal}" = "true" ]] || [[ "${varVal}" = "false" ]]; then
 		return 0
 	else
 		pecho warn "Config option ${1} should be boolean!"
