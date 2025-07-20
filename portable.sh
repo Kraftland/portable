@@ -537,7 +537,6 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/vmstat \
 		${procDriverBind} \
 		--tmpfs /proc/1 \
-		--bind-try /dev/null /proc/cpuinfo \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
 		--tmpfs /etc/kernel \
