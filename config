@@ -45,4 +45,7 @@ qt5Compat="true"
 # If not empty, will own the org.mpris.MediaPlayer2.mprisName bus name instead of "org.mpris.MediaPlayer2.${appID##*.}"
 mprisName="testie"
 
+# If true, allows the sandboxed application to use the org.freedesktop.portal.Inhibit interface to inhibit certain actions, like suspend and logout
+allowInhibit="false"
+
 # Below you can set envs that will be imported into the application sandbox
