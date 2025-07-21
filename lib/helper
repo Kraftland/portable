@@ -53,7 +53,7 @@ if [[ $(ps | wc -l) -le 7 ]]; then
 else
 	echo "Warning! There're still processes running in the background."
 	systemd-notify --status="Main application exited"
-	_state=$(notify-send --expire-time=20000 --wait --action="kill"="Terminate" --action="ignore"="Dismiss" "Application running in background!" "Terminate as required")
+	_state=$(notify-send --expire-time=200000 --wait --action="kill"="Terminate" --action="ignore"="Dismiss" "Application running in background!" "Terminate as required")
 	if [[ ${_state} = "kill" ]]; then
 		systemd-notify --stopping
 		echo "User opted to kill processes"
