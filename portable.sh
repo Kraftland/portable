@@ -409,6 +409,7 @@ function importEnv() {
 		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
 		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
 	genNewEnv &
+	readyNotify set importEnv
 }
 
 function getChildPid() {
@@ -453,6 +454,7 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
+	readyNotify wait importEnv
 	deviceBinding
 	mkdir \
 		--parents \
@@ -1022,7 +1024,7 @@ function dbusArg() {
 
 function dbusProxy() {
 	genXAuth
-	importEnv
+	importEnv &
 	dbusArg &
 	cleanDUnits &
 	generateFlatpakInfo
