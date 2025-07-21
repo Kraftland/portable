@@ -453,7 +453,7 @@ function execApp() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait importEnv
-	readyNotify wait writeInfo
+	#readyNotify wait writeInfo
 	terminateOnRequest &
 	systemd-run \
 	--user \
@@ -1001,6 +1001,7 @@ function dbusArg() {
 }
 
 function writeInfo() {
+	pecho debug "Waiting for bwrapinfo.json"
 	until grep child-pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" 1>/dev/null 2>/dev/null; do
 		inotifywait \
 			-e modify,create,attrib,close \
@@ -1041,7 +1042,7 @@ function dbusProxy() {
 		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
 		-p After="xdg-document-portal.service xdg-desktop-portal.service" \
 		-p SuccessExitStatus=SIGKILL \
-		-p StandardError="file:${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
+		-p StandardError="file:${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json" \
 		-- bwrap \
 			--json-status-fd 2 \
 			--unshare-all \
@@ -1150,7 +1151,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.IBus.*=* \
 			--call=org.freedesktop.portal.Request=* \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
-	writeInfo &
+	#writeInfo &
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
