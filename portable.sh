@@ -405,7 +405,6 @@ function importEnv() {
 	setXdgEnv &
 	setConfEnv &
 	setStaticEnv &
-	genXAuth
 	ln -srf \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
 		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
@@ -700,6 +699,7 @@ function termExec() {
 }
 
 function execAppExist() {
+	genXAuth
 	importEnv
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
@@ -1021,6 +1021,7 @@ function dbusArg() {
 }
 
 function dbusProxy() {
+	genXAuth
 	importEnv
 	dbusArg &
 	cleanDUnits &
