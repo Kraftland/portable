@@ -55,7 +55,7 @@ function readyNotify() {
 	if [[ $1 = "set" ]]; then
 		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
 	elif [[ $1 = "set-fail" ]]; then
-		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+		echo "abort" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
 	elif [[ $1 = "init" ]]; then
 		readyDir="$(xxd -p -l 5 /dev/urandom)"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-$(xxd -p -l 5 /dev/urandom)" ]]; do
