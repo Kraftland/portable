@@ -454,7 +454,6 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	readyNotify wait importEnv
 	deviceBinding
 	mkdir \
 		--parents \
@@ -471,13 +470,8 @@ function execApp() {
 		unset procDriverBind
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-	readyNotify wait genNewEnv
-	readyNotify wait setStaticEnv
-	readyNotify wait im
-	readyNotify wait setConfEnv
-	readyNotify wait setXdgEnv
-	readyNotify wait sanityCheck
 	termExec
+	readyNotify wait importEnv
 	terminateOnRequest &
 	passPid &
 	systemd-run \
