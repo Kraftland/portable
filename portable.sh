@@ -59,9 +59,10 @@ function readyNotify() {
 		echo "abort" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
 	elif [[ $1 = "init" ]]; then
 		readyDir="$(xxd -p -l 5 /dev/urandom)"
-		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-$(xxd -p -l 5 /dev/urandom)" ]]; do
+		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
 			readyDir="$(xxd -p -l 7 /dev/urandom)"
 		done
+		pecho debug "Chosen readiness code ${readyDir}"
 		mkdir \
 			--parents \
 			--mode=0700 \
@@ -956,7 +957,7 @@ function addDbusArg() {
 }
 
 function cleanDUnits() {
-	systemctl --user stop \
+	systemctl --user kill -sSIGKILL \
 		"${friendlyName}*" \
 		"${proxyName}*".service \
 		"${proxyName}*"-a11y.service \
@@ -1001,22 +1002,17 @@ function dbusArg() {
 }
 
 function writeInfo() {
-	while [[ ! -e "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" ]]; do
+	pecho debug "Initializing bwrapinfo..."
+	until grep child-pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"; do
 		inotifywait \
-			-e create \
+			-e modify,create,attrib,close \
 			--quiet \
 			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 	done
-	pecho debug "Original file bwrapinfo.json exists"
-	while ! grep pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"; do
-		inotifywait \
-			-e modify \
-			--quiet \
-			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	done
-	cat \
+	head -n 1 \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
-		| head -n 1 > "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+		> "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	pecho debug "bwrapinfo.json installed"
 	readyNotify set writeInfo
 }
 
@@ -1304,7 +1300,6 @@ function launch() {
 	if systemctl --user --quiet is-active "${unitName}.service"; then
 		warnMulRunning "$@"
 	fi
-	readyNotify init
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
@@ -1434,9 +1429,11 @@ export \
 	DISPLAY \
 	QT_SCALE_FACTOR \
 	waylandOnly \
-	instanceId
+	instanceId \
+	readyDir
 sourceXDG
 defineRunPath
+readyNotify init
 if [[ "$*" = "--actions quit" ]]; then
 	stopApp external
 fi
