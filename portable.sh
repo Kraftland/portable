@@ -225,18 +225,16 @@ function genXAuth() {
 	elif [[ -r "${XAUTHORITY}" ]]; then
 		pecho debug "Using authority file from ${XAUTHORITY}"
 		xAuthBind="${XAUTHORITY}"
-		export XAUTHORITY="/run/.Xauthority"
 	elif [[ -r "${HOME}/.Xauthority" ]]; then
 		pecho debug "Guessing authority as ${HOME}/.Xauthority"
 		xAuthBind="${HOME}/.Xauthority"
-		export XAUTHORITY="/run/.Xauthority"
 	else
 		pecho warn "Could not determine Xauthority file path"
 		xAuthBind="/dev/null"
 		unset XAUTHORITY
 		xhost +localhost
 	fi
-	addEnv "XAUTHORITY=${XAUTHORITY}"
+	export XAUTHORITY="/run/.Xauthority"
 	addEnv "DISPLAY=${DISPLAY}"
 }
 
@@ -537,6 +535,7 @@ function execApp() {
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
+	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
 	-- \
 	bwrap --new-session \
