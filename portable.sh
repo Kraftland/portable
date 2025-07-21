@@ -218,45 +218,15 @@ function manageDirs() {
 }
 
 function genXAuth() {
-	rm "${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" 2>/dev/null
-	rm -rf "${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" 2>/dev/null
-	ln -srf \
-		"${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
-		"${XDG_DATA_HOME}/${stateDirectory}/.XAuthority" &
-	if [[ "${waylandOnly}" = "true" ]]; then
-		touch "${XDG_DATA_HOME}/${stateDirectory}/.Xauthority"
-		return "$?"
-	elif [[ "${waylandOnly}" = "adaptive" && "${XDG_SESSION_TYPE}" = "wayland" ]]; then
-		touch "${XDG_DATA_HOME}/${stateDirectory}/.Xauthority"
-		return "$?"
-	fi
-	pecho debug "Processing X Server security restriction..."
-	touch "${XDG_DATA_HOME}/${stateDirectory}/.Xauthority"
-	pecho debug "Detecting display as ${DISPLAY}"
-	if [[ $(xauth list "${DISPLAY}" | head -n 1) =~ "$(hostname)/unix: " ]]; then
-		pecho warn "Adding new display..."
-		authHash="$(xxd -p -l 16 /dev/urandom)"
-		xauth add "${DISPLAY}" . "${authHash}"
-		xauth \
-			add \
-			"${DISPLAY}" \
-			. \
-			"${authHash}"
+	if [[ -r "${XAUTHORITY}" ]]; then
+		pecho debug "Using authority file from ${XAUTHORITY}"
+	elif [[ -r "${HOME}/.Xauthority" ]]; then
+		pecho debug "Guessing authority as ${HOME}/.Xauthority"
+		export XAUTHORITY="${HOME}/.Xauthority"
 	else
-		xauth -f \
-			"${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
-			add $(xauth list ${DISPLAY} | head -n 1)
-	fi
-	if [[ ! -f "${HOME}/.Xauthority" && -z "${XAUTHORITY}" ]]; then
 		pecho warn "Could not determine Xauthority file path"
 		xhost +localhost
-	fi
-	if xauth -f \
-			"${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" list >/dev/null; then
-		return 0
-	else
-		pecho warn "Turning off X access control for localhost"
-		xauth +localhost
+		return 1
 	fi
 }
 
@@ -533,7 +503,7 @@ function execApp() {
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
-	-p Environment=XAUTHORITY="${XDG_DATA_HOME}/${stateDirectory}/.Xauthority" \
+	-p Environment=XAUTHORITY="/run/.Xauthority" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir="${busDir}" \
 	-p "${sdNetArg}" \
@@ -597,6 +567,8 @@ function execApp() {
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			/run \
+		--ro-bind "${XAUTHORITY}" \
+			"/run/.Xauthority" \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			"${XDG_RUNTIME_DIR}/portable/${appID}" \
 		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
