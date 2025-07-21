@@ -5,6 +5,7 @@ function waitForStart() {
 		-e modify \
 		--quiet \
 		/run/startSignal 1>/dev/null
+	echo "Finished Start" &
 }
 
 function startLoop() {
@@ -13,12 +14,11 @@ function startLoop() {
 			-e modify \
 			--quiet \
 			/run/startSignal 1>/dev/null
-		systemd-notify --reloading
 		local _launch="$(cat /run/startSignal)"
 		if [[ ${_launch} =~ terminate ]]; then
 			break
 		elif [[ ${_launch} = finish ]]; then
-			echo "Finished Start"
+			continue
 		else
 			echo "Starting auxiliary application"
 			$(cat /run/startSignal) &
