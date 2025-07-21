@@ -49,21 +49,35 @@ unitName="${friendlyName}"
 proxyName="${friendlyName}-dbus"
 
 function readyNotify() {
-	# Notifies readiness, only usable after defineRunPath()
-	# $1 can be: wait, set
+	# Notifies readiness, only usable after warnMulRunning()
+	# $1 can be: wait, set, set-fail, init
 	# $2 is the item name
 	if [[ $1 = "set" ]]; then
+		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+	elif [[ $1 = "set-fail" ]]; then
+		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+	elif [[ $1 = "init" ]]; then
+		readyDir="$(xxd -p -l 5 /dev/urandom)"
+		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-$(xxd -p -l 5 /dev/urandom)" ]]; do
+			readyDir="$(xxd -p -l 7 /dev/urandom)"
+		done
 		mkdir \
 			--parents \
 			--mode=0700 \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/ready"
+			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
+		pecho debug "Initializing readyNotify..."
 	elif [[ $1 = "wait" ]]; then
-		while [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready" ]]; do
+		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
 			inotifywait \
-			-e create \
-			--quiet \
-			"${XDG_RUNTIME_DIR}/portable/${appID}" 1>/dev/null
+				-e create \
+				--quiet \
+				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
 		done
+		if grep -q abort "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"; then
+			pecho crit "Component $2 failed! Bailing out..."
+			stopApp force &
+			exit 2
+		fi
 	fi
 }
 
@@ -950,14 +964,19 @@ function addDbusArg() {
 	fi
 }
 
-function dbusProxy() {
-	generateFlatpakInfo
-	waylandDisplay
+function cleanDUnits() {
 	systemctl --user clean "${friendlyName}*" &
 	systemctl --user clean "${proxyName}*".service &
 	systemctl --user clean "${proxyName}*"-a11y.service &
 	systemctl --user clean "${friendlyName}*"-wayland-proxy.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
+	readyNotify set cleanDUnits
+}
+
+function dbusProxy() {
+	cleanDUnits &
+	generateFlatpakInfo
+	waylandDisplay
 	mkdir \
 		--parents \
 		--mode=0700 \
@@ -993,6 +1012,7 @@ function dbusProxy() {
 		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
 	fi
 	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
+	readyNotify wait cleanDUnits
 	systemd-run \
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
@@ -1201,13 +1221,13 @@ function questionFirstLaunch() {
 				--title "${friendlyName}" \
 				--icon=security-medium-symbolic \
 				--question \
-				--text="对应用程序 ${appID} 启用沙盒?"
+				--text="为 ${appID} 启用沙盒?"
 		else
 			/usr/bin/zenity \
-				--title "${friendlyName}" \
+				--title "Portable" \
 				--icon=security-medium-symbolic \
 				--question \
-				--text="Enable sandbox for: ${appID}?"
+				--text="Enable sandbox for ${friendlyName}(${appID})?"
 		fi
 		if [[ $? -eq 1 ]]; then
 			if [[ "${LANG}" =~ "zh_CN" ]]; then
@@ -1256,6 +1276,7 @@ function launch() {
 	if systemctl --user --quiet is-active "${unitName}.service"; then
 		warnMulRunning "$@"
 	fi
+	readyNotify init
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
 	fi
@@ -1399,7 +1420,7 @@ function cmdlineDispatcher() {
 set -m
 sourceXDG
 defineRunPath
-sanityCheck
+#sanityCheck
 if [[ "$*" = "--actions quit" ]]; then
 	stopApp external
 fi
