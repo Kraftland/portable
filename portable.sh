@@ -887,12 +887,20 @@ function warnMulRunning() {
 	fi
 }
 
+function genInstanceID() {
+	instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+}
+
 function generateFlatpakInfo() {
 	pecho debug "Installing flatpak-info..."
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	pecho debug "Generating flatpak-info..."
-	instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+	genInstanceID
+	while [[ -d "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" ]]; do
+		pecho debug "Instance ID collision detected!"
+		genInstanceID
+	done
 	sed -i "s|placeHolderAppName|${appID}|g" \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeholderInstanceId|${instanceId}|g" \
