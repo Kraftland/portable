@@ -77,6 +77,8 @@ function readyNotify() {
 			pecho crit "Component $2 failed! Bailing out..."
 			stopApp force &
 			exit 2
+		else
+			pecho debug "Component $2 ready, status validated"
 		fi
 	fi
 }
@@ -86,6 +88,7 @@ function sanityCheck() {
 	mountCheck
 	configCheck
 	bindCheck
+	readyNotify set sanityCheck
 }
 
 function bindCheck() {
@@ -143,6 +146,7 @@ function bindCheck() {
 				--warning \
 				--text="Specified shared path does not exist."
 		fi
+		readyNotify set-fail sanityCheck
 	fi
 }
 
@@ -150,7 +154,7 @@ function mountCheck() {
 	local mounts="$(systemd-run --user -P -- findmnt -R)"
 	if [[ "${mounts}" =~ "/usr/bin/" ]]; then
 		pecho crit "Mountpoints inside /usr/bin! Please unmount them for at least the user service manager"
-		exit 1
+		readyNotify set-fail sanityCheck
 	fi
 }
 
@@ -159,7 +163,7 @@ function confEmpty() {
 	local varVal="${!varName}"
 	if [[ -z "${varVal}" ]]; then
 		pecho crit "Config option $1 is empty!"
-		exit 1
+		readyNotify set-fail sanityCheck
 	fi
 }
 
@@ -450,6 +454,7 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
+	readyNotify wait sanityCheck
 	importEnv
 	deviceBinding
 	mkdir \
@@ -1285,6 +1290,7 @@ function launch() {
 		warnMulRunning "$@"
 	fi
 	readyNotify init
+	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
 	fi
@@ -1428,7 +1434,6 @@ function cmdlineDispatcher() {
 set -m
 sourceXDG
 defineRunPath
-#sanityCheck
 if [[ "$*" = "--actions quit" ]]; then
 	stopApp external
 fi
