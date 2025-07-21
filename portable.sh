@@ -410,25 +410,6 @@ function importEnv() {
 	readyNotify set importEnv
 }
 
-function setMainPid() {
-	local cGroup cmdlineArg
-	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
-	pecho debug "Getting PID from unit ${unitName}'s control group $(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')"
-	for childPid in $(pgrep --cgroup "${cGroup}"); do
-		pecho debug "Trying PID ${childPid}"
-		cmdlineArg=$(tr '\000' ' ' < "/proc/${childPid}/cmdline")
-		if [[ "${cmdlineArg}" =~ "/usr/lib/portable/helper" ]]; then
-			if [[ $(echo "${cmdlineArg}" | cut -c '-14') =~ "bwrap" ]]; then
-				pecho debug "Detected bwrap"
-			else
-				pecho debug "Detected helper"
-				return 0
-			fi
-		fi
-	done
-	echo "${childPid}" > "${XDG_DATA_HOME}/${stateDirectory}/mainPid"
-}
-
 # Function used to escape paths for sed processing.
 function pathEscape() {
 	local str="$*"
@@ -1321,8 +1302,6 @@ function passPid() {
 			--quiet \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
 	fi
-	setMainPid
-	unset childPid
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \

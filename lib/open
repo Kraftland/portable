@@ -1,9 +1,5 @@
 #!/bin/bash
 
-function procOpen() {
-	export link="/proc/$(cat ~/mainPid)/root${origReq}"
-}
-
 if [[ "$@" =~ "https://" ]] || [[ "$@" =~ "http://" ]]; then
 	echo "[Info] Received a request: $@, interpreting as link"
 	/usr/lib/flatpak-xdg-utils/xdg-open "$@"
@@ -37,10 +33,18 @@ fi
 
 if [[ "${origReq}" =~ "/tmp" ]]; then
 	echo "[Info] Detected /tmp!"
-	procOpen
+	cp \
+		-a \
+		${origReq} \
+		~/Shared/
+	link="${HOME}/Shared/$(basename "${origReq}")"
 elif [[ "${origReq}" =~ "/run/user" ]]; then
 	echo "[Info] Detected run path!"
-	procOpen
+	cp \
+		-a \
+		${origReq} \
+		~/Shared/
+	link="${HOME}/Shared/$(basename "${origReq}")"
 elif [[ "$(dirname "${origReq}")" =~ "${HOME}" ]]; then
 	echo "[Info] Detected sandbox home"
 	link="${origReq}"
