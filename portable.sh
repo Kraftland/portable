@@ -230,8 +230,8 @@ function genXAuth() {
 		xAuthBind="/dev/null"
 		unset XAUTHORITY
 		xhost +localhost
-		return 1
 	fi
+	addEnv XAUTHORITY="${XAUTHORITY}"
 }
 
 function waylandDisplay() {
@@ -396,18 +396,6 @@ function genNewEnv() {
 }
 
 function importEnv() {
-	export \
-		pwCam \
-		qt5Compat \
-		useZink \
-		XDG_DATA_HOME \
-		stateDirectory \
-		XDG_CONFIG_HOME \
-		_portableConfig \
-		XDG_RUNTIME_DIR \
-		appID \
-		DISPLAY \
-		QT_SCALE_FACTOR
 	setIM &
 	setXdgEnv &
 	setConfEnv &
@@ -775,7 +763,6 @@ function deviceBinding() {
 		videoMod=$(lsmod)
 		if [[ $(find /dev/dri/renderD* -maxdepth 0 -type c 2>/dev/null | wc -l) -eq 1 && "${videoMod}" =~ "nvidia" ]]; then
 			pecho info "Using single NVIDIA GPU"
-			addEnv "GSK_RENDERER=ngl"
 			for _card in /dev/nvidia*; do
 				if [[ -e "${_card}" ]]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
@@ -1451,6 +1438,18 @@ function cmdlineDispatcher() {
 }
 
 set -m
+export \
+	pwCam \
+	qt5Compat \
+	useZink \
+	XDG_DATA_HOME \
+	stateDirectory \
+	XDG_CONFIG_HOME \
+	_portableConfig \
+	XDG_RUNTIME_DIR \
+	appID \
+	DISPLAY \
+	QT_SCALE_FACTOR
 sourceXDG
 defineRunPath
 if [[ "$*" = "--actions quit" ]]; then
