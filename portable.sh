@@ -12,7 +12,7 @@ function pecho() {
 	fi
 }
 
-if [[ "${_portalConfig}" && "${_portableConfig}" ]]; then
+if [[ -z "${_portalConfig}" && -z "${_portableConfig}" ]]; then
 	pecho crit "No portable config specified!"
 	exit 1
 fi
