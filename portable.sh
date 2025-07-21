@@ -217,7 +217,12 @@ function manageDirs() {
 }
 
 function genXAuth() {
-	if [[ -r "${XAUTHORITY}" ]]; then
+	if [[ "${waylandOnly}" = "true" ]] || [[ "${waylandOnly}" = "adaptive" && "${XDG_SESSION_TYPE}" = "wayland" ]]; then
+		pecho debug "Wayland only mode enforced"
+		#addEnv "DISPLAY"
+		xAuthBind="/dev/null"
+		return 1
+	elif [[ -r "${XAUTHORITY}" ]]; then
 		pecho debug "Using authority file from ${XAUTHORITY}"
 		xAuthBind="${XAUTHORITY}"
 		export XAUTHORITY="/run/.Xauthority"
@@ -231,7 +236,8 @@ function genXAuth() {
 		unset XAUTHORITY
 		xhost +localhost
 	fi
-	addEnv XAUTHORITY="${XAUTHORITY}"
+	addEnv "XAUTHORITY=${XAUTHORITY}"
+	addEnv "DISPLAY=${DISPLAY}"
 }
 
 function waylandDisplay() {
@@ -367,7 +373,6 @@ function setXdgEnv() {
 	addEnv "XDG_MUSIC_DIR=${XDG_DATA_HOME}/${stateDirectory}/Music"
 	addEnv "XDG_PICTURES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Pictures"
 	addEnv "XDG_VIDEOS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Videos"
-	addEnv "DISPLAY=${DISPLAY}"
 	readyNotify set setXdgEnv
 }
 
@@ -531,13 +536,13 @@ function execApp() {
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
-	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir="${busDir}" \
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
+	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -1449,7 +1454,8 @@ export \
 	XDG_RUNTIME_DIR \
 	appID \
 	DISPLAY \
-	QT_SCALE_FACTOR
+	QT_SCALE_FACTOR \
+	waylandOnly
 sourceXDG
 defineRunPath
 if [[ "$*" = "--actions quit" ]]; then
