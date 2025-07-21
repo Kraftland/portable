@@ -657,7 +657,6 @@ function terminateOnRequest() {
 			stopApp
 		fi
 		inotifywait \
-			-e modify \
 			--quiet \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
 		if [[ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal")" =~ "terminate-now" ]]; then
@@ -1002,12 +1001,12 @@ function dbusArg() {
 }
 
 function writeInfo() {
-	pecho debug "Initializing bwrapinfo..."
-	until grep child-pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"; do
+	until grep child-pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" 1>/dev/null 2>/dev/null; do
 		inotifywait \
 			-e modify,create,attrib,close \
 			--quiet \
-			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
+			1>/dev/null
 	done
 	head -n 1 \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
