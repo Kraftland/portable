@@ -956,11 +956,17 @@ function addDbusArg() {
 }
 
 function cleanDUnits() {
-	systemctl --user clean "${friendlyName}*" &
-	systemctl --user clean "${proxyName}*".service &
-	systemctl --user clean "${proxyName}*"-a11y.service &
-	systemctl --user clean "${friendlyName}*"-wayland-proxy.service &
-	systemctl --user clean "${friendlyName}-subprocess*".service &
+	systemctl --user stop \
+		"${friendlyName}*" \
+		"${proxyName}*".service \
+		"${proxyName}*"-a11y.service \
+		"${friendlyName}*"-wayland-proxy.service \
+		"${friendlyName}-subprocess*".service
+	systemctl --user clean "${friendlyName}*" \
+		"${friendlyName}-subprocess*".service \
+		"${proxyName}*".service \
+		"${proxyName}*"-a11y.service \
+		"${friendlyName}*"-wayland-proxy.service
 	readyNotify set cleanDUnits
 }
 
