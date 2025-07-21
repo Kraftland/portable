@@ -1314,7 +1314,7 @@ function launch() {
 
 function passPid() {
 	if [[ $(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal") = "app-started" ]]; then
-		pecho warn "Application started before passPid()"
+		pecho warn "Application started before passPid()" &
 	else
 		inotifywait \
 			-e modify \
@@ -1328,7 +1328,6 @@ function passPid() {
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-
 	sed -i \
 		"s|placeholderMntId|$(readlink "/proc/${childPid}/ns/mnt" | sed 's/[^0-9]//g')|g" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"

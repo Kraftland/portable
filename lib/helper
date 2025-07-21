@@ -14,7 +14,7 @@ function startLoop() {
 			--quiet \
 			/run/startSignal 1>/dev/null
 		systemd-notify --reloading
-		_launch="$(cat /run/startSignal)"
+		local _launch="$(cat /run/startSignal)"
 		if [[ ${_launch} =~ terminate ]]; then
 			break
 		elif [[ ${_launch} = finish ]]; then
@@ -45,7 +45,7 @@ cmd=$1
 shift
 "$cmd" "$@"
 
-if [[ $(ps aux | wc -l) -le 7 ]]; then
+if [[ $(ps | wc -l) -le 7 ]]; then
 	echo "No more application running, terminating..."
 	#kill %1
 	echo terminate-now >/run/startSignal
