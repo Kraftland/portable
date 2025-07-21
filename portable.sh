@@ -53,7 +53,10 @@ function readyNotify() {
 	# $1 can be: wait, set
 	# $2 is the item name
 	if [[ $1 = "set" ]]; then
-		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready"
+		mkdir \
+			--parents \
+			--mode=0700 \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/ready"
 	elif [[ $1 = "wait" ]]; then
 		while [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready" ]]; do
 			inotifywait \
@@ -187,7 +190,10 @@ function sourceXDG() {
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
 	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/Shared" &
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/Shared" &
 	ln -sfr \
 		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
 		"${XDG_DATA_HOME}/${stateDirectory}/共享文件" &
@@ -274,7 +280,10 @@ function createWrapIfNotExist() {
 	if [[ -d "$*" ]]; then
 		return 0
 	else
-		mkdir -p "$@"
+		mkdir \
+			--parents \
+			--mode=0700 \
+			"$@"
 	fi
 }
 
@@ -419,16 +428,20 @@ function pathTranslation() {
 }
 
 function defineRunPath() {
-	if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" ]]; then
-		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}"
-	fi
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/portable/${appID}"
 }
 
 function execApp() {
 	desktopWorkaround &
 	importEnv
 	deviceBinding
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/.config"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/.config"
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
 	else
@@ -873,14 +886,23 @@ function generateFlatpakInfo() {
 	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 
-	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 	install /usr/lib/portable/bwrapinfo.json \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
 	pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
-	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
 	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
 	echo "instanceId=${instanceId}" > "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	echo "appID=${appID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
@@ -936,8 +958,14 @@ function dbusProxy() {
 	systemctl --user clean "${proxyName}*"-a11y.service &
 	systemctl --user clean "${friendlyName}*"-wayland-proxy.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
-	mkdir -p "${busDir}"
-	mkdir -p "${busDirAy}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${busDir}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${busDirAy}"
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
@@ -948,7 +976,10 @@ function dbusProxy() {
 		addDbusArg \
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
 	fi
-	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	if [[ -n "${mprisName}" ]]; then
 		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
 		addDbusArg \
@@ -1151,7 +1182,10 @@ function execAppUnsafe() {
 
 function enableSandboxFunc() {
 	pecho info "Sandboxing confirmed"
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/options"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/options"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
 	return 0
 }
@@ -1197,7 +1231,10 @@ function questionFirstLaunch() {
 				return 0
 			else
 				pecho warn "User disabled sandbox!"
-				mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/options"
+				mkdir \
+					--parents \
+					--mode=0700 \
+					"${XDG_DATA_HOME}/${stateDirectory}/options"
 				echo "disableSandbox" >> "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
 				export trashAppUnsafe=1
 			fi
