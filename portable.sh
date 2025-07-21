@@ -63,7 +63,6 @@ function readyNotify() {
 			--parents \
 			--mode=0700 \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
-		pecho debug "Initializing readyNotify..."
 	elif [[ $1 = "wait" ]]; then
 		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
 			inotifywait \
@@ -82,7 +81,6 @@ function readyNotify() {
 }
 
 function sanityCheck() {
-	pecho debug "Running sanity checks..." &
 	mountCheck
 	configCheck
 	bindCheck
@@ -366,9 +364,7 @@ function importEnv() {
 	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
 	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
 	printf "\n\n" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-	if [[ -e "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
-		pecho info "${XDG_DATA_HOME}/${stateDirectory}/portable.env exists"
-	else
+	if [[ ! -e "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
 		touch "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	fi
 	if [[ -s "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
@@ -870,7 +866,6 @@ function generateFlatpakInfo() {
 	pecho debug "Installing flatpak-info..."
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	pecho debug "Generating flatpak-info..."
 	genInstanceID
 	while [[ -d "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" ]]; do
 		pecho debug "Instance ID collision detected!"
