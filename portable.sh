@@ -452,7 +452,7 @@ function execApp() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait importEnv
-	passPid &
+	#passPid &
 	terminateOnRequest &
 	systemd-run \
 	--user \
@@ -898,11 +898,11 @@ function generateFlatpakInfo() {
 		--parents \
 		--mode=0700 \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	install /usr/lib/portable/bwrapinfo.json \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	#install /usr/lib/portable/bwrapinfo.json \
+	#	"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
-	pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	#pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	mkdir \
 		--parents \
 		--mode=0700 \
@@ -1023,7 +1023,9 @@ function dbusProxy() {
 		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
 		-p After="xdg-document-portal.service xdg-desktop-portal.service" \
 		-p SuccessExitStatus=SIGKILL \
+		-p StandardError="file:${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json" \
 		-- bwrap \
+			--json-status-fd 2 \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
 			--ro-bind /usr/lib64 /usr/lib64 \
