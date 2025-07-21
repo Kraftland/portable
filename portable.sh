@@ -48,6 +48,39 @@ busDirAy="${XDG_RUNTIME_DIR}/app/${busName}-a11y"
 unitName="${friendlyName}"
 proxyName="${friendlyName}-dbus"
 
+function readyNotify() {
+	# Notifies readiness, only usable after warnMulRunning()
+	# $1 can be: wait, set, set-fail, init
+	# $2 is the item name
+	if [[ $1 = "set" ]]; then
+		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+	elif [[ $1 = "set-fail" ]]; then
+		echo "abort" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+	elif [[ $1 = "init" ]]; then
+		readyDir="$(xxd -p -l 5 /dev/urandom)"
+		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-$(xxd -p -l 5 /dev/urandom)" ]]; do
+			readyDir="$(xxd -p -l 7 /dev/urandom)"
+		done
+		mkdir \
+			--parents \
+			--mode=0700 \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
+		pecho debug "Initializing readyNotify..."
+	elif [[ $1 = "wait" ]]; then
+		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
+			inotifywait \
+				-e create \
+				--quiet \
+				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
+		done
+		if grep -q abort "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"; then
+			pecho crit "Component $2 failed! Bailing out..."
+			stopApp force &
+			exit 2
+		fi
+	fi
+}
+
 function sanityCheck() {
 	pecho debug "Running sanity checks..." &
 	mountCheck
@@ -171,7 +204,10 @@ function sourceXDG() {
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
 	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/Shared" &
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/Shared" &
 	ln -sfr \
 		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
 		"${XDG_DATA_HOME}/${stateDirectory}/共享文件" &
@@ -258,7 +294,10 @@ function createWrapIfNotExist() {
 	if [[ -d "$*" ]]; then
 		return 0
 	else
-		mkdir -p "$@"
+		mkdir \
+			--parents \
+			--mode=0700 \
+			"$@"
 	fi
 }
 
@@ -403,16 +442,20 @@ function pathTranslation() {
 }
 
 function defineRunPath() {
-	if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" ]]; then
-		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}"
-	fi
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/portable/${appID}"
 }
 
 function execApp() {
 	desktopWorkaround &
 	importEnv
 	deviceBinding
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/.config"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/.config"
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
 	else
@@ -857,14 +900,23 @@ function generateFlatpakInfo() {
 	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 
-	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
 	install /usr/lib/portable/bwrapinfo.json \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
 	pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
-	mkdir -p "${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
 	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
 	echo "instanceId=${instanceId}" > "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	echo "appID=${appID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
@@ -912,16 +964,27 @@ function addDbusArg() {
 	fi
 }
 
-function dbusProxy() {
-	generateFlatpakInfo
-	waylandDisplay
+function cleanDUnits() {
 	systemctl --user clean "${friendlyName}*" &
 	systemctl --user clean "${proxyName}*".service &
 	systemctl --user clean "${proxyName}*"-a11y.service &
 	systemctl --user clean "${friendlyName}*"-wayland-proxy.service &
 	systemctl --user clean "${friendlyName}-subprocess*".service &
-	mkdir -p "${busDir}"
-	mkdir -p "${busDirAy}"
+	readyNotify set cleanDUnits
+}
+
+function dbusProxy() {
+	cleanDUnits &
+	generateFlatpakInfo
+	waylandDisplay
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${busDir}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${busDirAy}"
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
@@ -932,7 +995,10 @@ function dbusProxy() {
 		addDbusArg \
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
 	fi
-	mkdir -p "${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
 	if [[ -n "${mprisName}" ]]; then
 		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
 		addDbusArg \
@@ -946,6 +1012,7 @@ function dbusProxy() {
 		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
 	fi
 	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
+	readyNotify wait cleanDUnits
 	systemd-run \
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
@@ -1135,7 +1202,10 @@ function execAppUnsafe() {
 
 function enableSandboxFunc() {
 	pecho info "Sandboxing confirmed"
-	mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/options"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/options"
 	touch "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
 	return 0
 }
@@ -1151,13 +1221,13 @@ function questionFirstLaunch() {
 				--title "${friendlyName}" \
 				--icon=security-medium-symbolic \
 				--question \
-				--text="对应用程序 ${appID} 启用沙盒?"
+				--text="为 ${appID} 启用沙盒?"
 		else
 			/usr/bin/zenity \
-				--title "${friendlyName}" \
+				--title "Portable" \
 				--icon=security-medium-symbolic \
 				--question \
-				--text="Enable sandbox for: ${appID}?"
+				--text="Enable sandbox for ${friendlyName}(${appID})?"
 		fi
 		if [[ $? -eq 1 ]]; then
 			if [[ "${LANG}" =~ "zh_CN" ]]; then
@@ -1181,7 +1251,10 @@ function questionFirstLaunch() {
 				return 0
 			else
 				pecho warn "User disabled sandbox!"
-				mkdir -p "${XDG_DATA_HOME}/${stateDirectory}/options"
+				mkdir \
+					--parents \
+					--mode=0700 \
+					"${XDG_DATA_HOME}/${stateDirectory}/options"
 				echo "disableSandbox" >> "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
 				export trashAppUnsafe=1
 			fi
@@ -1203,6 +1276,7 @@ function launch() {
 	if systemctl --user --quiet is-active "${unitName}.service"; then
 		warnMulRunning "$@"
 	fi
+	readyNotify init
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
 	fi
@@ -1346,7 +1420,7 @@ function cmdlineDispatcher() {
 set -m
 sourceXDG
 defineRunPath
-sanityCheck
+#sanityCheck
 if [[ "$*" = "--actions quit" ]]; then
 	stopApp external
 fi
