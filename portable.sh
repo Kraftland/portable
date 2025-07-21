@@ -411,17 +411,16 @@ function importEnv() {
 }
 
 function setMainPid() {
-	local cGroup cmdlineArg
+	local childPid cGroup cmdlineArg
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
-	pecho debug "Getting PID from unit ${unitName}'s control group $(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')"
+	#pecho debug "Getting PID from unit ${unitName}'s control group $(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')"
 	for childPid in $(pgrep --cgroup "${cGroup}"); do
-		pecho debug "Trying PID ${childPid}"
 		cmdlineArg=$(tr '\000' ' ' < "/proc/${childPid}/cmdline")
 		if [[ "${cmdlineArg}" =~ "/usr/lib/portable/helper" ]]; then
 			if [[ $(echo "${cmdlineArg}" | cut -c '-14') =~ "bwrap" ]]; then
-				pecho debug "Detected bwrap"
+				continue
 			else
-				pecho debug "Detected helper"
+				pecho debug "Detected helper, PID: ${childPid}"
 				return 0
 			fi
 		fi
@@ -1322,7 +1321,6 @@ function passPid() {
 			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
 	fi
 	setMainPid
-	unset childPid
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
@@ -1450,7 +1448,8 @@ export \
 	appID \
 	DISPLAY \
 	QT_SCALE_FACTOR \
-	waylandOnly
+	waylandOnly \
+	unitName
 sourceXDG
 defineRunPath
 if [[ "$*" = "--actions quit" ]]; then
