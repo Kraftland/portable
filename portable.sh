@@ -50,6 +50,9 @@ function readyNotify() {
 	# Notifies readiness, only usable after warnMulRunning()
 	# $1 can be: wait, set, set-fail, init
 	# $2 is the item name
+	if [[ ${trashAppUnsafe} -eq 1 ]]; then
+		return 1
+	fi
 	if [[ $1 = "set" ]]; then
 		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
 	elif [[ $1 = "set-fail" ]]; then
@@ -317,28 +320,17 @@ function inputMethod() {
 			export XMODIFIERS=@im=fcitx
 		fi
 	fi
+
 }
 
-function importEnv() {
+function setIM() {
 	inputMethod
-	genXAuth
-	cat "${_portableConfig}" > "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-	ln -srf \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
-		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
-	printf "\n\n" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-	addEnv "XDG_CONFIG_HOME=$(echo "${XDG_CONFIG_HOME}" | pathTranslation)" &
-	addEnv "XDG_DOCUMENTS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Documents" &
-	addEnv "XDG_DATA_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/share" &
-	addEnv "XDG_STATE_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/state" &
-	addEnv "XDG_CACHE_HOME=${XDG_DATA_HOME}/${stateDirectory}/cache" &
-	addEnv "XDG_DESKTOP_DIR=${XDG_DATA_HOME}/${stateDirectory}/Desktop" &
-	addEnv "XDG_DOWNLOAD_DIR=${XDG_DATA_HOME}/${stateDirectory}/Downloads" &
-	addEnv "XDG_TEMPLATES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Templates" &
-	addEnv "XDG_PUBLICSHARE_DIR=${XDG_DATA_HOME}/${stateDirectory}/Public" &
-	addEnv "XDG_MUSIC_DIR=${XDG_DATA_HOME}/${stateDirectory}/Music" &
-	addEnv "XDG_PICTURES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Pictures" &
-	addEnv "XDG_VIDEOS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Videos" &
+	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}"
+	addEnv "QT_IM_MODULE=${QT_IM_MODULE}"
+	readyNotify set im
+}
+
+function setConfEnv() {
 	if [[ "${pwCam}" = "true" ]]; then
 		pecho debug "Enabling pw-v4l2 preload..."
 		addEnv "LD_PRELOAD=${LD_PRELOAD} $(ls /usr/lib/pipewire-* -d | head -n 1)/v4l2/libpw-v4l2.so" &
@@ -358,17 +350,39 @@ function importEnv() {
 		addEnv "LIBGL_KOPPER_DRI2=1"
 		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json"
 	fi
+	cat "${_portableConfig}" > "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
+	readyNotify set setConfEnv
+}
+
+function setXdgEnv() {
+	addEnv "XDG_CONFIG_HOME=$(echo "${XDG_CONFIG_HOME}" | pathTranslation)"
+	addEnv "XDG_DOCUMENTS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Documents"
+	addEnv "XDG_DATA_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/share"
+	addEnv "XDG_STATE_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/state"
+	addEnv "XDG_CACHE_HOME=${XDG_DATA_HOME}/${stateDirectory}/cache"
+	addEnv "XDG_DESKTOP_DIR=${XDG_DATA_HOME}/${stateDirectory}/Desktop"
+	addEnv "XDG_DOWNLOAD_DIR=${XDG_DATA_HOME}/${stateDirectory}/Downloads"
+	addEnv "XDG_TEMPLATES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Templates"
+	addEnv "XDG_PUBLICSHARE_DIR=${XDG_DATA_HOME}/${stateDirectory}/Public"
+	addEnv "XDG_MUSIC_DIR=${XDG_DATA_HOME}/${stateDirectory}/Music"
+	addEnv "XDG_PICTURES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Pictures"
+	addEnv "XDG_VIDEOS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Videos"
+	addEnv "DISPLAY=${DISPLAY}"
+	readyNotify set setXdgEnv
+}
+
+function setStaticEnv() {
 	addEnv "GDK_DEBUG=portals"
 	addEnv "GTK_USE_PORTAL=1"
 	addEnv "QT_AUTO_SCREEN_SCALE_FACTOR=1"
-	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}"
-	addEnv "QT_IM_MODULE=${QT_IM_MODULE}"
 	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
-	#addEnv "PATH=/sandbox:${PATH}"
-	addEnv "DISPLAY=${DISPLAY}"
-	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
 	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
-	printf "\n\n" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
+	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
+	echo "source /run/portable-generated.env" > "${XDG_DATA_HOME}/${stateDirectory}/.bashrc"
+	readyNotify set setStaticEnv
+}
+
+function genNewEnv() {
 	if [[ ! -e "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
 		touch "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	fi
@@ -378,7 +392,31 @@ function importEnv() {
 		echo "# Envs" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 		echo "isPortableEnvPresent=1" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	fi
-	echo "source /run/portable-generated.env" > "${XDG_DATA_HOME}/${stateDirectory}/.bashrc"
+	readyNotify set genNewEnv
+}
+
+function importEnv() {
+	export \
+		pwCam \
+		qt5Compat \
+		useZink \
+		XDG_DATA_HOME \
+		stateDirectory \
+		XDG_CONFIG_HOME \
+		_portableConfig \
+		XDG_RUNTIME_DIR \
+		appID \
+		DISPLAY \
+		QT_SCALE_FACTOR
+	setIM &
+	setXdgEnv &
+	setConfEnv &
+	setStaticEnv &
+	genXAuth
+	ln -srf \
+		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
+		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
+	genNewEnv &
 }
 
 function getChildPid() {
@@ -423,13 +461,11 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	readyNotify wait sanityCheck
-	importEnv
 	deviceBinding
 	mkdir \
 		--parents \
 		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/.config"
+		"${XDG_DATA_HOME}/${stateDirectory}/.config" &
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
 	else
@@ -441,7 +477,12 @@ function execApp() {
 		unset procDriverBind
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	readyNotify wait genNewEnv
+	readyNotify wait setStaticEnv
+	readyNotify wait im
+	readyNotify wait setConfEnv
+	readyNotify wait setXdgEnv
+	readyNotify wait sanityCheck
 	termExec
 	terminateOnRequest &
 	passPid &
@@ -666,6 +707,7 @@ function termExec() {
 }
 
 function execAppExist() {
+	importEnv
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
@@ -956,19 +998,7 @@ function cleanDUnits() {
 	readyNotify set cleanDUnits
 }
 
-function dbusProxy() {
-	cleanDUnits &
-	generateFlatpakInfo
-	waylandDisplay
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${busDir}"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${busDirAy}"
-	pecho info "Starting D-Bus Proxy @ ${busDir}..."
+function dbusArg() {
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
 	fi
@@ -995,6 +1025,25 @@ function dbusProxy() {
 		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
 	fi
 	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
+	readyNotify set dbusArg
+}
+
+function dbusProxy() {
+	importEnv
+	dbusArg &
+	cleanDUnits &
+	generateFlatpakInfo
+	waylandDisplay
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${busDir}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${busDirAy}"
+	pecho info "Starting D-Bus Proxy @ ${busDir}..."
+	readyNotify wait dbusArg
 	readyNotify wait cleanDUnits
 	systemd-run \
 		--user \
