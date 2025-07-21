@@ -452,6 +452,7 @@ function execApp() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait importEnv
+	readyNotify wait writeInfo
 	terminateOnRequest &
 	systemd-run \
 	--user \
@@ -993,6 +994,26 @@ function dbusArg() {
 	readyNotify set dbusArg
 }
 
+function writeInfo() {
+	while [[ ! -e "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" ]]; do
+		inotifywait \
+			-e create \
+			--quiet \
+			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	done
+	pecho debug "Original file bwrapinfo.json exists"
+	while ! grep pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"; do
+		inotifywait \
+			-e modify \
+			--quiet \
+			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	done
+	cat \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
+		| head -n 1 > "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	readyNotify set writeInfo
+}
+
 function dbusProxy() {
 	genXAuth
 	importEnv &
@@ -1128,16 +1149,7 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.IBus.*=* \
 			--call=org.freedesktop.portal.Request=* \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
-
-	while ! grep pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"; do
-		inotifywait \
-			-e modify \
-			--quiet \
-			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"
-	done
-	cat \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
-		| head -n 1 > "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
+	writeInfo &
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
@@ -1415,7 +1427,8 @@ export \
 	appID \
 	DISPLAY \
 	QT_SCALE_FACTOR \
-	waylandOnly
+	waylandOnly \
+	instanceId
 sourceXDG
 defineRunPath
 if [[ "$*" = "--actions quit" ]]; then
