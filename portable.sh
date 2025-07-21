@@ -452,8 +452,8 @@ function execApp() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait importEnv
-	terminateOnRequest &
 	passPid &
+	terminateOnRequest &
 	systemd-run \
 	--user \
 	${sdOption} \
@@ -1129,7 +1129,6 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.IBus.*=* \
 			--call=org.freedesktop.portal.Request=* \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
-
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
@@ -1294,14 +1293,6 @@ function launch() {
 }
 
 function passPid() {
-	if [[ $(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal") = "app-started" ]]; then
-		pecho warn "Application started before passPid()" &
-	else
-		inotifywait \
-			-e modify \
-			--quiet \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
-	fi
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	sed -i \
 		"s|placeholderChildPid|${childPid}|g" \
