@@ -410,7 +410,7 @@ function importEnv() {
 	readyNotify set importEnv
 }
 
-function getChildPid() {
+function setMainPid() {
 	local cGroup cmdlineArg
 	cGroup=$(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')
 	pecho debug "Getting PID from unit ${unitName}'s control group $(systemctl --user show "${unitName}" -p ControlGroup | cut -c '14-')"
@@ -426,6 +426,7 @@ function getChildPid() {
 			fi
 		fi
 	done
+	echo "${childPid}" > "${XDG_DATA_HOME}/${stateDirectory}/mainPid"
 }
 
 # Function used to escape paths for sed processing.
@@ -1320,8 +1321,7 @@ function passPid() {
 			--quiet \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
 	fi
-	getChildPid
-	echo "${childPid}" > "${XDG_DATA_HOME}/${stateDirectory}/mainPid"
+	setMainPid
 	unset childPid
 	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
 	sed -i \
