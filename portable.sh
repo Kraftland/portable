@@ -452,7 +452,6 @@ function execApp() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait importEnv
-	#passPid &
 	terminateOnRequest &
 	systemd-run \
 	--user \
@@ -898,11 +897,8 @@ function generateFlatpakInfo() {
 		--parents \
 		--mode=0700 \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	#install /usr/lib/portable/bwrapinfo.json \
-	#	"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
-	#pecho debug "Successfully installed bwrapinfo @${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	mkdir \
 		--parents \
 		--mode=0700 \
@@ -1023,9 +1019,10 @@ function dbusProxy() {
 		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
 		-p After="xdg-document-portal.service xdg-desktop-portal.service" \
 		-p SuccessExitStatus=SIGKILL \
-		-p StandardError="file:${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json" \
+		-p StandardError="file:${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
 		-- bwrap \
 			--json-status-fd 2 \
+			--unshare-all \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
 			--ro-bind /usr/lib64 /usr/lib64 \
@@ -1131,6 +1128,16 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.IBus.*=* \
 			--call=org.freedesktop.portal.Request=* \
 			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
+
+	while ! grep pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"; do
+		inotifywait \
+			-e modify \
+			--quiet \
+			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original"
+	done
+	cat \
+		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
+		| head -n 1 > "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
@@ -1292,20 +1299,6 @@ function launch() {
 		pecho info "Launching ${appID}..."
 		execApp
 	fi
-}
-
-function passPid() {
-	local childPid=$(systemctl --user show "${friendlyName}-dbus" -p MainPID | cut -c '9-')
-	sed -i \
-		"s|placeholderChildPid|${childPid}|g" \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	sed -i \
-		"s|placeholderMntId|$(readlink "/proc/${childPid}/ns/mnt" | sed 's/[^0-9]//g')|g" \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	sed -i \
-		"s|placeholderPidId|$(readlink "/proc/${childPid}/ns/pid" | sed 's/[^0-9]//g')|g" \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	echo "finish" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
 
 function stopApp() {
