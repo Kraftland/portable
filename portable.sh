@@ -216,11 +216,16 @@ function manageDirs() {
 function genXAuth() {
 	if [[ -r "${XAUTHORITY}" ]]; then
 		pecho debug "Using authority file from ${XAUTHORITY}"
+		xAuthBind="${XAUTHORITY}"
+		export XAUTHORITY="/run/.Xauthority"
 	elif [[ -r "${HOME}/.Xauthority" ]]; then
 		pecho debug "Guessing authority as ${HOME}/.Xauthority"
-		export XAUTHORITY="${HOME}/.Xauthority"
+		xAuthBind="${HOME}/.Xauthority"
+		export XAUTHORITY="/run/.Xauthority"
 	else
 		pecho warn "Could not determine Xauthority file path"
+		xAuthBind="/dev/null"
+		unset XAUTHORITY
 		xhost +localhost
 		return 1
 	fi
@@ -497,7 +502,7 @@ function execApp() {
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
-	-p Environment=XAUTHORITY="/run/.Xauthority" \
+	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p Environment=instanceId="${instanceId}" \
 	-p Environment=busDir="${busDir}" \
 	-p "${sdNetArg}" \
@@ -561,7 +566,7 @@ function execApp() {
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			/run \
-		--ro-bind "${XAUTHORITY}" \
+		--ro-bind "${xAuthBind}" \
 			"/run/.Xauthority" \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			"${XDG_RUNTIME_DIR}/portable/${appID}" \
