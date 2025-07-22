@@ -25,7 +25,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
     - WPS (aur/wps-office-cn-bwrap)
     - Genshin Impact Launcher
     - Bottles (aur/bottles-bwrap)
-    - QQ (aur/linuxqq-portable)
+    - Visual Studio Code (aur/visual-studio-code-portable)
     - Discord (aur/discord-bwrap)
     - Larksuite (aur/larksuite-portable)
     - Firefox (aur/firefox-portable)
