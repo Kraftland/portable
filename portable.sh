@@ -69,6 +69,9 @@ function readyNotify() {
 			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
 	elif [[ $1 = "wait" ]]; then
 		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
+			if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
+				break
+			fi
 			inotifywait \
 				-e create \
 				--quiet \
@@ -78,6 +81,8 @@ function readyNotify() {
 			pecho crit "Component $2 failed! Bailing out..."
 			stopApp force &
 			exit 2
+		elif [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
+			pecho crit "Readiness notify failed"
 		else
 			pecho debug "Component $2 ready, status validated"
 		fi
