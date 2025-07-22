@@ -349,13 +349,13 @@ function setConfEnv() {
 		addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal"
 	fi
 	if [[ "${useZink}" = "true" ]]; then
+		pecho debug "Enabling Zink..."
 		addEnv "__GLX_VENDOR_LIBRARY_NAME=mesa"
 		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink"
 		addEnv "GALLIUM_DRIVER=zink"
 		addEnv "LIBGL_KOPPER_DRI2=1"
 		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json"
 	fi
-	cat "${_portableConfig}" > "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	readyNotify set setConfEnv
 }
 
@@ -400,6 +400,7 @@ function genNewEnv() {
 }
 
 function importEnv() {
+	cat "${_portableConfig}" > "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	setIM &
 	setXdgEnv &
 	setConfEnv &
@@ -408,6 +409,11 @@ function importEnv() {
 		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
 		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
 	genNewEnv &
+	readyNotify wait im
+	readyNotify wait setXdgEnv
+	readyNotify wait setConfEnv
+	readyNotify wait setStaticEnv
+	readyNotify wait genNewEnv
 	readyNotify set importEnv
 }
 
@@ -703,9 +709,9 @@ function shareFile() {
 	done
 	exit 0
 }
-
 function addEnv() {
-	echo "$@" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
+	flock -x "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env.lock" \
+		/usr/lib/portable/addEnv "$@"
 }
 
 function desktopWorkaround() {

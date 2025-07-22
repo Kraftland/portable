@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+echo $@ | tee --append "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
+echo "Adding env $@"
