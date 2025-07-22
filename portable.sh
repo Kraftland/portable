@@ -1333,9 +1333,9 @@ function stopApp() {
 		if [[ "${sdOut}" =~ "${friendlyName}.service" ]] && [[ "${sdOut}" =~ "subprocess" ]]; then
 			pecho crit "Not stopping the slice because one or more instance are still running"
 			exit 1
-		elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -ge 2 ]]; then
-			pecho crit "Not stopping the slice because two or more subprocesses are still running"
-			exit 1
+		#elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -ge 2 ]]; then
+			#pecho crit "Not stopping the slice because two or more subprocesses are still running"
+			#exit 1
 		fi
 	fi
 	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l)" -eq 0 ]]; then
