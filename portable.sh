@@ -784,7 +784,7 @@ function passDevArgs() {
 
 # $1 as arg name.
 function getDevArgs() {
-	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")"
+	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")" 2>/dev/null
 }
 
 function hybridBind() {
