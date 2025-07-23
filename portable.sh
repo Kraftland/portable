@@ -728,11 +728,10 @@ function desktopWorkaround() {
 }
 
 function deviceBinding() {
+	bwSwitchableGraphicsArg=""
 	if [[ "${gameMode}" = "true" ]]; then
-		bwSwitchableGraphicsArg=""
-		pecho debug "Binding all GPUs in Game Mode"
 		if ls /dev/nvidia* &> /dev/null; then
-			pecho debug "Binding NVIDIA GPUs"
+			pecho debug "Binding NVIDIA GPUs in Game Mode"
 			for _card in /dev/nvidia*; do
 				if [[ -e "${_card}" ]]; then
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
@@ -745,15 +744,14 @@ function deviceBinding() {
 			addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
 			addEnv "DRI_PRIME=1"
 		else
-			pecho info "No NVIDIA GPU could be found!"
-			pecho info "Using mesa feature... unsetting all related environment variables"
+			pecho info "No NVIDIA GPU could be found in Game Mode!"
+			pecho info "Using mesa PRIME... unsetting all related environment variables"
 			addEnv "VK_LOADER_DRIVERS_DISABLE="
 			addEnv "DRI_PRIME=1"
 		fi
 	else
 		pecho debug "Detecting GPU..."
-		bwSwitchableGraphicsArg=""
-		videoMod=$(lsmod)
+		videoMod="$(lsmod)"
 		if [[ $(find /dev/dri/renderD* -maxdepth 0 -type c 2>/dev/null | wc -l) -eq 1 && "${videoMod}" =~ "nvidia" ]]; then
 			pecho info "Using single NVIDIA GPU"
 			for _card in /dev/nvidia*; do
@@ -765,7 +763,7 @@ function deviceBinding() {
 			if [[ "${videoMod}" =~ "nvidia" ]]; then
 				pecho debug "Activating hybrid GPU detection"
 				bwSwitchableGraphicsArg="--tmpfs /dev/dri"
-				for device in /sys/class/drm/renderD12*; do
+				for device in /sys/class/drm/renderD*; do
 					if [[ -e "${device}" ]]; then
 						if [[ $(cat "${device}/device/vendor") = 0x10de ]]; then
 							pecho debug "Device $(basename "${device}") detected as NVIDIA GPU"
