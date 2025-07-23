@@ -748,18 +748,16 @@ function detectNv(){
 
 # Meant to run after bindNvDevIfExist() or detectNv()
 function setNvOffloadEnv() {
+	addEnv "VK_LOADER_DRIVERS_DISABLE="
+	addEnv "DRI_PRIME=1"
 	if [[ "${nvExist}" = 1 ]]; then
 		pecho debug "Specifying environment variables for dGPU utilization: NVIDIA"
 		addEnv "__NV_PRIME_RENDER_OFFLOAD=1"
 		addEnv "__VK_LAYER_NV_optimus=NVIDIA_only"
 		addEnv "__GLX_VENDOR_LIBRARY_NAME=nvidia"
 		addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
-		addEnv "VK_LOADER_DRIVERS_DISABLE="
-		addEnv "DRI_PRIME=1"
 	else
 		pecho debug "Specifying environment variables for dGPU utilization: Mesa"
-		addEnv "VK_LOADER_DRIVERS_DISABLE="
-		addEnv "DRI_PRIME=1"
 	fi
 }
 
@@ -784,18 +782,22 @@ function deviceBinding() {
 	else
 		bwSwitchableGraphicsArg="--tmpfs /dev/dri"
 		activeCardSum=0
-		activeCards=""
+		export activeCards="placeholder"
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
-			for _cStat in /sys/class/drm/card1/card1-*/status; do
-				if grep -q disconnected "${_cStat}"; then
+			pecho debug "Working on "${vCards}""
+			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
+				pecho debug "Inspecting ${file}"
+				if [[ "$(cat "${file}")" =~ "disconnected" ]]; then
 					continue
 				else
-					activeCardSum=$(expr ${activeCard} + 1)
-					if [[ -n "${activeCards}" ]]; then
-						activeCards=" $(basename ${vCards})"
+					pecho debug "Active GPU"
+					activeCardSum=$(expr "${activeCardSum}" + 1)
+					if [[ "${activeCards}" = "placeholder" ]]; then
+						activeCards="$(basename "${vCards}")"
 					else
-						activeCards="$(basename ${vCards})"
+						activeCards="${activeCards} $(basename "${vCards}")"
 					fi
+					break
 				fi
 			done
 		done
