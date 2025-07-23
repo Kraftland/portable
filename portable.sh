@@ -762,8 +762,16 @@ function setNvOffloadEnv() {
 	fi
 }
 
+# $1=card[0-9], sets renderIndex in form of renderD128, etc
+function cardToRender() {
+	local symOrig="$(realpath /sys/class/drm/"$1"/../)"
+	renderIndex="$(find "${symOrig}" -maxdepth 1 -mindepth 1 -name 'render*' -print -quit)"
+	renderIndex="$(basename "${renderIndex}")"
+	pecho debug "Translated $1 to ${renderIndex}"
+}
+
 function deviceBinding() {
-	local bwSwitchableGraphicsArg=""
+	local bwSwitchableGraphicsArg
 	if [[ "$(ls -l /sys/class/drm | grep render | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -772,6 +780,7 @@ function deviceBinding() {
 		bindNvDevIfExist
 		setNvOffloadEnv
 	else
+		bwSwitchableGraphicsArg="--tmpfs /dev/dri"
 		activeCardSum=0
 		activeCards=""
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
@@ -791,7 +800,7 @@ function deviceBinding() {
 		if [[ "${activeCardSum}" -le 1 ]]; then
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
-
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind"
 		else
 			pecho debug "${activeCardSum} cards active"
 
