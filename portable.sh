@@ -469,6 +469,7 @@ function execApp() {
 	getDevArgs bwSwitchableGraphicsArg
 	termExec
 	readyNotify wait importEnv
+	readyNotify wait generateFlatpakInfo
 	readyNotify wait deviceBinding
 	terminateOnRequest &
 	systemd-run \
@@ -968,24 +969,23 @@ function warnMulRunning() {
 
 function genInstanceID() {
 	instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+	while [[ -d "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" ]]; do
+		pecho debug "Instance ID collision detected!"
+		instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+	done
+
 }
 
 function generateFlatpakInfo() {
 	pecho debug "Installing flatpak-info..."
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	genInstanceID
-	while [[ -d "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" ]]; do
-		pecho debug "Instance ID collision detected!"
-		genInstanceID
-	done
 	sed -i "s|placeHolderAppName|${appID}|g" \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeholderInstanceId|${instanceId}|g" \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-
 	mkdir \
 		--parents \
 		--mode=0700 \
@@ -1030,6 +1030,7 @@ function generateFlatpakInfo() {
 			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file" \
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"
 	fi
+	readyNotify set generateFlatpakInfo
 }
 
 function resetUnit() {
@@ -1109,11 +1110,12 @@ function writeInfo() {
 }
 
 function dbusProxy() {
-	genXAuth
+	genInstanceID
+	generateFlatpakInfo &
 	importEnv &
 	dbusArg &
 	cleanDUnits &
-	generateFlatpakInfo
+	genXAuth
 	waylandDisplay
 	mkdir \
 		--parents \
