@@ -771,7 +771,7 @@ function cardToRender() {
 }
 
 function deviceBinding() {
-	local bwSwitchableGraphicsArg
+	#local bwSwitchableGraphicsArg
 	if [[ "$(ls -l /sys/class/drm | grep render | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -804,7 +804,6 @@ function deviceBinding() {
 			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
 		else
 			pecho debug "${activeCardSum} cards active"
-
 		fi
 	fi
 
