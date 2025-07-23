@@ -754,6 +754,7 @@ function setNvOffloadEnv() {
 		addEnv "__VK_LAYER_NV_optimus=NVIDIA_only"
 		addEnv "__GLX_VENDOR_LIBRARY_NAME=nvidia"
 		addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
+		addEnv "VK_LOADER_DRIVERS_DISABLE="
 		addEnv "DRI_PRIME=1"
 	else
 		pecho debug "Specifying environment variables for dGPU utilization: Mesa"
