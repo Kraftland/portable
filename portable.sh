@@ -663,6 +663,7 @@ function execApp() {
 }
 
 function terminateOnRequest() {
+	pecho debug "Established termination watches"
 	while true; do
 		if [[ ! -r "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
 			pecho warn "startSignal is missing! Stopping application"
@@ -771,8 +772,19 @@ function cardToRender() {
 	pecho debug "Translated $1 to ${renderIndex}"
 }
 
-function deviceBinding() {
+# $1 as arg name, $2 as value
+function passDevArgs() {
+	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1"
+}
+
+# $1 as arg name.
+function getDevArgs() {
+	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")"
+}
+
+function hybridBind() {
 	#local bwSwitchableGraphicsArg
+	bwSwitchableGraphicsArg='--setenv portableDiscrete 1'
 	if [[ "$(ls -l /sys/class/drm | grep render | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -782,8 +794,8 @@ function deviceBinding() {
 		setNvOffloadEnv
 	else
 		bwSwitchableGraphicsArg="--tmpfs /dev/dri"
-		activeCardSum=0
-		export activeCards="placeholder"
+		local activeCardSum=0
+		activeCards="placeholder"
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
 			pecho debug "Working on "${vCards}""
 			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
@@ -824,6 +836,11 @@ function deviceBinding() {
 		fi
 	fi
 	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
+	passDevArgs bwSwitchableGraphicsArg "${bwSwitchableGraphicsArg}"
+	readyNotify set hybridBind
+}
+
+function cameraBind() {
 	bwCamPar=""
 	if [[ "${bindCameras}" = "true" ]]; then
 		pecho debug "Detecting Camera..."
@@ -834,6 +851,11 @@ function deviceBinding() {
 		done
 	fi
 	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
+	passDevArgs bwCamPar "${bwCamPar}"
+	readyNotify set cameraBind
+}
+
+function inputBind() {
 	if [[ "${bindInputDevices}" = "true" ]]; then
 		bwInputArg="--dev-bind-try /sys/class/leds /sys/class/leds --dev-bind-try /sys/class/input /sys/class/input --dev-bind-try /sys/class/hidraw /sys/class/hidraw --dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
 		for _device in /dev/hidraw*; do
@@ -846,6 +868,11 @@ function deviceBinding() {
 		bwInputArg=""
 		pecho debug "Not exposing input devices"
 	fi
+	passDevArgs bwInputArg "${bwInputArg}"
+	readyNotify set inputBind
+}
+
+function miscBind() {
 	if [[ "${bindNetwork}" = "false" ]]; then
 		pecho info "Network access disabled via config"
 		sdNetArg="PrivateNetwork=yes"
@@ -853,9 +880,17 @@ function deviceBinding() {
 		sdNetArg="PrivateNetwork=no"
 		pecho debug "Network access allowed"
 	fi
+	passDevArgs sdNetArg "${sdNetArg}"
 	if [[ "${bindPipewire}" = "true" ]]; then
 		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
 	fi
+	passDevArgs "pipewireBinding ${pipewireBinding}"
+	readyNotify set miscBind
+}
+
+function deviceBinding() {
+	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
+
 }
 
 function appANR() {
