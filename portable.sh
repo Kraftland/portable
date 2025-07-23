@@ -446,7 +446,6 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	deviceBinding
 	mkdir \
 		--parents \
 		--mode=0700 \
@@ -463,9 +462,14 @@ function execApp() {
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	getDevArgs pipewireBinding
+	getDevArgs sdNetArg
+	getDevArgs bwInputArg
+	getDevArgs bwCamPar
+	getDevArgs bwSwitchableGraphicsArg
 	termExec
 	readyNotify wait importEnv
-	#readyNotify wait writeInfo
+	readyNotify wait deviceBinding
 	terminateOnRequest &
 	systemd-run \
 	--remain-after-exit \
@@ -890,7 +894,15 @@ function miscBind() {
 
 function deviceBinding() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
-
+	hybridBind &
+	inputBind &
+	cameraBind &
+	miscBind &
+	readyNotify wait cameraBind
+	readyNotify wait miscBind
+	readyNotify wait inputBind
+	readyNotify wait hybridBind
+	readyNotify set deviceBinding
 }
 
 function appANR() {
@@ -1377,6 +1389,7 @@ function launch() {
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
 	fi
+	deviceBinding &
 	if systemctl --user --quiet is-active "${unitName}.service"; then
 		warnMulRunning "$@"
 	fi
