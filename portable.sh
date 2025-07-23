@@ -683,7 +683,7 @@ function execAppExistDirect() {
 }
 
 function termExec() {
-	trap "stopApp force" SIGTERM SIGHUP SIGQUIT
+	trap "stopApp force" SIGTERM SIGINT SIGHUP SIGQUIT SIGKILL
 }
 
 function execAppExist() {
@@ -808,13 +808,13 @@ function deviceBinding() {
 			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
 		else
 			pecho debug "${activeCardSum} cards active"
-			for vCard in ${activeCards}; do
+			for vCards in ${activeCards}; do
 			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
-				if grep -q '0x10de' "/sys/class/drm/${vCards}"; then
+				if grep -q '0x10de' "/sys/class/drm/${vCards}/device/vendor"; then
 					addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 					continue
 				else
-					cardToRender "${vCard}"
+					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
 					addEnv 'DRI_PRIME=0'
