@@ -1,13 +1,13 @@
 #!/usr/bin/bash
 
 # This is your Application ID, avoid conflict
-appID="top.kimiblock.example111"
+appID="top.kimiblock.tester"
 
 # This is a friendly name of an application. It should only contain ASCII characters and not spaces.
-friendlyName="Portable_Test"
+friendlyName="Portable_Tester"
 
 # This is the state directory of your application, which is located under "XDG_DATA_HOME"
-stateDirectory="Portable_Test_Data"
+stateDirectory="Portable_Tester_Data"
 
 # This is the target executable to launch
 launchTarget="gtk4-demo"
