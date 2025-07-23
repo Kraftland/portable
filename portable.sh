@@ -359,7 +359,7 @@ function setConfEnv() {
 		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink"
 		addEnv "GALLIUM_DRIVER=zink"
 		addEnv "LIBGL_KOPPER_DRI2=1"
-		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+		#addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json"
 	fi
 	readyNotify set setConfEnv
 }
@@ -815,6 +815,7 @@ function deviceBinding() {
 					pecho debug "Binding ${renderIndex}"
 					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
 					addEnv 'DRI_PRIME=0'
+				fi
 			done
 		fi
 	fi

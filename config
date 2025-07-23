@@ -31,7 +31,7 @@ gameMode="false"
 dbusWake="false"
 
 # Enables Network access within the sandbox. Defaults to true.
-bindNetwork="true"
+bindNetwork="false"
 
 # Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true! Unstable for now
 pwCam="false"
