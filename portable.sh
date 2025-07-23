@@ -800,7 +800,8 @@ function deviceBinding() {
 		if [[ "${activeCardSum}" -le 1 ]]; then
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind"
+			cardToRender "${activeCards}"
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
 		else
 			pecho debug "${activeCardSum} cards active"
 
