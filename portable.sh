@@ -1439,7 +1439,8 @@ export \
 	waylandOnly \
 	instanceId \
 	readyDir \
-	gameMode
+	gameMode \
+	GSK_RENDERER=gl
 sourceXDG
 defineRunPath
 readyNotify init
