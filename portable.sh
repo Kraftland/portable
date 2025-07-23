@@ -462,14 +462,15 @@ function execApp() {
 		unset procDriverBind
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait importEnv
 	#readyNotify wait writeInfo
 	terminateOnRequest &
 	systemd-run \
+	--remain-after-exit \
 	--user \
 	${sdOption} \
-	--send-sighup \
 	--service-type=notify \
 	--wait \
 	-u "${unitName}" \
