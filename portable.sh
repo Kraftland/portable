@@ -727,28 +727,43 @@ function desktopWorkaround() {
 		string:"background" boolean:true string:"background" string:"${appID}" array:string:"yes" &
 }
 
+function bindNvDevIfExist(){
+	if ls /dev/nvidia* &> /dev/null; then
+		pecho debug "Binding NVIDIA GPUs in Game Mode"
+		for _card in /dev/nvidia*; do
+			if [[ -e "${_card}" ]]; then
+				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+			fi
+		done
+		export nvExist=1
+	fi
+}
+
+# Meant to run after bindNvDevIfExist()
+function setNvOffloadEnv() {
+	if [[ "${nvExist}" = 1 ]]; then
+		pecho debug "Specifying environment variables for dGPU utilization: NVIDIA"
+		addEnv "__NV_PRIME_RENDER_OFFLOAD=1"
+		addEnv "__VK_LAYER_NV_optimus=NVIDIA_only"
+		addEnv "__GLX_VENDOR_LIBRARY_NAME=nvidia"
+		addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
+		addEnv "DRI_PRIME=1"
+	else
+		pecho debug "Specifying environment variables for dGPU utilization: Mesa"
+		addEnv "VK_LOADER_DRIVERS_DISABLE="
+		addEnv "DRI_PRIME=1"
+	fi
+}
+
 function deviceBinding() {
 	bwSwitchableGraphicsArg=""
-	if [[ "${gameMode}" = "true" ]]; then
-		if ls /dev/nvidia* &> /dev/null; then
-			pecho debug "Binding NVIDIA GPUs in Game Mode"
-			for _card in /dev/nvidia*; do
-				if [[ -e "${_card}" ]]; then
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
-				fi
-			done
-			pecho debug "Specifying environment variables for dGPU utilization"
-			addEnv "__NV_PRIME_RENDER_OFFLOAD=1"
-			addEnv "__VK_LAYER_NV_optimus=NVIDIA_only"
-			addEnv "__GLX_VENDOR_LIBRARY_NAME=nvidia"
-			addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
-			addEnv "DRI_PRIME=1"
-		else
-			pecho info "No NVIDIA GPU could be found in Game Mode!"
-			pecho info "Using mesa PRIME... unsetting all related environment variables"
-			addEnv "VK_LOADER_DRIVERS_DISABLE="
-			addEnv "DRI_PRIME=1"
-		fi
+	if [[ "$(ls -l /sys/class/drm | grep render | wc -l)" -le 1 ]]; then
+		pecho debug "Single or no GPU, binding all devices"
+		bindNvDevIfExist
+	elif [[ "${gameMode}" = "true" ]]; then
+		pecho debug "Game Mode enabled on hybrid graphics"
+		bindNvDevIfExist
+		setNvOffloadEnv
 	else
 		pecho debug "Detecting GPU..."
 		videoMod="$(lsmod)"
