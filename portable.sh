@@ -739,7 +739,14 @@ function bindNvDevIfExist(){
 	fi
 }
 
-# Meant to run after bindNvDevIfExist()
+function detectNv(){
+	if ls /dev/nvidia* &> /dev/null; then
+		pecho debug "NVIDIA GPU present"
+		export nvExist=1
+	fi
+}
+
+# Meant to run after bindNvDevIfExist() or detectNv()
 function setNvOffloadEnv() {
 	if [[ "${nvExist}" = 1 ]]; then
 		pecho debug "Specifying environment variables for dGPU utilization: NVIDIA"
@@ -756,7 +763,7 @@ function setNvOffloadEnv() {
 }
 
 function deviceBinding() {
-	bwSwitchableGraphicsArg=""
+	local bwSwitchableGraphicsArg=""
 	if [[ "$(ls -l /sys/class/drm | grep render | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -765,6 +772,45 @@ function deviceBinding() {
 		bindNvDevIfExist
 		setNvOffloadEnv
 	else
+		activeCardSum=0
+		activeCards=""
+		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
+			for _cStat in /sys/class/drm/card1/card1-*/status; do
+				if grep -q disconnected "${_cStat}"; then
+					continue
+				else
+					activeCardSum=$(expr ${activeCard} + 1)
+					if [[ -n "${activeCards}" ]]; then
+						activeCards=" $(basename ${vCards})"
+					else
+						activeCards="$(basename ${vCards})"
+					fi
+				fi
+			done
+		done
+		if [[ "${activeCardSum}" -le 1 ]]; then
+			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
+			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
+
+		else
+			pecho debug "${activeCardSum} cards active"
+
+		fi
+	fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		pecho debug "Detecting GPU..."
 		videoMod="$(lsmod)"
 		if [[ $(find /dev/dri/renderD* -maxdepth 0 -type c 2>/dev/null | wc -l) -eq 1 && "${videoMod}" =~ "nvidia" ]]; then
