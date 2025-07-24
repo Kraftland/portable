@@ -690,7 +690,7 @@ function execAppExistDirect() {
 }
 
 function termExec() {
-	trap "stopApp force" SIGTERM SIGINT SIGHUP SIGQUIT SIGKILL
+	trap "stopApp force" SIGTERM SIGINT SIGHUP SIGQUIT SIGKILL SIGILL SIGABRT SIGUSR1 SIGSEGV
 }
 
 function execAppExist() {
