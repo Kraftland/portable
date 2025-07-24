@@ -889,7 +889,7 @@ function miscBind() {
 	if [[ "${bindPipewire}" = "true" ]]; then
 		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
 	fi
-	passDevArgs "pipewireBinding ${pipewireBinding}"
+	passDevArgs pipewireBinding "${pipewireBinding}"
 	readyNotify set miscBind
 }
 
@@ -1048,6 +1048,16 @@ function addDbusArg() {
 	fi
 }
 
+# $1 as arg name, $2 as value
+function passBusArgs() {
+	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1"
+}
+
+# $1 as arg name.
+function getBusArgs() {
+	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1")" 2>/dev/null
+}
+
 function cleanDUnits() {
 	systemctl --user kill -sSIGKILL \
 		"${friendlyName}*" \
@@ -1064,6 +1074,7 @@ function cleanDUnits() {
 }
 
 function dbusArg() {
+	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/busstore"
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
 	fi
@@ -1090,6 +1101,8 @@ function dbusArg() {
 		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
 	fi
 	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
+	passBusArgs extraDbusArgs "${extraDbusArgs}"
+	passBusArgs proxyArg "${proxyArg}"
 	readyNotify set dbusArg
 }
 
@@ -1128,6 +1141,8 @@ function dbusProxy() {
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	readyNotify wait dbusArg
 	readyNotify wait cleanDUnits
+	getBusArgs extraDbusArgs
+	getBusArgs proxyArg
 	systemd-run \
 		--user \
 		-p Slice="portable-${friendlyName}.slice" \
