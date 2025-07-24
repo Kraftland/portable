@@ -1401,7 +1401,8 @@ function questionFirstLaunch() {
 }
 
 function launch() {
-	sdOption="-P"
+	#sdOption="-P"
+	sdOption="--pty --quiet"
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
