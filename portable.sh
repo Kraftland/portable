@@ -343,14 +343,14 @@ function setIM() {
 function setConfEnv() {
 	if [[ "${pwCam}" = "true" ]]; then
 		pecho debug "Enabling pw-v4l2 preload..."
-		addEnv "LD_PRELOAD=${LD_PRELOAD} $(ls /usr/lib/pipewire-* -d | head -n 1)/v4l2/libpw-v4l2.so" &
+		addEnv "LD_PRELOAD=${LD_PRELOAD} $(ls /usr/lib/pipewire-* -d | head -n 1)/v4l2/libpw-v4l2.so"
 	else
-		addEnv "LD_PRELOAD=${LD_PRELOAD}" &
+		addEnv "LD_PRELOAD=${LD_PRELOAD}"
 	fi
 	if [[ "${qt5Compat}" = "false" ]]; then
-		pecho debug "Skipping Qt 5 compatibility workarounds" &
+		pecho debug "Skipping Qt 5 compatibility workarounds"
 	else
-		pecho debug "Enabling Qt 5 compatibility workarounds" &
+		pecho debug "Enabling Qt 5 compatibility workarounds"
 		addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal"
 	fi
 	if [[ "${useZink}" = "true" ]]; then
