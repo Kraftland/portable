@@ -40,7 +40,7 @@ pwCam="false"
 useZink="true"
 
 # Enable compatibility workarounds for Qt5. Defaults to true.
-qt5Compat="true"
+qt5Compat="false"
 
 # If not empty, will own the org.mpris.MediaPlayer2.mprisName bus name instead of "org.mpris.MediaPlayer2.${appID##*.}"
 mprisName="testie"
