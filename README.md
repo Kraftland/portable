@@ -59,7 +59,7 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 ## Portable
 
-Install aur/portable-git, aur/portable or install the following files directly
+Install aur/portable, aur/portable-git or install the following files directly. Dependencies can be retrived through those official AUR packages.
 
 ```bash
 	cd portable
