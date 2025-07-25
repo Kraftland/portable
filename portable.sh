@@ -75,7 +75,7 @@ function readyNotify() {
 			fi
 			inotifywait \
 				-e modify,open,create \
-				--timeout 5 \
+				--timeout 2 \
 				--quiet \
 				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
 		done
