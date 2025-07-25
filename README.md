@@ -65,7 +65,7 @@ Install aur/portable-git, aur/portable or install the following files directly
 	cd portable
 	install -Dm755 portable.sh /usr/bin/portable
 	install -d "/usr/lib/"
-    cp -r "lib" "/usr/lib/portable"
+	cp -r "lib" "/usr/lib/portable"
 	install -t "/usr/share/portable" -Dm755 "share"/*
 	install -Dm755 portable-pools /usr/bin/portable-pools
 ```
@@ -144,6 +144,15 @@ Example: Create a test sandbox:
 portable-pools test
 
 ╰─>Portable Sandbox·top.kimiblock.test·🧐⤔
+```
+
+Usage:
+
+```
+portable-pools [Options] <Sandbox Name>
+
+Options:
+	--quit: Terminates the sandbox
 ```
 
 # Code of Conduct
