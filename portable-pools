@@ -16,6 +16,11 @@ function cmdlineDispatcher() {
 	if [ -z "$1" ]; then
 		pecho crit "Usage: portable-pools [Container Name, only ASCII characters without space allowed]"
 	fi
+	if [[ $1 = "--quit" ]]; then
+		termApp=1
+		shift
+	fi
+	sandboxName=$1
 }
 
 function sourceXDG() {
@@ -59,7 +64,15 @@ waylandOnly="adaptive"
 }
 
 function invokePortable() {
-	_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"$1"/config portable --actions debug-shell
+	export \
+		_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"${sandboxName}"/config
+	if [[ "${termApp}" -eq 1 ]]; then
+		 portable \
+		 	--actions quit
+	else
+		portable \
+			--actions debug-shell
+	fi
 }
 
 initialStart $@
