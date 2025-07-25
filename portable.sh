@@ -68,12 +68,14 @@ function readyNotify() {
 			--mode=0700 \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
 	elif [[ $1 = "wait" ]]; then
+		pecho debug "Waiting for component: $2..." &
 		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
 			if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 				break
 			fi
 			inotifywait \
 				-e create \
+				--timeout 2 \
 				--quiet \
 				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
 		done
@@ -1401,7 +1403,6 @@ function questionFirstLaunch() {
 }
 
 function launch() {
-	#sdOption="-P"
 	sdOption="--pty --quiet"
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
