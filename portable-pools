@@ -46,20 +46,20 @@ function initialStart() {
 }
 
 function generatePortableInfo() {
-	if [ -f "${XDG_CONFIG_HOME}"/portable-pools/"$1"/config  ]; then
+	if [ -f "${XDG_CONFIG_HOME}"/portable-pools/"${sandboxName}"/config  ]; then
 		pecho debug "Skipping generation"
 		return 0
 	fi
 	pecho debug "Starting generation..."
-	mkdir -p "${XDG_CONFIG_HOME}"/portable-pools/"$1"
+	mkdir -p "${XDG_CONFIG_HOME}"/portable-pools/"${sandboxName}"
 	echo '''#!/usr/bin/bash
 appID="top.kimiblock.placeHolder"
 friendlyName="placeHolder"
 stateDirectory="placeHolder_Data"
 launchTarget="/usr/bin/bash"
 waylandOnly="adaptive"
-''' >"${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
-	sed -i "s|placeHolder|$1|g" "${XDG_CONFIG_HOME}"/portable-pools/"$1"/config
+''' >"${XDG_CONFIG_HOME}"/portable-pools/"${sandboxName}"/config
+	sed -i "s|placeHolder|$1|g" "${XDG_CONFIG_HOME}"/portable-pools/"${sandboxName}"/config
 	pecho debug "Generation Done!"
 }
 
