@@ -85,8 +85,6 @@ function readyNotify() {
 			exit 2
 		elif [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 			pecho crit "Readiness notify failed"
-		else
-			pecho debug "Component $2 ready, status validated"
 		fi
 	fi
 }
