@@ -74,8 +74,8 @@ function readyNotify() {
 				break
 			fi
 			inotifywait \
-				-e create \
-				--timeout 2 \
+				-e modify,open,create \
+				--timeout 5 \
 				--quiet \
 				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
 		done
@@ -416,12 +416,6 @@ function importEnv() {
 		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
 		"${XDG_DATA_HOME}/${stateDirectory}/portable-generated.env" &
 	genNewEnv &
-	readyNotify wait im
-	readyNotify wait setXdgEnv
-	readyNotify wait setConfEnv
-	readyNotify wait setStaticEnv
-	readyNotify wait genNewEnv
-	readyNotify set importEnv
 }
 
 # Function used to escape paths for sed processing.
@@ -470,7 +464,11 @@ function execApp() {
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
 	termExec
-	readyNotify wait importEnv
+	readyNotify wait im
+	readyNotify wait setXdgEnv
+	readyNotify wait setConfEnv
+	readyNotify wait setStaticEnv
+	readyNotify wait genNewEnv
 	readyNotify wait generateFlatpakInfo
 	readyNotify wait deviceBinding
 	terminateOnRequest &
