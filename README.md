@@ -74,7 +74,7 @@ Install aur/portable, aur/portable-git or install the following files directly. 
 
 1. Download the config file from [here](https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/config) and modify it.
 
-2. Read the configuration manual
+2. Read [configuration manuals](https://github.com/Kraftland/portable/tree/master/doc)
 
 3. Install the config file:
 
@@ -82,24 +82,6 @@ Install aur/portable, aur/portable-git or install the following files directly. 
 # Modify before installing
 install -Dm755 config /usr/lib/portable/info/${appID}/config
 ```
-
-### Modifying the .desktop entry
-
-- The file name of your .desktop file **must** match the appID, like `top.kimiblock.example.desktop`
-
-- Your .desktop file *should* contain the following entries:
-
-```
-X-Flatpak-Tags=aTag;
-X-Flatpak=appID;
-X-Flatpak-RenamedFrom=previousName.desktop;
-```
-
-## Environment Variables
-
-Environment variables are sourced from `XDG_DATA_HOME/stateDirectory/portable.env`.
-
-You can also specify environment variables in the config file.
 
 ## Starting portable
 
@@ -111,28 +93,11 @@ Start portable with environment variable `_portableConfig`, which can be 1) the 
 
 Portable itself allows multiple instances. It automatically creates an identical sandbox and launches the application. Application itself may or may not support waking up itself. It is advised to set `SingleMainWindow=true` for applications that doesn't have well multi-instance support.
 
-### CLI arguments
-
-`--actions f5aaebc6-0014-4d30-beba-72bce57e0650`: Toggle Sandbox, requires user confirmation.
-
-`--actions opendir`: Open the sandbox's home directory.
-
-`--actions share-files`: Choose multiple files to share with the sandbox. The file will be temporarily stored in `XDG_DATA_HOME/stateDirectory/Shared`, which will be purged each launch.
-
-`--actions reset-documents`: Resets XDG Desktop Portal's documents portal and other permissions, causing an instant redaction the permission to read & write for sandboxed apps. **Pleased be advised that this is suggested not to be included in desktop actions made by packagers or be executed when there are applications using the documents portal**!
-
-`--actions quit`: Stop sandbox and D-Bus proxy. If the app fails to stop after 20s, it'll be killed.
-
-`--actions debug-shell`: Start a debugging bash shell inside the sandbox. This works regardless whether the app is running.
-
-Arguments for the application can be passed by putting your arguments in the end of the list of arguments and separate it with `--`
-
 ### Debugging
 
 #### Entering sandbox
 
 To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
-
 
 ---
 
