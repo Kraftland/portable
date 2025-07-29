@@ -55,28 +55,14 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 ---
 
-# File installment
-
-## Portable
-
-Install aur/portable, aur/portable-git or install the following files directly. Dependencies can be retrived through those official AUR packages.
-
-```bash
-	cd portable
-	install -Dm755 portable.sh /usr/bin/portable
-	install -d "/usr/lib/"
-	cp -r "lib" "/usr/lib/portable"
-	install -t "/usr/share/portable" -Dm755 "share"/*
-	install -Dm755 portable-pools /usr/bin/portable-pools
-```
+# How to package?
 
 ## Configurations
 
 1. Download the config file from [here](https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/config) and modify it.
-
-2. Read [configuration manuals](https://github.com/Kraftland/portable/tree/master/doc)
-
-3. Install the config file:
+2. Install Portable.
+3. Read [configuration manuals](https://github.com/Kraftland/portable/tree/master/doc)
+4. Install the config file:
 
 ```bash
 # Modify before installing
