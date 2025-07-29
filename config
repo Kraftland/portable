@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+########## Section: General ##########
+
 # This is your Application ID, avoid conflict
 appID="top.kimiblock.tester"
 
@@ -12,11 +14,30 @@ stateDirectory="Portable_Tester_Data"
 # This is the target executable to launch
 launchTarget="gtk4-demo"
 
+# Enables Network access within the sandbox. Defaults to true.
+bindNetwork="true"
+
+########## Section: Output ##########
+
+# Use zink for GL -> Vulkan translation
+useZink="false"
+
+# Enable compatibility workarounds for Qt5. Defaults to true.
+qt5Compat="false"
+
 # Takes a boolean value or string "adaptive". When true, do not process XAuth files and forces wayland input method. "adaptive" enables this option on Wayland and vice versa. Generally this should be adaptive when possible.
 waylandOnly="adaptive"
 
-# Takes boolean value.
-bindInputDevices="false"
+# Expose all GPUs. Takes boolean value, usually used in games.
+gameMode="false"
+
+# If not empty, will own the org.mpris.MediaPlayer2.mprisName bus name instead of "org.mpris.MediaPlayer2.${appID##*.}"
+mprisName="testie"
+
+########## Section: Input ##########
+
+# Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true! Unstable for now
+pwCam="false"
 
 # Takes boolean value. Binds /dev/video* into the sandbox. Required if target application uses /dev/video* interfaces directly instead of v4l2.
 bindCameras="false"
@@ -24,28 +45,22 @@ bindCameras="false"
 # Takes boolean value. Binds PipeWire socket into the sandbox. Required if target application doesn't use Portals. Please be aware that such operation may impact the integrity of host.
 bindPipewire="false"
 
-# Expose all GPUs. Takes boolean value, usually used in games.
-gameMode="false"
+# Takes boolean value.
+bindInputDevices="false"
+
+########## Section: Portals ##########
+
+# If true, allows the sandboxed application to use the org.freedesktop.portal.Inhibit interface to inhibit certain actions, like suspend and logout
+allowInhibit="false"
+
+# If true, allow apps to register Global Shortcuts via the Portal.
+allowGlobalShortcuts="false"
+
+########## Section: Miscellaneous ##########
 
 # Wake the application using D-Bus calls towards StatusNotifiers. Deprecated.
 dbusWake="false"
 
-# Enables Network access within the sandbox. Defaults to true.
-bindNetwork="true"
-
-# Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true! Unstable for now
-pwCam="false"
-
-# Use zink for GL -> Vulkan translation
-useZink="true"
-
-# Enable compatibility workarounds for Qt5. Defaults to true.
-qt5Compat="false"
-
-# If not empty, will own the org.mpris.MediaPlayer2.mprisName bus name instead of "org.mpris.MediaPlayer2.${appID##*.}"
-mprisName="testie"
-
-# If true, allows the sandboxed application to use the org.freedesktop.portal.Inhibit interface to inhibit certain actions, like suspend and logout
-allowInhibit="false"
+########## Environment ##########
 
 # Below you can set envs that will be imported into the application sandbox

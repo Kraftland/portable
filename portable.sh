@@ -1087,12 +1087,12 @@ function dbusArg() {
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
 	fi
-	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
-		local featureSet="GlobalShortcuts"
-		pecho info "Enabling GNOME exclusive features: ${featureSet}"
-		addDbusArg \
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
-	fi
+	# if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
+	# 	local featureSet="GlobalShortcuts"
+	# 	pecho info "Enabling GNOME exclusive features: ${featureSet}"
+	# 	addDbusArg \
+	# 		""
+	# fi
 	mkdir \
 		--parents \
 		--mode=0700 \
@@ -1105,6 +1105,10 @@ function dbusArg() {
 		local mprisBus="org.mpris.MediaPlayer2.${appID##*.}"
 		addDbusArg \
 			"--own=${mprisBus} --own=${mprisBus}.*"
+	fi
+	if [[ "${allowGlobalShortcuts}" = "true" ]]; then
+		addDbusArg \
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
 	fi
 	if [[ "${allowInhibit}" = "true" ]]; then
 		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
