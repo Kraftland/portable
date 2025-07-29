@@ -1098,14 +1098,15 @@ function dbusArg() {
 		--parents \
 		--mode=0700 \
 		"${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
+	local \
+	defaultMprisOwn="--own=org.mpris.MediaPlayer2.${appID##*.}.* --own=org.mpris.MediaPlayer2.${appID##*.} --own=org.mpris.MediaPlayer2.${appID} --own=org.mpris.MediaPlayer2.${appID}.*"
 	if [[ -n "${mprisName}" ]]; then
 		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
 		addDbusArg \
-			"--own=${mprisBus} --own=${mprisBus}.*"
+			"--own=${mprisBus} --own=${mprisBus}.* ${defaultMprisOwn}"
 	else
-		local mprisBus="org.mpris.MediaPlayer2.${appID##*.}"
 		addDbusArg \
-			"--own=${mprisBus} --own=${mprisBus}.*"
+			"${defaultMprisOwn}"
 	fi
 	if [[ "${allowGlobalShortcuts}" = "true" ]]; then
 		addDbusArg \
