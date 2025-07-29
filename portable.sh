@@ -548,6 +548,7 @@ function execApp() {
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
 	-p Environment=XAUTHORITY="${XAUTHORITY}" \
+	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
 	-- \
 	bwrap --new-session \
@@ -607,7 +608,7 @@ function execApp() {
 			"/run/.Xauthority" \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			"${XDG_RUNTIME_DIR}/portable/${appID}" \
-		--bind "${busDir}" "${XDG_RUNTIME_DIR}" \
+		--bind "${busDir}/bus" "/run/sessionBus" \
 		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
 		--dir /run/host \
 		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
