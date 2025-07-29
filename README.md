@@ -74,7 +74,9 @@ Install aur/portable, aur/portable-git or install the following files directly. 
 
 1. Download the config file from [here](https://raw.githubusercontent.com/Kraftland/portable/refs/heads/master/config) and modify it.
 
-2. Install the config file:
+2. Read the configuration manual
+
+3. Install the config file:
 
 ```bash
 # Modify before installing
