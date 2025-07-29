@@ -48,7 +48,7 @@ proxyName="${friendlyName}-dbus"
 
 function readyNotify() {
 	# Notifies readiness, only usable after warnMulRunning()
-	# $1 can be: wait, set, set-fail, init
+	# $1 can be: wait, set, set-fail, init, verify
 	# $2 is the item name
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		return 1
@@ -56,7 +56,7 @@ function readyNotify() {
 	if [[ $1 = "set" ]]; then
 		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
 	elif [[ $1 = "set-fail" ]]; then
-		echo "abort" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+		echo "FAIL-$2;" >>"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail"
 	elif [[ $1 = "init" ]]; then
 		readyDir="$(xxd -p -l 5 /dev/urandom)"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
@@ -71,6 +71,7 @@ function readyNotify() {
 		pecho debug "Waiting for component: $2..." &
 		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
 			if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
+				exit 114
 				break
 			fi
 			inotifywait \
@@ -79,12 +80,13 @@ function readyNotify() {
 				--quiet \
 				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
 		done
-		if grep -q abort "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"; then
-			pecho crit "Component $2 failed! Bailing out..."
-			stopApp force &
-			exit 2
-		elif [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
+		if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 			pecho crit "Readiness notify failed"
+		fi
+	elif [[ $1 = "verify" ]]; then
+		if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
+			pecho crit "Component failed. Starting aborted."
+			exit 114
 		fi
 	fi
 }
@@ -92,8 +94,23 @@ function readyNotify() {
 function sanityCheck() {
 	mountCheck
 	configCheck
+	busCheck "${appID}"
 	bindCheck
 	readyNotify set sanityCheck
+}
+
+function busCheck() {
+	local busOwn="${appID}"
+	if [[ "${busOwn}" = "org.mpris.MediaPlayer2" ]]; then
+		pecho crit "appID invalid: prohibited to own entire org.mpris.MediaPlayer2"
+		readyNotify set-fail sanityCheck
+	elif [[ "${busOwn}" =~ "org.freedesktop.impl" ]]; then
+		pecho crit "appID invalid: sandbox escape not allowed"
+		readyNotify set-fail sanityCheck
+	elif [[ "${busOwn}" =~ "org.gtk.vfs" ]]; then
+		pecho crit "appID invalid: full filesystem access not allowed"
+		readyNotify set-fail sanityCheck
+	fi
 }
 
 function bindCheck() {
@@ -462,13 +479,10 @@ function execApp() {
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
 	termExec
-	readyNotify wait im
-	readyNotify wait setXdgEnv
-	readyNotify wait setConfEnv
-	readyNotify wait setStaticEnv
-	readyNotify wait genNewEnv
+
 	readyNotify wait generateFlatpakInfo
 	readyNotify wait deviceBinding
+	readyNotify verify
 	terminateOnRequest &
 	systemd-run \
 	--remain-after-exit \
@@ -1271,7 +1285,11 @@ function dbusProxy() {
 				-i "${instanceId}" \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
-
+	readyNotify wait im
+	readyNotify wait setXdgEnv
+	readyNotify wait setConfEnv
+	readyNotify wait setStaticEnv
+	readyNotify wait genNewEnv
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
