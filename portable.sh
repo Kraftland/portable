@@ -144,7 +144,7 @@ function bindCheck() {
 				--question \
 				--text="是否暴露路径 ${bwBindPar}: ${fileCnt} 个文件, ${dirCnt} 个子目录"
 			if [[ $? -eq 1 ]]; then
-				unset bwBindPar
+				readyNotify set-fail sanityCheck
 			fi
 		else
 			/usr/bin/zenity \
@@ -153,7 +153,7 @@ function bindCheck() {
 				--question \
 				--text="Expose ${bwBindPar}, containing ${fileCnt} ${trailingF}, ${dirCnt} ${trailingD}?"
 			if [[ $? -eq 1 ]]; then
-				unset bwBindPar
+				readyNotify set-fail sanityCheck
 			fi
 		fi
 	else
