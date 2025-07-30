@@ -5,6 +5,7 @@
 | Version | Supported          |
 | ------- | ------------------ |
 | Latest  | :white_check_mark: |
+| RC  | :white_check_mark: |
 | Other   | :x:                |
 
 ## Reporting a Vulnerability
