@@ -59,4 +59,17 @@ Terminal=false
 NoDisplay=true
 ```
 
-And, just install it into /usr/share/applications/, with the name you just obtained, "spotify.desktop" in this case.
+And, just install it into /usr/share/applications/, with the name you just obtained, "spotify.desktop" in this case. Example below:
+
+```bash
+    echo '''[Desktop Entry]
+Type=Application
+Name=Spotify Music
+GenericName=Stub for MPRIS
+Icon=spotify
+TryExec=spotify
+Exec=spotify --uri=%u
+Terminal=false
+NoDisplay=true
+Categories=Audio;Music;Player;AudioVideo;''' >"${pkgdir}/usr/share/applications/spotify.desktop"
+```
