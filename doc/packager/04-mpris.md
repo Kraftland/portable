@@ -67,9 +67,8 @@ Type=Application
 Name=Spotify Music
 GenericName=Stub for MPRIS
 Icon=spotify
-TryExec=spotify
+TryExec=portable
 Exec=spotify --uri=%u
 Terminal=false
-NoDisplay=true
-Categories=Audio;Music;Player;AudioVideo;''' >"${pkgdir}/usr/share/applications/spotify.desktop"
+NoDisplay=true''' >"${pkgdir}/usr/share/applications/spotify.desktop"
 ```
