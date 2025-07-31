@@ -34,6 +34,9 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
     - DaVinci Resolve (aur/davinci-resolve-portable)
     - Zen Browser (aur/zen-browser-portable)
     - PCSX2 (aur/pcsx2-portable)
+    - Spotify (aur/spotify-portable)
+    - QQ (aur/linuxqq-portable)
+    - Bitwarden (aur/bitwarden-portable)
 
 # Limitations:
 
