@@ -1090,12 +1090,12 @@ function dbusArg() {
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
 	fi
-	# if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
-	# 	local featureSet="GlobalShortcuts"
-	# 	pecho info "Enabling GNOME exclusive features: ${featureSet}"
-	# 	addDbusArg \
-	# 		""
-	# fi
+	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
+		local featureSet="Location"
+		pecho info "Enabling GNOME exclusive features: ${featureSet}"
+		addDbusArg \
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*"
+	fi
 	mkdir \
 		--parents \
 		--mode=0700 \
