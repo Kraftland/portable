@@ -34,26 +34,7 @@ function stopApp() {
 	return $?
 }
 
-echo "app-started" >/run/startSignal
-
-startLoop &
-#waitForStart
-
-systemd-notify --ready &
-systemd-notify --status="Sandbox startup complete" &
-
-cmd=$1
-shift
-"$cmd" "$@"
-
-if [[ $(ps | wc -l) -le 7 ]]; then
-	echo "No more application running, terminating..."
-	#kill %1
-	echo terminate-now >/run/startSignal
-	exit 0
-else
-	echo "Warning! There're still processes running in the background."
-	systemd-notify --status="Main application exited"
+function askStop() {
 	if [[ "${LANG}" =~ "zh_CN" ]]; then
 		/usr/bin/zenity \
 			--title "${friendlyName}" \
@@ -73,14 +54,42 @@ else
 		stopApp
 	else
 		systemd-notify --status="User denied session termination"
-		echo "User denied termination, staying in background until all process terminates"
-		while true; do
-			sleep 5s
-			if [[ $(ps | wc -l) -le 7 ]]; then
-				echo "Terminating sandbox..."
-				stopApp
-				break
-			fi
-		done
 	fi
+}
+
+echo "app-started" >/run/startSignal
+
+startLoop &
+#waitForStart
+
+systemd-notify --ready &
+systemd-notify --status="Sandbox startup complete" &
+
+cmd=$1
+shift
+"$cmd" "$@"
+
+#sleep 1s
+_procCnt=$(ps | grep -v zenity | wc -l)
+echo "Process count: ${_procCnt}"
+if [[ "${_procCnt}" -le 8 ]]; then
+	echo "No more application running, terminating..."
+	#kill %1
+	echo terminate-now >/run/startSignal
+	exit 0
+else
+	echo "Warning! There're still processes running in the background."
+	systemd-notify --status="Main application exited"
+	echo "Staying in background until all process terminates"
+	askStop &
+	while true; do
+		sleep 5s
+		_procCnt=$(ps | grep -v zenity | wc -l)
+		#echo "Process count: ${_procCnt}"
+		if [[ "${_procCnt}" -le 9 ]]; then
+			echo "Terminating sandbox..."
+			stopApp
+			break
+		fi
+	done
 fi
