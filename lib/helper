@@ -40,13 +40,13 @@ function askStop() {
 			--title "${friendlyName}" \
 			--icon=background-app-ghost-symbolic \
 			--question \
-			--text="主程序已退出, 停止沙盒?"
+			--text="主程序已退出但有残余进程, 停止沙盒?"
 	else
 		/usr/bin/zenity \
 			--title "${friendlyName}" \
 			--icon=background-app-ghost-symbolic \
 			--question \
-			--text="Main process terminated, stop sandbox?"
+			--text="Main process terminated with leftovers, stop sandbox?"
 	fi
 	if [[ $? -eq 0 ]]; then
 		systemd-notify --stopping
