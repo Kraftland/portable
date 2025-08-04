@@ -54,16 +54,33 @@ if [[ $(ps | wc -l) -le 7 ]]; then
 else
 	echo "Warning! There're still processes running in the background."
 	systemd-notify --status="Main application exited"
-	_state=$(notify-send --expire-time=200000 --wait --action="kill"="Terminate" --action="ignore"="Dismiss" "Application running in background!" "Terminate as required")
-	if [[ ${_state} = "kill" ]]; then
+	if [[ "${LANG}" =~ "zh_CN" ]]; then
+		/usr/bin/zenity \
+			--title "${friendlyName}" \
+			--icon=background-app-ghost-symbolic \
+			--question \
+			--text="主程序已退出, 停止沙盒?"
+	else
+		/usr/bin/zenity \
+			--title "${friendlyName}" \
+			--icon=background-app-ghost-symbolic \
+			--question \
+			--text="Main process terminated, stop sandbox?"
+	fi
+	if [[ $? -eq 0 ]]; then
 		systemd-notify --stopping
 		echo "User opted to kill processes"
 		stopApp
 	else
-		systemd-notify --status="User denied termination, staying in background indefinitely..."
-		echo "User denied termination, staying in background indefinitely..."
+		systemd-notify --status="User denied session termination"
+		echo "User denied termination, staying in background until all process terminates"
 		while true; do
-			sleep 3650d
+			sleep 5s
+			if [[ $(ps | wc -l) -le 7 ]]; then
+				echo "Terminating sandbox..."
+				stopApp
+				break
+			fi
 		done
 	fi
 fi
