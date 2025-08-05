@@ -28,3 +28,14 @@ You may want a comparison between Flatpak and Portable:
 | File sharing workarounds | :x: |
 
 That said, Flatpak's XDG Desktop Portal is one of our security foundation. So a respect towards that should be given. And another thing to notice here is that we don't act as a source to distribute software, sandboxing is all we do. The distribution package manager takes care of tracking and installing files.
+
+# Types of applications that suits Portable
+
+In theory most applications can run inside Portable, but not all of them worth sandboxing. Here are a list of application characteristics that we thought need Portable.
+
+- The software is NOT open source
+- The software has major possibilities of being exploited
+- The software is Web Browser based
+- The software is a game
+- The software wakes up discrete GPU
+- The software doesn't follow the _XDG Base Directory_ specifications
