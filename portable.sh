@@ -516,13 +516,12 @@ function execApp() {
 	-p SystemCallFilter=~@debug \
 	-p SystemCallFilter=~@module \
 	-p SystemCallFilter=~@obsolete \
-	-p SystemCallFilter=~@resources \
 	-p SystemCallFilter=~@raw-io \
 	-p SystemCallFilter=~@reboot \
 	-p SystemCallFilter=~@swap \
-	-p SystemCallErrorNumber=EPERM \
+	-p SystemCallErrorNumber=EAGAIN \
 	-p SyslogIdentifier="portable-${appID}" \
-	-p SystemCallLog='@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resource' \
+	-p SystemCallLog='@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources' \
 	-p SystemCallLog='~@sandbox' \
 	-p PrivateIPC=yes \
 	-p ProtectClock=yes \
