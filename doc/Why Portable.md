@@ -27,4 +27,4 @@ You may want a comparison between Flatpak and Portable:
 | Hybrid GPU workarounds | :x: |
 | File sharing workarounds | :x: |
 
-That said, Flatpak's XDG Desktop Portal is one of our security basis. So a respect towards that should be given. And another thing to notice here is that we don't act as a source to distribute software, sandboxing is all we do. The distribution package manager takes care of tracking and installing files.
+That said, Flatpak's XDG Desktop Portal is one of our security foundation. So a respect towards that should be given. And another thing to notice here is that we don't act as a source to distribute software, sandboxing is all we do. The distribution package manager takes care of tracking and installing files.
