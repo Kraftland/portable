@@ -499,7 +499,7 @@ function execApp() {
 	-p NotifyAccess=all \
 	-p TimeoutStartSec=infinity \
 	-p OOMPolicy=stop \
-	-p SecureBits=noroot-locked\
+	-p SecureBits=noroot-locked \
 	-p KillMode=control-group \
 	-p LimitCORE=0 \
 	-p CPUAccounting=yes \
@@ -522,7 +522,7 @@ function execApp() {
 	-p SystemCallFilter=~@swap \
 	-p SystemCallErrorNumber=EPERM \
 	-p SyslogIdentifier="portable-${appID}" \
-	-p SystemCallLog='@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup' \
+	-p SystemCallLog='@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resource' \
 	-p SystemCallLog='~@sandbox' \
 	-p PrivateIPC=yes \
 	-p ProtectClock=yes \
