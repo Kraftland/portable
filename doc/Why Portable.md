@@ -20,9 +20,9 @@ You may want a comparison between Flatpak and Portable:
 
 | Portable | Flatpak |
 | ------- | ------------------ |
-| Does not include package management  | Includes package management |
+| :x: | Includes package management |
 | Efficient on disk | Could not use system libraries & resources |
-| Security enforced | Loose permissions leading to sandbox escape |
+| Security enforced | :x: |
 | Input Method workarounds | :x: |
 | Hybrid GPU workarounds | :x: |
 | File sharing workarounds | :x: |
