@@ -3,7 +3,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 
 # Why Portable?
 
-See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
+See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.md)
 
 ## Available for
 
