@@ -1,5 +1,7 @@
 # MPRIS media control
 
+MPRIS is used by applications to expose their playback state.
+
 ---
 
 Configuration options:

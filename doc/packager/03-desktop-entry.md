@@ -9,3 +9,5 @@ X-Flatpak-Tags=aTag;
 X-Flatpak=appID;
 X-Flatpak-RenamedFrom=previousName.desktop;
 ```
+
+Notice: If your app is designated as a single-window program, add `SingleMainWindow=true` to the .desktop file.
