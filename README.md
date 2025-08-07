@@ -40,7 +40,12 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 3. Steam will not work due to the requirement of Flatpak spawn portal.
 4. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
 5. Due to some desktop portal implementations being insecure (without requiring user consent), some features will only be available on GNOME
-    - The Global Shortcuts portal is only available on GNOME
+	- The Location portal is only available on GNOME
+6. Portable acts like Flatpak, to trick XDG Desktop Portal.
+	- The correct way for this situation is to specify another sandboxing engine in XDP, which I have a PoC [here](https://github.com/Kimiblock/xdg-desktop-portal/commit/199c0934035789986b98738b01b15edf0443d675)
+		- I barely understand C at all! Please help if you will.
+	- The other possibly "correct way" is to wait until [busd#34](https://github.com/dbus2/busd/issues/34), and XDP's implementation.
+		- Is it dead? idk.
 
 Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org)
 
