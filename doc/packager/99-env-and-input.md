@@ -1,8 +1,6 @@
 # Environment Variables
 
-Environment variables are sourced from `XDG_DATA_HOME/stateDirectory/portable.env`.
-
-You can also specify environment variables in the config file. Though, some environment variables, like `GNOME_SETUP_DISPLAY` will be discarded.
+Environment variables are sourced from `XDG_DATA_HOME/stateDirectory/portable.env`. Though, some environment variables, like `GNOME_SETUP_DISPLAY` will be discarded.
 
 It is worth noting that setting environment variable for portable doesn't work for the underlying application sandbox. That of the environment should be set in a global manner, i.e. at least for the user service manager.
 

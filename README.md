@@ -30,6 +30,8 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
     - Spotify (aur/spotify-portable)
     - QQ (aur/linuxqq-portable)
     - Bitwarden (aur/bitwarden-portable)
+    - SlopeCraft (aur/slopecraft-portable)
+    - Netease Cloud Music (aur/netease-cloud-music-portable)
 
 # Limitations:
 
