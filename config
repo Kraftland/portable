@@ -60,3 +60,7 @@ allowGlobalShortcuts="false"
 
 # Wake the application using D-Bus calls towards StatusNotifiers. Deprecated.
 dbusWake="false"
+
+########## Environment ##########
+
+# Below you can set envs that will be imported into the application sandbox
