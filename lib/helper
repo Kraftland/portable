@@ -70,7 +70,7 @@ shift
 "$cmd" "$@"
 
 #sleep 1s
-_procCnt=$(ps | grep -v zenity | wc -l)
+_procCnt=$(ps | grep -v zenity | grep -v glycin | wc -l)
 echo "Process count: ${_procCnt}"
 if [[ "${_procCnt}" -le 8 ]]; then
 	echo "No more application running, terminating..."
