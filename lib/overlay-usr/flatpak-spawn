@@ -1,8 +1,14 @@
 #!/usr/bin/bash
-	echo "Acting as flatpak-spawn..."
+echo "Acting as flatpak-spawn..."
+while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
+	shift
+done
+if [[ $1 = "prlimit" ]]; then
+	shift
 	while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
 		shift
 	done
-	echo "Decoded cmdline: $@"
-	echo "$@" >/run/startSignal
-	exit 0
+fi
+echo "Decoded cmdline: $@"
+$@
+exit $?
