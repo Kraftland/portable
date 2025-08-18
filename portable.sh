@@ -495,6 +495,7 @@ function execApp() {
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
+	--slice="portable-${friendlyName}.slice" \
 	-p ExitType=cgroup \
 	-p NotifyAccess=all \
 	-p TimeoutStartSec=infinity \
@@ -1162,6 +1163,7 @@ function dbusProxy() {
 	systemd-run \
 		--user \
 		--slice-inherit \
+		--slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}" \
 		-p KillMode=control-group \
 		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
@@ -1282,6 +1284,7 @@ function dbusProxy() {
 		systemd-run \
 			--user \
 			--slice-inherit \
+			--slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
 			-p Environment=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
@@ -1305,6 +1308,7 @@ function dbusProxy() {
 	systemd-run \
 		--user \
 		--slice-inherit \
+		--slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}-a11y" \
 		-p RestartMode=direct \
 		-- bwrap \
@@ -1342,6 +1346,7 @@ function execAppUnsafe() {
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
 		--slice-inherit \
+		--slice="portable-${friendlyName}.slice" \
 		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
 		-p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
 		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
