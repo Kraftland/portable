@@ -490,12 +490,11 @@ function execApp() {
 	${sdOption} \
 	--service-type=notify \
 	--wait \
-	--slice-inherit \
 	-u "${unitName}" \
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
-	--slice="portable-${friendlyName}.slice" \
+	-p Slice="portable-${friendlyName}.slice" \
 	-p ExitType=cgroup \
 	-p NotifyAccess=all \
 	-p TimeoutStartSec=infinity \
@@ -1162,8 +1161,7 @@ function dbusProxy() {
 	getBusArgs proxyArg
 	systemd-run \
 		--user \
-		--slice-inherit \
-		--slice="portable-${friendlyName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}" \
 		-p KillMode=control-group \
 		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
@@ -1283,8 +1281,7 @@ function dbusProxy() {
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
 			--user \
-			--slice-inherit \
-			--slice="portable-${friendlyName}.slice" \
+			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
 			-p Environment=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
@@ -1307,8 +1304,7 @@ function dbusProxy() {
 	fi
 	systemd-run \
 		--user \
-		--slice-inherit \
-		--slice="portable-${friendlyName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}-a11y" \
 		-p RestartMode=direct \
 		-- bwrap \
@@ -1345,8 +1341,7 @@ function execAppUnsafe() {
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
-		--slice-inherit \
-		--slice="portable-${friendlyName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
 		-p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
 		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
@@ -1466,10 +1461,10 @@ function stopApp() {
 		local sdOut
 		sdOut=$(systemctl --user list-units --state active --no-pager "${friendlyName}"*)
 		if [[ "${sdOut}" =~ "${friendlyName}.service" ]] && [[ "${sdOut}" =~ "subprocess" ]]; then
-			pecho crit "Not stopping the app because one or more instance are still running"
+			pecho crit "Not stopping the slice because one or more instance are still running"
 			exit 1
 		#elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -ge 2 ]]; then
-			#pecho crit "Not stopping the app because two or more subprocesses are still running"
+			#pecho crit "Not stopping the slice because two or more subprocesses are still running"
 			#exit 1
 		fi
 	fi
@@ -1480,7 +1475,7 @@ function stopApp() {
 		pecho info "Stopping application..." &
 		systemctl \
 			--user stop \
-			"${friendlyName}-dbus.service"
+			"portable-${friendlyName}.slice"
 	fi
 	source "${XDG_RUNTIME_DIR}/portable/${appID}/control" 2>/dev/null
 	if [[ $? -eq 0 ]]; then
@@ -1488,8 +1483,8 @@ function stopApp() {
 	else
 		if [[ ${alreadyStopped} -eq 1 ]]; then
 			pecho debug "Not showing warning because application is already stopped" &
-		#else
-		#	pecho warn "Control file missing! Did you upgrade portable?" &
+		else
+			pecho warn "Control file missing! Did you upgrade portable?" &
 		fi
 	fi
 	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]]; then
