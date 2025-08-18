@@ -74,7 +74,7 @@ _procCnt=$(ps | grep -v zenity | grep -v glycin | grep -v grep | wc -l)
 ps | grep -v zenity | grep -v glycin | grep -v grep
 echo "Process count: ${_procCnt}"
 if [[ "${_procCnt}" -gt 7 ]]; then
-	sleep 10s
+	sleep 2s
 	_procCnt=$(ps | grep -v zenity | grep -v glycin | grep -v grep | wc -l)
 	ps | grep -v zenity | grep -v glycin | grep -v grep
 	echo "Process count: ${_procCnt}"
