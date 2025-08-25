@@ -1137,6 +1137,48 @@ function writeInfo() {
 	readyNotify set writeInfo
 }
 
+function pwSecContext() {
+	if [[ "${bindPipewire}" = 'true' ]]; then
+		pecho debug "Pipewire security context enabled"
+		#rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
+		rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"
+		systemd-run \
+			--user \
+			-p Slice="portable-${friendlyName}.slice" \
+			-u "${unitName}-pipewire-container" \
+			-p KillMode=control-group \
+			-p Wants="pipewire.service" \
+			-p StandardOutput="file:${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" \
+			-p SuccessExitStatus=SIGKILL \
+			-- \
+			"stdbuf" \
+			"-oL" \
+			"/usr/bin/pw-container" \
+			"-P" \
+			'{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }'
+
+		if [ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" 2>/dev/null | grep "new socket")" ]; then
+			pecho debug "Pipewire socket created"
+		else
+			while true; do
+				sleep 0.0001s
+				if [ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" ]; then
+					break
+				elif [ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" 2>/dev/null | grep "new socket")" ]; then
+					break
+				fi
+			done
+			pecho debug "Pipewire socket created after waiting"
+		fi
+		passBusArgs \
+			pwSecContext \
+			"$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" | sed 's|new socket: ||g')"
+	else
+		return 0
+	fi
+	readyNotify set pwSecContext
+}
+
 function dbusProxy() {
 	genInstanceID
 	generateFlatpakInfo &
@@ -1156,6 +1198,7 @@ function dbusProxy() {
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	readyNotify wait dbusArg
 	readyNotify wait cleanDUnits
+	pwSecContext &
 	getBusArgs extraDbusArgs
 	getBusArgs proxyArg
 	systemd-run \
@@ -1314,6 +1357,10 @@ function dbusProxy() {
 	readyNotify wait setConfEnv
 	readyNotify wait setStaticEnv
 	readyNotify wait genNewEnv
+	if [[ "${bindPipewire}" = 'true' ]]; then
+		readyNotify wait pwSecContext
+		getBusArgs pwSecContext
+	fi
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
