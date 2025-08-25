@@ -21,6 +21,7 @@ You may want a comparison between Flatpak and Portable:
 | Portable | Flatpak |
 | ------- | ------------------ |
 | :x: | Includes package management |
+| :x: | Large package base |
 | Efficient on disk | Could not use system libraries & resources |
 | Security enforced | :x: |
 | Input Method workarounds | :x: |
