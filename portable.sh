@@ -889,6 +889,7 @@ function inputBind() {
 }
 
 function miscBind() {
+	readyNotify wait pwSecContext
 	if [[ "${bindNetwork}" = "false" ]]; then
 		pecho info "Network access disabled via config"
 		sdNetArg="PrivateNetwork=yes"
@@ -897,8 +898,11 @@ function miscBind() {
 		pecho debug "Network access allowed"
 	fi
 	passDevArgs sdNetArg "${sdNetArg}"
-	if [[ "${bindPipewire}" = "true" ]]; then
+	if [[ "${bindPipewire}" = 'true' ]]; then
+		readyNotify wait pwSecContext
+		getBusArgs pwSecContext
 		pipewireBinding="--bind-try ${pwSecContext} ${XDG_RUNTIME_DIR}/pipewire-0"
+		pecho debug "Pipewire bind parm: ${pipewireBinding}"
 	fi
 	passDevArgs pipewireBinding "${pipewireBinding}"
 	readyNotify set miscBind
@@ -1359,10 +1363,6 @@ function dbusProxy() {
 	readyNotify wait setConfEnv
 	readyNotify wait setStaticEnv
 	readyNotify wait genNewEnv
-	if [[ "${bindPipewire}" = 'true' ]]; then
-		readyNotify wait pwSecContext
-		getBusArgs pwSecContext
-	fi
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
