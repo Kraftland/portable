@@ -549,6 +549,7 @@ function execApp() {
 	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
+	-p UnsetEnvironment=PIPEWIRE_REMOTE \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -897,7 +898,7 @@ function miscBind() {
 	fi
 	passDevArgs sdNetArg "${sdNetArg}"
 	if [[ "${bindPipewire}" = "true" ]]; then
-		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
+		pipewireBinding="--bind-try ${pwSecContext} ${XDG_RUNTIME_DIR}/pipewire-0"
 	fi
 	passDevArgs pipewireBinding "${pipewireBinding}"
 	readyNotify set miscBind
@@ -1147,6 +1148,7 @@ function pwSecContext() {
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${unitName}-pipewire-container" \
 			-p KillMode=control-group \
+			-p After="pipewire.service" \
 			-p Wants="pipewire.service" \
 			-p StandardOutput="file:${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" \
 			-p SuccessExitStatus=SIGKILL \
