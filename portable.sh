@@ -473,15 +473,15 @@ function execApp() {
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	termExec
+
+	readyNotify wait generateFlatpakInfo
+	readyNotify wait deviceBinding
 	getDevArgs pipewireBinding
 	getDevArgs sdNetArg
 	getDevArgs bwInputArg
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
-	termExec
-
-	readyNotify wait generateFlatpakInfo
-	readyNotify wait deviceBinding
 	readyNotify verify
 	terminateOnRequest &
 	systemd-run \
