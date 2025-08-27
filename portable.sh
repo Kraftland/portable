@@ -1183,8 +1183,6 @@ function pwSecContext() {
 		passBusArgs \
 			pwSecContext \
 			"$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" | sed 's|new socket: ||g')"
-	else
-		return 0
 	fi
 	readyNotify set pwSecContext
 }
