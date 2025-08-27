@@ -54,7 +54,8 @@ function readyNotify() {
 		return 1
 	fi
 	if [[ $1 = "set" ]]; then
-		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" &
+		pecho debug "Readiness set for $2" &
 	elif [[ $1 = "set-fail" ]]; then
 		echo "FAIL-$2;" >>"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail"
 	elif [[ $1 = "init" ]]; then
@@ -74,11 +75,15 @@ function readyNotify() {
 				exit 114
 				break
 			fi
-			inotifywait \
-				-e modify,open,create \
-				--timeout 2 \
-				--quiet \
-				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
+			if [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; then
+				inotifywait \
+					-e modify,open,create \
+					--timeout 1 \
+					--quiet \
+					"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
+			else
+				break
+			fi
 		done
 		if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 			pecho crit "Readiness notify failed"
