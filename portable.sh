@@ -83,6 +83,7 @@ function readyNotify() {
 		if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 			pecho crit "Readiness notify failed"
 		fi
+		pecho debug "Done waiting for $2..." &
 	elif [[ $1 = "verify" ]]; then
 		if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
 			pecho crit "Component failed. Starting aborted."
