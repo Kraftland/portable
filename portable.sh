@@ -1496,10 +1496,10 @@ function launch() {
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
 	fi
-	deviceBinding &
 	if systemctl --user --quiet is-active "${unitName}.service"; then
 		warnMulRunning "$@"
 	fi
+	deviceBinding &
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
