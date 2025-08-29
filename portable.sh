@@ -491,7 +491,6 @@ function execApp() {
 	readyNotify verify
 	terminateOnRequest &
 	systemd-run \
-	--remain-after-exit \
 	--user \
 	${sdOption} \
 	--service-type=notify \
