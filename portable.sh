@@ -1085,12 +1085,14 @@ function cleanDUnits() {
 		"${proxyName}*".service \
 		"${proxyName}*"-a11y.service \
 		"${friendlyName}*"-wayland-proxy.service \
+		"${friendlyName}*"-pipewire-container.service \
 		"${friendlyName}-subprocess*".service
 	systemctl --user clean "${friendlyName}*" \
 		"${friendlyName}-subprocess*".service \
 		"${proxyName}*".service \
 		"${proxyName}*"-a11y.service \
-		"${friendlyName}*"-wayland-proxy.service
+		"${friendlyName}*"-wayland-proxy.service \
+		"${friendlyName}*"-pipewire-container.service
 	readyNotify set cleanDUnits
 }
 
@@ -1162,6 +1164,7 @@ function pwSecContext() {
 			-p Wants="pipewire.service" \
 			-p StandardOutput="file:${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" \
 			-p SuccessExitStatus=SIGKILL \
+			-p Requires=pipewire.service \
 			-- \
 			"stdbuf" \
 			"-oL" \
