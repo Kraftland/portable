@@ -42,7 +42,7 @@ pwCam="false"
 # Takes boolean value. Binds /dev/video* into the sandbox. Required if target application uses /dev/video* interfaces directly instead of v4l2.
 bindCameras="false"
 
-# Takes boolean value. Binds PipeWire socket into the sandbox. Required if target application doesn't use Portals. Please be aware that such operation may impact the integrity of host.
+# Takes boolean value. Binds PipeWire socket into the sandbox. Required if target application doesn't use Portals. Please be aware that such operation *will* impact the integrity of host.
 bindPipewire="false"
 
 # Takes boolean value.

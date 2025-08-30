@@ -6,6 +6,7 @@ Portable is designed to be simple to use, privacy first and efficient while oper
 
 - Background Portal support.
 - Wayland Security Context support. (although deprecated, you can use it)
+- PipeWire security context when absolutely needed.
 - Access Control: Limits what the application can see, write and modify. Sandboxed applications are self-contained.
 - Sharing files with the application, even if it doesn't support portals. portable creates a directory within the sandbox home to contain shared files.
 - D-Bus filtering & accessibility support: Cuts off unneeded D-Bus messages thus eliminates the possibility to locate, spawn a process outside of the sandbox, mess with the host system and other possible exploits.
@@ -21,6 +22,7 @@ You may want a comparison between Flatpak and Portable:
 | Portable | Flatpak |
 | ------- | ------------------ |
 | :x: | Includes package management |
+| :x: | Large package base |
 | Efficient on disk | Could not use system libraries & resources |
 | Security enforced | :x: |
 | Input Method workarounds | :x: |

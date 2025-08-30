@@ -33,6 +33,7 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
     - SlopeCraft (aur/slopecraft-portable)
     - Netease Cloud Music (aur/netease-cloud-music-portable)
     - FeiShu (aur/feishu-portable)
+    - Google Earth Pro (aur/google-earth-pro-portable)
 
 # Limitations:
 

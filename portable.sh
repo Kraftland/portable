@@ -54,7 +54,8 @@ function readyNotify() {
 		return 1
 	fi
 	if [[ $1 = "set" ]]; then
-		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2"
+		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" &
+		pecho debug "Readiness set for $2" &
 	elif [[ $1 = "set-fail" ]]; then
 		echo "FAIL-$2;" >>"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail"
 	elif [[ $1 = "init" ]]; then
@@ -74,15 +75,20 @@ function readyNotify() {
 				exit 114
 				break
 			fi
-			inotifywait \
-				-e modify,open,create \
-				--timeout 2 \
-				--quiet \
-				"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
+			if [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; then
+				inotifywait \
+					-e modify,open,create \
+					--timeout 1 \
+					--quiet \
+					"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
+			else
+				break
+			fi
 		done
 		if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 			pecho crit "Readiness notify failed"
 		fi
+		pecho debug "Done waiting for $2..." &
 	elif [[ $1 = "verify" ]]; then
 		if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
 			pecho crit "Component failed. Starting aborted."
@@ -473,19 +479,18 @@ function execApp() {
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	termExec
+
+	readyNotify wait generateFlatpakInfo
+	readyNotify wait deviceBinding
 	getDevArgs pipewireBinding
 	getDevArgs sdNetArg
 	getDevArgs bwInputArg
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
-	termExec
-
-	readyNotify wait generateFlatpakInfo
-	readyNotify wait deviceBinding
 	readyNotify verify
 	terminateOnRequest &
 	systemd-run \
-	--remain-after-exit \
 	--user \
 	${sdOption} \
 	--service-type=notify \
@@ -549,6 +554,7 @@ function execApp() {
 	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
+	-p UnsetEnvironment=PIPEWIRE_REMOTE \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
@@ -587,7 +593,6 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/diskstats \
 		--ro-bind-try /dev/null /proc/devices \
 		--ro-bind-try /dev/null /proc/config.gz \
-		--ro-bind-try /dev/null /proc/version \
 		--ro-bind-try /dev/null /proc/mounts \
 		--ro-bind-try /dev/null /proc/loadavg \
 		--ro-bind-try /dev/null /proc/filesystems \
@@ -889,6 +894,7 @@ function inputBind() {
 }
 
 function miscBind() {
+	readyNotify wait pwSecContext
 	if [[ "${bindNetwork}" = "false" ]]; then
 		pecho info "Network access disabled via config"
 		sdNetArg="PrivateNetwork=yes"
@@ -897,8 +903,11 @@ function miscBind() {
 		pecho debug "Network access allowed"
 	fi
 	passDevArgs sdNetArg "${sdNetArg}"
-	if [[ "${bindPipewire}" = "true" ]]; then
-		pipewireBinding="--ro-bind-try ${XDG_RUNTIME_DIR}/pipewire-0 ${XDG_RUNTIME_DIR}/pipewire-0"
+	if [[ "${bindPipewire}" = 'true' ]]; then
+		readyNotify wait pwSecContext
+		getBusArgs pwSecContext
+		pipewireBinding="--bind-try ${pwSecContext} ${XDG_RUNTIME_DIR}/pipewire-0"
+		pecho debug "Pipewire bind parm: ${pipewireBinding}"
 	fi
 	passDevArgs pipewireBinding "${pipewireBinding}"
 	readyNotify set miscBind
@@ -1075,12 +1084,14 @@ function cleanDUnits() {
 		"${proxyName}*".service \
 		"${proxyName}*"-a11y.service \
 		"${friendlyName}*"-wayland-proxy.service \
+		"${friendlyName}*"-pipewire-container.service \
 		"${friendlyName}-subprocess*".service
 	systemctl --user clean "${friendlyName}*" \
 		"${friendlyName}-subprocess*".service \
 		"${proxyName}*".service \
 		"${proxyName}*"-a11y.service \
-		"${friendlyName}*"-wayland-proxy.service
+		"${friendlyName}*"-wayland-proxy.service \
+		"${friendlyName}*"-pipewire-container.service
 	readyNotify set cleanDUnits
 }
 
@@ -1138,6 +1149,48 @@ function writeInfo() {
 	readyNotify set writeInfo
 }
 
+function pwSecContext() {
+	if [[ "${bindPipewire}" = 'true' ]]; then
+		pecho debug "Pipewire security context enabled"
+		#rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
+		rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"
+		systemd-run \
+			--user \
+			-p Slice="portable-${friendlyName}.slice" \
+			-u "${unitName}-pipewire-container" \
+			-p KillMode=control-group \
+			-p After="pipewire.service" \
+			-p Wants="pipewire.service" \
+			-p StandardOutput="file:${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" \
+			-p SuccessExitStatus=SIGKILL \
+			-p Requires=pipewire.service \
+			-- \
+			"stdbuf" \
+			"-oL" \
+			"/usr/bin/pw-container" \
+			"-P" \
+			'{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }'
+
+		if [ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" 2>/dev/null | grep "new socket")" ]; then
+			pecho debug "Pipewire socket created"
+		else
+			while true; do
+				sleep 0.0001s
+				if [ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" ]; then
+					break
+				elif [ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" 2>/dev/null | grep "new socket")" ]; then
+					break
+				fi
+			done
+			pecho debug "Pipewire socket created after waiting"
+		fi
+		passBusArgs \
+			pwSecContext \
+			"$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" | sed 's|new socket: ||g')"
+	fi
+	readyNotify set pwSecContext
+}
+
 function dbusProxy() {
 	genInstanceID
 	generateFlatpakInfo &
@@ -1157,6 +1210,7 @@ function dbusProxy() {
 	pecho info "Starting D-Bus Proxy @ ${busDir}..."
 	readyNotify wait dbusArg
 	readyNotify wait cleanDUnits
+	pwSecContext &
 	getBusArgs extraDbusArgs
 	getBusArgs proxyArg
 	systemd-run \
@@ -1196,6 +1250,24 @@ function dbusProxy() {
 			--own=org.kde.StatusNotifierItem-9-1 \
 			--own=org.kde.StatusNotifierItem-10-1 \
 			--own=org.kde.StatusNotifierItem-11-1 \
+			--own=org.kde.StatusNotifierItem-12-1 \
+			--own=org.kde.StatusNotifierItem-13-1 \
+			--own=org.kde.StatusNotifierItem-14-1 \
+			--own=org.kde.StatusNotifierItem-15-1 \
+			--own=org.kde.StatusNotifierItem-16-1 \
+			--own=org.kde.StatusNotifierItem-17-1 \
+			--own=org.kde.StatusNotifierItem-18-1 \
+			--own=org.kde.StatusNotifierItem-19-1 \
+			--own=org.kde.StatusNotifierItem-20-1 \
+			--own=org.kde.StatusNotifierItem-21-1 \
+			--own=org.kde.StatusNotifierItem-22-1 \
+			--own=org.kde.StatusNotifierItem-23-1 \
+			--own=org.kde.StatusNotifierItem-24-1 \
+			--own=org.kde.StatusNotifierItem-25-1 \
+			--own=org.kde.StatusNotifierItem-26-1 \
+			--own=org.kde.StatusNotifierItem-27-1 \
+			--own=org.kde.StatusNotifierItem-28-1 \
+			--own=org.kde.StatusNotifierItem-29-1 \
 			--own=com.belmoussaoui.ashpd.demo \
 			--own="${appID}" \
 			--own="${appID}".* \
@@ -1426,10 +1498,10 @@ function launch() {
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
 	fi
-	deviceBinding &
 	if systemctl --user --quiet is-active "${unitName}.service"; then
 		warnMulRunning "$@"
 	fi
+	deviceBinding &
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"

@@ -1,5 +1,6 @@
 #!/usr/bin/bash
-echo "Acting as flatpak-spawn..."
+
+echo "Acting as prlimit..."
 while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
 	shift
 done
