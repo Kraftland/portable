@@ -32,6 +32,7 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
     - Bitwarden (aur/bitwarden-portable)
     - SlopeCraft (aur/slopecraft-portable)
     - Netease Cloud Music (aur/netease-cloud-music-portable)
+    - FeiShu (aur/feishu-portable)
 
 # Limitations:
 
