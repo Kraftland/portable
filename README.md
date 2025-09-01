@@ -34,6 +34,7 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
     - Netease Cloud Music (aur/netease-cloud-music-portable)
     - FeiShu (aur/feishu-portable)
     - Google Earth Pro (aur/google-earth-pro-portable)
+    - HMCL (aur/hmcl-portable)
 
 # Limitations:
 
