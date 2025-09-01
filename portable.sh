@@ -551,6 +551,7 @@ function execApp() {
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
+ 	-p Environment=XDG_SESSION_TYPE="${XDG_SESSION_TYPE}" \
 	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
@@ -1357,6 +1358,7 @@ function dbusProxy() {
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
 			-p Environment=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
+   			-p Environment=XDG_SESSION_TYPE="${XDG_SESSION_TYPE}" \
 			-- \
 			way-secure \
 				-e top.kimiblock.portable \
