@@ -550,8 +550,8 @@ function execApp() {
 	-p "${sdNetArg}" \
 	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
 	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
-	-p Environment=WAYLAND_DISPLAY="${wayDisplayBind}" \
  	-p Environment=XDG_SESSION_TYPE="${XDG_SESSION_TYPE}" \
+	-p Environment=WAYLAND_DISPLAY="wayland-0" \
 	-p Environment=XAUTHORITY="${XAUTHORITY}" \
 	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
@@ -639,7 +639,7 @@ function execApp() {
 		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
 			"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info" \
 		--ro-bind-try "${wayDisplayBind}" \
-				"${wayDisplayBind}" \
+				"${XDG_RUNTIME_DIR}/wayland-0" \
 		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
 			"${XDG_CONFIG_HOME}/fontconfig" \
 		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
@@ -1424,7 +1424,7 @@ function execAppUnsafe() {
 		-p EnvironmentFile=-"${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
 		-u "${unitName}" \
 		--tty \
-		"${launchTarget}"
+		${launchTarget}
 }
 
 function enableSandboxFunc() {
