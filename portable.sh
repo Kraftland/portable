@@ -814,6 +814,7 @@ function hybridBind() {
 		pecho debug "Game Mode enabled on hybrid graphics"
 		bindNvDevIfExist
 		setNvOffloadEnv
+		addEnv "NVPRESENT_ENABLE_SMOOTH_MOTION=1"
 	else
 		bwSwitchableGraphicsArg="--tmpfs /dev/dri"
 		local activeCardSum=0
