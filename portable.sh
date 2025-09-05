@@ -118,6 +118,7 @@ function busCheck() {
 
 function bindCheck() {
 	if [[ -z "${bwBindPar}" ]]; then
+		readyNotify set bindCheck
 		return 0
 	fi
 	if [[ -e "${bwBindPar}" ]]; then
@@ -147,7 +148,9 @@ function bindCheck() {
 				--question \
 				--text="是否暴露路径 ${bwBindPar}: ${fileCnt} 个文件, ${dirCnt} 个子目录"
 			if [[ $? -eq 1 ]]; then
-				readyNotify set-fail sanityCheck
+				readyNotify set-fail bindCheck
+			elif [[ $? -eq 0 ]]; then
+				readyNotify set bindCheck
 			fi
 		else
 			/usr/bin/zenity \
@@ -156,7 +159,9 @@ function bindCheck() {
 				--question \
 				--text="Expose ${bwBindPar}, containing ${fileCnt} ${trailingF}, ${dirCnt} ${trailingD}?"
 			if [[ $? -eq 1 ]]; then
-				readyNotify set-fail sanityCheck
+				readyNotify set-fail bindCheck
+			elif [[ $? -eq 0 ]]; then
+				readyNotify set bindCheck
 			fi
 		fi
 	else
@@ -171,7 +176,7 @@ function bindCheck() {
 				--warning \
 				--text="Specified shared path does not exist."
 		fi
-		readyNotify set-fail sanityCheck
+		readyNotify set-fail bindCheck
 	fi
 }
 
