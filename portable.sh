@@ -508,7 +508,6 @@ function execApp() {
 	-p OOMPolicy=stop \
 	-p SecureBits=noroot-locked \
 	-p KillMode=control-group \
-	-p LimitCORE=0 \
 	-p CPUAccounting=yes \
 	-p StartupCPUWeight=idle \
 	-p StartupIOWeight=1 \
