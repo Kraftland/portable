@@ -54,10 +54,10 @@ function readyNotify() {
 		return 1
 	fi
 	if [[ $1 = "set" ]]; then
-		echo "ready" >"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" &
+		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" &
 		pecho debug "Readiness set for $2" &
 	elif [[ $1 = "set-fail" ]]; then
-		echo "FAIL-$2;" >>"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail"
+		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/fail" &
 	elif [[ $1 = "init" ]]; then
 		readyDir="$(xxd -p -l 5 /dev/urandom)"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
@@ -69,25 +69,22 @@ function readyNotify() {
 			--mode=0700 \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
 	elif [[ $1 = "wait" ]]; then
+		if [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
+			pecho debug "Component $2 ready verified" &
+			return 0
+		fi
 		pecho debug "Waiting for component: $2..." &
-		while [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; do
+		while true; do
 			if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 				exit 114
 				break
 			fi
-			if [[ ! -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2" ]]; then
-				inotifywait \
-					-e modify,open,create \
-					--timeout 1 \
-					--quiet \
-					"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" 1>/dev/null
-			else
+			if [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
 				break
+			else
+				continue
 			fi
 		done
-		if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
-			pecho crit "Readiness notify failed"
-		fi
 		pecho debug "Done waiting for $2..." &
 	elif [[ $1 = "verify" ]]; then
 		if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
@@ -1530,7 +1527,7 @@ function stopApp() {
 		systemctl \
 			--user kill \
 			-sSIGKILL \
-			"${friendlyName}.service"
+			"${friendlyName}.service" 2>/dev/null
 	else
 		sleep 1s
 		local sdOut
