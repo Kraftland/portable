@@ -8,33 +8,8 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 ## Available for
 
 - [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch)
-- AUR
-    - WeChat (aur/wechat)
-    - Wemeet (aur/wemeet-bwrap)
-    - Prism Launcher (aur/prismlauncher-bwrap)
-    - Obsidian (aur/obsidian-bwrap)
-    - Z-Library (aur/z-library-bwrap)
-    - Wiliwili (aur/wiliwili-wayland)
-    - WPS (aur/wps-office-cn-bwrap)
-    - Genshin Impact Launcher
-    - Bottles (aur/bottles-bwrap)
-    - Visual Studio Code (aur/visual-studio-code-portable)
-    - Discord (aur/discord-bwrap)
-    - Larksuite (aur/larksuite-portable)
-    - Firefox (aur/firefox-portable)
-    - Thunderbird (aur/thunderbird-portable)
-    - Baidu Netdisk (aur/baidunetdisk-portable)
-    - DaVinci Resolve (aur/davinci-resolve-portable)
-    - Zen Browser (aur/zen-browser-portable)
-    - PCSX2 (aur/pcsx2-portable)
-    - Spotify (aur/spotify-portable)
-    - QQ (aur/linuxqq-portable)
-    - Bitwarden (aur/bitwarden-portable)
-    - SlopeCraft (aur/slopecraft-portable)
-    - Netease Cloud Music (aur/netease-cloud-music-portable)
-    - FeiShu (aur/feishu-portable)
-    - Google Earth Pro (aur/google-earth-pro-portable)
-    - HMCL (aur/hmcl-portable)
+- Arch Linux
+	- Configure paru to use [portable-arch](https://github.com/Kraftland/portable-arch): https://github.com/Kraftland/portable-arch
 
 # Limitations:
 
