@@ -1638,7 +1638,7 @@ export \
 	instanceId \
 	readyDir \
 	gameMode \
-	GSK_RENDERER=ngl
+	GSK_RENDERER=gl
 sourceXDG
 defineRunPath
 readyNotify init
