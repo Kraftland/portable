@@ -585,7 +585,7 @@ function execApp() {
 		--bind /usr /usr \
 		--overlay-src /usr/bin \
 		--overlay-src /usr/lib/portable/overlay-usr \
-		--tmp-overlay /usr/bin \
+		--ro-overlay /usr/bin \
 		--ro-bind /usr/lib/portable/helper \
 			/usr/lib/flatpak-xdg-utils/flatpak-spawn \
 		--proc /proc \
