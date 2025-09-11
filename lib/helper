@@ -69,9 +69,15 @@ cmd=$1
 shift
 "$cmd" "$@"
 
-#sleep 1s
+if [[ "${terminateImmediately}" = "true" ]]; then
+	echo "Immediately terminating sandbox per config"
+	stopApp
+	echo terminate-now >/run/startSignal
+	exit 0
+fi
+
 _procCnt=$(ps | grep -v zenity | grep -v glycin | grep -v prlimit | grep -v grep | wc -l)
-ps | grep -v zenity | grep -v glycin | grep -v grep
+#ps | grep -v zenity | grep -v glycin | grep -v grep
 echo "Process count: ${_procCnt}"
 if [[ "${_procCnt}" -gt 7 ]]; then
 	sleep 1s
