@@ -41,6 +41,12 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
 
+# FAQ
+1. Portable fails with something like _no such device_
+	- Try reboot your system
+2. Portable fails with something like _invalid argument_
+	- BcacheFS is not supported, or you have mountpoints under `/usr/bin` and `/usr/lib`
+
 ## Starting portable
 
 Start portable with environment variable `_portableConfig`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${_portableConfig}`. It searches for each of them respectively.
