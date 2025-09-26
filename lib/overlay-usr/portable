@@ -1,0 +1,3 @@
+#/usr/bin/bash
+
+echo "Error: You are calling portable from the sandbox itself!"
