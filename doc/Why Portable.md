@@ -5,6 +5,7 @@
 Portable is designed to be simple to use, privacy first and efficient while operating. It has many unique features:
 
 - Background Portal support.
+- Exposes some theming and preference configurations by default for user-level and all configuration in system-level.
 - Wayland Security Context support. (although deprecated, you can use it)
 - PipeWire security context when absolutely needed.
 - Access Control: Limits what the application can see, write and modify. Sandboxed applications are self-contained.
