@@ -50,9 +50,6 @@ function readyNotify() {
 	# Notifies readiness, only usable after warnMulRunning()
 	# $1 can be: wait, set, set-fail, init, verify
 	# $2 is the item name
-	if [[ ${trashAppUnsafe} -eq 1 ]]; then
-		return 1
-	fi
 	if [[ $1 = "set" ]]; then
 		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" &
 		pecho debug "Readiness set for $2" &
