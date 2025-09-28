@@ -58,7 +58,7 @@ function readyNotify() {
 	elif [[ $1 = "init" ]]; then
 		readyDir="$(xxd -p -l 5 /dev/urandom)"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
-			readyDir="$(xxd -p -l 7 /dev/urandom)"
+			readyDir="${RANDOM}"
 		done
 		pecho debug "Chosen readiness code ${readyDir}"
 		mkdir \
