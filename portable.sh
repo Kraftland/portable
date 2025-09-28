@@ -72,13 +72,13 @@ function readyNotify() {
 		fi
 		pecho debug "Waiting for component: $2..." &
 		while true; do
-			if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
-				exit 114
-				break
-			fi
 			if [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
 				break
 			else
+				if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
+					exit 114
+					break
+				fi
 				continue
 			fi
 		done
