@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+
+# Configuration for testing perf
+
+########## Section: General ##########
+
+# This is your Application ID, avoid conflict
+appID="top.kimiblock.tester"
+
+# This is a friendly name of an application. It should only contain ASCII characters and not spaces.
+friendlyName="Portable_Tester"
+
+# This is the state directory of your application, which is located under "XDG_DATA_HOME"
+stateDirectory="Portable_Tester_Data"
+
+# This is the target executable to launch
+launchTarget="echo 1"
+
+# Enables Network access within the sandbox. Defaults to true.
+bindNetwork="false"
+
+# Takes a boolean value. Terminates the sandbox immediately after the main process exits. Defaults to false. Note that turning this on might affect applications that forks immediately and exits.
+terminateImmediately="true"
+# Takes a boolean value or string "adaptive". When true, do not process XAuth files and forces wayland input method. "adaptive" enables this option on Wayland and vice versa. Generally this should be adaptive when possible.
+waylandOnly="true"
