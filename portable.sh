@@ -676,7 +676,7 @@ function execApp() {
 		${bwCamPar} \
 		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
 		-- \
-			/usr/lib/portable/helper ${launchTarget} "${targetArgs}"
+			/usr/lib/portable/helper ${launchTarget} ${targetArgs}
 
 		stopApp
 }
@@ -1583,7 +1583,7 @@ function resetDocuments() {
 }
 
 function cmdlineDispatcher() {
-	export targetArgs="${*##* -- }"
+	export targetArgs="$(echo "${*##* -- }" | sed 's|-- ||g')"
 	pecho info "Application argument interpreted as: ${targetArgs}"
 	if [[ "$*" =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ "$*" =~ "--actions" ]]; then
 		rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"

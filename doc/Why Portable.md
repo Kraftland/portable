@@ -24,8 +24,7 @@ You may want a comparison between Flatpak and Portable:
 | ------- | ------------------ |
 | :x: | Includes package management |
 | :x: | Large package base |
-| Efficient on disk | Could not use system libraries & resources |
-| Security enforced | :x: |
+| Efficient on disk while integrates better | Could not use system libraries & resources |
 | Input Method workarounds | :x: |
 | Hybrid GPU workarounds | :x: |
 | File sharing workarounds | :x: |
