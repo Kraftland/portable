@@ -972,6 +972,7 @@ function warnMulRunning() {
 	source "${_portableConfig}"
 	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "debug-shell" ]]; then
 		export launchTarget="/usr/bin/bash"
+		export targetArgs=""
 		execAppExist
 	else
 		execAppExistDirect
@@ -1505,6 +1506,7 @@ function launch() {
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
+		export targetArgs=""
 	fi
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
