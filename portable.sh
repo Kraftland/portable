@@ -178,7 +178,7 @@ function bindCheck() {
 }
 
 function mountCheck() {
-	local mounts="$(systemd-run --user -P -- findmnt -R)"
+	local mounts="$(systemd-run --quiet --user -P -- findmnt -R)"
 	if [[ "${mounts}" =~ "/usr/bin/" ]]; then
 		pecho crit "Mountpoints inside /usr/bin! Please unmount them for at least the user service manager"
 		readyNotify set-fail sanityCheck
@@ -490,6 +490,7 @@ function execApp() {
 	readyNotify verify
 	terminateOnRequest &
 	systemd-run \
+	--quiet \
 	--user \
 	${sdOption} \
 	--service-type=notify \
@@ -1215,6 +1216,7 @@ function dbusProxy() {
 	getBusArgs proxyArg
 	systemd-run \
 		--user \
+		--quiet \
 		-p Slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}" \
 		-p KillMode=control-group \
@@ -1353,6 +1355,7 @@ function dbusProxy() {
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
 			--user \
+			--quiet \
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
@@ -1377,6 +1380,7 @@ function dbusProxy() {
 	fi
 	systemd-run \
 		--user \
+		--quiet \
 		-p Slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}-a11y" \
 		-p RestartMode=direct \
