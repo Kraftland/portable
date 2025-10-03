@@ -554,6 +554,9 @@ function execApp() {
 	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
 	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
 	-p UnsetEnvironment=PIPEWIRE_REMOTE \
+	-p UnsetEnvironment=PAM_KWALLET5_LOGIN \
+	-p UnsetEnvironment=GTK2_RC_FILES \
+	-p UnsetEnvironment=ICEAUTHORITY \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
