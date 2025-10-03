@@ -604,6 +604,10 @@ function execApp() {
 		--symlink /usr/lib /lib64 \
 		--symlink /usr/bin /bin \
 		--symlink /usr/bin /sbin \
+		--tmpfs /var \
+		--ro-bind-try \
+			/var/cache/fontconfig \
+			/var/cache/fontconfig \
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			/run \
