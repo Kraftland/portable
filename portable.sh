@@ -1596,7 +1596,7 @@ function resetDocuments() {
 }
 
 function cmdlineDispatcher() {
-	export targetArgs="$(echo "${*##* -- }" | sed 's|-- ||g')"
+	export targetArgs="$(echo "${*##* -- }" | sed 's|--||g')"
 	pecho info "Application argument interpreted as: ${targetArgs}"
 	if [[ "$*" =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ "$*" =~ "--actions" ]]; then
 		rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
