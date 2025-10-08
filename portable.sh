@@ -557,6 +557,7 @@ function execApp() {
 	-p UnsetEnvironment=PAM_KWALLET5_LOGIN \
 	-p UnsetEnvironment=GTK2_RC_FILES \
 	-p UnsetEnvironment=ICEAUTHORITY \
+	-p UnsetEnvironment=MANAGERPID \
 	-- \
 	bwrap --new-session \
 		--unshare-cgroup-try \
