@@ -457,16 +457,6 @@ function pathTranslation() {
 	sed "s|$(pathEscape "${HOME}")|$(pathEscape "${XDG_DATA_HOME}/${stateDirectory}")|g"
 }
 
-function determineHomed() {
-	if [[ -f /run/systemd/userdb/io.systemd.Home ]]; then
-		if [[ "${exposeHomed}" = "false" ]]; then
-			pecho debug "Homed socket not exposed"
-		else
-			export homedBinding="--ro-bind-try /run/systemd/userdb/io.systemd.Home /run/systemd/userdb/io.systemd.Home"
-		fi
-	fi
-}
-
 function defineRunPath() {
 	mkdir \
 		--parents \
@@ -476,7 +466,6 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	determineHomed
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
 	else
@@ -626,7 +615,7 @@ function execApp() {
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			/run \
-		${homedBinding} \
+		--ro-bind-try /run/systemd/userdb/io.systemd.Home /run/systemd/userdb/io.systemd.Home \
 		--ro-bind "${xAuthBind}" \
 			"/run/.Xauthority" \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
