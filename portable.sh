@@ -602,7 +602,6 @@ function execApp() {
 		--tmpfs /proc/1 \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
-		--ro-bind /dev/null /etc/passwd \
 		--tmpfs /etc/kernel \
 		--symlink /usr/lib /lib \
 		--symlink /usr/lib /lib64 \
