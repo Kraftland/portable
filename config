@@ -65,7 +65,7 @@ allowGlobalShortcuts="false"
 dbusWake="false"
 
 # Expose /run/systemd/userdb/io.systemd.Home in read only mode for some weird applications that require it (WeChat). Unknown risk involved.
-exposeHomed="false"
+exposeHomed="true"
 
 ########## Environment ##########
 

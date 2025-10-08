@@ -458,8 +458,12 @@ function pathTranslation() {
 }
 
 function determineHomed() {
-	if [[ -f /run/systemd/userdb/io.systemd.Home ]] && [[ "${exposeHomed}" = "true" ]]; then
-		export homedBinding="--ro-bind-try /run/systemd/userdb/io.systemd.Home /run/systemd/userdb/io.systemd.Home"
+	if [[ -f /run/systemd/userdb/io.systemd.Home ]]; then
+		if [[ "${exposeHomed}" = "false" ]]; then
+			pecho debug "Homed socket not exposed"
+		else
+			export homedBinding="--ro-bind-try /run/systemd/userdb/io.systemd.Home /run/systemd/userdb/io.systemd.Home"
+		fi
 	fi
 }
 
@@ -609,6 +613,7 @@ function execApp() {
 		--tmpfs /proc/1 \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
+		--ro-bind /dev/null /etc/passwd \
 		--tmpfs /etc/kernel \
 		--symlink /usr/lib /lib \
 		--symlink /usr/lib /lib64 \
