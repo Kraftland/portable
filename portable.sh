@@ -234,6 +234,10 @@ function sourceXDG() {
 
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/.config" &
 	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
 	mkdir \
 		--parents \
@@ -453,6 +457,12 @@ function pathTranslation() {
 	sed "s|$(pathEscape "${HOME}")|$(pathEscape "${XDG_DATA_HOME}/${stateDirectory}")|g"
 }
 
+function determineHomed() {
+	if [[ -f /run/systemd/userdb/io.systemd.Home ]] && [[ "${exposeHomed}" = "true" ]]; then
+		export homedBinding="--ro-bind-try /run/systemd/userdb/io.systemd.Home /run/systemd/userdb/io.systemd.Home"
+	fi
+}
+
 function defineRunPath() {
 	mkdir \
 		--parents \
@@ -462,10 +472,7 @@ function defineRunPath() {
 
 function execApp() {
 	desktopWorkaround &
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/.config" &
+	determineHomed
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
 	else
@@ -614,6 +621,7 @@ function execApp() {
 		--ro-bind-try /opt /opt \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
 			/run \
+		${homedBinding} \
 		--ro-bind "${xAuthBind}" \
 			"/run/.Xauthority" \
 		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
