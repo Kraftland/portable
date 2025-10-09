@@ -573,7 +573,6 @@ function execApp() {
 		--dev /dev \
 		--mqueue /dev/mqueue \
 		--dev-bind /dev/dri /dev/dri \
-		${bwSwitchableGraphicsArg} \
 		--dev-bind-try /dev/udmabuf /dev/udmabuf \
 		--tmpfs /sys \
 		--ro-bind /sys/module/ /sys/module/ \
@@ -581,7 +580,7 @@ function execApp() {
 		--ro-bind /sys/devices /sys/devices \
 		--tmpfs /sys/devices/virtual/dmi \
 		--dir /sys/class \
-		--symlink /dev/dri/ /sys/class/drm \
+		${bwSwitchableGraphicsArg} \
 		${bwInputArg} \
 		--bind /usr /usr \
 		--overlay-src /usr/bin \
@@ -821,9 +820,8 @@ function hybridBind() {
 		pecho debug "Game Mode enabled on hybrid graphics"
 		bindNvDevIfExist
 		setNvOffloadEnv
-		addEnv "NVPRESENT_ENABLE_SMOOTH_MOTION=1"
 	else
-		bwSwitchableGraphicsArg="--tmpfs /dev/dri"
+		bwSwitchableGraphicsArg="--tmpfs /dev/dri --tmpfs /sys/class/drm"
 		local activeCardSum=0
 		activeCards="placeholder"
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
@@ -848,7 +846,7 @@ function hybridBind() {
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind "/dev/dri/${renderIndex}" "/sys/class/drm/${renderIndex}""
 		else
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
@@ -859,7 +857,7 @@ function hybridBind() {
 				else
 					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}""
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind "/dev/dri/${renderIndex}" "/sys/class/drm/${renderIndex}""
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
