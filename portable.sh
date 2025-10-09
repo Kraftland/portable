@@ -758,18 +758,6 @@ function desktopWorkaround() {
 		string:"background" boolean:true string:"background" string:"${appID}" array:string:"yes" &
 }
 
-function bindNvDevIfExist(){
-	if ls /dev/nvidia* &> /dev/null; then
-		pecho debug "Binding NVIDIA GPUs in Game Mode"
-		for _card in /dev/nvidia*; do
-			if [[ -e "${_card}" ]]; then
-				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
-			fi
-		done
-		export nvExist=1
-	fi
-}
-
 function detectNv(){
 	if ls /dev/nvidia* &> /dev/null; then
 		pecho debug "NVIDIA GPU present"
@@ -809,6 +797,18 @@ function passDevArgs() {
 # $1 as arg name.
 function getDevArgs() {
 	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")" 2>/dev/null
+}
+
+function bindNvDevIfExist(){
+	if ls /dev/nvidia* &> /dev/null; then
+		pecho debug "Binding NVIDIA GPUs in Game Mode"
+		for _card in /dev/nvidia*; do
+			if [[ -e "${_card}" ]]; then
+				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
+			fi
+		done
+		export nvExist=1
+	fi
 }
 
 function hybridBind() {
