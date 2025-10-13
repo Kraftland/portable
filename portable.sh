@@ -48,7 +48,7 @@ proxyName="${friendlyName}-dbus"
 
 function readyNotify() {
 	# Notifies readiness, only usable after warnMulRunning()
-	# $1 can be: wait, set, set-fail, init, verify
+	# $1 can be: wait, set, set-fail, init
 	# $2 is the item name
 	if [[ $1 = "set" ]]; then
 		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" &
@@ -83,11 +83,6 @@ function readyNotify() {
 			fi
 		done
 		pecho debug "Done waiting for $2..." &
-	elif [[ $1 = "verify" ]]; then
-		if [[ -f "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
-			pecho crit "Component failed. Starting aborted."
-			exit 114
-		fi
 	fi
 }
 
@@ -487,7 +482,6 @@ function execApp() {
 	getDevArgs bwInputArg
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
-	readyNotify verify
 	terminateOnRequest &
 	systemd-run \
 	--quiet \
