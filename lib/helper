@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 function startLoop() {
+	systemd-notify --ready --status="Sandbox startup complete" &
 	while true; do
 		inotifywait \
 			-e modify \
@@ -48,9 +49,7 @@ function askStop() {
 	fi
 }
 
-echo "app-started" >/run/startSignal
 startLoop &
-systemd-notify --ready --status="Sandbox startup complete" &
 
 cmd=$1
 shift
