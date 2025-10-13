@@ -56,7 +56,7 @@ function readyNotify() {
 	elif [[ $1 = "set-fail" ]]; then
 		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/fail" &
 	elif [[ $1 = "init" ]]; then
-		readyDir="$(xxd -p -l 5 /dev/urandom)"
+		readyDir="${RANDOM}"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
 			readyDir="${RANDOM}"
 		done
