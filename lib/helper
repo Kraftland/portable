@@ -57,7 +57,7 @@ function askStop() {
 	fi
 }
 
-echo "app-started" >/run/startSignal &
+echo "app-started" >/run/startSignal
 startLoop &
 systemd-notify --ready --status="Sandbox startup complete" &
 
