@@ -539,7 +539,7 @@ function execApp() {
 	-p UMask=077 \
 	-p DevicePolicy=strict \
 	-p NoNewPrivileges=yes \
-	-p ProtectControlGroups=yes \
+	-p ProtectControlGroups=strict \
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
