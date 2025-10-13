@@ -1,5 +1,11 @@
 # What is this
-Portable is a sandbox framework targeted for Desktop usage and offers ease of use for distro packagers, which should work on any recent FHS compliant system (plus, enables unprivileged user namespaces and uses recent version of systemd). It offers many useful features for users and packagers:
+Portable is a sandbox framework targeted for Desktop usage and offers ease of use for distro packagers, which should work on any recent FHS compliant system:
+
+- enables unprivileged user namespaces
+- uses systemd >=258
+- Does not have mount points under /usr/bin, and use a supported fs of OverlayFS (NOT BcacheFS)
+
+It offers many useful features for users and packagers.
 
 # Why Portable?
 
