@@ -684,9 +684,9 @@ function execApp() {
 function terminateOnRequest() {
 	pecho debug "Established termination watches"
 	while true; do
-		if [[ ! -r "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
+		if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
 			pecho warn "startSignal is missing! Stopping application"
-			stopApp
+			stopApp force
 		fi
 		inotifywait \
 			--quiet \
@@ -1531,7 +1531,7 @@ function stopApp() {
 		systemctl \
 			--user kill \
 			-sSIGKILL \
-			"${friendlyName}.service" 2>/dev/null
+			"${friendlyName}.service" 2>/dev/null &
 	else
 		sleep 1s
 		local sdOut
@@ -1539,42 +1539,29 @@ function stopApp() {
 		if [[ "${sdOut}" =~ "${friendlyName}.service" ]] && [[ "${sdOut}" =~ "subprocess" ]]; then
 			pecho crit "Not stopping the slice because one or more instance are still running"
 			exit 1
-		#elif [[ $(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep subprocess | wc -l) -ge 2 ]]; then
-			#pecho crit "Not stopping the slice because two or more subprocesses are still running"
-			#exit 1
 		fi
 	fi
 	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l)" -eq 0 ]]; then
 		pecho debug "Application already stopped!"
-		alreadyStopped=1
 	else
 		pecho info "Stopping application..." &
 		systemctl \
 			--user stop \
-			"portable-${friendlyName}.slice"
+			"portable-${friendlyName}.slice" &
 	fi
-	source "${XDG_RUNTIME_DIR}/portable/${appID}/control" 2>/dev/null
-	if [[ $? -eq 0 ]]; then
-		pecho debug "Sourced configuration..." &
-	else
-		if [[ ${alreadyStopped} -eq 1 ]]; then
-			pecho debug "Not showing warning because application is already stopped" &
-		else
-			pecho warn "Control file missing! Did you upgrade portable?" &
-		fi
-	fi
+	source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]]; then
 		pecho debug "Cleaning leftovers..." &
-		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
-		rm -rf "${busDir}"
-		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
-		if [[ -n "${busDirAy}" ]]; then
-			rm -rf "${busDirAy}"
+		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" &
+		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}" &
+		rm -rf "${busDir}" &
+		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}" &
+		if [[ -e "${busDirAy}" ]]; then
+			rm -rf "${busDirAy}" &
 		fi
 		rm -rf \
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"\
-			2>/dev/null
+			2>/dev/null  &
 		exit 0
 	else
 		pecho warn "Clean shutdown not possible due to missing information."
