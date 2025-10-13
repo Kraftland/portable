@@ -66,7 +66,7 @@ function readyNotify() {
 			--mode=0700 \
 			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
 	elif [[ $1 = "wait" ]]; then
-		if [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
+		if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
 			pecho debug "Component $2 ready verified" &
 			return 0
 		fi
@@ -75,7 +75,7 @@ function readyNotify() {
 			if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
 				break
 			else
-				if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
+				if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 					exit 114
 					break
 				fi
