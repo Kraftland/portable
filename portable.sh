@@ -225,18 +225,6 @@ function sourceXDG() {
 
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/.config" &
-	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/Shared" &
-	ln -sfr \
-		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
-		"${XDG_DATA_HOME}/${stateDirectory}/共享文件" &
 }
 
 function genXAuth() {
@@ -418,6 +406,18 @@ function genNewEnv() {
 		echo "# Envs" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 		echo "isPortableEnvPresent=1" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
 	fi
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/.config" &
+	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
+	mkdir \
+		--parents \
+		--mode=0700 \
+		"${XDG_DATA_HOME}/${stateDirectory}/Shared" &
+	ln -sfr \
+		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
+		"${XDG_DATA_HOME}/${stateDirectory}/共享文件" &
 	readyNotify set genNewEnv
 }
 
