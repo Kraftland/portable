@@ -207,9 +207,6 @@ function configCheck() {
 	for value in appID friendlyName stateDirectory launchTarget; do
 		confEmpty ${value}
 	done
-	for value in allowInhibit bindInputDevices bindCameras bindPipewire gameMode dbusWake bindNetwork pwCam useZink qt5Compat; do
-		confBool "${value}"
-	done
 	unset value
 }
 
