@@ -578,6 +578,7 @@ function execApp() {
 		--ro-bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
+		--ro-bind /sys/fs/cgroup /sys/fs/cgroup \
 		--tmpfs /sys/devices/virtual/dmi \
 		--dev-bind /sys/class/drm /sys/class/drm \
 		${bwSwitchableGraphicsArg} \
