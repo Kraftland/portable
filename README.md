@@ -15,8 +15,12 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 
 - [Minecraft](https://github.com/Kimiblock/moeOS.config/blob/master/usr/bin/mcLaunch)
 - Arch Linux
-	- Configure paru to use [portable-arch](https://github.com/Kraftland/portable-arch): https://github.com/Kraftland/portable-arch
-	- Current support status (as of Mon  8 Sep 18:35:34 CST 2025): 23 packages in repo.
+	- Arch Linux CN Repository
+		- Only selected free/OSS apps
+		- Updates faster
+	- Portable for Arch
+		- Configure paru to use [portable-arch](https://github.com/Kraftland/portable-arch): https://github.com/Kraftland/portable-arch
+		- Current support status (as of Mon  8 Sep 18:35:34 CST 2025): 23 packages in repo.
 
 # Limitations:
 
