@@ -808,7 +808,7 @@ function bindNvDevIfExist(){
 function hybridBind() {
 	#local bwSwitchableGraphicsArg
 	bwSwitchableGraphicsArg='--setenv portableDiscrete 1'
-	if [[ "$(ls -l /sys/class/drm | grep render | wc -l)" -le 1 ]]; then
+	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
 	elif [[ "${gameMode}" = "true" ]]; then
