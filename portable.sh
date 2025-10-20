@@ -991,10 +991,10 @@ function warnMulRunning() {
 }
 
 function genInstanceID() {
-	instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+	instanceId=$(shuf -i 1024000000-9999999999 -n 1)
 	while [[ -d "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" ]]; do
 		pecho debug "Instance ID collision detected!"
-		instanceId=$(head -c 4 /dev/urandom | xxd -p | tr -d '\n' | awk '{print strtonum("0x"$1)}')
+		instanceId=$(shuf -i 1024000000-9999999999 -n 1)
 	done
 
 }
