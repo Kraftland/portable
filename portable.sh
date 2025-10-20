@@ -561,6 +561,7 @@ function execApp() {
 		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
 		--dev /dev \
+		--tmpfs /dev/shm \
 		--dev-bind-try /dev/mali /dev/mali \
 		--dev-bind-try /dev/mali0 /dev/mali0 \
 		--dev-bind-try /dev/umplock /dev/umplock \
