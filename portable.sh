@@ -203,7 +203,6 @@ function confBool() {
 }
 
 function configCheck() {
-	mainPid=$
 	for value in appID friendlyName stateDirectory launchTarget; do
 		confEmpty ${value}
 	done
@@ -346,12 +345,6 @@ function setIM() {
 }
 
 function setConfEnv() {
-	if [[ "${pwCam}" = "true" ]]; then
-		pecho debug "Enabling pw-v4l2 preload..."
-		addEnv "LD_PRELOAD=${LD_PRELOAD} $(ls /usr/lib/pipewire-* -d | head -n 1)/v4l2/libpw-v4l2.so"
-	else
-		addEnv "LD_PRELOAD=${LD_PRELOAD}"
-	fi
 	if [[ "${qt5Compat}" = "false" ]]; then
 		pecho debug "Skipping Qt 5 compatibility workarounds"
 	else
@@ -478,6 +471,7 @@ function execApp() {
 	getDevArgs bwInputArg
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
+	readyNotify wait bindCheck
 	terminateOnRequest &
 	systemd-run \
 	--quiet \

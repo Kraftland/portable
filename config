@@ -39,9 +39,6 @@ mprisName="testie"
 
 ########## Section: Input ##########
 
-# Use pipewire-v4l2 to replace v4l2. Requires bindPipewire=true! Unstable for now
-pwCam="false"
-
 # Takes boolean value. Binds /dev/video* into the sandbox. Required if target application uses /dev/video* interfaces directly instead of v4l2.
 bindCameras="false"
 
