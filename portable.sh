@@ -814,7 +814,7 @@ function hybridBind() {
 		local activeCardSum=0
 		activeCards="placeholder"
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
-			pecho debug "Working on "${vCards}""
+			pecho debug "Working on ${vCards}"
 			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
 				pecho debug "Inspecting ${file}"
 				if [[ "$(cat "${file}")" =~ "disconnected" ]]; then
@@ -841,7 +841,7 @@ function hybridBind() {
 			for vCards in ${activeCards}; do
 			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
 				if grep -q '0x10de' "/sys/class/drm/${vCards}/device/vendor"; then
-					addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
+					addEnv "VK_LOADER_DRIVERS_DISABLE=nvidia_icd.json"
 					continue
 				else
 					cardToRender "${vCards}"
@@ -1539,7 +1539,7 @@ function stopApp() {
 			exit 1
 		fi
 	fi
-	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep service | wc -l)" -eq 0 ]]; then
+	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep -c '.service')" -eq 0 ]]; then
 		pecho debug "Application already stopped!"
 	else
 		pecho info "Stopping application..." &
