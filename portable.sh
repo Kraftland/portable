@@ -896,7 +896,7 @@ function inputBind() {
 }
 
 function miscBind() {
-	readyNotify wait pwSecContext
+	#readyNotify wait pwSecContext
 	if [[ "${bindNetwork}" = "false" ]]; then
 		pecho info "Network access disabled via config"
 		sdNetArg="PrivateNetwork=yes"
