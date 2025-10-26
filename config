@@ -35,10 +35,7 @@ waylandOnly="adaptive"
 gameMode="false"
 
 # If not empty, will own the org.mpris.MediaPlayer2.mprisName bus name instead of "org.mpris.MediaPlayer2.${appID##*.}"
-#mprisName="testie"
-
-# If not unset, will own org.unifiedpush.Distributor.${unifiedPushID} in addition to org.unifiedpush.Distributor.${appID}
-#unifiedPushID=""
+mprisName="testie"
 
 ########## Section: Input ##########
 

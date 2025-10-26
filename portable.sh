@@ -1097,15 +1097,6 @@ function dbusArg() {
 	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
 		proxyArg="--log"
 	fi
-	local defaultUPOwn="--own=org.unifiedpush.Distributor.${appID} --own=org.unifiedpush.Distributor.${appID}.*"
-	if [[ -n "${unifiedPushID}" ]]; then
-		local unifiedpushBus="org.unifiedpush.Distributor.${unifiedPushID}"
-		addDbusArg \
-			"--own=${unifiedpushBus} --own=${unifiedpushBus}.* ${defaultUPOwn}"
-	else
-		addDbusArg \
-			"${defaultUPOwn}"
-	fi
 	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
 		local featureSet="Location"
 		pecho info "Enabling GNOME exclusive features: ${featureSet}"
