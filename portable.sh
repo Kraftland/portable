@@ -139,10 +139,11 @@ function bindCheck() {
 				--icon=folder-open-symbolic \
 				--question \
 				--text="是否暴露路径 ${bwBindPar}: ${fileCnt} 个文件, ${dirCnt} 个子目录"
-			if [[ $? -eq 1 ]]; then
-				readyNotify set-fail bindCheck
-			elif [[ $? -eq 0 ]]; then
+			local status=$?
+			if [[ "${status}" -eq 0 ]]; then
 				readyNotify set bindCheck
+			else
+				readyNotify set-fail bindCheck
 			fi
 		else
 			/usr/bin/zenity \
@@ -150,10 +151,11 @@ function bindCheck() {
 				--icon=folder-open-symbolic \
 				--question \
 				--text="Expose ${bwBindPar}, containing ${fileCnt} ${trailingF}, ${dirCnt} ${trailingD}?"
-			if [[ $? -eq 1 ]]; then
-				readyNotify set-fail bindCheck
-			elif [[ $? -eq 0 ]]; then
+			local status=$?
+			if [[ "${status}" -eq 0 ]]; then
 				readyNotify set bindCheck
+			else
+				readyNotify set-fail bindCheck
 			fi
 		fi
 	else
