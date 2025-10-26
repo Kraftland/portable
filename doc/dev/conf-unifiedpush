@@ -1,0 +1,39 @@
+#!/usr/bin/bash
+
+########## Section: General ##########
+
+# This is your Application ID, avoid conflict
+appID="org.unifiedpush.Example"
+
+# This is a friendly name of an application. It should only contain ASCII characters and not spaces.
+friendlyName="Portable_Tester"
+
+# This is the state directory of your application, which is located under "XDG_DATA_HOME"
+stateDirectory="Portable_Tester_Data"
+
+# This is the target executable to launch
+launchTarget="curl -OJ https://codeberg.org/api/packages/UnifiedPush/generic/flutter-connector/70af6ffe46/flutter-example-linux.zip && ./unifiedpush_example"
+
+# Enables Network access within the sandbox. Defaults to true.
+bindNetwork="true"
+
+# Takes a boolean value. Terminates the sandbox immediately after the main process exits. Defaults to false. Note that turning this on might affect applications that forks immediately and exits.
+terminateImmediately="true"
+
+########## Section: Output ##########
+
+# Use zink for GL -> Vulkan translation
+useZink="false"
+
+# Enable compatibility workarounds for Qt5. Defaults to true.
+qt5Compat="false"
+
+# Takes a boolean value or string "adaptive". When true, do not process XAuth files and forces wayland input method. "adaptive" enables this option on Wayland and vice versa. Generally this should be adaptive when possible.
+waylandOnly="adaptive"
+
+# Expose all GPUs. Takes boolean value, usually used in games.
+gameMode="false"
+
+########## Environment ##########
+
+# Below you can set envs that will be imported into the application sandbox
