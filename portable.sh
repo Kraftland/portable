@@ -1276,6 +1276,7 @@ function dbusProxy() {
 			--own=org.kde.StatusNotifierItem-28-1 \
 			--own=org.kde.StatusNotifierItem-29-1 \
 			--own=com.belmoussaoui.ashpd.demo \
+			--talk="org.unifiedpush.Distributor.*" \
 			--own="${appID}" \
 			--own="${appID}".* \
 			--talk=org.freedesktop.Notifications \
