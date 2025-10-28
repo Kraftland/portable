@@ -1161,10 +1161,10 @@ function writeInfo() {
 function pwSecContext() {
 	if [[ "${bindPipewire}" = 'true' ]]; then
 		pecho debug "Pipewire security context enabled"
-		#rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"
 		systemd-run \
 			--user \
+			--quiet \
 			-p Slice="portable-${friendlyName}.slice" \
 			-u "${unitName}-pipewire-container" \
 			-p KillMode=control-group \
@@ -1180,14 +1180,14 @@ function pwSecContext() {
 			"-P" \
 			'{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }'
 
-		if [ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" 2>/dev/null | grep "new socket")" ]; then
+		if grep -q "new socket" "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"; then
 			pecho debug "Pipewire socket created"
 		else
 			while true; do
 				sleep 0.0001s
 				if [ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" ]; then
 					break
-				elif [ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" 2>/dev/null | grep "new socket")" ]; then
+				elif grep -q "new socket" "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"; then
 					break
 				fi
 			done
