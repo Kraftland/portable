@@ -16,7 +16,7 @@ function pecho() {
 function printHelp() {
 	echo "This is Portable, a fast, private and efficient Linux desktop sandbox."
 	echo "Visit https://github.com/Kraftland/portable for documentation and information."
-	echo "To get started, specify a configuration file using environment variable \"\${_portableConfig}\""
+	echo "To get started, specify a configuration file using the environment variable \"\${_portableConfig}\""
 	exit 0
 }
 
@@ -61,7 +61,7 @@ function readyNotify() {
 		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" &
 		pecho debug "Readiness set for $2" &
 	elif [[ $1 = "set-fail" ]]; then
-		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/fail" &
+		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" &
 	elif [[ $1 = "init" ]]; then
 		readyDir="${RANDOM}"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
@@ -107,7 +107,7 @@ function busCheck() {
 		pecho crit "appID invalid: prohibited to own entire org.mpris.MediaPlayer2"
 		readyNotify set-fail sanityCheck
 	elif [[ "${busOwn}" =~ org.freedesktop.impl.* ]]; then
-		pecho crit "appID invalid: sandbox escape not allowed, check appID"
+		pecho crit "appID invalid: sandbox escape not allowed"
 		readyNotify set-fail sanityCheck
 	elif [[ "${busOwn}" =~ org.gtk.vfs.* ]]; then
 		pecho crit "appID invalid: full filesystem access not allowed"
@@ -461,8 +461,6 @@ function execApp() {
 	desktopWorkaround &
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
-	else
-		pecho warn "bwBindPar is ${bwBindPar}"
 	fi
 	if [[ -d /proc/driver ]]; then
 		procDriverBind="--tmpfs /proc/driver"
@@ -689,6 +687,10 @@ function execApp() {
 }
 
 function terminateOnRequest() {
+	if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
+		pecho warn "One or more components failed during startup, terminating now..."
+		stopApp force
+	fi
 	pecho debug "Established termination watches"
 	while true; do
 		if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
