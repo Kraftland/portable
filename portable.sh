@@ -103,13 +103,13 @@ function sanityCheck() {
 
 function busCheck() {
 	local busOwn="${appID}"
-	if [[ "${busOwn}" = "org.mpris.MediaPlayer2" ]]; then
+	if [[ "${busOwn}" = org.mpris.MediaPlayer2$ ]]; then
 		pecho crit "appID invalid: prohibited to own entire org.mpris.MediaPlayer2"
 		readyNotify set-fail sanityCheck
-	elif [[ "${busOwn}" =~ "org.freedesktop.impl" ]]; then
-		pecho crit "appID invalid: sandbox escape not allowed"
+	elif [[ "${busOwn}" =~ org.freedesktop.impl.* ]]; then
+		pecho crit "appID invalid: sandbox escape not allowed, check appID"
 		readyNotify set-fail sanityCheck
-	elif [[ "${busOwn}" =~ "org.gtk.vfs" ]]; then
+	elif [[ "${busOwn}" =~ org.gtk.vfs.* ]]; then
 		pecho crit "appID invalid: full filesystem access not allowed"
 		readyNotify set-fail sanityCheck
 	fi
