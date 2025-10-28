@@ -1609,7 +1609,7 @@ function cmdlineDispatcher() {
 		fi
 		shift
 	done
-	export targetArgs="$@"
+	export targetArgs="$*"
 	pecho info "Application argument interpreted as: ${targetArgs}"
 }
 
