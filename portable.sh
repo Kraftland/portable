@@ -832,7 +832,7 @@ function hybridBind() {
 					continue
 				else
 					pecho debug "Active GPU"
-					activeCardSum=$(expr "${activeCardSum}" + 1)
+					activeCardSum=$(("${activeCardSum}"+1))
 					if [[ "${activeCards}" = "placeholder" ]]; then
 						activeCards="$(basename "${vCards}")"
 					else
