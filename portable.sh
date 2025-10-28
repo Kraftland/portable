@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1090,SC2174,SC2154,SC2129
 
 function pecho() {
 	if [[ "$1" = "debug" ]] && [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
@@ -12,14 +13,20 @@ function pecho() {
 	fi
 }
 
+function printHelp() {
+	echo "This is Portable, a fast, private and efficient Linux desktop sandbox."
+	echo "Visit https://github.com/Kraftland/portable for documentation and information."
+	echo "To get started, specify a configuration file using environment variable \"\${_portableConfig}\""
+	exit 0
+}
+
 if [[ "${_portalConfig}" ]]; then
 	export _portableConfig="${_portalConfig}"
 	pecho warn "Using legacy configuration variable!"
 fi
 
-if [[ -z "${_portableConfig}" ]]; then
-	pecho crit "No portable config specified!"
-	exit 1
+if [[ -z "${_portableConfig}" ]] || [[ $1 = "--help" ]]; then
+	printHelp
 elif [[ -r "${_portableConfig}" ]]; then
 	pecho info "Configuration specified as absolute path: ${_portableConfig}"
 	source "${_portableConfig}"
@@ -35,7 +42,7 @@ else
 		source "$(pwd)/${_portableConfig}"
 		export _portableConfig="$(pwd)/${_portableConfig}"
 	else
-		pecho crit "Specified config cannot be found or read!"
+		pecho crit "Specified configuration not reachable"
 		exit 1
 	fi
 fi
