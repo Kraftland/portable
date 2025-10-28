@@ -828,7 +828,7 @@ function hybridBind() {
 			pecho debug "Working on ${vCards}"
 			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
 				pecho debug "Inspecting ${file}"
-				if [[ "$(cat "${file}")" =~ "disconnected" ]]; then
+				if grep -q "disconnected" "${file}"; then
 					continue
 				else
 					pecho debug "Active GPU"
