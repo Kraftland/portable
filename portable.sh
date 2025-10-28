@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1090,SC2174,SC2154,SC2129,SC2155
+# shellcheck disable=SC1090,SC2174,SC2154,SC2129,SC2155,SC1091,SC2086
 
 function pecho() {
 	if [[ "$1" = "debug" ]] && [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
@@ -986,13 +986,14 @@ function warnMulRunning() {
 		execAppExistDirect
 		exit "$?"
 	fi
-	appANR
-	if [[ $? -eq 0 ]]; then
-		stopApp force
-	else
-		pecho crit "User denied session termination"
-		exit "$?"
-	fi
+	# Appears to be unreachable
+	# appANR
+	# if [[ $? -eq 0 ]]; then
+	# 	stopApp force
+	# else
+	# 	pecho crit "User denied session termination"
+	# 	exit "$?"
+	# fi
 }
 
 function genInstanceID() {
@@ -1070,9 +1071,9 @@ function resetUnit() {
 
 function addDbusArg() {
 	if [[ -z "${extraDbusArgs}" ]]; then
-		extraDbusArgs="$@"
+		extraDbusArgs="$*"
 	else
-		extraDbusArgs="${extraDbusArgs} $@"
+		extraDbusArgs="${extraDbusArgs} $*"
 	fi
 }
 
