@@ -936,8 +936,13 @@ function deviceBinding() {
 function appANR() {
 	if [[ "${LANG}" =~ "zh_CN" ]]; then
 		zenity --title "程序未响应" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="是否结束正在运行的进程?"
+		local status=$?
 	else
 		zenity --title "Application is not responding" --icon=utilities-system-monitor-symbolic --default-cancel --question --text="Do you wish to terminate the running session?"
+		local status=$?
+	fi
+	if [[ "${status}" -eq 0 ]]; then
+		stopApp force
 	fi
 }
 
