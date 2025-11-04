@@ -50,7 +50,7 @@ fi
 busName="${appID}"
 busDir="${XDG_RUNTIME_DIR}/app/${busName}"
 busDirAy="${XDG_RUNTIME_DIR}/app/${busName}-a11y"
-unitName="${friendlyName}"
+unitName="app-portable-${appID}"
 proxyName="${friendlyName}-dbus"
 
 function readyNotify() {
@@ -1095,16 +1095,18 @@ function getBusArgs() {
 function cleanDUnits() {
 	systemctl --user kill -sSIGKILL \
 		"${friendlyName}*" \
+		"${unitName}" \
 		"${proxyName}*".service \
-		"${proxyName}*"-a11y.service \
-		"${friendlyName}*"-wayland-proxy.service \
-		"${friendlyName}*"-pipewire-container.service \
+		"${proxyName}-a11y" \
+		"${friendlyName}"-wayland-proxy \
+		"${unitName}-pipewire-container" \
 		"${friendlyName}-subprocess*".service
 	systemctl --user clean "${friendlyName}*" \
+		"${unitName}" \
 		"${friendlyName}-subprocess*".service \
 		"${proxyName}*".service \
-		"${proxyName}*"-a11y.service \
-		"${friendlyName}*"-wayland-proxy.service \
+		"${proxyName}-a11y" \
+		"${friendlyName}"-wayland-proxy \
 		"${friendlyName}*"-pipewire-container.service
 	readyNotify set cleanDUnits
 }
@@ -1518,6 +1520,8 @@ function launch() {
 		systemctl --user reset-failed "${unitName}.service" &
 	fi
 	if systemctl --user --quiet is-active "${unitName}.service"; then
+		warnMulRunning "$@"
+	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
 		warnMulRunning "$@"
 	fi
 	deviceBinding &
