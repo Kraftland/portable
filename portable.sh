@@ -487,6 +487,7 @@ function execApp() {
 	--service-type=notify \
 	--wait \
 	-u "${unitName}" \
+	--slice-inherit \
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
