@@ -487,11 +487,10 @@ function execApp() {
 	--service-type=notify \
 	--wait \
 	-u "${unitName}" \
-	--slice-inherit \
+	--slice=app.slice \
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
-	-p Slice="app-portable-${friendlyName}.slice" \
 	-p ExitType=cgroup \
 	-p NotifyAccess=all \
 	-p TimeoutStartSec=infinity \
@@ -1173,7 +1172,7 @@ function pwSecContext() {
 		systemd-run \
 			--user \
 			--quiet \
-			-p Slice="app-portable-${friendlyName}.slice" \
+			-p Slice="portable-${friendlyName}.slice" \
 			-u "${unitName}-pipewire-container" \
 			-p KillMode=control-group \
 			-p After="pipewire.service" \
@@ -1233,7 +1232,7 @@ function dbusProxy() {
 	systemd-run \
 		--user \
 		--quiet \
-		-p Slice="app-portable-${friendlyName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}" \
 		-p KillMode=control-group \
 		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
@@ -1373,7 +1372,7 @@ function dbusProxy() {
 		systemd-run \
 			--user \
 			--quiet \
-			-p Slice="app-portable-${friendlyName}.slice" \
+			-p Slice="portable-${friendlyName}.slice" \
 			-u "${friendlyName}"-wayland-proxy \
 			-p BindsTo="${proxyName}.service" \
 			-p Environment=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
@@ -1398,7 +1397,7 @@ function dbusProxy() {
 	systemd-run \
 		--user \
 		--quiet \
-		-p Slice="app-portable-${friendlyName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-u "${proxyName}-a11y" \
 		-p RestartMode=direct \
 		-- bwrap \
@@ -1435,7 +1434,7 @@ function execAppUnsafe() {
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
 	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
 	systemd-run --user \
-		-p Slice="app-portable-${friendlyName}.slice" \
+		-p Slice="portable-${friendlyName}.slice" \
 		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
 		-p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
 		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
@@ -1544,7 +1543,7 @@ function launch() {
 function stopSlice() {
 	systemctl \
 		--user stop \
-		"app-portable-${friendlyName}.slice"
+		"app-portable-${friendlyName}.slice" 2>/dev/null
 	systemctl \
 		--user stop \
 		"portable-${friendlyName}.slice" 2>/dev/null
