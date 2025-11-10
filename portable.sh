@@ -491,6 +491,7 @@ function execApp() {
 	--wait \
 	-u "${unitName}" \
 	--slice=app.slice \
+	-p Delegate="yes" \
 	-p BindsTo="${proxyName}.service" \
 	-p Description="Portable Sandbox for ${appID}" \
 	-p Documentation="https://github.com/Kraftland/portable" \
