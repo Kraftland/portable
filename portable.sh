@@ -1560,7 +1560,7 @@ function stopApp() {
 		sleep 1s
 		local sdOut
 		sdOut=$(systemctl --user list-units --state active --no-pager "${friendlyName}"*)
-		if [[ "${sdOut}" =~ "${friendlyName}.service" ]] && [[ "${sdOut}" =~ "subprocess" ]]; then
+		if [[ "${sdOut}" =~ ^${unitName}-subprocess.*service$ ]]; then
 			pecho crit "Not stopping the slice because one or more instance are still running"
 			exit 1
 		fi
