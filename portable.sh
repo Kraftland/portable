@@ -702,8 +702,6 @@ function terminateOnRequest() {
 			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
 		if [[ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal")" =~ "terminate-now" ]]; then
 			stopApp force
-			exit 0
-			break
 		fi
 	done
 }
