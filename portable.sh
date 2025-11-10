@@ -720,7 +720,6 @@ function execAppExist() {
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
-	exit $?
 }
 
 function shareFile() {
