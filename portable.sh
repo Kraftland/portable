@@ -1,5 +1,8 @@
 #!/bin/bash
+
+# Shellcheck configurations below
 # shellcheck disable=SC1090,SC2174,SC2154,SC2129,SC2155,SC1091,SC2086
+# Shellcheck configurations end
 
 function pecho() {
 	if [[ "$1" = "debug" ]] && [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
