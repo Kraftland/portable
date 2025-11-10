@@ -1101,14 +1101,14 @@ function cleanDUnits() {
 		"${proxyName}-a11y" \
 		"${friendlyName}"-wayland-proxy \
 		"${unitName}-pipewire-container" \
-		"${friendlyName}-subprocess*".service
+		"${friendlyName}-subprocess*".service 2>/dev/null
 	systemctl --user clean "${friendlyName}*" \
 		"${unitName}" \
 		"${friendlyName}-subprocess*".service \
 		"${proxyName}*".service \
 		"${proxyName}-a11y" \
 		"${friendlyName}"-wayland-proxy \
-		"${friendlyName}*"-pipewire-container.service
+		"${friendlyName}*"-pipewire-container.service 2>/dev/null
 	readyNotify set cleanDUnits
 }
 
