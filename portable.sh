@@ -1318,6 +1318,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Device \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Device.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileTransfer.* \
