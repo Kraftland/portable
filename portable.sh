@@ -397,7 +397,7 @@ function setStaticEnv() {
 	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
 	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
 	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
-	echo "source /run/portable-generated.env" > "${XDG_DATA_HOME}/${stateDirectory}/.bashrc"
+	echo "source /run/portable-generated.env" > "${XDG_RUNTIME_DIR}/portable/${appID}/bashrc"
 	readyNotify set setStaticEnv
 }
 
@@ -1017,7 +1017,7 @@ function warnMulRunning() {
 	source "${_portableConfig}"
 	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "debug-shell" ]]; then
 		export launchTarget="/usr/bin/bash"
-		export targetArgs=""
+		export targetArgs="--noprofile --rcfile /run/bashrc"
 		execAppExist
 	else
 		execAppExistDirect
@@ -1562,7 +1562,7 @@ function launch() {
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		launchTarget="/usr/bin/bash"
-		export targetArgs=""
+		export targetArgs="--noprofile --rcfile /run/bashrc"
 	fi
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
