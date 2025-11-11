@@ -615,6 +615,7 @@ function execApp() {
 		--size 1 \
 		--perms 0000 \
 		--tmpfs /root \
+		--tmpfs /home \
 		--size 1 \
 		--perms 0000 \
 		--tmpfs /media \
