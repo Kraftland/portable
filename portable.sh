@@ -613,6 +613,9 @@ function execApp() {
 		--perms 0000 \
 		--tmpfs /boot \
 		--size 1 \
+		--perms 0000 \
+		--tmpfs /media \
+		--size 1 \
 		--tmpfs /var \
 		--tmpfs /var/empty \
 		--ro-bind-try \
