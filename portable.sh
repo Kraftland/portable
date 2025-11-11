@@ -466,9 +466,14 @@ function execApp() {
 		unset bwBindPar
 	fi
 	if [[ -d /proc/driver ]]; then
-		procDriverBind="--tmpfs /proc/driver"
+		local procDriverBind="--tmpfs /proc/driver"
 	else
 		unset procDriverBind
+	fi
+	if [ -d /proc/bus ]; then
+		local bwPciBindArg="--tmpfs /sys/bus/pci --tmpfs /proc/bus"
+	else
+		local bwPciBindArg="--tmpfs /sys/bus/pci"
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
@@ -601,6 +606,7 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/loadavg \
 		--ro-bind-try /dev/null /proc/filesystems \
 		${procDriverBind} \
+		${bwPciBindArg} \
 		--tmpfs /proc/1 \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
