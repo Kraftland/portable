@@ -614,6 +614,9 @@ function execApp() {
 		--tmpfs /boot \
 		--size 1 \
 		--perms 0000 \
+		--tmpfs /root \
+		--size 1 \
+		--perms 0000 \
 		--tmpfs /media \
 		--size 1 \
 		--perms 0000 \
