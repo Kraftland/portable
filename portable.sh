@@ -624,6 +624,7 @@ function execApp() {
 		--tmpfs /mnt \
 		--size 1 \
 		--tmpfs /var \
+		--symlink /run /var/run \
 		--symlink /run/lock /var/lock \
 		--tmpfs /var/empty \
 		--ro-bind-try \
