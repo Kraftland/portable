@@ -534,7 +534,8 @@ function execApp() {
 	-p UMask=077 \
 	-p DevicePolicy=strict \
 	-p NoNewPrivileges=yes \
-	-p ProtectControlGroups=strict \
+	-p ProtectControlGroups=private \
+	-p DelegateSubgroup="portable-cgroup" \
 	-p PrivateMounts=yes \
 	-p KeyringMode=private \
 	-p TimeoutStopSec=20s \
@@ -578,6 +579,7 @@ function execApp() {
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
 		--ro-bind /sys/fs/cgroup /sys/fs/cgroup \
+		--ro-bind /sys/fs/cgroup/portable-cgroup /sys/fs/cgroup/portable-cgroup \
 		--tmpfs /sys/devices/virtual/dmi \
 		--dev-bind /sys/class/drm /sys/class/drm \
 		${bwSwitchableGraphicsArg} \
