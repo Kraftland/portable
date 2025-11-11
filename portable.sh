@@ -631,6 +631,9 @@ function execApp() {
 		--symlink /run/lock /var/lock \
 		--tmpfs /var/empty \
 		--tmpfs /var/lib \
+		--size 1 \
+		--perms 0000 \
+		--tmpfs /var/log \
 		--ro-bind-try \
 			/var/cache/fontconfig \
 			/var/cache/fontconfig \
