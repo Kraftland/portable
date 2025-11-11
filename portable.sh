@@ -638,6 +638,7 @@ function execApp() {
 		--perms 0000 \
 		--tmpfs /var/opt \
 		--tmpfs /var/spool \
+		--tmpfs /var/tmp \
 		--ro-bind-try \
 			/var/cache/fontconfig \
 			/var/cache/fontconfig \
