@@ -63,7 +63,6 @@ shift
 if [[ "${terminateImmediately}" = "true" ]]; then
 	echo "Immediately terminating sandbox per config"
 	stopApp
-	echo terminate-now >/run/startSignal
 	exit 0
 fi
 
