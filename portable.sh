@@ -620,6 +620,7 @@ function execApp() {
 		--tmpfs /mnt \
 		--size 1 \
 		--tmpfs /var \
+		--symlink /run/lock /var/lock \
 		--tmpfs /var/empty \
 		--ro-bind-try \
 			/var/cache/fontconfig \
