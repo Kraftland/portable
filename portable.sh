@@ -610,6 +610,9 @@ function execApp() {
 		--symlink /usr/bin /bin \
 		--symlink /usr/bin /sbin \
 		--size 1 \
+		--perms 0000 \
+		--tmpfs /boot \
+		--size 1 \
 		--tmpfs /var \
 		--tmpfs /var/empty \
 		--ro-bind-try \
