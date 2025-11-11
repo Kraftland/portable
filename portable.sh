@@ -609,7 +609,9 @@ function execApp() {
 		--symlink /usr/lib /lib64 \
 		--symlink /usr/bin /bin \
 		--symlink /usr/bin /sbin \
+		--size 1 \
 		--tmpfs /var \
+		--tmpfs /var/empty \
 		--ro-bind-try \
 			/var/cache/fontconfig \
 			/var/cache/fontconfig \
