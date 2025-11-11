@@ -56,8 +56,6 @@ function askStop() {
 
 startLoop &
 
-echo $$ >
-
 cmd=$1
 shift
 "$cmd" "$@"
