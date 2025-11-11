@@ -2,8 +2,8 @@
 
 echo "Running hyperfine..."
 
-hyperfine '_portalConfig=./doc/dev/conf-perf PORTABLE_LOGGING=debug ./portable.sh'
+hyperfine '_portableConfig=./doc/dev/conf-perf PORTABLE_LOGGING=debug ./portable.sh'
 
 echo "Running ts..."
 
-_portalConfig=./doc/dev/conf-perf PORTABLE_LOGGING=debug ./portable.sh | ts "%.S"
+_portableConfig=./doc/dev/conf-perf PORTABLE_LOGGING=debug ./portable.sh | ts "%.S"
