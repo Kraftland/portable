@@ -537,6 +537,8 @@ function execApp() {
 	-p ProtectHome=no \
 	-p PrivateUsers=yes \
 	-p UMask=077 \
+	-p OOMScoreAdjust=100 \
+	-p LimitNOFILE=524288 \
 	-p DevicePolicy=strict \
 	-p NoNewPrivileges=yes \
 	-p ProtectControlGroups=private \
