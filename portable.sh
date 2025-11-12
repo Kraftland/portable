@@ -482,7 +482,6 @@ function defineRunPath() {
 }
 
 function execApp() {
-	calcMountArg &
 	desktopWorkaround &
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
@@ -1069,6 +1068,7 @@ function genInstanceID() {
 
 function generateFlatpakInfo() {
 	pecho debug "Installing flatpak-info..."
+	calcMountArg &
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeHolderAppName|${appID}|g" \
