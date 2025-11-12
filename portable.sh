@@ -453,7 +453,7 @@ function passMountArgs() {
 	echo -e "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1"
 }
 
-# $1 as arg name.
+# $1 as arg name. For references only.
 function getMountArgs() {
 	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1")" 2>/dev/null
 }
