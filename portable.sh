@@ -450,7 +450,7 @@ function pathEscape() {
 
 # $1 as arg name, $2 as value
 function passMountArgs() {
-	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1"
+	echo -e "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1"
 }
 
 # $1 as arg name.
@@ -462,7 +462,7 @@ function calcMountArg() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore"
 	if true; then
 		pecho debug "Mounting flatpak-info..."
-		passMountArgs infoMount "--ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_RUNTIME_DIR}/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info\""
+		passMountArgs infoMount "--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_RUNTIME_DIR}/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info"
 		pecho debug "Mount instructions: --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_RUNTIME_DIR}/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info\""
 	else
 		pecho debug "Not mounting flatpak-info..."
@@ -700,7 +700,7 @@ function execApp() {
 			"${XDG_DATA_HOME}/icons" \
 		--ro-bind-try "${XDG_DATA_HOME}/icons" \
 			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons" \
-		$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount" | xargs) \
+		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount") \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${XDG_RUNTIME_DIR}/wayland-0" \
 		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \

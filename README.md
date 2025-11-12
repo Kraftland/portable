@@ -7,6 +7,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 	- Note that `/lib` `/lib64` `/bin` `/sbin` should be symlinks to their respective locations under `/usr`
 
 - Does not have mount points under /usr/bin, and use a supported fs of OverlayFS (NOT BcacheFS)
+- MUST NOT have spaces in `XDG_RUNTIME_DIR` path
 
 It offers many useful features for users and packagers.
 
