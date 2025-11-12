@@ -448,6 +448,28 @@ function pathEscape() {
 	echo "$str"
 }
 
+# $1 as arg name, $2 as value
+function passMountArgs() {
+	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1"
+}
+
+# $1 as arg name.
+function getMountArgs() {
+	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1")" 2>/dev/null
+}
+
+function calcMountArg() {
+	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore"
+	if true; then
+		pecho debug "Mounting flatpak-info..."
+		passMountArgs infoMount "--ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_RUNTIME_DIR}/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info\""
+		pecho debug "Mount instructions: --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_RUNTIME_DIR}/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info\""
+	else
+		pecho debug "Not mounting flatpak-info..."
+	fi
+	readyNotify set calcMountArg
+}
+
 # Translates path based on ~ to state directory
 function pathTranslation() {
 	sed "s|$(pathEscape "${HOME}")|$(pathEscape "${XDG_DATA_HOME}/${stateDirectory}")|g"
@@ -461,6 +483,7 @@ function defineRunPath() {
 }
 
 function execApp() {
+	calcMountArg &
 	desktopWorkaround &
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
@@ -478,7 +501,6 @@ function execApp() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
-
 	readyNotify wait generateFlatpakInfo
 	readyNotify wait deviceBinding
 	getDevArgs pipewireBinding
@@ -487,6 +509,7 @@ function execApp() {
 	getDevArgs bwCamPar
 	getDevArgs bwSwitchableGraphicsArg
 	readyNotify wait bindCheck
+	readyNotify wait calcMountArg
 	terminateOnRequest &
 	systemd-run \
 	--quiet \
@@ -568,8 +591,6 @@ function execApp() {
 		--unshare-uts \
 		--unshare-pid \
 		--unshare-user \
-		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-			/.flatpak-info \
 		--dir /tmp \
 		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
 		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
@@ -661,8 +682,6 @@ function execApp() {
 		--bind "${busDir}/bus" "/run/sessionBus" \
 		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
 		--dir /run/host \
-		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-			"${XDG_RUNTIME_DIR}/.flatpak-info" \
 		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
 			"${XDG_RUNTIME_DIR}/pulse" \
 		${pipewireBinding} \
@@ -681,8 +700,7 @@ function execApp() {
 			"${XDG_DATA_HOME}/icons" \
 		--ro-bind-try "${XDG_DATA_HOME}/icons" \
 			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons" \
-		--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-			"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info" \
+		$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount" | xargs) \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${XDG_RUNTIME_DIR}/wayland-0" \
 		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
