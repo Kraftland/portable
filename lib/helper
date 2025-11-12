@@ -27,7 +27,7 @@ function startLoop() {
 }
 
 function calcProcCnt() {
-	_procCnt=$(ps | grep -vE 'ps|helper|zenity|glycin|grep|inotifywait$' -c)
+	_procCnt=$(ps | grep -vE 'ps|helper|zenity|glycin|grep|inotifywait' -c)
 }
 
 function stopApp() {
