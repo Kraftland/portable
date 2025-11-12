@@ -460,12 +460,11 @@ function getMountArgs() {
 
 function calcMountArg() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore"
-	if true; then
+	if [[ "${mountInfo}" = "false" ]]; then
+		pecho debug "Not mounting flatpak-info..."
+	else
 		pecho debug "Mounting flatpak-info..."
 		passMountArgs infoMount "--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_RUNTIME_DIR}/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info"
-		pecho debug "Mount instructions: --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_RUNTIME_DIR}/.flatpak-info\" --ro-bind \"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\" \"${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info\""
-	else
-		pecho debug "Not mounting flatpak-info..."
 	fi
 	readyNotify set calcMountArg
 }
@@ -700,7 +699,7 @@ function execApp() {
 			"${XDG_DATA_HOME}/icons" \
 		--ro-bind-try "${XDG_DATA_HOME}/icons" \
 			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons" \
-		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount") \
+		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount" 2>/dev/null) \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${XDG_RUNTIME_DIR}/wayland-0" \
 		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
