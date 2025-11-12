@@ -467,7 +467,7 @@ function calcMountArg() {
 		pecho debug "Mounting flatpak-info..."
 		passMountArgs infoMount "--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_RUNTIME_DIR}/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info"
 	fi
-	passMountArgs configMount "--ro-bind-try\0${XDG_CONFIG_HOME}/fontconfig\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css\0-ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/colors.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/colors.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-4.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/qt6ct\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/qt6ct\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0${XDG_DATA_HOME}/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts"
+	passMountArgs configMount "--ro-bind-try\0${XDG_CONFIG_HOME}/fontconfig\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/colors.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/colors.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-4.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/qt6ct\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/qt6ct\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0${XDG_DATA_HOME}/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts"
 	readyNotify set calcMountArg
 }
 
@@ -703,20 +703,7 @@ function execApp() {
 		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount" 2>/dev/null) \
 		--ro-bind-try "${wayDisplayBind}" \
 				"${XDG_RUNTIME_DIR}/wayland-0" \
-		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
-			"${XDG_CONFIG_HOME}/fontconfig" \
-		--ro-bind-try "${XDG_CONFIG_HOME}/fontconfig" \
-			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig" \
-		--ro-bind-try "${XDG_CONFIG_HOME}/gtk-3.0/gtk.css" \
-			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css" \
-		--ro-bind-try "${XDG_CONFIG_HOME}/gtk-4.0/gtk.css" \
-			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css" \
-		--ro-bind-try "${XDG_CONFIG_HOME}/qt6ct" \
-			"$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/qt6ct" \
-		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
-			"${XDG_DATA_HOME}/fonts" \
-		--ro-bind-try "${XDG_DATA_HOME}/fonts" \
-			"$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts" \
+		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/configMount" 2>/dev/null) \
 		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
 			"/run/systemd/resolve/stub-resolv.conf" \
 		--size 1 \
