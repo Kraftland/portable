@@ -603,7 +603,6 @@ function execApp() {
 		--dev-bind /dev/dri /dev/dri \
 		--dev-bind-try /dev/udmabuf /dev/udmabuf \
 		--tmpfs /sys \
-		--ro-bind /sys/module/ /sys/module/ \
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--ro-bind /sys/devices /sys/devices \
 		--ro-bind /sys/fs/cgroup /sys/fs/cgroup \
