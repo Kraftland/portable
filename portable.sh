@@ -494,9 +494,9 @@ function execApp() {
 		unset procDriverBind
 	fi
 	if [ -d /proc/bus ]; then
-		local bwPciBindArg="--tmpfs /sys/bus/pci --tmpfs /proc/bus"
+		local bwPciBindArg="--tmpfs /proc/bus"
 	else
-		local bwPciBindArg="--tmpfs /sys/bus/pci"
+		local bwPciBindArg=""
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
@@ -852,7 +852,7 @@ function bindNvDevIfExist(){
 
 function hybridBind() {
 	#local bwSwitchableGraphicsArg
-	bwSwitchableGraphicsArg='--setenv portableDiscrete 1'
+	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
 	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -886,7 +886,7 @@ function hybridBind() {
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}""
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}")"
 		else
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
@@ -897,15 +897,31 @@ function hybridBind() {
 				else
 					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind "/dev/dri/${vCards}" "/dev/dri/${vCards}" --dev-bind "/sys/class/drm/${vCards}" "/sys/class/drm/${vCards}""
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}""
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
 		fi
+		sleepyCards="placeholder"
+		# for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
+		# 	if [[ "${activeCards}" =~ ${vCards}+ ]]; then
+		# 		if [[ "${sleepyCards}" = "placeholder" ]]; then
+		# 			sleepyCards="$(basename "${vCards}")"
+		# 		else
+		# 			sleepyCards="${sleepyCards} $(basename "${vCards}")"
+		# 		fi
+		# 	fi
+		# done
+		# pecho debug "Resolved inactive cards: ${sleepyCards}"
 	fi
 	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
 	passDevArgs bwSwitchableGraphicsArg "${bwSwitchableGraphicsArg}"
 	readyNotify set hybridBind
+}
+
+# Take video card number as input $1, e.g. card0, and prints out card's PCI path
+function resolvePCICard() {
+	readlink --quiet --no-newline --canonicalize /sys/class/drm/$1/../../
 }
 
 function cameraBind() {
