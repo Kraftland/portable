@@ -846,7 +846,7 @@ function bindNvDevIfExist(){
 
 function hybridBind() {
 	#local bwSwitchableGraphicsArg
-	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
+	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci --dev-bind /sys/devices /sys/devices'
 	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
