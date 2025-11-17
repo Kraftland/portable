@@ -802,7 +802,7 @@ function detectNv(){
 # Meant to run after bindNvDevIfExist() or detectNv()
 function setNvOffloadEnv() {
 	addEnv "VK_LOADER_DRIVERS_DISABLE="
-	addEnv "DRI_PRIME=1"
+	detectNv
 	if [[ "${nvExist}" = 1 ]]; then
 		pecho debug "Specifying environment variables for dGPU utilization: NVIDIA"
 		addEnv "__NV_PRIME_RENDER_OFFLOAD=1"
@@ -811,6 +811,7 @@ function setNvOffloadEnv() {
 		addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
 	else
 		pecho debug "Specifying environment variables for dGPU utilization: Mesa"
+		addEnv "DRI_PRIME=1"
 	fi
 }
 
