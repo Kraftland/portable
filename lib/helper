@@ -28,6 +28,7 @@ function startLoop() {
 
 function calcProcCnt() {
 	_procCnt=$(ps | grep -vE 'ps|helper|zenity|glycin|grep|inotifywait|prlimit' -c)
+	echo "Calculated process: $(ps | grep -vE 'ps|helper|zenity|glycin|grep|inotifywait|prlimit')"
 }
 
 function stopApp() {

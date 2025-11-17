@@ -897,7 +897,7 @@ function hybridBind() {
 				else
 					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}""
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind "/dev/dri/${vCards}" "/dev/dri/${vCards}" --dev-bind "/sys/class/drm/${vCards}" "/sys/class/drm/${vCards}""
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
