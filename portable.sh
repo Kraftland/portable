@@ -846,7 +846,7 @@ function bindNvDevIfExist(){
 
 function hybridBind() {
 	#local bwSwitchableGraphicsArg
-	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci --dev-bind /sys/devices /sys/devices'
+	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci --dev-bind /sys/module/nvidia /sys/module/nvidia'
 	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -880,7 +880,7 @@ function hybridBind() {
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}")"
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}") --tmpfs /sys/module/nvidia"
 		else
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
@@ -891,7 +891,7 @@ function hybridBind() {
 				else
 					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}""
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}") --tmpfs /sys/module/nvidia"
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
