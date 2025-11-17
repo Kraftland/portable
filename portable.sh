@@ -1156,6 +1156,14 @@ function cleanDUnits() {
 		"${friendlyName}"-wayland-proxy \
 		"${unitName}-pipewire-container" \
 		"${friendlyName}-subprocess*".service 2>/dev/null
+	systemctl --user reset-failed \
+		"${friendlyName}*" \
+		"${unitName}" \
+		"${proxyName}*".service \
+		"${proxyName}-a11y" \
+		"${friendlyName}"-wayland-proxy \
+		"${unitName}-pipewire-container" \
+		"${friendlyName}-subprocess*".service 2>/dev/null &
 	systemctl --user clean "${friendlyName}*" \
 		"${unitName}" \
 		"${friendlyName}-subprocess*".service \
