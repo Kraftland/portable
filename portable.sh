@@ -598,6 +598,7 @@ function execApp() {
 		--dev-bind /dev/dri /dev/dri \
 		--dev-bind-try /dev/udmabuf /dev/udmabuf \
 		--tmpfs /sys \
+		--ro-bind-try /sys/module /sys/module \
 		--ro-bind /sys/dev/char /sys/dev/char \
 		--tmpfs /sys/devices \
 		--ro-bind /sys/fs/cgroup /sys/fs/cgroup \
@@ -846,7 +847,7 @@ function bindNvDevIfExist(){
 
 function hybridBind() {
 	#local bwSwitchableGraphicsArg
-	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci --dev-bind /sys/module/nvidia /sys/module/nvidia'
+	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
 	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
 		bindNvDevIfExist
@@ -856,6 +857,9 @@ function hybridBind() {
 		setNvOffloadEnv
 	else
 		bwSwitchableGraphicsArg="--tmpfs /dev/dri --tmpfs /sys/class/drm"
+		for _module in $(find /sys/module -maxdepth 1 -type d -name 'nvidia*'); do
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --tmpfs "${_module}""
+		done
 		local activeCardSum=0
 		activeCards="placeholder"
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
@@ -880,7 +884,7 @@ function hybridBind() {
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}") --tmpfs /sys/module/nvidia"
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}")"
 		else
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
@@ -891,7 +895,7 @@ function hybridBind() {
 				else
 					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}") --tmpfs /sys/module/nvidia"
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}")"
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
