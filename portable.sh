@@ -493,11 +493,6 @@ function execApp() {
 	else
 		unset procDriverBind
 	fi
-	if [ -d /proc/bus ]; then
-		local bwPciBindArg="--tmpfs /proc/bus"
-	else
-		local bwPciBindArg=""
-	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
@@ -604,7 +599,7 @@ function execApp() {
 		--dev-bind-try /dev/udmabuf /dev/udmabuf \
 		--tmpfs /sys \
 		--ro-bind /sys/dev/char /sys/dev/char \
-		--ro-bind /sys/devices /sys/devices \
+		--tmpfs /sys/devices \
 		--ro-bind /sys/fs/cgroup /sys/fs/cgroup \
 		--ro-bind /sys/fs/cgroup/portable-cgroup /sys/fs/cgroup/portable-cgroup \
 		--tmpfs /sys/devices/virtual/dmi \
@@ -627,7 +622,6 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/loadavg \
 		--ro-bind-try /dev/null /proc/filesystems \
 		${procDriverBind} \
-		${bwPciBindArg} \
 		${bwSwitchableGraphicsArg} \
 		--tmpfs /proc/1 \
 		--tmpfs /usr/share/applications \
