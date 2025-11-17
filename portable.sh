@@ -609,7 +609,6 @@ function execApp() {
 		--ro-bind /sys/fs/cgroup/portable-cgroup /sys/fs/cgroup/portable-cgroup \
 		--tmpfs /sys/devices/virtual/dmi \
 		--dev-bind /sys/class/drm /sys/class/drm \
-		${bwSwitchableGraphicsArg} \
 		${bwInputArg} \
 		--bind /usr /usr \
 		--overlay-src /usr/bin \
@@ -629,6 +628,7 @@ function execApp() {
 		--ro-bind-try /dev/null /proc/filesystems \
 		${procDriverBind} \
 		${bwPciBindArg} \
+		${bwSwitchableGraphicsArg} \
 		--tmpfs /proc/1 \
 		--tmpfs /usr/share/applications \
 		--ro-bind /etc /etc \
