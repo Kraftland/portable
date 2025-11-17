@@ -845,14 +845,19 @@ function bindNvDevIfExist(){
 	fi
 }
 
+function setDiscBindArg() {
+	export bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
+	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)" "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)""
+}
+
 function hybridBind() {
-	#local bwSwitchableGraphicsArg
-	bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
 	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
 		pecho debug "Single or no GPU, binding all devices"
+		setDiscBindArg
 		bindNvDevIfExist
 	elif [[ "${gameMode}" = "true" ]]; then
 		pecho debug "Game Mode enabled on hybrid graphics"
+		setDiscBindArg
 		bindNvDevIfExist
 		setNvOffloadEnv
 	else
