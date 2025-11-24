@@ -906,17 +906,6 @@ function hybridBind() {
 				fi
 			done
 		fi
-		sleepyCards="placeholder"
-		# for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
-		# 	if [[ "${activeCards}" =~ ${vCards}+ ]]; then
-		# 		if [[ "${sleepyCards}" = "placeholder" ]]; then
-		# 			sleepyCards="$(basename "${vCards}")"
-		# 		else
-		# 			sleepyCards="${sleepyCards} $(basename "${vCards}")"
-		# 		fi
-		# 	fi
-		# done
-		# pecho debug "Resolved inactive cards: ${sleepyCards}"
 	fi
 	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
 	passDevArgs bwSwitchableGraphicsArg "${bwSwitchableGraphicsArg}"
