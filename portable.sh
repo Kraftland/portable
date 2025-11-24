@@ -471,6 +471,10 @@ function calcMountArg() {
 	readyNotify set calcMountArg
 }
 
+function passBwrapArgs() {
+	echo -e "$*" >"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
+}
+
 # Translates path based on ~ to state directory
 function pathTranslation() {
 	sed "s|$(pathEscape "${HOME}")|$(pathEscape "${XDG_DATA_HOME}/${stateDirectory}")|g"
