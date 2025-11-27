@@ -448,29 +448,6 @@ function pathEscape() {
 	echo "$str"
 }
 
-# $1 as arg name, $2 as value
-function passMountArgs() {
-	echo -e "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1"
-}
-
-# $1 as arg name. For references only.
-function getMountArgs() {
-	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/$1")" 2>/dev/null
-}
-
-# Pass NUL separated arguments!
-function calcMountArg() {
-	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore"
-	if [[ "${mountInfo}" = "false" ]]; then
-		pecho debug "Not mounting flatpak-info..."
-	else
-		pecho debug "Mounting flatpak-info..."
-		passMountArgs infoMount "--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_RUNTIME_DIR}/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info"
-	fi
-	passMountArgs configMount "--ro-bind-try\0${XDG_CONFIG_HOME}/fontconfig\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/colors.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/colors.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-4.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/qt6ct\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/qt6ct\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0${XDG_DATA_HOME}/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/icons\0${XDG_DATA_HOME}/icons\0--ro-bind-try\0${XDG_DATA_HOME}/icons\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons"
-	readyNotify set calcMountArg
-}
-
 function passBwrapArgs() {
 	local bwArgWrite="$*"
 	#echo -e ${bwArgWrite} >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
@@ -969,7 +946,6 @@ function genInstanceID() {
 
 function generateFlatpakInfo() {
 	pecho debug "Installing flatpak-info..."
-	calcMountArg &
 	install /usr/lib/portable/flatpak-info \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
 	sed -i "s|placeHolderAppName|${appID}|g" \
