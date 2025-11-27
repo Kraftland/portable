@@ -869,11 +869,6 @@ function getDevArgs() {
 	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")" 2>/dev/null
 }
 
-function setDiscBindArg() {
-	export bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
-	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)" "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)""
-}
-
 # Take video card number as input $1, e.g. card0, and prints out card's PCI path
 function resolvePCICard() {
 	readlink --quiet --no-newline --canonicalize /sys/class/drm/$1/../../
