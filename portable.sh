@@ -869,18 +869,6 @@ function getDevArgs() {
 	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")" 2>/dev/null
 }
 
-function bindNvDevIfExist(){
-	if ls /dev/nvidia* &> /dev/null; then
-		pecho debug "Binding NVIDIA GPUs in Game Mode"
-		for _card in /dev/nvidia*; do
-			if [[ -e "${_card}" ]]; then
-				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind ${_card} ${_card}"
-			fi
-		done
-		export nvExist=1
-	fi
-}
-
 function setDiscBindArg() {
 	export bwSwitchableGraphicsArg='--setenv portableDiscrete 1 --dev-bind /sys/bus/pci /sys/bus/pci'
 	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)" "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)""
