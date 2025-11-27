@@ -874,67 +874,6 @@ function setDiscBindArg() {
 	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)" "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)""
 }
 
-function hybridBind() {
-	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
-		pecho debug "Single or no GPU, binding all devices"
-		setDiscBindArg
-		bindNvDevIfExist
-	elif [[ "${gameMode}" = "true" ]]; then
-		pecho debug "Game Mode enabled on hybrid graphics"
-		setDiscBindArg
-		bindNvDevIfExist
-		setNvOffloadEnv
-	else
-		bwSwitchableGraphicsArg="--tmpfs /dev/dri --tmpfs /sys/class/drm"
-		for _module in $(find /sys/module -maxdepth 1 -type d -name 'nvidia*'); do
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --tmpfs "${_module}""
-		done
-		local activeCardSum=0
-		activeCards="placeholder"
-		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
-			pecho debug "Working on ${vCards}"
-			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
-				pecho debug "Inspecting ${file}"
-				if grep -q "disconnected" "${file}"; then
-					continue
-				else
-					pecho debug "Active GPU"
-					activeCardSum=$(("${activeCardSum}"+1))
-					if [[ "${activeCards}" = "placeholder" ]]; then
-						activeCards="$(basename "${vCards}")"
-					else
-						activeCards="${activeCards} $(basename "${vCards}")"
-					fi
-					break
-				fi
-			done
-		done
-		if [[ "${activeCardSum}" -le 1 ]]; then
-			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
-			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
-			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}")"
-		else
-			pecho debug "${activeCardSum} cards active"
-			for vCards in ${activeCards}; do
-			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
-				if grep -q '0x10de' "/sys/class/drm/${vCards}/device/vendor"; then
-					addEnv "VK_LOADER_DRIVERS_DISABLE=nvidia_icd.json"
-					continue
-				else
-					cardToRender "${vCards}"
-					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "/dev/dri/${renderIndex}" "/dev/dri/${renderIndex}" --dev-bind "/sys/class/drm/${renderIndex}" "/sys/class/drm/${renderIndex}" --dev-bind $(resolvePCICard "${activeCards}") $(resolvePCICard "${activeCards}")"
-					addEnv 'DRI_PRIME=0'
-				fi
-			done
-		fi
-	fi
-	pecho debug "Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
-	passDevArgs bwSwitchableGraphicsArg "${bwSwitchableGraphicsArg}"
-	readyNotify set hybridBind
-}
-
 # Take video card number as input $1, e.g. card0, and prints out card's PCI path
 function resolvePCICard() {
 	readlink --quiet --no-newline --canonicalize /sys/class/drm/$1/../../
@@ -957,10 +896,8 @@ function cameraBind() {
 
 function deviceBinding() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
-	hybridBind &
 	cameraBind &
 	readyNotify wait cameraBind
-	readyNotify wait hybridBind
 	readyNotify set deviceBinding
 }
 
