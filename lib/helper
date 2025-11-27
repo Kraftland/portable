@@ -60,9 +60,11 @@ function askStop() {
 
 startLoop &
 
-cmd=$1
-shift
-"$cmd" "$@"
+if [[ "${_portableDebug}" -eq 1 ]]; then
+	bash --noprofile --rcfile /run/bashrc
+else
+	"${launchTarget}" ${targetArgs}
+fi
 
 if [[ "${terminateImmediately}" = "true" ]]; then
 	echo "Immediately terminating sandbox per config"

@@ -647,7 +647,7 @@ function calcBwrapArg() {
 	#readyNotify wait deviceBinding
 	readyNotify wait cameraBindv2
 	readyNotify wait calcMountArgv2
-	passBwrapArgs "--\0/usr/lib/portable/helper\0${launchTarget}\0${targetArgs}"
+	passBwrapArgs "--\0/usr/lib/portable/helper"
 	readyNotify set calcBwrapArg
 }
 
@@ -666,6 +666,8 @@ function defineRunPath() {
 function execApp() {
 	calcBwrapArg &
 	desktopWorkaround &
+	addEnv targetArgs="${targetArgs}"
+	addEnv _portableDebug="${_portableDebug}"
 	if [[ "${bindNetwork}" = "false" ]]; then
 		pecho info "Network access disabled via config"
 		sdNetArg="PrivateNetwork=yes"
@@ -1043,14 +1045,8 @@ function warnMulRunning() {
 		pecho info "Skipping D-Bus wake"
 	fi
 	source "${_portableConfig}"
-	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "debug-shell" ]]; then
-		export launchTarget="/usr/bin/bash"
-		export targetArgs="--noprofile --rcfile /run/bashrc"
-		execAppExist
-	else
-		execAppExistDirect
-		exit "$?"
-	fi
+	execAppExistDirect
+	exit "$?"
 	# Appears to be unreachable
 	# appANR
 	# if [[ $? -eq 0 ]]; then
@@ -1597,8 +1593,7 @@ function launch() {
 	deviceBinding &
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
-		launchTarget="/usr/bin/bash"
-		export targetArgs="--noprofile --rcfile /run/bashrc"
+		export _portableDebug=1
 	fi
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
@@ -1693,7 +1688,7 @@ function cmdlineDispatcher() {
 		fi
 		shift
 	done
-	export targetArgs="$*"
+	export targetArgs="$(printf '%s\0' "$@")"
 	pecho info "Application argument interpreted as: ${targetArgs}"
 }
 
