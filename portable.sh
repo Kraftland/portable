@@ -501,6 +501,84 @@ function procDriverBind() {
 	readyNotify set procDriverBind
 }
 
+function bindNvDevIfExistv2(){
+	if ls /dev/nvidia* &> /dev/null; then
+		pecho debug "Binding NVIDIA GPUs in Game Mode"
+		for _card in /dev/nvidia*; do
+			if [[ -e "${_card}" ]]; then
+				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0${_card}\0${_card}\0"
+			fi
+		done
+		export nvExist=1
+	fi
+}
+
+function setDiscBindArgv2() {
+	export bwSwitchableGraphicsArg='--dev-bind\0/sys/bus/pci\0/sys/bus/pci\0'
+	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)" "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)""
+}
+
+function hybridBindv2() {
+	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
+		pecho debug "Single or no GPU, binding all devices"
+		setDiscBindArgv2
+		bindNvDevIfExistv2
+	elif [[ "${gameMode}" = "true" ]]; then
+		pecho debug "Game Mode enabled on hybrid graphics"
+		setDiscBindArgv2
+		bindNvDevIfExistv2
+		setNvOffloadEnv
+	else
+		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
+		for _module in $(find /sys/module -maxdepth 1 -type d -name 'nvidia*'); do
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--tmpfs\0${_module}\0"
+		done
+		local activeCardSum=0
+		activeCards="placeholder"
+		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
+			pecho debug "Working on ${vCards}"
+			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
+				pecho debug "Inspecting ${file}"
+				if grep -q "disconnected" "${file}"; then
+					continue
+				else
+					pecho debug "Active GPU"
+					activeCardSum=$(("${activeCardSum}"+1))
+					if [[ "${activeCards}" = "placeholder" ]]; then
+						activeCards="$(basename "${vCards}")"
+					else
+						activeCards="${activeCards} $(basename "${vCards}")"
+					fi
+					break
+				fi
+			done
+		done
+		if [[ "${activeCardSum}" -le 1 ]]; then
+			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
+			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
+			cardToRender "${activeCards}"
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+		else
+			pecho debug "${activeCardSum} cards active"
+			for vCards in ${activeCards}; do
+			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
+				if grep -q '0x10de' "/sys/class/drm/${vCards}/device/vendor"; then
+					addEnv "VK_LOADER_DRIVERS_DISABLE=nvidia_icd.json"
+					continue
+				else
+					cardToRender "${vCards}"
+					pecho debug "Binding ${renderIndex}"
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+					addEnv 'DRI_PRIME=0'
+				fi
+			done
+		fi
+	fi
+	pecho debug "(v2) Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
+	passBwrapArgs "${bwSwitchableGraphicsArg}"
+	readyNotify set hybridBindv2
+}
+
 function calcBwrapArg() {
 	#export SHELL="$(which bash)"
 	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
@@ -509,10 +587,14 @@ function calcBwrapArg() {
 	passBwrapArgs "--dev\0/dev\0--tmpfs\0/dev/shm\0--dev-bind-try\0/dev/mali\0/dev/mali\0--dev-bind-try\0/dev/mali0\0/dev/mali0\0--dev-bind-try\0/dev/umplock\0/dev/umplock\0--mqueue\0/dev/mqueue\0--dev-bind\0/dev/dri\0/dev/dri\0--dev-bind-try\0/dev/udmabuf\0/dev/udmabuf\0" # Dev binds
 	passBwrapArgs "--tmpfs\0/sys\0--ro-bind-try\0/sys/module\0/sys/module\0--ro-bind-try\0/sys/dev/char\0/sys/dev/char\0--tmpfs\0/sys/devices\0--ro-bind-try\0/sys/fs/cgroup\0/sys/fs/cgroup\0--ro-bind-try\0/sys/fs/cgroup/portable-cgroup\0/sys/fs/cgroup/portable-cgroup\0--dev-bind\0/sys/class/drm\0/sys/class/drm\0" # sys entries
 	inputBindv2 &
-	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0--proc\0/proc\0--ro-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0"
+	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0--proc\0/proc\0--ro-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0--symlink\0/usr/lib\0/lib\0--symlink\0/usr/lib\0/lib64\0--symlink\0/usr/bin\0/bin\0"
+	hybridBindv2 &
 	procDriverBind &
+	passBwrapArgs "--ro-bind\0/etc\0/etc\0--tmpfs\0/etc/kernel\0"
+	passBwrapArgs "--tmpfs\0/proc/1\0--tmpfs\0/usr/share/applications\0" # Hide some entries
 	readyNotify wait procDriverBind
 	readyNotify wait inputBindv2
+	readyNotify wait hybridBindv2
 }
 
 # Translates path based on ~ to state directory
