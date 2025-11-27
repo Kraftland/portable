@@ -475,11 +475,31 @@ function passBwrapArgs() {
 	echo -e "$*" >"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 }
 
+function inputBindv2() {
+	if [[ "${bindInputDevices}" = "true" ]]; then
+		bwInputArg="--dev-bind-try\0/sys/class/leds\0/sys/class/leds\0--dev-bind-try\0/sys/class/input\0/sys/class/input\0--dev-bind-try\0/sys/class/hidraw\0/sys/class/hidraw\0--dev-bind-try\0/dev/input\0/dev/input\0--dev-bind-try\0/dev/uinput\0/dev/uinput\0"
+		for _device in /dev/hidraw*; do
+			if [[ -e "${_device}" ]]; then
+				bwInputArg="${bwInputArg}--dev-bind\0${_device}\0${_device}\0"
+			fi
+		done
+		pecho warn "Detected input preference as expose."
+	else
+		bwInputArg=""
+		pecho debug "Not exposing input devices."
+	fi
+	passBwrapArgs "${bwInputArg}"
+	readyNotify set inputBindv2
+}
+
 function calcBwrapArg() {
+	export SHELL="$(which bash)"
 	passBwrapArgs "--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-use\0" # Unshares
 	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
 	passBwrapArgs "--dev\0/dev\0--tmpfs\0/dev/shm\0--dev-bind-try\0/dev/mali\0/dev/mali\0--dev-bind-try\0/dev/mali0\0/dev/mali0\0--dev-bind-try\0/dev/umplock\0/dev/umplock\0--mqueue\0/dev/mqueue\0--dev-bind\0/dev/dri\0/dev/dri\0--dev-bind-try\0/dev/udmabuf\0/dev/udmabuf\0" # Dev binds
 	passBwrapArgs "--tmpfs\0/sys\0--ro-bind-try\0/sys/module\0/sys/module\0--ro-bind-try\0/sys/dev/char\0/sys/dev/char\0--tmpfs\0/sys/devices\0--ro-bind-try\0/sys/fs/cgroup\0/sys/fs/cgroup\0--ro-bind-try\0/sys/fs/cgroup/portable-cgroup\0/sys/fs/cgroup/portable-cgroup\0--dev-bind\0/sys/class/drm\0/sys/class/drm\0" # sys entries
+	inputBindv2 &
+	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin"
 	# WIP: https://github.com/Kraftland/portable/blob/1462b6cc1bc049c9503a3a2fd0cfb0e47ba7b554/portable.sh#L600
 }
 
