@@ -622,7 +622,7 @@ function calcBwrapArg() {
 	passBwrapArgs "--dev\0/dev\0--tmpfs\0/dev/shm\0--dev-bind-try\0/dev/mali\0/dev/mali\0--dev-bind-try\0/dev/mali0\0/dev/mali0\0--dev-bind-try\0/dev/umplock\0/dev/umplock\0--mqueue\0/dev/mqueue\0--dev-bind\0/dev/dri\0/dev/dri\0--dev-bind-try\0/dev/udmabuf\0/dev/udmabuf\0" # Dev binds
 	passBwrapArgs "--tmpfs\0/sys\0--ro-bind-try\0/sys/module\0/sys/module\0--ro-bind-try\0/sys/dev/char\0/sys/dev/char\0--tmpfs\0/sys/devices\0--ro-bind-try\0/sys/fs/cgroup\0/sys/fs/cgroup\0--ro-bind-try\0/sys/fs/cgroup/portable-cgroup\0/sys/fs/cgroup/portable-cgroup\0--dev-bind\0/sys/class/drm\0/sys/class/drm\0" # sys entries
 	inputBindv2 &
-	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0--proc\0/proc\0--ro-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0--symlink\0/usr/lib\0/lib\0--symlink\0/usr/lib\0/lib64\0--symlink\0/usr/bin\0/bin\0--symlink\0/usr/bin\0/sbin\0"
+	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0--proc\0/proc\0--dev-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0--symlink\0/usr/lib\0/lib\0--symlink\0/usr/lib\0/lib64\0--symlink\0/usr/bin\0/bin\0--symlink\0/usr/bin\0/sbin\0"
 	passBwrapArgs "--perms\00000\0--tmpfs\0/boot\0--perms\00000\0--tmpfs\0/srv\0--perms\00000\0--tmpfs\0/root\0--perms\00000\0--tmpfs\0/media\0--perms\00000\0--tmpfs\0/mnt\0--tmpfs\0/home\0--tmpfs\0/var\0--symlink\0/run\0/var/run\0--symlink\0/run/lock\0/var/lock\0--tmpfs\0/var/empty\0--tmpfs\0/var/lib\0--perms\00000\0--tmpfs\0/var/log\0--perms\00000\0--tmpfs\0/var/opt\0--perms\00000\0--tmpfs\0/var/spool\0--tmpfs\0/var/tmp\0--ro-bind-try\0/var/cache/fontconfig\0/var/cache/fontconfig\0--ro-bind-try\0/opt\0/opt\0" # Create various directories for FHS
 	passBwrapArgs "--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0/run\0--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0${XDG_RUNTIME_DIR}/portable/${appID}\0--ro-bind-try\0/run/systemd/userdb/io.systemd.Home\0/run/systemd/userdb/io.systemd.Home\0--ro-bind\0${xAuthBind}\0/run/.Xauthority\0--ro-bind\0${busDir}/bus\0/run/sessionBus\0--ro-bind-try\0${busDirAy}\0${XDG_RUNTIME_DIR}/at-spi\0--dir\0/run/host\0--bind\0${XDG_RUNTIME_DIR}/doc/by-app/${appID}\0${XDG_RUNTIME_DIR}/doc\0--ro-bind\0/dev/null\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/flatpak-runtime-directory\0--ro-bind-try\0${wayDisplayBind}\0${XDG_RUNTIME_DIR}/wayland-0\0--ro-bind-try\0/run/systemd/resolve/stub-resolv.conf\0/run/systemd/resolve/stub-resolv.conf\0--bind\0${XDG_RUNTIME_DIR}/systemd/notify\0${XDG_RUNTIME_DIR}/systemd/notify\0" # Run binds
 
@@ -644,6 +644,7 @@ function calcBwrapArg() {
 	#readyNotify wait deviceBinding
 	readyNotify wait cameraBindv2
 	readyNotify wait calcMountArgv2
+	passBwrapArgs "--\0/usr/lib/portable/helper\0${launchTarget}\0${targetArgs}"
 }
 
 # Translates path based on ~ to state directory
@@ -756,148 +757,12 @@ function execApp() {
 	-p UnsetEnvironment=ICEAUTHORITY \
 	-p UnsetEnvironment=MANAGERPID \
 	-- \
-	bwrap --new-session \
-		--unshare-cgroup-try \
-		--unshare-ipc \
-		--unshare-uts \
-		--unshare-pid \
-		--unshare-user \
-		--dir /tmp \
-		--bind-try /tmp/.X11-unix /tmp/.X11-unix \
-		--bind-try /tmp/.XIM-unix /tmp/.XIM-unix \
-		--dev /dev \
-		--tmpfs /dev/shm \
-		--dev-bind-try /dev/mali /dev/mali \
-		--dev-bind-try /dev/mali0 /dev/mali0 \
-		--dev-bind-try /dev/umplock /dev/umplock \
-		--mqueue /dev/mqueue \
-		--dev-bind /dev/dri /dev/dri \
-		--dev-bind-try /dev/udmabuf /dev/udmabuf \
-		--tmpfs /sys \
-		--ro-bind-try /sys/module /sys/module \
-		--ro-bind /sys/dev/char /sys/dev/char \
-		--tmpfs /sys/devices \
-		--ro-bind /sys/fs/cgroup /sys/fs/cgroup \
-		--ro-bind /sys/fs/cgroup/portable-cgroup /sys/fs/cgroup/portable-cgroup \
-		--tmpfs /sys/devices/virtual/dmi \
-		--dev-bind /sys/class/drm /sys/class/drm \
-		${bwInputArg} \
-		--bind /usr /usr \
-		--overlay-src /usr/bin \
-		--overlay-src /usr/lib/portable/overlay-usr \
-		--ro-overlay /usr/bin \
-		--ro-bind /usr/lib/portable/helper \
-			/usr/lib/flatpak-xdg-utils/flatpak-spawn \
-		--proc /proc \
-		--ro-bind-try /dev/null /proc/uptime \
-		--ro-bind-try /dev/null /proc/modules \
-		--ro-bind-try /dev/null /proc/cmdline \
-		--ro-bind-try /dev/null /proc/diskstats \
-		--ro-bind-try /dev/null /proc/devices \
-		--ro-bind-try /dev/null /proc/config.gz \
-		--ro-bind-try /dev/null /proc/mounts \
-		--ro-bind-try /dev/null /proc/loadavg \
-		--ro-bind-try /dev/null /proc/filesystems \
-		${procDriverBind} \
-		${bwSwitchableGraphicsArg} \
-		--tmpfs /proc/1 \
-		--tmpfs /usr/share/applications \
-		--ro-bind /etc /etc \
-		--tmpfs /etc/kernel \
-		--symlink /usr/lib /lib \
-		--symlink /usr/lib /lib64 \
-		--symlink /usr/bin /bin \
-		--symlink /usr/bin /sbin \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /boot \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /srv \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /root \
-		--tmpfs /home \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /media \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /mnt \
-		--size 1 \
-		--tmpfs /var \
-		--symlink /run /var/run \
-		--symlink /run/lock /var/lock \
-		--tmpfs /var/empty \
-		--tmpfs /var/lib \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /var/log \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs /var/opt \
-		--tmpfs /var/spool \
-		--tmpfs /var/tmp \
-		--ro-bind-try \
-			/var/cache/fontconfig \
-			/var/cache/fontconfig \
-		--ro-bind-try /opt /opt \
-		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
-			/run \
-		--ro-bind-try /run/systemd/userdb/io.systemd.Home /run/systemd/userdb/io.systemd.Home \
-		--ro-bind "${xAuthBind}" \
-			"/run/.Xauthority" \
-		--bind "${XDG_RUNTIME_DIR}/portable/${appID}" \
-			"${XDG_RUNTIME_DIR}/portable/${appID}" \
-		--bind "${busDir}/bus" "/run/sessionBus" \
-		--bind "${busDirAy}" "${XDG_RUNTIME_DIR}/at-spi" \
-		--dir /run/host \
-		--ro-bind-try "${XDG_RUNTIME_DIR}/pulse" \
-			"${XDG_RUNTIME_DIR}/pulse" \
-		${pipewireBinding} \
-		--bind "${XDG_RUNTIME_DIR}/doc/by-app/${appID}" \
-			"${XDG_RUNTIME_DIR}/doc" \
-		--ro-bind /dev/null \
-			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ" \
-		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
-			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
-		--ro-bind "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
-			"${XDG_RUNTIME_DIR}/flatpak-runtime-directory" \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" "${HOME}" \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
-			"${XDG_DATA_HOME}/${stateDirectory}" \
-		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/infoMount" 2>/dev/null) \
-		--ro-bind-try "${wayDisplayBind}" \
-				"${XDG_RUNTIME_DIR}/wayland-0" \
-		$(xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/mountstore/configMount" 2>/dev/null) \
-		--ro-bind-try "/run/systemd/resolve/stub-resolv.conf" \
-			"/run/systemd/resolve/stub-resolv.conf" \
-		--size 1 \
-		--perms 0000 \
-		--tmpfs "${HOME}/options" \
-		--perms 0000 \
-		--size 1 \
-		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/options" \
-		--perms 0000 \
-		--size 1 \
-		--tmpfs "${HOME}/.var" \
-		--perms 0000 \
-		--size 1 \
-		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/.var" \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
-			"${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}" \
-		--bind "${XDG_DATA_HOME}/${stateDirectory}" \
-			"${HOME}/.var/app/${appID}" \
-		--tmpfs "${HOME}/.var/app/${appID}/options" \
-		--tmpfs "${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options" \
-		--bind "${XDG_RUNTIME_DIR}/systemd/notify" \
-			"${XDG_RUNTIME_DIR}/systemd/notify" \
-		${bwCamPar} \
-		${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"} \
-		-- \
-			/usr/lib/portable/helper ${launchTarget} ${targetArgs}
-
-		stopApp
+		xargs \
+			-0 \
+			-a \
+			"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs" \
+			bwrap
+	stopApp
 }
 
 function terminateOnRequest() {
