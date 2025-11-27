@@ -1609,6 +1609,35 @@ function stopSlice() {
 		"portable-${friendlyName}.slice" 2>/dev/null
 }
 
+function cleanDirs() {
+	source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
+	pecho debug "Cleaning leftovers..."
+	if [[ -n "${instanceId}" ]]; then
+		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
+	else
+		pecho warn "Clean shutdown not possible due to missing information: instanceId"
+	fi
+	if [[ -n "${busDir}" ]]; then
+		rm -rf "${busDir}"
+	else
+		pecho warn "Clean shutdown not possible due to missing information: busDir"
+	fi
+	if [[ -n "${appID}" ]]; then
+		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
+		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
+		rm -rf \
+			"${XDG_DATA_HOME}/applications/${appID}.desktop" \
+			2>/dev/null
+	else
+		pecho warn "Clean shutdown not possible due to missing information: appID"
+	fi
+	if [[ -e "${busDirAy}" ]]; then
+		rm -rf "${busDirAy}"
+	else
+		pecho debug "Clean shutdown not possible due to missing information: busDirAy"
+	fi
+}
+
 function stopApp() {
 	if [[ "$*" =~ "external" ]]; then
 		stopSlice
@@ -1631,27 +1660,11 @@ function stopApp() {
 	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep -c '.service')" -eq 0 ]]; then
 		pecho debug "Application already stopped!"
 	else
-		pecho info "Stopping application..." &
+		pecho info "Stopping application..."
 		stopSlice &
 	fi
-	source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	if [[ -n "${appID}" ]] && [[ -n "${instanceId}" ]] && [[ -n "${busDir}" ]]; then
-		pecho debug "Cleaning leftovers..." &
-		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" &
-		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}" &
-		rm -rf "${busDir}" &
-		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}" &
-		if [[ -e "${busDirAy}" ]]; then
-			rm -rf "${busDirAy}" &
-		fi
-		rm -rf \
-			"${XDG_DATA_HOME}/applications/${appID}.desktop"\
-			2>/dev/null  &
-		exit 0
-	else
-		pecho warn "Clean shutdown not possible due to missing information."
-		exit 1
-	fi
+	cleanDirs &
+	exit 0
 }
 
 function resetDocuments() {
