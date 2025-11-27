@@ -1545,7 +1545,7 @@ function cmdlineDispatcher() {
 		fi
 		shift
 	done
-	export targetArgs="$(printf '%s\0' "$@")"
+	export targetArgs="$*"
 	pecho info "Application argument interpreted as: ${targetArgs}"
 }
 
