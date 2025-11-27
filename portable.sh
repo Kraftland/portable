@@ -474,7 +474,7 @@ function calcMountArg() {
 function passBwrapArgs() {
 	local bwArgWrite="$*"
 	#echo -e ${bwArgWrite} >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
-	flock --exclusive "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs.lock" 'echo' '-e' "${bwArgWrite}" >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
+	flock --exclusive "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs.lock" 'echo' '-ne' "${bwArgWrite}" >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 }
 
 function inputBindv2() {
