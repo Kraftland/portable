@@ -967,30 +967,11 @@ function cameraBind() {
 	readyNotify set cameraBind
 }
 
-function inputBind() {
-	if [[ "${bindInputDevices}" = "true" ]]; then
-		bwInputArg="--dev-bind-try /sys/class/leds /sys/class/leds --dev-bind-try /sys/class/input /sys/class/input --dev-bind-try /sys/class/hidraw /sys/class/hidraw --dev-bind-try /dev/input /dev/input --dev-bind-try /dev/uinput /dev/uinput"
-		for _device in /dev/hidraw*; do
-			if [[ -e "${_device}" ]]; then
-				bwInputArg="${bwInputArg} --dev-bind ${_device} ${_device}"
-			fi
-		done
-		pecho warn "Detected input preference as expose, setting arg: ${bwInputArg}"
-	else
-		bwInputArg=""
-		pecho debug "Not exposing input devices"
-	fi
-	passDevArgs bwInputArg "${bwInputArg}"
-	readyNotify set inputBind
-}
-
 function deviceBinding() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
 	hybridBind &
-	inputBind &
 	cameraBind &
 	readyNotify wait cameraBind
-	readyNotify wait inputBind
 	readyNotify wait hybridBind
 	readyNotify set deviceBinding
 }
