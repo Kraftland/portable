@@ -14,4 +14,6 @@ Useful to include in .desktop entries
 
 `--actions debug-shell`: Start a debugging bash shell inside the sandbox. This works regardless whether the app is running.
 
+`--actions stat`: Shows statistics of a running application.
+
 Arguments for the application can be passed by putting your arguments in the end of the list of arguments and separate it with `--`
