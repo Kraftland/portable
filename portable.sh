@@ -472,7 +472,9 @@ function calcMountArg() {
 }
 
 function passBwrapArgs() {
-	echo -e "$*" >"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
+	local bwArgWrite="$*"
+	#echo -e ${bwArgWrite} >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
+	flock --exclusive "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs.lock" 'echo' '-e' "${bwArgWrite}" >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 }
 
 function inputBindv2() {
@@ -493,7 +495,8 @@ function inputBindv2() {
 }
 
 function calcBwrapArg() {
-	export SHELL="$(which bash)"
+	#export SHELL="$(which bash)"
+	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 	passBwrapArgs "--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-use\0" # Unshares
 	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
 	passBwrapArgs "--dev\0/dev\0--tmpfs\0/dev/shm\0--dev-bind-try\0/dev/mali\0/dev/mali\0--dev-bind-try\0/dev/mali0\0/dev/mali0\0--dev-bind-try\0/dev/umplock\0/dev/umplock\0--mqueue\0/dev/mqueue\0--dev-bind\0/dev/dri\0/dev/dri\0--dev-bind-try\0/dev/udmabuf\0/dev/udmabuf\0" # Dev binds
@@ -516,6 +519,7 @@ function defineRunPath() {
 }
 
 function execApp() {
+	calcBwrapArg &
 	desktopWorkaround &
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
