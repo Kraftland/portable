@@ -1500,19 +1500,11 @@ function stopApp() {
 		stopSlice
 		exit 0
 	elif [[ "$*" =~ "force" ]]; then
-		pecho info "Force stop is called, killing service" &
+		pecho info "Force stop is called, killing service"
 		systemctl \
 			--user kill \
 			-sSIGKILL \
 			"${friendlyName}.service" 2>/dev/null &
-	else
-		sleep 1s
-		local sdOut
-		sdOut=$(systemctl --user list-units --state active --no-pager "${friendlyName}"*)
-		if [[ "${sdOut}" =~ ^${unitName}-subprocess.*service$ ]]; then
-			pecho crit "Not stopping the slice because one or more instance are still running"
-			exit 1
-		fi
 	fi
 	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep -c '.service')" -eq 0 ]]; then
 		pecho debug "Application already stopped!"
