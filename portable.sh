@@ -621,7 +621,6 @@ function calcBwrapArg() {
 	readyNotify wait inputBindv2
 	readyNotify wait hybridBindv2
 	readyNotify wait pwBindCalc # PW binds
-	#readyNotify wait deviceBinding
 	readyNotify wait cameraBindv2
 	readyNotify wait calcMountArgv2
 	passBwrapArgs "--\0/usr/lib/portable/helper"
@@ -656,7 +655,6 @@ function execApp() {
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait generateFlatpakInfo
-	readyNotify wait deviceBinding
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
 	systemd-run \
@@ -849,11 +847,6 @@ function getDevArgs() {
 # Take video card number as input $1, e.g. card0, and prints out card's PCI path
 function resolvePCICard() {
 	readlink --quiet --no-newline --canonicalize /sys/class/drm/$1/../../
-}
-
-function deviceBinding() {
-	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
-	readyNotify set deviceBinding
 }
 
 function appANR() {
@@ -1450,7 +1443,6 @@ function launch() {
 	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
 		warnMulRunning "$@"
 	fi
-	deviceBinding &
 	sanityCheck &
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
 		export _portableDebug=1
