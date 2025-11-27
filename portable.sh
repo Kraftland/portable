@@ -636,6 +636,9 @@ function calcBwrapArg() {
 	passBwrapArgs "--ro-bind\0/etc\0/etc\0--tmpfs\0/etc/kernel\0"
 	passBwrapArgs "--tmpfs\0/proc/1\0--tmpfs\0/usr/share/applications\0--tmpfs\0${HOME}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/options\0--tmpfs\0${HOME}/.var\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}/.var/app/${appID}\0--tmpfs\0${HOME}/.var/app/${appID}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options\0" # Hide some entries
 	readyNotify wait bindCheck
+	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
+		unset bwBindPar
+	fi
 	passBwrapArgs "${bwBindPar:+--dev-bind "${bwBindPar}" "${bwBindPar}"}"
 	readyNotify wait procDriverBind
 	readyNotify wait inputBindv2
@@ -645,6 +648,7 @@ function calcBwrapArg() {
 	readyNotify wait cameraBindv2
 	readyNotify wait calcMountArgv2
 	passBwrapArgs "--\0/usr/lib/portable/helper\0${launchTarget}\0${targetArgs}"
+	readyNotify set calcBwrapArg
 }
 
 # Translates path based on ~ to state directory
@@ -662,31 +666,24 @@ function defineRunPath() {
 function execApp() {
 	calcBwrapArg &
 	desktopWorkaround &
-	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
-		unset bwBindPar
-	fi
-	if [[ -d /proc/driver ]]; then
-		local procDriverBind="--tmpfs /proc/driver"
+	if [[ "${bindNetwork}" = "false" ]]; then
+		pecho info "Network access disabled via config"
+		sdNetArg="PrivateNetwork=yes"
 	else
-		unset procDriverBind
+		sdNetArg="PrivateNetwork=no"
+		pecho debug "Network access allowed"
 	fi
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait generateFlatpakInfo
 	readyNotify wait deviceBinding
-	getDevArgs pipewireBinding
-	getDevArgs sdNetArg
-	getDevArgs bwInputArg
-	getDevArgs bwCamPar
-	getDevArgs bwSwitchableGraphicsArg
-	readyNotify wait bindCheck
-	readyNotify wait calcMountArg
 	terminateOnRequest &
+	readyNotify wait calcBwrapArg
 	systemd-run \
 	--quiet \
 	--user \
-	${sdOption} \
+	--pty \
 	--service-type=notify \
 	--wait \
 	-u "${unitName}" \
@@ -756,12 +753,7 @@ function execApp() {
 	-p UnsetEnvironment=GTK2_RC_FILES \
 	-p UnsetEnvironment=ICEAUTHORITY \
 	-p UnsetEnvironment=MANAGERPID \
-	-- \
-		xargs \
-			-0 \
-			-a \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs" \
-			bwrap
+	-- xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs" bwrap
 	stopApp
 }
 
@@ -990,34 +982,12 @@ function inputBind() {
 	readyNotify set inputBind
 }
 
-function miscBind() {
-	#readyNotify wait pwSecContext
-	if [[ "${bindNetwork}" = "false" ]]; then
-		pecho info "Network access disabled via config"
-		sdNetArg="PrivateNetwork=yes"
-	else
-		sdNetArg="PrivateNetwork=no"
-		pecho debug "Network access allowed"
-	fi
-	passDevArgs sdNetArg "${sdNetArg}"
-	if [[ "${bindPipewire}" = 'true' ]]; then
-		readyNotify wait pwSecContext
-		getBusArgs pwSecContext
-		pipewireBinding="--bind-try ${pwSecContext} ${XDG_RUNTIME_DIR}/pipewire-0"
-		pecho debug "Pipewire bind parm: ${pipewireBinding}"
-	fi
-	passDevArgs pipewireBinding "${pipewireBinding}"
-	readyNotify set miscBind
-}
-
 function deviceBinding() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
 	hybridBind &
 	inputBind &
 	cameraBind &
-	miscBind &
 	readyNotify wait cameraBind
-	readyNotify wait miscBind
 	readyNotify wait inputBind
 	readyNotify wait hybridBind
 	readyNotify set deviceBinding
@@ -1615,7 +1585,6 @@ function questionFirstLaunch() {
 }
 
 function launch() {
-	sdOption="--pty --quiet"
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
