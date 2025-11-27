@@ -492,7 +492,7 @@ function bindNvDevIfExistv2(){
 
 function setDiscBindArgv2() {
 	export bwSwitchableGraphicsArg='--dev-bind\0/sys/bus/pci\0/sys/bus/pci\0'
-	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg} --dev-bind "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)" "$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)""
+	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0"
 }
 
 function hybridBindv2() {
