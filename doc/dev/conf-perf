@@ -14,7 +14,7 @@ friendlyName="Portable_Tester"
 stateDirectory="Portable_Tester_Data"
 
 # This is the target executable to launch
-launchTarget="echo 1"
+launchTarget="true"
 
 # Enables Network access within the sandbox. Defaults to true.
 bindNetwork="false"

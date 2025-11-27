@@ -63,7 +63,7 @@ startLoop &
 if [[ "${_portableDebug}" -eq 1 ]]; then
 	bash --noprofile --rcfile /run/bashrc
 else
-	"${launchTarget}" ${targetArgs}
+	${launchTarget} ${targetArgs}
 fi
 
 if [[ "${terminateImmediately}" = "true" ]]; then
