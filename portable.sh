@@ -579,6 +579,27 @@ function hybridBindv2() {
 	readyNotify set hybridBindv2
 }
 
+# Pass NUL separated arguments!
+function calcMountArgv2() {
+	if [[ "${mountInfo}" = "false" ]]; then
+		pecho debug "Not mounting flatpak-info..."
+	else
+		passBwrapArgs "--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_RUNTIME_DIR}/.flatpak-info\0--ro-bind\0${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info\0${XDG_DATA_HOME}/${stateDirectory}/.flatpak-info\0"
+	fi
+	passBwrapArgs "--ro-bind-try\0${XDG_CONFIG_HOME}/fontconfig\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/colors.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/colors.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-4.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/qt6ct\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/qt6ct\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0${XDG_DATA_HOME}/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/icons\0${XDG_DATA_HOME}/icons\0--ro-bind-try\0${XDG_DATA_HOME}/icons\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons\0"
+	readyNotify set calcMountArgv2
+}
+
+function pwBindCalc() {
+	if [[ "${bindPipewire}" = 'true' ]]; then
+		readyNotify wait pwSecContext
+		getBusArgs pwSecContext
+		passBwrapArgs "--bind-try\0${pwSecContext}\0${XDG_RUNTIME_DIR}/pipewire-0\0"
+		pecho debug "Bound PipeWire socket w/ security context"
+	fi
+	readyNotify set pwBindCalc
+}
+
 function calcBwrapArg() {
 	#export SHELL="$(which bash)"
 	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
@@ -589,10 +610,10 @@ function calcBwrapArg() {
 	inputBindv2 &
 	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0--proc\0/proc\0--ro-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0--symlink\0/usr/lib\0/lib\0--symlink\0/usr/lib\0/lib64\0--symlink\0/usr/bin\0/bin\0--symlink\0/usr/bin\0/sbin\0"
 	passBwrapArgs "--perms\00000\0--tmpfs\0/boot\0--perms\00000\0--tmpfs\0/srv\0--perms\00000\0--tmpfs\0/root\0--perms\00000\0--tmpfs\0/media\0--perms\00000\0--tmpfs\0/mnt\0--tmpfs\0/home\0--tmpfs\0/var\0--symlink\0/run\0/var/run\0--symlink\0/run/lock\0/var/lock\0--tmpfs\0/var/empty\0--tmpfs\0/var/lib\0--perms\00000\0--tmpfs\0/var/log\0--perms\00000\0--tmpfs\0/var/opt\0--perms\00000\0--tmpfs\0/var/spool\0--tmpfs\0/var/tmp\0--ro-bind-try\0/var/cache/fontconfig\0/var/cache/fontconfig\0--ro-bind-try\0/opt\0/opt\0" # Create various directories for FHS
-	passBwrapArgs "--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0/run\0--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0${XDG_RUNTIME_DIR}/portable/${appID}\0--ro-bind-try\0/run/systemd/userdb/io.systemd.Home\0/run/systemd/userdb/io.systemd.Home\0--ro-bind\0${xAuthBind}\0/run/.Xauthority\0${busDir}/bus\0/run/sessionBus\0${busDirAy}\0${XDG_RUNTIME_DIR}/at-spi\0--dir\0/run/host\0--bind\0${XDG_RUNTIME_DIR}/doc/by-app/${appID}\0${XDG_RUNTIME_DIR}/doc\0--ro-bind\0/dev/null\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/flatpak-runtime-directory\0" # Run binds
+	passBwrapArgs "--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0/run\0--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0${XDG_RUNTIME_DIR}/portable/${appID}\0--ro-bind-try\0/run/systemd/userdb/io.systemd.Home\0/run/systemd/userdb/io.systemd.Home\0--ro-bind\0${xAuthBind}\0/run/.Xauthority\0--ro-bind\0${busDir}/bus\0/run/sessionBus\0--ro-bind-try\0${busDirAy}\0${XDG_RUNTIME_DIR}/at-spi\0--dir\0/run/host\0--bind\0${XDG_RUNTIME_DIR}/doc/by-app/${appID}\0${XDG_RUNTIME_DIR}/doc\0--ro-bind\0/dev/null\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/flatpak-runtime-directory\0--ro-bind-try\0${wayDisplayBind}\0${XDG_RUNTIME_DIR}/wayland-0\0--ro-bind-try\0/run/systemd/resolve/stub-resolv.conf\0/run/systemd/resolve/stub-resolv.conf\0" # Run binds
 
-	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0"
-
+	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0" # HOME binds
+	calcMountArgv2 &
 	passBwrapArgs "--ro-bind-try\0${XDG_RUNTIME_DIR}/pulse\0${XDG_RUNTIME_DIR}/pulse\0" # PulseAudio Bind!
 
 	# WIP: https://github.com/Kraftland/portable/blob/1462b6cc1bc049c9503a3a2fd0cfb0e47ba7b554/portable.sh#L674
@@ -603,14 +624,10 @@ function calcBwrapArg() {
 	readyNotify wait procDriverBind
 	readyNotify wait inputBindv2
 	readyNotify wait hybridBindv2
-	# PW binds
-	readyNotify wait deviceBinding
-	if [[ "${bindPipewire}" = 'true' ]]; then
-		readyNotify wait pwSecContext
-		getBusArgs pwSecContext
-		passBwrapArgs "--bind-try\0${pwSecContext}\0${XDG_RUNTIME_DIR}/pipewire-0\0"
-		pecho debug "Bound PipeWire socket w/ security context"
-	fi
+	readyNotify set pwBindCalc # PW binds
+	#readyNotify wait deviceBinding
+
+	readyNotify wait calcMountArgv2
 }
 
 # Translates path based on ~ to state directory
