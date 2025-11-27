@@ -632,8 +632,6 @@ function calcBwrapArg() {
 	pwBindCalc &
 	cameraBindv2 &
 	passBwrapArgs "--ro-bind-try\0${XDG_RUNTIME_DIR}/pulse\0${XDG_RUNTIME_DIR}/pulse\0" # PulseAudio Bind!
-
-	# WIP: https://github.com/Kraftland/portable/blob/1462b6cc1bc049c9503a3a2fd0cfb0e47ba7b554/portable.sh#L674
 	hybridBindv2 &
 	procDriverBind &
 	passBwrapArgs "--ro-bind\0/etc\0/etc\0--tmpfs\0/etc/kernel\0"
