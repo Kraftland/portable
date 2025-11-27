@@ -851,25 +851,8 @@ function resolvePCICard() {
 	readlink --quiet --no-newline --canonicalize /sys/class/drm/$1/../../
 }
 
-function cameraBind() {
-	bwCamPar=""
-	if [[ "${bindCameras}" = "true" ]]; then
-		pecho debug "Detecting Camera..."
-		for _camera in /dev/video*; do
-			if [[ -e "${_camera}" ]]; then
-				bwCamPar="${bwCamPar} --dev-bind ${_camera} ${_camera}"
-			fi
-		done
-	fi
-	pecho debug "Generated Camera bind parameter: ${bwCamPar}"
-	passDevArgs bwCamPar "${bwCamPar}"
-	readyNotify set cameraBind
-}
-
 function deviceBinding() {
 	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/devstore"
-	cameraBind &
-	readyNotify wait cameraBind
 	readyNotify set deviceBinding
 }
 
