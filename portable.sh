@@ -486,11 +486,11 @@ function inputBindv2() {
 			fi
 		done
 		pecho warn "Detected input preference as expose."
+		passBwrapArgs "${bwInputArg}"
 	else
 		bwInputArg=""
 		pecho debug "Not exposing input devices."
 	fi
-	passBwrapArgs "${bwInputArg}"
 	readyNotify set inputBindv2
 }
 
@@ -616,7 +616,6 @@ function cameraBindv2() {
 }
 
 function calcBwrapArg() {
-	#export SHELL="$(which bash)"
 	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 	passBwrapArgs "--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-user\0" # Unshares
 	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
