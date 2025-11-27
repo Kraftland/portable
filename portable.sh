@@ -1518,6 +1518,13 @@ function stopApp() {
 
 function resetDocuments() {
 	flatpak permission-reset "${appID}"
+	exit $?
+}
+
+function showStats() {
+	systemctl --user \
+		status \
+		"${unitName}"
 }
 
 function cmdlineDispatcher() {
@@ -1537,6 +1544,10 @@ function cmdlineDispatcher() {
 	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "reset-documents" ]]; then
 		export targetArgs=""
 		resetDocuments
+	fi
+	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "stat" ]]; then
+		export targetArgs=""
+		showStats
 	fi
 	while [[ $# -gt 0 ]]; do
 		if [[ "$1" = "--" ]]; then
