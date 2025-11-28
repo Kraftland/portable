@@ -534,7 +534,7 @@ function hybridBindv2() {
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
 		else
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
@@ -593,6 +593,8 @@ function cameraBindv2() {
 }
 
 function calcBwrapArg() {
+	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 	passBwrapArgs "--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-user\0" # Unshares
 	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
@@ -652,8 +654,6 @@ function execApp() {
 		sdNetArg="PrivateNetwork=no"
 		pecho debug "Network access allowed"
 	fi
-	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	termExec
 	readyNotify wait generateFlatpakInfo
 	terminateOnRequest &
