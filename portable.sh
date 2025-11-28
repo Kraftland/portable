@@ -534,7 +534,7 @@ function hybridBindv2() {
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${activeCards}\0/sys/class/drm/${activeCards}\0--dev-bind-try\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
 		else
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
