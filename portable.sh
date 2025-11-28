@@ -615,8 +615,9 @@ function calcBwrapArg() {
 	readyNotify wait bindCheck
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
 		unset bwBindPar
+	else
+		passBwrapArgs "--dev-bind\0"${bwBindPar}"\0"${bwBindPar}"}\0"
 	fi
-	passBwrapArgs "${bwBindPar:+--dev-bind\0"${bwBindPar}"\0"${bwBindPar}"}\0"
 	readyNotify wait procDriverBind
 	readyNotify wait inputBindv2
 	readyNotify wait hybridBindv2
