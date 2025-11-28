@@ -1507,12 +1507,7 @@ function stopApp() {
 			-sSIGKILL \
 			"${unitName}.service" 2>/dev/null &
 	fi
-	if [[ "$(systemctl --user list-units --state active --no-pager "${unitName}"* | grep -c '.service')" -eq 0 ]]; then
-		pecho debug "Application already stopped!"
-	else
-		pecho info "Stopping application..."
-		stopSlice &
-	fi
+	stopSlice &
 	cleanDirs &
 	exit 0
 }
