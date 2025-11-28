@@ -1657,12 +1657,7 @@ function stopApp() {
 			exit 1
 		fi
 	fi
-	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep -c '.service')" -eq 0 ]]; then
-		pecho debug "Application already stopped!"
-	else
-		pecho info "Stopping application..."
-		stopSlice &
-	fi
+	stopSlice &
 	cleanDirs &
 	exit 0
 }
