@@ -748,8 +748,8 @@ function terminateOnRequest() {
 		fi
 		inotifywait \
 			--quiet \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" 1>/dev/null
-		if [[ "$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal")" =~ "terminate-now" ]]; then
+			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
+		if grep -q "terminate-now" "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"; then
 			stopApp force
 		fi
 	done
@@ -1505,9 +1505,9 @@ function stopApp() {
 		systemctl \
 			--user kill \
 			-sSIGKILL \
-			"${friendlyName}.service" 2>/dev/null &
+			"${unitName}.service" 2>/dev/null &
 	fi
-	if [[ "$(systemctl --user list-units --state active --no-pager "${friendlyName}"* | grep -c '.service')" -eq 0 ]]; then
+	if [[ "$(systemctl --user list-units --state active --no-pager "${unitName}"* | grep -c '.service')" -eq 0 ]]; then
 		pecho debug "Application already stopped!"
 	else
 		pecho info "Stopping application..."
