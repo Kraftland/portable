@@ -29,12 +29,11 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 # Limitations:
 
 1. **Running untrusted code is never safe, sandboxing does not change this.**
-2. WebKitGTK on a hybrid graphics laptop may require `gameMode=on`, otherwise may display a blank screen.
-3. Steam will not work due to the requirement of Flatpak spawn portal.
-4. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
-5. Due to some desktop portal implementations being insecure (without requiring user consent), some features will only be available on GNOME
+2. Steam will not work due to the requirement of Flatpak spawn portal.
+3. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
+4. Due to some desktop portal implementations being insecure (without requiring user consent), some features will only be available on GNOME
 	- The Location portal is only available on GNOME
-6. Portable acts like Flatpak, to trick XDG Desktop Portal.
+5. Portable acts like Flatpak, to trick XDG Desktop Portal.
 	- The correct way for this situation is to specify another sandboxing engine in XDP, which I have a PoC [here](https://github.com/Kimiblock/xdg-desktop-portal/commit/199c0934035789986b98738b01b15edf0443d675)
 		- I barely understand C at all! Please help if you will.
 	- The other possibly "correct way" is to wait until [busd#34](https://github.com/dbus2/busd/issues/34), and XDP's implementation.
