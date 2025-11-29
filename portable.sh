@@ -1521,6 +1521,8 @@ function showStats() {
 	systemctl --user \
 		status \
 		"${unitName}"
+
+	exit 0
 }
 
 function cmdlineDispatcher() {
