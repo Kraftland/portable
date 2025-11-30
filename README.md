@@ -66,10 +66,6 @@ Start portable with environment variable `_portableConfig`, which can be 1) the 
 
 - Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
 
-### Launching multiple instances
-
-Portable itself allows multiple instances. It automatically creates an identical sandbox and launches the application. Application itself may or may not support waking up itself. It is advised to set `SingleMainWindow=true` for applications that doesn't have well multi-instance support.
-
 ### Debugging
 
 #### Entering sandbox
