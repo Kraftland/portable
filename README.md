@@ -1,4 +1,4 @@
-# What is this
+# Abstract
 Portable is a sandbox framework targeted for Desktop usage and offers ease of use for distro packagers, which should work on most recent systems:
 
 - enables unprivileged user namespaces
@@ -7,9 +7,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 	- Note that `/lib` `/lib64` `/bin` `/sbin` should be symlinks to their respective locations under `/usr`
 
 - Does not have mount points under /usr/bin, and use a supported fs of OverlayFS (NOT BcacheFS)
-- MUST NOT have spaces in `XDG_RUNTIME_DIR` path
-
-It offers many useful features for users and packagers.
+- MUST NOT have spaces in various paths until all parsing logic is fully examined
 
 # Why Portable?
 
@@ -24,16 +22,16 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 		- Updates faster
 	- Portable for Arch
 		- Configure paru to use [portable-arch](https://github.com/Kraftland/portable-arch): https://github.com/Kraftland/portable-arch
-		- Current support status (as of 14 Oct 2025): 26 packages in repo.
+		- Current support status (as of 30 Nov 2025): 29 packages in repo.
 
 # Limitations:
 
 1. **Running untrusted code is never safe, sandboxing does not change this.**
-2. Steam will not work due to the requirement of Flatpak spawn portal.
-3. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
-4. Due to some desktop portal implementations being insecure (without requiring user consent), some features will only be available on GNOME
-	- The Location portal is only available on GNOME
-5. Portable acts like Flatpak, to trick XDG Desktop Portal.
+2. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
+	- This is an [KWin issue](https://bugs.kde.org/show_bug.cgi?id=502309)
+3. Due to some desktop portal implementations being insecure (without requiring user consent), feature(s) may only be available on GNOME:
+	- Location Portal
+4. Portable acts like Flatpak, to trick XDG Desktop Portal.
 	- The correct way for this situation is to specify another sandboxing engine in XDP, which I have a PoC [here](https://github.com/Kimiblock/xdg-desktop-portal/commit/199c0934035789986b98738b01b15edf0443d675)
 		- I barely understand C at all! Please help if you will.
 	- The other possibly "correct way" is to wait until [busd#34](https://github.com/dbus2/busd/issues/34), and XDP's implementation.
