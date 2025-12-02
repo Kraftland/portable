@@ -23,6 +23,7 @@ function printHelp() {
 	echo "	--config [path]	-	-> Specify the configuration source for sandbox"
 	echo "	--desktop-file [path]	-> Specify the desktop file path for sandbox"
 	echo "	--dbus-activation	-> Enables the activation from D-Bus (optional)"
+	echo "	--dbus-arguments	-> Specify arguments to use when being activated"
 	echo "Exit codes:"
 	echo "	1	-	-	-> Syntax / argument error"
 	echo "	110	-	-	-> Arch specific error"
@@ -113,6 +114,12 @@ function cmdlineDispatcher() {
 		elif [[ $1 = "--dbus-activation" ]]; then
 			pecho debug "D-Bus activation enabled"
 			declare -g dbusActivation=true
+			if [[ $2 = "--dbus-arguments" ]]; then
+				shift
+				shift
+				pecho debug "Specified bus activation argument: $1"
+				declare -g dbusArg="$1"
+			fi
 		elif [[ -z $* ]]; then
 			declare trailS="s"
 			if [[ "${argumentCount}" -eq 1 ]]; then
@@ -216,8 +223,11 @@ function genDBusService() {
 
 	echo '''[D-BUS Service]
 Name=appID
-Exec=/usr/bin/env _portableConfig=appID portable -- ''' >busService
+Exec=/usr/bin/env _portableConfig=appID portable --dbus-activation -- ''' >busService
 	sed -i "s|appID|${appID}|g" ./busService
+	if [[ ${dbusArg} ]]; then
+		sed -i "s#--dbus-activation --#--dbus-activation -- ${dbusArg}#g"
+	fi
 
 }
 
