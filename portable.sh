@@ -65,6 +65,7 @@ function readyNotify() {
 		pecho debug "Readiness set for $2" &
 	elif [[ $1 = "set-fail" ]]; then
 		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" &
+		#rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
 	elif [[ $1 = "init" ]]; then
 		readyDir="${RANDOM}"
 		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
@@ -83,6 +84,9 @@ function readyNotify() {
 		pecho debug "Waiting for component: $2..." &
 		while true; do
 			if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
+				break
+			elif [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
+				exit 114
 				break
 			else
 				if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
@@ -507,9 +511,6 @@ function hybridBindv2() {
 		setNvOffloadEnv
 	else
 		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
-		for _module in $(find /sys/module -maxdepth 1 -type d -name 'nvidia*'); do
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--tmpfs\0${_module}\0"
-		done
 		local activeCardSum=0
 		activeCards="placeholder"
 		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
@@ -531,11 +532,15 @@ function hybridBindv2() {
 			done
 		done
 		if [[ "${activeCardSum}" -le 1 ]]; then
+			for _module in $(find /sys/module -maxdepth 1 -type d -name 'nvidia*'); do
+				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--tmpfs\0${_module}\0"
+			done
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
 			cardToRender "${activeCards}"
 			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${activeCards}\0/sys/class/drm/${activeCards}\0--dev-bind-try\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
 		else
+			pecho warn "Multiple GPU outputs detected! Report bugs if found."
 			pecho debug "${activeCardSum} cards active"
 			for vCards in ${activeCards}; do
 			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
@@ -545,7 +550,7 @@ function hybridBindv2() {
 				else
 					cardToRender "${vCards}"
 					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${vCards}\0/sys/class/drm/${vCards}\0--dev-bind-try\0/dev/dri/${vCards}\0/dev/dri/${vCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${vCards}")\0$(resolvePCICard "${vCards}")\0"
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
