@@ -484,7 +484,7 @@ function procDriverBind() {
 
 function bindNvDevIfExistv2(){
 	if ls /dev/nvidia* &> /dev/null; then
-		pecho debug "Binding NVIDIA GPUs in Game Mode"
+		pecho debug "Binding NVIDIA GPUs in Game Mode / Single output configurations"
 		for _card in /dev/nvidia*; do
 			if [[ -e "${_card}" ]]; then
 				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0${_card}\0${_card}\0"
@@ -500,8 +500,18 @@ function setDiscBindArgv2() {
 }
 
 function hybridBindv2() {
-	if [[ "$(find /sys/class/drm -name 'renderD*' | wc -l)" -le 1 ]]; then
-		pecho debug "Single or no GPU, binding all devices"
+	local cardSums="$(find /sys/class/drm -name 'card*' -not -name '*-*' | wc -l)"
+	if [[ "${cardSums}" -eq 1 || "${PORTABLE_ASSUME_SINGLE_GPU}" -eq 114514 ]]; then
+		bwSwitchableGraphicsArg=""
+		pecho debug "Single GPU"
+		#setDiscBindArgv2
+		bindNvDevIfExistv2
+		local vCards="$(find /sys/class/drm -name 'card*' -not -name '*-*')"
+		local vCards="$(basename ${vCards})"
+		bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(resolvePCICard "${vCards}")\0$(resolvePCICard "${vCards}")\0"
+	elif [[ "${cardSums}" -eq 0 ]]; then
+		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
+		pecho warn "No GPU detected!"
 		setDiscBindArgv2
 		bindNvDevIfExistv2
 	elif [[ "${gameMode}" = "true" ]]; then
