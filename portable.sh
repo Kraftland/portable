@@ -1126,7 +1126,7 @@ function pwSecContext() {
 		else
 			while true; do
 				sleep 0.0001s
-				if [ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" ]; then
+				if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" || ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 					break
 				elif grep -q "new socket" "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"; then
 					break
