@@ -192,7 +192,6 @@ function copyArchFiles() {
 		pecho crit "srcdir and pkgdir not present! Did you forgot to export them before invoking packer?"
 		exit 110
 	fi
-	preCleanArch
 	if pacman -Qi "${archPackage}" 1>/dev/null 2>/dev/null; then
 		pecho debug "Package present and verified"
 	else
@@ -214,7 +213,7 @@ function copyArchFiles() {
 			fi
 		fi
 	done < file.list
-
+	preCleanArch
 	install "-${installVerbose}Dm644" "${configPath}" \
 		"${pkgdir}/usr/lib/portable/info/${appID}/config"
 	echo '#!/usr/bin/bash' >exec.sh
