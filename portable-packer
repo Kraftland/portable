@@ -72,6 +72,9 @@ function cmdlineDispatcher() {
 				exit 200
 			fi
 			declare -g configPath="${configPath}"
+		elif [[ $1 = "--help" ]]; then
+			pecho debug "Printing help on explicit request"
+			printHelp
 		elif [[ -z $* ]]; then
 			declare trailS="s"
 			if [[ "${argumentCount}" -eq 1 ]]; then
@@ -100,10 +103,6 @@ function main() {
 }
 
 if [[ -n $* ]]; then
-	if [[ $* =~ "--help" ]]; then
-		pecho debug "Printing help on explicit request"
-		printHelp
-	fi
 	cmdlineDispatcher $@
 else
 	printHelp
