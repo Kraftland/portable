@@ -1,0 +1,47 @@
+#!/usr/bin/bash
+
+function pecho() {
+	if [[ "$1" = "debug" ]] && [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
+		echo "[Debug] $2" &
+	elif [[ "$1" = "info" ]] && [[ "${PORTABLE_LOGGING}" = "info" || "${PORTABLE_LOGGING}" = "debug" ]]; then
+		echo "[Info] $2" &
+	elif [[ "$1" = "warn" ]]; then
+		echo "[Warn] $2" &
+	elif [[ "$1" = "crit" ]]; then
+		echo "[Critical] $2"
+	fi
+}
+
+function printHelp() {
+	echo "This is Portable packer, a tool to build sandboxed package"
+	echo "Visit https://github.com/Kraftland/portable for documentation and information."
+	echo "Supported arguments:"
+	echo "	-v: Verbose output"
+	echo "	--distro [distro name]: Specify the distribution."
+	echo "	--hash [true / false]: Enables hashing of configuration file. Currently has no effect."
+	echo "	--config [path]: Specify the configuration source for sandbox"
+	exit 0
+}
+
+function cmdlineDispatcher() {
+	while true; do
+		if [[ $1 = "-v" ]]; then
+			export PORTABLE_LOGGING=debug
+			pecho debug "Enabled verbose logging"
+		elif [[ -z $@ ]]; then
+			pecho debug "Resolution of command line arguments finished."
+			break
+		fi
+		shift
+	done
+}
+
+if [[ -n $* ]]; then
+	if [[ $* =~ "--help" ]]; then
+		pecho debug "Printing help on explicit request"
+		printHelp
+	fi
+	cmdlineDispatcher $@
+else
+	printHelp
+fi
