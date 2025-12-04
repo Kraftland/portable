@@ -1450,6 +1450,14 @@ function questionFirstLaunch() {
 }
 
 function launch() {
+	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
+		export _portableDebug=1
+	elif [[ "$*" =~ "--dbus-activation" ]]; then
+		if [[ -z "${busLaunchTarget}" ]]; then
+			pecho warn "D-Bus launch target not defined! Using default launchTarget"
+		fi
+		export launchTarget="${busLaunchTarget}"
+	fi
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
@@ -1460,9 +1468,6 @@ function launch() {
 		warnMulRunning "$@"
 	fi
 	sanityCheck &
-	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
-		export _portableDebug=1
-	fi
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
 		execAppUnsafe

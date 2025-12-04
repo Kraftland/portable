@@ -14,6 +14,9 @@ stateDirectory="Portable_Tester_Data"
 # This is the target executable to launch
 launchTarget="gtk4-demo"
 
+# This is the target executable to launch when being activated by D-Bus
+#busLaunchTarget="gtk4-demo"
+
 # Enables Network access within the sandbox. Defaults to true.
 bindNetwork="true"
 

@@ -106,6 +106,9 @@ function cmdlineDispatcher() {
 		elif [[ $1 = "--help" ]]; then
 			pecho debug "Printing help on explicit request"
 			printHelp
+		elif [[ $1 = "--dbus-activation" ]]; then
+			pecho debug "D-Bus activation enabled"
+			declare -g dbusActivation=true
 		elif [[ -z $* ]]; then
 			declare trailS="s"
 			if [[ "${argumentCount}" -eq 1 ]]; then
@@ -185,6 +188,18 @@ function main() {
 		copyArchFiles
 		exit 0
 	fi
+
+	if [[ "${dbusActivation}" = true ]]; then
+
+	fi
+}
+
+function genDBusService() {
+
+	echo '''[D-BUS Service]
+Name=appID
+Exec=/usr/bin/env _portableConfig=appID portable -- ''' >busService
+
 }
 
 function copyArchFiles() {
@@ -223,11 +238,15 @@ function copyArchFiles() {
 		"-${installVerbose}Dm755" \
 		exec.sh \
 		"${pkgdir}/usr/bin/${pkgname}"
+	rm exec.sh
 }
 
 function preCleanArch() {
-	rm -f "${pkgdir}/usr/share/applications"/*
-	rm -f "${pkgdir}/usr/bin"/*
+	rm -rf "${pkgdir}/usr/share/applications"
+	rm -rf "${pkgdir}/usr/bin"
+	rm -rf "${pkgdir}/etc/xdg/autostart"
+	rm -rf "${pkgdir}/usr/share/dbus-1"
+	rm -rf "${pkgdir}/usr/share/menu"
 }
 
 cmdlineDispatcher $@
