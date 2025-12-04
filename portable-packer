@@ -182,15 +182,29 @@ function main() {
 	fi
 	configCheck "${configPath}"
 	source "${configPath}"
+	busCheck
 
-	if [[ "${_distribution}" = archlinux && "${packerMode}" = copy ]]; then
-		pecho info "Entering copy mode: Arch Linux"
-		copyArchFiles
-		exit 0
+	if [[ "${_distribution}" = archlinux ]]; then
+		if [[ "${packerMode}" = copy ]]; then
+			pecho info "Entering copy mode: Arch Linux"
+			copyArchFiles
+		elif [[ "${packerMode}" = post ]]; then
+			pecho info "Entering post mode: Arch Linux"
+		fi
+		archPost
 	fi
 
 	if [[ "${dbusActivation}" = true ]]; then
-
+		genDBusService
+		pecho info "Generating D-Bus service"
+		if [[ "${_distribution}" = archlinux ]]; then
+			install \
+				"-${installVerbose}Dm644" \
+				busService \
+				"${pkgdir}/usr/share/dbus-1/services/${appID}.service"
+		else
+			pecho warn "	=> Distribution not yet supported"
+		fi
 	fi
 }
 
@@ -199,6 +213,7 @@ function genDBusService() {
 	echo '''[D-BUS Service]
 Name=appID
 Exec=/usr/bin/env _portableConfig=appID portable -- ''' >busService
+	sed -i "s|appID|${appID}|g" ./busService
 
 }
 
@@ -228,6 +243,9 @@ function copyArchFiles() {
 			fi
 		fi
 	done < file.list
+}
+
+function archPost() {
 	preCleanArch
 	install "-${installVerbose}Dm644" "${configPath}" \
 		"${pkgdir}/usr/lib/portable/info/${appID}/config"
