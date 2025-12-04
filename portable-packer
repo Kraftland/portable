@@ -188,7 +188,7 @@ function main() {
 }
 
 function copyArchFiles() {
-	if [[ ! ${srcdir} || ! ${pkgdir} ]]; then
+	if [[ ! ${srcdir} || ! ${pkgdir} || ! ${pkgname} ]]; then
 		pecho crit "srcdir and pkgdir not present! Did you forgot to export them before invoking packer?"
 		exit 110
 	fi
