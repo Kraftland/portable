@@ -94,6 +94,7 @@ function cmdlineDispatcher() {
 }
 
 function configCheck() {
+	pecho debug "Processing configuration..."
 	declare -i configLength=$(wc -l < "${1}")
 	configLength=$((${configLength} + 1))
 	pecho debug "Calculated configuration length: ${configLength}"
@@ -107,20 +108,23 @@ function configCheck() {
 		lineContent="$(sed -n "${lineCount}p" "${1}")"
 		pecho debug "Processing configuration @${lineCount}"
 		if [[ "${lineContent}" =~ ^# ]]; then
-			pecho debug "	Skipping comments"
+			pecho debug "	=> Skipping comments"
 		elif [[ "${lineContent}" =~ .*=.* ]]; then
 			pecho debug "	=> KEY=VAL discovered: ${lineContent}"
 			if [[ "${lineContent}" =~ .*=.*=.* ]]; then
 				pecho crit "	=> Rejecting malformed configuration file! Expected KEY=VAL pair. found multiple \"=\" operators"
+				exit 200
 			fi
 		elif [[ -z "${lineContent}" ]]; then
 			pecho debug "	=> Skipping empty line"
 		else
-			pecho crit "Unrecognized line, possibly commands, rejecting..."
+			pecho crit "	=> Rejecting line for syntax error: Only comments starting with\"#\" and simple KEY=VAL assignment is allowed"
+			exit 200
 		fi
 		lineCount+=1
 		unset lineContent
 	done
+	pecho info "Done verifying configuration"
 }
 
 function main() {
@@ -134,7 +138,7 @@ function main() {
 		exit 1
 	fi
 	configCheck "${configPath}"
-	#source "${configPath}"
+	source "${configPath}"
 }
 
 cmdlineDispatcher $@
