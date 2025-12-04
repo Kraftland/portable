@@ -81,6 +81,9 @@ function cmdlineDispatcher() {
 				unset trailS
 			fi
 			pecho debug "Resolution of command line arguments finished with ${argumentCount} argument${trailS}."
+			if [[ "${argumentCount}" -eq 0 ]]; then
+				printHelp
+			fi
 			break
 		else
 			pecho warn "Unrecognized option: $1"
@@ -102,10 +105,6 @@ function main() {
 	source "${configPath}"
 }
 
-if [[ -n $* ]]; then
-	cmdlineDispatcher $@
-else
-	printHelp
-fi
+cmdlineDispatcher $@
 
 main
