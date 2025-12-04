@@ -115,6 +115,8 @@ function configCheck() {
 			fi
 		elif [[ -z "${lineContent}" ]]; then
 			pecho debug "	=> Skipping empty line"
+		else
+			pecho crit "Unrecognized line, possibly commands, rejecting..."
 		fi
 		lineCount+=1
 		unset lineContent
