@@ -2,13 +2,13 @@
 
 function pecho() {
 	if [[ "$1" = "debug" ]] && [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
-		echo "[Debug] $2" &
-	elif [[ "$1" = "info" ]] && [[ "${PORTABLE_LOGGING}" = "info" || "${PORTABLE_LOGGING}" = "debug" ]]; then
-		echo "[Info] $2" &
+		echo "[Debug]		$2"
+	elif [[ "$1" = "info" ]] && [[ ! "${PORTABLE_LOGGING}" = "warn" ]]; then
+		echo "[Info]		$2"
 	elif [[ "$1" = "warn" ]]; then
-		echo "[Warn] $2" &
+		echo "[Warn]		$2"
 	elif [[ "$1" = "crit" ]]; then
-		echo "[Critical] $2"
+		echo "[Critical]	$2"
 	fi
 }
 
@@ -47,7 +47,6 @@ function cmdlineDispatcher() {
 		if [[ $1 = "-v" ]]; then
 			export PORTABLE_LOGGING=debug
 			pecho debug "Enabled verbose logging"
-			argumentCount+=1
 		elif [[ $1 = "--distro" ]]; then
 			pecho debug "Resolving distribution..."
 			shift
@@ -87,8 +86,38 @@ function cmdlineDispatcher() {
 			break
 		else
 			pecho warn "Unrecognized option: $1"
+			argumentCount+=-1
 		fi
+		argumentCount+=1
 		shift
+	done
+}
+
+function configCheck() {
+	declare -i configLength=$(wc -l < "${1}")
+	configLength=$((${configLength} + 1))
+	pecho debug "Calculated configuration length: ${configLength}"
+	declare -i lineCount=1
+	while true; do
+		if [[ "${lineCount}" -gt "${configLength}" ]]; then
+			pecho debug "Finished parsing of configuration file"
+			break
+		fi
+		declare lineContent
+		lineContent="$(sed -n "${lineCount}p" "${1}")"
+		pecho debug "Processing configuration @${lineCount}"
+		if [[ "${lineContent}" =~ ^# ]]; then
+			pecho debug "	Skipping comments"
+		elif [[ "${lineContent}" =~ .*=.* ]]; then
+			pecho debug "	=> KEY=VAL discovered: ${lineContent}"
+			if [[ "${lineContent}" =~ .*=.*=.* ]]; then
+				pecho crit "	=> Rejecting malformed configuration file! Expected KEY=VAL pair. found multiple \"=\" operators"
+			fi
+		elif [[ -z "${lineContent}" ]]; then
+			pecho debug "	=> Skipping empty line"
+		fi
+		lineCount+=1
+		unset lineContent
 	done
 }
 
@@ -102,7 +131,8 @@ function main() {
 		pecho crit "Distribution not set"
 		exit 1
 	fi
-	source "${configPath}"
+	configCheck "${configPath}"
+	#source "${configPath}"
 }
 
 cmdlineDispatcher $@
