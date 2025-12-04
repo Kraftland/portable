@@ -16,21 +16,69 @@ function printHelp() {
 	echo "This is Portable packer, a tool to build sandboxed package"
 	echo "Visit https://github.com/Kraftland/portable for documentation and information."
 	echo "Supported arguments:"
-	echo "	-v: Verbose output"
-	echo "	--distro [distro name]: Specify the distribution."
-	echo "	--hash [true / false]: Enables hashing of configuration file. Currently has no effect."
-	echo "	--config [path]: Specify the configuration source for sandbox"
+	echo "	-v	-	-	-> Verbose output"
+	echo "	--distro [distro name]	-> Specify the distribution."
+	echo "	--hash [true / false]	-> Enables hashing of configuration file. Currently has no effect."
+	echo "	--config [path]	-	-> Specify the configuration source for sandbox"
+	echo "Exit codes:"
+	echo "	1	-	-	-> Syntax / argument error"
+	echo "	200	-	-	-> Configuration error"
 	exit 0
 }
 
+function busCheck() {
+	local busOwn="${appID}"
+	if [[ "${busOwn}" = org.mpris.MediaPlayer2$ ]]; then
+		pecho crit "appID invalid: prohibited to own entire org.mpris.MediaPlayer2"
+		exit 200
+	elif [[ "${busOwn}" =~ org.freedesktop.impl.* ]]; then
+		pecho crit "appID invalid: sandbox escape not allowed"
+		exit 200
+	elif [[ "${busOwn}" =~ org.gtk.vfs.* ]]; then
+		pecho crit "appID invalid: full filesystem access not allowed"
+		exit 200
+	fi
+}
+
 function cmdlineDispatcher() {
+	declare -i argumentCount=0
 	while true; do
 		if [[ $1 = "-v" ]]; then
 			export PORTABLE_LOGGING=debug
 			pecho debug "Enabled verbose logging"
-		elif [[ -z $@ ]]; then
-			pecho debug "Resolution of command line arguments finished."
+			argumentCount+=1
+		elif [[ $1 = "--distro" ]]; then
+			pecho debug "Resolving distribution..."
+			shift
+			if [[ $1 =~ ^arch$|^archlinux$|^Arch ]]; then
+				pecho info "Distribution set to \"Arch Linux\""
+			else
+				pecho crit "Unrecognized distribution: \"${1}\""
+				exit 1
+			fi
+		elif [[ $1 = "--config" ]]; then
+			pecho debug "Verifying configuration..."
+			shift
+			declare -r configPath="$(realpath --quiet $1)"
+			if [[ $? -eq 0 ]]; then
+				if [[ ! -r "${configPath}" ]]; then
+					pecho crit "Failed reading configuration"
+					exit 200
+				fi
+				source "${configPath}"
+			else
+				pecho crit "Failed reading configuration: "$(realpath $1)""
+				exit 200
+			fi
+		elif [[ -z $* ]]; then
+			declare trailS="s"
+			if [[ "${argumentCount}" -eq 1 ]]; then
+				unset trailS
+			fi
+			pecho debug "Resolution of command line arguments finished with ${argumentCount} argument${trailS}."
 			break
+		else
+			pecho warn "Unrecognized option: $1"
 		fi
 		shift
 	done
