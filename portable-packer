@@ -18,8 +18,10 @@ function printHelp() {
 	echo "Supported arguments:"
 	echo "	-v	-	-	-> Verbose output"
 	echo "	--distro [distro name]	-> Specify the distribution."
+	echo "	--mode [copy <[pkg]>]	-> Modes of operation"
 	echo "	--hash [true / false]	-> Enables hashing of configuration file. Currently has no effect. (optional)"
 	echo "	--config [path]	-	-> Specify the configuration source for sandbox"
+	echo "	--desktop-file [path]	-> Specify the desktop file path for sandbox"
 	echo "	--dbus-activation	-> Enables the activation from D-Bus (optional)"
 	echo "Exit codes:"
 	echo "	1	-	-	-> Syntax / argument error"
@@ -47,6 +49,7 @@ function cmdlineDispatcher() {
 		if [[ $1 = "-v" ]]; then
 			export PORTABLE_LOGGING=debug
 			pecho debug "Enabled verbose logging"
+			declare -g installVerbose="v"
 		elif [[ $1 = "--distro" ]]; then
 			pecho debug "Resolving distribution..."
 			shift
@@ -71,6 +74,28 @@ function cmdlineDispatcher() {
 				exit 200
 			fi
 			declare -g configPath="${configPath}"
+		elif [[ $1 = "--desktop-file" ]]; then
+			pecho debug "Verifying desktop file..."
+			shift
+			declare -r desktopPath="$(realpath --quiet $1)"
+			if [[ $? -eq 0 ]]; then
+				if [[ ! -r "${desktopPath}" || ! -f "${desktopPath}" ]]; then
+					pecho crit "Failed reading desktop file: expecting PATH to file, found \"$1\""
+					exit 200
+				fi
+			else
+				pecho crit "Failed reading desktop file: "$(realpath $1)""
+				exit 200
+			fi
+			declare -g desktopPath="${desktopPath}"
+		elif [[ $1 = "--mode" ]]; then
+			shift
+			if [[ $1 = "copy" ]]; then
+				shift
+				declare -g archPackage="$1"
+				pecho debug "Mode set to: Copy from existing package: $1"
+			fi
+			declare -g packerMode="$1"
 		elif [[ $1 = "--help" ]]; then
 			pecho debug "Printing help on explicit request"
 			printHelp
@@ -133,12 +158,48 @@ function main() {
 		pecho crit "Configuration not found"
 		exit 1
 	fi
+	if [[ ! "${desktopPath}" ]]; then
+		pecho crit "Desktop file not found"
+		exit 1
+	fi
 	if [[ ! "${_distribution}" ]]; then
 		pecho crit "Distribution not set"
 		exit 1
 	fi
 	configCheck "${configPath}"
 	source "${configPath}"
+}
+
+function copyArchFiles() {
+	pacman -Ql "${archPackage}" >file.list
+	while IFS= read -r line; do
+		file="$(echo "$line" | awk '{print $2}')"
+		if [[ -d ${file} ]]; then
+			pecho debug "Omitting Directory"
+		else
+			if [[ -L "${file}" ]]; then
+				mkdir -p "$(dirname "${pkgdir}/${file}")"
+				ln -${installVerbose}sf "$(readlink -f "${file}")" "${pkgdir}/${file}"
+			else
+				install -${installVerbose}Dm755 "${file}" "${pkgdir}/${file}"
+			fi
+		fi
+	done < file.list
+
+	install "-${installVerbose}Dm644" "${configPath}" \
+		"${pkgdir}/usr/lib/portable/info/${appID}/config"
+	echo '#!/usr/bin/bash' >exec.sh
+	echo "export _portableConfig=${appID}" >>exec.sh
+	echo 'exec portable -- $@' >>exec.sh
+	install \
+		"-${installVerbose}Dm755" \
+		exec.sh \
+		"${pkgdir}/usr/bin/${pkgname}"
+}
+
+function postCleanArch() {
+	rm -f "${pkgdir}/usr/share/applications"/*
+	rm -f "${pkgdir}/usr/bin"/*
 }
 
 cmdlineDispatcher $@
