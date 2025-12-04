@@ -65,7 +65,6 @@ function cmdlineDispatcher() {
 					pecho crit "Failed reading configuration"
 					exit 200
 				fi
-				source "${configPath}"
 			else
 				pecho crit "Failed reading configuration: "$(realpath $1)""
 				exit 200
@@ -84,6 +83,15 @@ function cmdlineDispatcher() {
 	done
 }
 
+function main() {
+	pecho debug "Starting main function"
+	if [[ ! "${configPath}" ]]; then
+		pecho crit "Configuration not found"
+		exit 1
+	fi
+	source "${configPath}"
+}
+
 if [[ -n $* ]]; then
 	if [[ $* =~ "--help" ]]; then
 		pecho debug "Printing help on explicit request"
@@ -93,3 +101,5 @@ if [[ -n $* ]]; then
 else
 	printHelp
 fi
+
+main
