@@ -25,7 +25,9 @@ function printHelp() {
 	echo "	--dbus-activation	-> Enables the activation from D-Bus (optional)"
 	echo "Exit codes:"
 	echo "	1	-	-	-> Syntax / argument error"
+	echo "	110	-	-	-> Arch specific error"
 	echo "	200	-	-	-> Configuration error"
+	echo "	201	-	-	-> Non-existent package"
 	exit 0
 }
 
@@ -91,11 +93,16 @@ function cmdlineDispatcher() {
 		elif [[ $1 = "--mode" ]]; then
 			shift
 			if [[ $1 = "copy" ]]; then
+				declare -g packerMode="$1"
 				shift
-				declare -g archPackage="$1"
+				if [[ -n "${1}" ]]; then
+					declare -g archPackage="$1"
+				else
+					pecho crit "Specify package name after --mode copy!"
+					exit 1
+				fi
 				pecho debug "Mode set to: Copy from existing package: $1"
 			fi
-			declare -g packerMode="$1"
 		elif [[ $1 = "--help" ]]; then
 			pecho debug "Printing help on explicit request"
 			printHelp
@@ -158,6 +165,10 @@ function main() {
 		pecho crit "Configuration not found"
 		exit 1
 	fi
+	if [[ ! "${packerMode}" ]]; then
+		pecho crit "Mode of operation not defined"
+		exit 1
+	fi
 	if [[ ! "${desktopPath}" ]]; then
 		pecho crit "Desktop file not found"
 		exit 1
@@ -168,10 +179,28 @@ function main() {
 	fi
 	configCheck "${configPath}"
 	source "${configPath}"
+
+	if [[ "${_distribution}" = archlinux && "${packerMode}" = copy ]]; then
+		pecho info "Entering copy mode: Arch Linux"
+		copyArchFiles
+		exit 0
+	fi
 }
 
 function copyArchFiles() {
+	if [[ ! ${srcdir} || ! ${pkgdir} ]]; then
+		pecho crit "srcdir and pkgdir not present! Did you forgot to export them before invoking packer?"
+		exit 110
+	fi
+	preCleanArch
+	if pacman -Qi "${archPackage}" 1>/dev/null 2>/dev/null; then
+		pecho debug "Package present and verified"
+	else
+		pecho crit "Package does not exist"
+		exit 201
+	fi
 	pacman -Ql "${archPackage}" >file.list
+
 	while IFS= read -r line; do
 		file="$(echo "$line" | awk '{print $2}')"
 		if [[ -d ${file} ]]; then
@@ -197,7 +226,7 @@ function copyArchFiles() {
 		"${pkgdir}/usr/bin/${pkgname}"
 }
 
-function postCleanArch() {
+function preCleanArch() {
 	rm -f "${pkgdir}/usr/share/applications"/*
 	rm -f "${pkgdir}/usr/bin"/*
 }
