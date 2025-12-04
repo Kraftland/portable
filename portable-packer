@@ -18,8 +18,9 @@ function printHelp() {
 	echo "Supported arguments:"
 	echo "	-v	-	-	-> Verbose output"
 	echo "	--distro [distro name]	-> Specify the distribution."
-	echo "	--hash [true / false]	-> Enables hashing of configuration file. Currently has no effect."
+	echo "	--hash [true / false]	-> Enables hashing of configuration file. Currently has no effect. (optional)"
 	echo "	--config [path]	-	-> Specify the configuration source for sandbox"
+	echo "	--dbus-activation	-> Enables the activation from D-Bus (optional)"
 	echo "Exit codes:"
 	echo "	1	-	-	-> Syntax / argument error"
 	echo "	200	-	-	-> Configuration error"
@@ -52,6 +53,7 @@ function cmdlineDispatcher() {
 			shift
 			if [[ $1 =~ ^arch$|^archlinux$|^Arch ]]; then
 				pecho info "Distribution set to \"Arch Linux\""
+				declare -g _distribution="archlinux"
 			else
 				pecho crit "Unrecognized distribution: \"${1}\""
 				exit 1
@@ -61,14 +63,15 @@ function cmdlineDispatcher() {
 			shift
 			declare -r configPath="$(realpath --quiet $1)"
 			if [[ $? -eq 0 ]]; then
-				if [[ ! -r "${configPath}" ]]; then
-					pecho crit "Failed reading configuration"
+				if [[ ! -r "${configPath}" || ! -f "${configPath}" ]]; then
+					pecho crit "Failed reading configuration: expecting PATH to file, found \"$1\""
 					exit 200
 				fi
 			else
 				pecho crit "Failed reading configuration: "$(realpath $1)""
 				exit 200
 			fi
+			declare -g configPath="${configPath}"
 		elif [[ -z $* ]]; then
 			declare trailS="s"
 			if [[ "${argumentCount}" -eq 1 ]]; then
@@ -87,6 +90,10 @@ function main() {
 	pecho debug "Starting main function"
 	if [[ ! "${configPath}" ]]; then
 		pecho crit "Configuration not found"
+		exit 1
+	fi
+	if [[ ! "${_distribution}" ]]; then
+		pecho crit "Distribution not set"
 		exit 1
 	fi
 	source "${configPath}"
