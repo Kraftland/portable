@@ -102,6 +102,10 @@ function cmdlineDispatcher() {
 					exit 1
 				fi
 				pecho debug "Mode set to: Copy from existing package: $1"
+
+			elif [[ $1 = "post" ]]; then
+				declare -g packerMode="$1"
+				pecho debug "Mode set to: Post"
 			fi
 		elif [[ $1 = "--help" ]]; then
 			pecho debug "Printing help on explicit request"
@@ -146,7 +150,7 @@ function configCheck() {
 			pecho debug "	=> Skipping comments"
 		elif [[ "${lineContent}" =~ .*=.* ]]; then
 			pecho debug "	=> KEY=VAL discovered: ${lineContent}"
-			if [[ "${lineContent}" =~ .*=.*=.* ]]; then
+			if [[ "${lineContent}" =~ .*=.*=.* ]] && [[ ! "${lineContent}" =~ ^launchTarget|busLaunchTarget ]]; then
 				pecho crit "	=> Rejecting malformed configuration file! Expected KEY=VAL pair. found multiple \"=\" operators"
 				exit 200
 			fi
