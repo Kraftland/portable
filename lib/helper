@@ -62,6 +62,13 @@ startLoop &
 
 if [[ "${_portableDebug}" -eq 1 ]]; then
 	bash --noprofile --rcfile /run/bashrc
+elif [[ "${_portableBusActivate}" -eq 1 ]]; then
+	if [[ -n "${busLaunchTarget}" ]]; then
+		${busLaunchTarget} ${targetArgs}
+	else
+		echo "Warning: busLaunchTarget not defined"
+		${launchTarget} ${targetArgs}
+	fi
 else
 	${launchTarget} ${targetArgs}
 fi

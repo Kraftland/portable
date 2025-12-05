@@ -662,6 +662,7 @@ function execApp() {
 	desktopWorkaround &
 	addEnv targetArgs="${targetArgs}"
 	addEnv _portableDebug="${_portableDebug}"
+	addEnv _portableBusActivate="${_portableBusActivate}"
 	if [[ "${bindNetwork}" = "false" ]]; then
 		pecho info "Network access disabled via config"
 		sdNetArg="PrivateNetwork=yes"
@@ -1451,12 +1452,9 @@ function questionFirstLaunch() {
 
 function launch() {
 	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
-		export _portableDebug=1
+		declare -g _portableDebug=1
 	elif [[ "$*" =~ "--dbus-activation" ]]; then
-		if [[ -z "${busLaunchTarget}" ]]; then
-			pecho warn "D-Bus launch target not defined! Using default launchTarget"
-		fi
-		export launchTarget="${busLaunchTarget}"
+		declare -g _portableBusActivate=1
 	fi
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
