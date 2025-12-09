@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+echo "Acting as systemd-run..."
+while [[ $(echo "$1" | cut -c 1-1) = "-" ]]; do
+	shift
+done
+
+echo "Decoded cmdline: $@"
+$@
+exit $?
