@@ -270,6 +270,10 @@ function archPost() {
 		"-${installVerbose}Dm755" \
 		exec.sh \
 		"${pkgdir}/usr/bin/${pkgname}"
+	install \
+		"-${installVerbose}Dm644" \
+		"${desktopPath}" \
+		"${pkgdir}/usr/share/applications/${appID}.desktop"
 	rm exec.sh
 }
 
