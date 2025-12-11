@@ -48,32 +48,6 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 ---
 
-# How to package?
-
-See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
-
-# FAQ / Troubleshooting
-1. Portable fails with something like _no such device_
-	- Try reboot your system
-2. Portable fails with something like _invalid argument_
-	- BcacheFS is not supported, or you have mountpoints under `/usr/bin` and `/usr/lib`
-3. Portable eats a full CPU core!
-	- Try updating your microcode first, if not fixed then report an issue with `PORTABLE_LOGGING=debug` environment variable.
-
-## Starting portable
-
-Start portable with environment variable `_portableConfig`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${_portableConfig}`. It searches for each of them respectively.
-
-- Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
-
-### Debugging
-
-#### Entering sandbox
-
-To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
-
----
-
 # Pools
 
 Pools is a user friendly sandbox generator. To create and enter a user sandbox, simply execute portable-pools with your sandbox name.
@@ -94,6 +68,33 @@ portable-pools [Options] <Sandbox Name>
 Options:
 	--quit: Terminates the sandbox
 ```
+
+---
+
+# How to package?
+
+See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
+
+# FAQ / Troubleshooting
+1. Portable fails with something like _no such device_
+	- Try reboot your system
+	- Portable 11.2 should address this by loading the kernel module in advance
+2. Portable fails with something like _invalid argument_
+	- BcacheFS is not supported, or you have mountpoints under `/usr/bin` and `/usr/lib`
+3. Portable eats a full CPU core!
+	- Try updating your microcode first, if not fixed then report an issue with `PORTABLE_LOGGING=debug` environment variable.
+
+## Starting portable
+
+Start portable with environment variable `_portableConfig`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${_portableConfig}`. It searches for each of them respectively.
+
+- Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
+
+### Debugging
+
+#### Entering sandbox
+
+To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
 # Code of Conduct
 
