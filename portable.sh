@@ -1553,7 +1553,7 @@ function cmdlineDispatcher() {
 	fi
 	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "opendir" ]]; then
 		export targetArgs=""
-		/usr/lib/flatpak-xdg-utils/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
+		/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
 		exit "$?"
 	fi
 	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "share-files" ]]; then
