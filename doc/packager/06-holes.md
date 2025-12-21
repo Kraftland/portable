@@ -10,3 +10,4 @@ Work-in-progress possible holes in packaging. Below is a checklist for ruling it
 	- [ ] /usr/share/menu		for XDG menus
 	- [ ] /usr/share/applications	for extra .desktop files
 	- [ ] /usr/bin			for surplus binary files
+	- [ ] /usr/share/gnome-shell	for search providers

@@ -283,6 +283,7 @@ function preCleanArch() {
 	rm -rf "${pkgdir}/etc/xdg/autostart"
 	rm -rf "${pkgdir}/usr/share/dbus-1"
 	rm -rf "${pkgdir}/usr/share/menu"
+	rm -rf "${pkgdir}/usr/share/gnome-shell"
 }
 
 cmdlineDispatcher $@
