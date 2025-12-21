@@ -401,6 +401,11 @@ function setStaticEnv() {
 	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
 	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
 	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
+	addEnv "HOME=${XDG_DATA_HOME}/${stateDirectory}"
+	addEnv "XDG_SESSION_TYPE=${XDG_SESSION_TYPE}"
+	addEnv "WAYLAND_DISPLAY=wayland-0"
+	addEnv "XAUTHORITY=${XAUTHORITY}"
+	addEnv "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus"
 	echo "source /run/portable-generated.env" > "${XDG_RUNTIME_DIR}/portable/${appID}/bashrc"
 	readyNotify set setStaticEnv
 }
@@ -611,7 +616,25 @@ function calcBwrapArg() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
-	passBwrapArgs "--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-user\0" # Unshares
+
+	# Build sd-run args first!
+	if [[ "${bindNetwork}" = "false" ]]; then
+		pecho info "Network access disabled via config"
+		sdNetArg="PrivateNetwork=yes"
+	else
+		sdNetArg="PrivateNetwork=no"
+		pecho debug "Network access allowed"
+	fi
+	passBwrapArgs "--quiet\0--user\0--pty\0--service-type=notify-reload\0--wait\0-u\0${unitName}\0--slice=app.slice\0-p\0Delegate=yes\0-p\0BindsTo=${proxyName}.service\0-p\0Description=Portable Sandbox for ${appID}\0-p\0Documentation=https://github.com/Kraftland/portable\0-p\0ExitType=cgroup\0-p\0NotifyAccess=all\0-p\0TimeoutStartSec=infinity\0-p\0OOMPolicy=stop\0-p\0SecureBits=noroot-locked\0-p\0KillMode=control-group\0-p\0MemoryHigh=90%\0-p\0ManagedOOMSwap=kill\0-p\0ManagedOOMMemoryPressure=kill\0-p\0IPAccounting=yes\0-p\0MemoryPressureWatch=yes\0-p\0SyslogIdentifier=portable-${appID}\0-p\0SystemCallLog=@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources\0-p\0SystemCallLog=~@sandbox\0-p\0PrivateIPC=yes\0-p\0ProtectClock=yes\0-p\0CapabilityBoundingSet=\0-p\0RestrictSUIDSGID=yes\0-p\0LockPersonality=yes\0-p\0RestrictRealtime=yes\0-p\0ProtectProc=invisible\0-p\0ProcSubset=pid\0-p\0PrivateUsers=yes\0-p\0UMask=077\0-p\0OOMScoreAdjust=100\0-p\0NoNewPrivileges=yes\0-p\0ProtectControlGroups=private\0-p\0DelegateSubgroup=portable-cgroup\0-p\0PrivateMounts=yes\0-p\0KeyringMode=private\0-p\0TimeoutStopSec=10s\0-p\0Environment=instanceId=${instanceId}\0-p\0Environment=busDir=${busDir}\0-p\0${sdNetArg}\0-p\0WorkingDirectory=${XDG_DATA_HOME}/${stateDirectory}\0"
+
+	passBwrapArgs "-p\0ReloadSignal=SIGALRM\0-p\0EnvironmentFile=${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env\0"
+	passBwrapArgs "-p\0SystemCallFilter=~@clock\0-p\0SystemCallFilter=~@cpu-emulation\0-p\0SystemCallFilter=~@debug\0-p\0SystemCallFilter=~@module\0-p\0SystemCallFilter=~@obsolete\0-p\0SystemCallFilter=~@raw-io\0-p\0SystemCallFilter=~@reboot\0-p\0SystemCallFilter=~@swap\0-p\0SystemCallErrorNumber=EAGAIN\0-p\0ProtectHome=no\0-p\0UnsetEnvironment=GNOME_SETUP_DISPLAY\0-p\0UnsetEnvironment=PIPEWIRE_REMOTE\0-p\0UnsetEnvironment=PAM_KWALLET5_LOGIN\0-p\0UnsetEnvironment=GTK2_RC_FILES\0-p\0UnsetEnvironment=ICEAUTHORITY\0-p\0UnsetEnvironment=MANAGERPID\0"
+
+	# Do we really need this?
+	#passBwrapArgs "-p\0LimitNOFILE=524288\0"
+
+
+	passBwrapArgs "--\0bwrap\0--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-user\0" # Unshares
 	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
 	passBwrapArgs "--dev\0/dev\0--tmpfs\0/dev/shm\0--dev-bind-try\0/dev/mali\0/dev/mali\0--dev-bind-try\0/dev/mali0\0/dev/mali0\0--dev-bind-try\0/dev/umplock\0/dev/umplock\0--mqueue\0/dev/mqueue\0--dev-bind\0/dev/dri\0/dev/dri\0--dev-bind-try\0/dev/udmabuf\0/dev/udmabuf\0--dev-bind-try\0/dev/ntsync\0/dev/ntsync\0--dir\0/top.kimiblock.portable\0" # Dev binds
 	passBwrapArgs "--tmpfs\0/sys\0--ro-bind-try\0/sys/module\0/sys/module\0--ro-bind-try\0/sys/dev/char\0/sys/dev/char\0--tmpfs\0/sys/devices\0--ro-bind-try\0/sys/fs/cgroup\0/sys/fs/cgroup\0--ro-bind-try\0/sys/fs/cgroup/portable-cgroup\0/sys/fs/cgroup/portable-cgroup\0--dev-bind\0/sys/class/drm\0/sys/class/drm\0" # sys entries
@@ -666,91 +689,11 @@ function execApp() {
 	addEnv targetArgs="${targetArgs}"
 	addEnv _portableDebug="${_portableDebug}"
 	addEnv _portableBusActivate="${_portableBusActivate}"
-	if [[ "${bindNetwork}" = "false" ]]; then
-		pecho info "Network access disabled via config"
-		sdNetArg="PrivateNetwork=yes"
-	else
-		sdNetArg="PrivateNetwork=no"
-		pecho debug "Network access allowed"
-	fi
 	termExec
 	readyNotify wait generateFlatpakInfo
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
-	systemd-run \
-	--quiet \
-	--user \
-	--pty \
-	--service-type=notify \
-	--wait \
-	-u "${unitName}" \
-	--slice=app.slice \
-	-p Delegate="yes" \
-	-p BindsTo="${proxyName}.service" \
-	-p Description="Portable Sandbox for ${appID}" \
-	-p Documentation="https://github.com/Kraftland/portable" \
-	-p ExitType=cgroup \
-	-p NotifyAccess=all \
-	-p TimeoutStartSec=infinity \
-	-p OOMPolicy=stop \
-	-p SecureBits=noroot-locked \
-	-p KillMode=control-group \
-	-p StartupCPUWeight=idle \
-	-p StartupIOWeight=1 \
-	-p MemoryHigh=90% \
-	-p ManagedOOMSwap=kill \
-	-p ManagedOOMMemoryPressure=kill \
-	-p IPAccounting=yes \
-	-p MemoryPressureWatch=yes \
-	-p EnvironmentFile="${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
-	-p SystemCallFilter=~@clock \
-	-p SystemCallFilter=~@cpu-emulation \
-	-p SystemCallFilter=~@debug \
-	-p SystemCallFilter=~@module \
-	-p SystemCallFilter=~@obsolete \
-	-p SystemCallFilter=~@raw-io \
-	-p SystemCallFilter=~@reboot \
-	-p SystemCallFilter=~@swap \
-	-p SystemCallErrorNumber=EAGAIN \
-	-p SyslogIdentifier="portable-${appID}" \
-	-p SystemCallLog='@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources' \
-	-p SystemCallLog='~@sandbox' \
-	-p PrivateIPC=yes \
-	-p ProtectClock=yes \
-	-p CapabilityBoundingSet= \
-	-p RestrictSUIDSGID=yes \
-	-p LockPersonality=yes \
-	-p RestrictRealtime=yes \
-	-p ProtectProc=invisible \
-	-p ProcSubset=pid \
-	-p ProtectHome=no \
-	-p PrivateUsers=yes \
-	-p UMask=077 \
-	-p OOMScoreAdjust=100 \
-	-p LimitNOFILE=524288 \
-	-p DevicePolicy=strict \
-	-p NoNewPrivileges=yes \
-	-p ProtectControlGroups=private \
-	-p DelegateSubgroup="portable-cgroup" \
-	-p PrivateMounts=yes \
-	-p KeyringMode=private \
-	-p TimeoutStopSec=20s \
-	-p Environment=instanceId="${instanceId}" \
-	-p Environment=busDir="${busDir}" \
-	-p "${sdNetArg}" \
-	-p Environment=HOME="${XDG_DATA_HOME}/${stateDirectory}" \
-	-p WorkingDirectory="${XDG_DATA_HOME}/${stateDirectory}" \
- 	-p Environment=XDG_SESSION_TYPE="${XDG_SESSION_TYPE}" \
-	-p Environment=WAYLAND_DISPLAY="wayland-0" \
-	-p Environment=XAUTHORITY="${XAUTHORITY}" \
-	-p Environment=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/sessionBus" \
-	-p UnsetEnvironment=GNOME_SETUP_DISPLAY \
-	-p UnsetEnvironment=PIPEWIRE_REMOTE \
-	-p UnsetEnvironment=PAM_KWALLET5_LOGIN \
-	-p UnsetEnvironment=GTK2_RC_FILES \
-	-p UnsetEnvironment=ICEAUTHORITY \
-	-p UnsetEnvironment=MANAGERPID \
-	-- xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs" bwrap
+	xargs -0 -a "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs" systemd-run
 	stopApp
 }
 
