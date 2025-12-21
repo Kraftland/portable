@@ -11,38 +11,13 @@ function startAux() {
 		else
 			echo "Starting auxiliary application"
 			# shellcheck disable=SC2046
-			eval $(${_launch}) &
+			bash -c "${_launch}" &
 			systemd-notify --ready 2>/dev/null
 			systemd-notify --status="Started auxiliary Application" 2>/dev/null
 		fi
 	else
 		stopApp
 	fi
-}
-
-function startLoop() {
-	systemd-notify --ready --status="Sandbox startup complete" & 2>/dev/null
-	while true; do
-		inotifywait \
-			-e modify \
-			--quiet \
-			/run/startSignal 1>/dev/null
-		if [[ $? -eq 1 ]]; then
-			stopApp
-		fi
-		local _launch="$(cat /run/startSignal 2>/dev/null)"
-		if [[ ${_launch} =~ terminate ]]; then
-			break
-		elif [[ ${_launch} = finish ]]; then
-			continue
-		else
-			echo "Starting auxiliary application"
-			# shellcheck disable=SC2046
-			eval $(${_launch}) &
-			systemd-notify --ready 2>/dev/null
-			systemd-notify --status="Started auxiliary Application" 2>/dev/null
-		fi
-	done
 }
 
 function calcProcCnt() {
@@ -77,7 +52,8 @@ function askStop() {
 	fi
 }
 
-startLoop &
+systemd-notify --ready --status="Sandbox startup complete" &
+trap startAux SIGALRM
 
 if [[ "${_portableDebug}" -eq 1 ]]; then
 	bash --noprofile --rcfile /run/bashrc
