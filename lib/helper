@@ -1,6 +1,25 @@
 #!/usr/bin/bash
 # shellcheck disable=SC2154,SC2155,SC2009
 
+function startAux() {
+	if [[ -f /run/startSignal ]]; then
+		local _launch="$(cat /run/startSignal 2>/dev/null)"
+		if [[ ${_launch} =~ terminate ]]; then
+			stopApp
+		elif [[ ${_launch} = finish ]]; then
+			return 0
+		else
+			echo "Starting auxiliary application"
+			# shellcheck disable=SC2046
+			eval $(${_launch}) &
+			systemd-notify --ready 2>/dev/null
+			systemd-notify --status="Started auxiliary Application" 2>/dev/null
+		fi
+	else
+		stopApp
+	fi
+}
+
 function startLoop() {
 	systemd-notify --ready --status="Sandbox startup complete" & 2>/dev/null
 	while true; do
