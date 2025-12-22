@@ -262,6 +262,7 @@ function genXAuth() {
 	fi
 	export XAUTHORITY="/run/.Xauthority"
 	addEnv "DISPLAY=${DISPLAY}"
+	addEnv "XAUTHORITY=${XAUTHORITY}"
 }
 
 function waylandDisplay() {
@@ -404,7 +405,6 @@ function setStaticEnv() {
 	addEnv "HOME=${XDG_DATA_HOME}/${stateDirectory}"
 	addEnv "XDG_SESSION_TYPE=${XDG_SESSION_TYPE}"
 	addEnv "WAYLAND_DISPLAY=wayland-0"
-	addEnv "XAUTHORITY=${XAUTHORITY}"
 	addEnv "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus"
 	echo "source /run/portable-generated.env" > "${XDG_RUNTIME_DIR}/portable/${appID}/bashrc"
 	readyNotify set setStaticEnv
