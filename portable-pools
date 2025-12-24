@@ -17,6 +17,7 @@ function printHelp() {
 	echo "Visit https://github.com/Kraftland/portable for documentation and information."
 	echo "Supported arguments:"
 	echo "	-v	-	-	-	-> Verbose output (optional)"
+	echo "	--game	-	-	-	-> Enable game mode for discrete GPU utilisation"
 	echo "	[container name]	-	-> Specifies the name for sandbox"
 
 	exit 0
@@ -27,6 +28,15 @@ function cmdlineDispatcher() {
 	while true; do
 		if [[ $1 = "--quit" ]]; then
 			declare -g -i -r termApp=1
+		elif [[ $1 = "-v" ]]; then
+			declare -g -r -x PORTABLE_LOGGING=debug
+			pecho debug "Enabled verbose logging"
+		elif [[ $1 = "--help" ]]; then
+			pecho debug "Printing help on explicit request"
+			printHelp
+		elif [[ $1 = "--game" ]]; then
+			pecho debug "Enabled game mode"
+			declare -g -x -r gameMode=true
 		elif [[ -z $* ]]; then
 			declare trailS="s"
 			if [[ "${argumentCount}" -eq 1 ]]; then
@@ -98,6 +108,7 @@ waylandOnly="adaptive"
 function invokePortable() {
 	export \
 		_portableConfig="${XDG_CONFIG_HOME}"/portable-pools/"${sandboxName}"/config
+	export gameMode
 	if [[ "${termApp}" -eq 1 ]]; then
 		 portable \
 		 	--actions quit
