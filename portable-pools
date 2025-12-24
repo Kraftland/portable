@@ -1,26 +1,58 @@
 #!/usr/bin/bash
 
 function pecho() {
-	if [[ $1 =~ debug ]] && [[ ${PORTABLE_LOGGING} = "debug" ]]; then
-		echo "[Debug] $2"
-	elif [[ $1 =~ info ]] && [[ ${PORTABLE_LOGGING} = "info" ]] || [[ ${PORTABLE_LOGGING} = "debug" ]]; then
-		echo "[Info] $2"
-	elif [[ $1 =~ warn ]]; then
-		echo "[Warn] $2"
-	elif [[ $1 =~ crit ]]; then
-		echo "[Critical] $2"
+	if [[ "$1" = "debug" ]] && [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
+		echo "[Debug]		$2"
+	elif [[ "$1" = "info" ]] && [[ ! "${PORTABLE_LOGGING}" = "warn" ]]; then
+		echo "[Info]		$2"
+	elif [[ "$1" = "warn" ]]; then
+		echo "[Warn]		$2"
+	elif [[ "$1" = "crit" ]]; then
+		echo "[Critical]	$2"
 	fi
 }
 
+function printHelp() {
+	echo "This is Portable Pools, a tool to create and enter transient sandboxes"
+	echo "Visit https://github.com/Kraftland/portable for documentation and information."
+	echo "Supported arguments:"
+	echo "	-v	-	-	-	-> Verbose output (optional)"
+	echo "	[container name]	-	-> Specifies the name for sandbox"
+
+	exit 0
+}
+
 function cmdlineDispatcher() {
-	if [ -z "$1" ]; then
-		pecho crit "Usage: portable-pools [Container Name, only ASCII characters without space allowed]"
-	fi
-	if [[ $1 = "--quit" ]]; then
-		termApp=1
+	declare -i argumentCount=0
+	while true; do
+		if [[ $1 = "--quit" ]]; then
+			declare -g -i -r termApp=1
+		elif [[ -z $* ]]; then
+			declare trailS="s"
+			if [[ "${argumentCount}" -eq 1 ]]; then
+				unset trailS
+			fi
+			pecho debug "Resolution of command line arguments finished with ${argumentCount} argument${trailS}."
+			if [[ "${argumentCount}" -eq 0 ]]; then
+				printHelp
+			fi
+			break
+		else
+			if [[ ! "${sandboxName}" ]]; then
+				declare -g sandboxName
+				sandboxName=$1
+				pecho info "Interpreted sandbox name: $1"
+			else
+				pecho warn "Unrecognized option: $1"
+			fi
+		fi
+		argumentCount+=1
 		shift
+	done
+
+	if [[ ! "${sandboxName}" ]]; then
+		pecho crit "Sandbox name undefined!"
 	fi
-	sandboxName=$1
 }
 
 function sourceXDG() {
