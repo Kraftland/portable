@@ -486,6 +486,9 @@ function procDriverBind() {
 	if [[ -d /proc/driver ]]; then
 		passBwrapArgs "--tmpfs\0/proc/driver\0"
 	fi
+	if [[ -d "/proc/bus" ]]; then
+		passBwrapArgs "--tmpfs\0/proc/bus\0"
+	fi
 	readyNotify set procDriverBind
 }
 
@@ -530,7 +533,7 @@ function hybridBindv2() {
 		declare vCards
 		vCards="$(find /sys/class/drm -name 'card*' -not -name '*-*')"
 		vCards="$(basename ${vCards})"
-		bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(resolvePCICard "${vCards}")\0$(resolvePCICard "${vCards}")\0"
+		bindCard "${vCards}"
 	elif [[ "${cardSums}" -eq 0 ]]; then
 		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
 		pecho warn "No GPU detected!"
