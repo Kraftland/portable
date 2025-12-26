@@ -514,8 +514,9 @@ function hybridBindv2() {
 		pecho debug "Single GPU"
 		#setDiscBindArgv2
 		bindNvDevIfExistv2
-		local vCards="$(find /sys/class/drm -name 'card*' -not -name '*-*')"
-		local vCards="$(basename ${vCards})"
+		declare vCards
+		vCards="$(find /sys/class/drm -name 'card*' -not -name '*-*')"
+		vCards="$(basename ${vCards})"
 		bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(resolvePCICard "${vCards}")\0$(resolvePCICard "${vCards}")\0"
 	elif [[ "${cardSums}" -eq 0 ]]; then
 		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
