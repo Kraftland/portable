@@ -43,7 +43,8 @@ else
 		pecho info \
 			"Configuration specified as relative path ${_portableConfig}"
 		source "$(pwd)/${_portableConfig}"
-		export _portableConfig="$(pwd)/${_portableConfig}"
+		declare -g -x
+		_portableConfig="$(pwd)/${_portableConfig}"
 	else
 		pecho crit "Specified configuration not reachable"
 		exit 1
