@@ -507,8 +507,17 @@ function setDiscBindArgv2() {
 	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0"
 }
 
+# Takes card* as arg1
+function bindCard() {
+	cardToRender "$1"
+	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${activeCards}\0/sys/class/drm/${activeCards}\0--dev-bind-try\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+}
+
 function hybridBindv2() {
 	declare -i cardSums
+	declare -g bwSwitchableGraphicsArg
+	declare IFS
+	IFS=$'\n'
 	cardSums="$(find /sys/class/drm -name 'card*' -not -name '*-*' | wc -l)"
 	if [[ "${cardSums}" -eq 1 || "${PORTABLE_ASSUME_SINGLE_GPU}" -eq 114514 ]]; then
 		bwSwitchableGraphicsArg=""
@@ -526,6 +535,7 @@ function hybridBindv2() {
 	elif [[ "${gameMode}" = "true" ]]; then
 		pecho debug "Game Mode enabled on hybrid graphics"
 		setDiscBindArgv2
+		#gameModeBind
 		bindNvDevIfExistv2
 		setNvOffloadEnv
 	else
@@ -556,8 +566,7 @@ function hybridBindv2() {
 			done
 			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
 			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
-			cardToRender "${activeCards}"
-			bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${activeCards}\0/sys/class/drm/${activeCards}\0--dev-bind-try\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+			bindCard "${activeCards}"
 		else
 			pecho warn "Multiple GPU outputs detected! Report bugs if found."
 			pecho debug "${activeCardSum} cards active"
@@ -820,7 +829,7 @@ function getDevArgs() {
 function resolvePCICard() {
 	declare sysfsPath
 	sysfsPath="$(udevadm info /sys/class/drm/$1 --query=path)"
-	echo "/sys/${sysfsPath}" | sed "s|drm/$1||g"
+	echo "/sys${sysfsPath}" | sed "s|drm/$1||g"
 }
 
 function appANR() {
