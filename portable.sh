@@ -501,12 +501,6 @@ function bindNvDevIfExistv2(){
 	fi
 }
 
-function setDiscBindArgv2() {
-	declare -g bwSwitchableGraphicsArg
-	bwSwitchableGraphicsArg='--dev-bind\0/sys/bus/pci\0/sys/bus/pci\0'
-	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0"
-}
-
 function gameModeBind() {
 	declare IFS
 	IFS=$'\n'
@@ -543,7 +537,6 @@ function hybridBindv2() {
 	elif [[ "${gameMode}" = "true" ]]; then
 		pecho debug "Game Mode enabled on hybrid graphics"
 		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
-		#setDiscBindArgv2
 		gameModeBind
 		bindNvDevIfExistv2
 		setNvOffloadEnv
@@ -593,7 +586,7 @@ function hybridBindv2() {
 			done
 		fi
 	fi
-	pecho debug "(v2) Generated GPU bind parameter: ${bwSwitchableGraphicsArg}"
+	pecho debug "(v2) Generated GPU bind parameter: $(echo -e "${bwSwitchableGraphicsArg}" | xargs -0)" &
 	passBwrapArgs "${bwSwitchableGraphicsArg}"
 	readyNotify set hybridBindv2
 }
