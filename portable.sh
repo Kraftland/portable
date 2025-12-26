@@ -817,7 +817,9 @@ function getDevArgs() {
 
 # Take video card number as input $1, e.g. card0, and prints out card's PCI path
 function resolvePCICard() {
-	readlink --quiet --no-newline --canonicalize /sys/class/drm/$1/../../
+	declare sysfsPath
+	sysfsPath="$(udevadm info /sys/class/drm/$1 --query=path)"
+	echo "/sys/${sysfsPath}" | sed "s|drm/$1||g"
 }
 
 function appANR() {
