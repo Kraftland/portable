@@ -798,7 +798,8 @@ function setNvOffloadEnv() {
 # $1=card[0-9], sets renderIndex in form of renderD128, etc
 function cardToRender() {
 	unset renderIndex
-	local symOrig="$(realpath /sys/class/drm/"$1"/../)"
+	declare symOrig
+	symOrig="$(realpath /sys/class/drm/"$1"/../)"
 	renderIndex="$(find "${symOrig}" -maxdepth 1 -mindepth 1 -name 'render*' -print -quit)"
 	renderIndex="$(basename "${renderIndex}")"
 	pecho debug "Translated $1 to ${renderIndex}"
