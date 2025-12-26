@@ -581,9 +581,7 @@ function hybridBindv2() {
 					addEnv "VK_LOADER_DRIVERS_DISABLE=nvidia_icd.json"
 					continue
 				else
-					cardToRender "${vCards}"
-					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${vCards}\0/sys/class/drm/${vCards}\0--dev-bind-try\0/dev/dri/${vCards}\0/dev/dri/${vCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${vCards}")\0$(resolvePCICard "${vCards}")\0"
+					bindCard "${vCards}"
 					addEnv 'DRI_PRIME=0'
 				fi
 			done
