@@ -798,10 +798,11 @@ function setNvOffloadEnv() {
 # $1=card[0-9], sets renderIndex in form of renderD128, etc
 function cardToRender() {
 	unset renderIndex
-	declare symOrig
-	symOrig="$(realpath /sys/class/drm/"$1"/../)"
-	renderIndex="$(find "${symOrig}" -maxdepth 1 -mindepth 1 -name 'render*' -print -quit)"
-	renderIndex="$(basename "${renderIndex}")"
+	declare sysfsPath devPath
+	sysfsPath="/sys$(udevadm info /sys/class/drm/$1 --query=path)"
+	devPath="${sysfsPath}"
+	declare -g renderIndex
+	renderIndex="$(basename "$(find "${sysfsPath}/../" -maxdepth 1 -mindepth 1 -name 'render*' -print -quit)")" # head is not needed since find exits on first match
 	pecho debug "Translated $1 to ${renderIndex}"
 }
 
