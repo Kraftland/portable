@@ -128,8 +128,10 @@ function bindCheck() {
 	fi
 	if [[ -e "${bwBindPar}" ]]; then
 		if [[ -d "${bwBindPar}" ]]; then
-			local fileCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type f | wc -l)
-			local dirCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type d | wc -l)
+			declare -i fileCnt
+			declare -i dirCnt
+			fileCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type f | wc -l)
+			dirCnt=$(find "${bwBindPar}" -maxdepth 1 -mindepth 1 -type d | wc -l)
 			if [[ "${fileCnt}" -gt 1 ]]; then
 				local trailingF="files"
 			else
