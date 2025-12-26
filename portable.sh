@@ -507,7 +507,8 @@ function setDiscBindArgv2() {
 }
 
 function hybridBindv2() {
-	local cardSums="$(find /sys/class/drm -name 'card*' -not -name '*-*' | wc -l)"
+	declare -i cardSums
+	cardSums="$(find /sys/class/drm -name 'card*' -not -name '*-*' | wc -l)"
 	if [[ "${cardSums}" -eq 1 || "${PORTABLE_ASSUME_SINGLE_GPU}" -eq 114514 ]]; then
 		bwSwitchableGraphicsArg=""
 		pecho debug "Single GPU"
