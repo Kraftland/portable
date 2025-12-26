@@ -507,14 +507,24 @@ function setDiscBindArgv2() {
 	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0"
 }
 
+function gameModeBind() {
+	declare IFS
+	IFS=$'\n'
+	for cardOp in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
+		bindCard "$(basename "${cardOp}")"
+	done
+}
+
 # Takes card* as arg1
 function bindCard() {
+	pecho debug "Binding card: $1..."
 	cardToRender "$1"
-	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${activeCards}\0/sys/class/drm/${activeCards}\0--dev-bind-try\0/dev/dri/${activeCards}\0/dev/dri/${activeCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${activeCards}")\0$(resolvePCICard "${activeCards}")\0"
+	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(resolvePCICard "$1")\0$(resolvePCICard "$1")\0--dev-bind-try\0/sys/class/drm/$1\0/sys/class/drm/$1\0--dev-bind-try\0/dev/dri/$1\0/dev/dri/$1\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0"
 }
 
 function hybridBindv2() {
 	declare -i cardSums
+	unset bwSwitchableGraphicsArg
 	declare -g bwSwitchableGraphicsArg
 	declare IFS
 	IFS=$'\n'
@@ -530,12 +540,11 @@ function hybridBindv2() {
 	elif [[ "${cardSums}" -eq 0 ]]; then
 		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
 		pecho warn "No GPU detected!"
-		#setDiscBindArgv2
-		bindNvDevIfExistv2
 	elif [[ "${gameMode}" = "true" ]]; then
 		pecho debug "Game Mode enabled on hybrid graphics"
-		setDiscBindArgv2
-		#gameModeBind
+		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
+		#setDiscBindArgv2
+		gameModeBind
 		bindNvDevIfExistv2
 		setNvOffloadEnv
 	else
