@@ -190,7 +190,8 @@ function bindCheck() {
 }
 
 function mountCheck() {
-	local mounts="$(systemd-run --quiet --user -P -- findmnt -R)"
+	declare mounts
+	mounts="$(systemd-run --quiet --user -P -- findmnt -R)"
 	if [[ "${mounts}" =~ "/usr/bin/" ]]; then
 		pecho crit "Mountpoints inside /usr/bin! Please unmount them for at least the user service manager"
 		readyNotify set-fail sanityCheck
