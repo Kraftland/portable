@@ -579,6 +579,7 @@ function hybridBindv2() {
 			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
 				if grep -q '0x10de' "/sys/class/drm/${vCards}/device/vendor"; then
 					addEnv "VK_LOADER_DRIVERS_DISABLE=nvidia_icd.json"
+					addEnv 'DRI_PRIME=0'
 					continue
 				else
 					cardToRender "${vCards}"
