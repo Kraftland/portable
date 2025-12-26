@@ -88,11 +88,9 @@ function readyNotify() {
 				break
 			elif [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
 				exit 114
-				break
 			else
 				if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
 					exit 114
-					break
 				fi
 				continue
 			fi
