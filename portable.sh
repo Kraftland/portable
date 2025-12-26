@@ -502,7 +502,8 @@ function bindNvDevIfExistv2(){
 }
 
 function setDiscBindArgv2() {
-	export bwSwitchableGraphicsArg='--dev-bind\0/sys/bus/pci\0/sys/bus/pci\0'
+	declare -g bwSwitchableGraphicsArg
+	bwSwitchableGraphicsArg='--dev-bind\0/sys/bus/pci\0/sys/bus/pci\0'
 	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0$(find /sys/devices -maxdepth 1 -name 'pci*' | head -n 1)\0"
 }
 
@@ -512,7 +513,6 @@ function hybridBindv2() {
 	if [[ "${cardSums}" -eq 1 || "${PORTABLE_ASSUME_SINGLE_GPU}" -eq 114514 ]]; then
 		bwSwitchableGraphicsArg=""
 		pecho debug "Single GPU"
-		#setDiscBindArgv2
 		bindNvDevIfExistv2
 		declare vCards
 		vCards="$(find /sys/class/drm -name 'card*' -not -name '*-*')"
@@ -521,7 +521,7 @@ function hybridBindv2() {
 	elif [[ "${cardSums}" -eq 0 ]]; then
 		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
 		pecho warn "No GPU detected!"
-		setDiscBindArgv2
+		#setDiscBindArgv2
 		bindNvDevIfExistv2
 	elif [[ "${gameMode}" = "true" ]]; then
 		pecho debug "Game Mode enabled on hybrid graphics"
