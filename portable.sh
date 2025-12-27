@@ -1525,12 +1525,14 @@ function cmdlineDispatcherv2() {
 		elif [[ $1 = "--" ]]; then
 			declare -g -r -x targetArgs="$*"
 		elif [[ "$1" = "--dbus-activation" ]]; then
-			declare -g -i -r _portableBusActivate=1
+			declare -g -i _portableBusActivate
+			_portableBusActivate=1
 		elif [[ "$1" = "--actions" ]]; then
 			shift
 			cmdArgCount++
 			if [[ "$1" = "debug-shell" ]]; then
-				declare -g -i -r _portableDebug=1
+				declare -g -i _portableDebug
+				_portableDebug=1
 			elif [[ "$1" =~ ^opendir|openhome$ ]]; then
 				unset targetArgs
 				declare -g -r targetArgs
@@ -1555,7 +1557,7 @@ function cmdlineDispatcherv2() {
 		else
 			pecho warn "Unrecognised argument: $1!"
 		fi
-		cmdArgCount++
+		cmdArgCount+=1
 		shift
 	done
 	if [[ "${cmdArgCount}" -le 1 ]]; then
@@ -1626,5 +1628,5 @@ if [[ "$*" = "--actions quit" ]]; then
 fi
 questionFirstLaunch
 manageDirs
-cmdlineDispatcher "$@"
+cmdlineDispatcherv2 $@
 launch "$@"
