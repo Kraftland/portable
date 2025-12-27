@@ -1525,6 +1525,7 @@ function cmdlineDispatcherv2() {
 		elif [[ $1 = "--" ]]; then
 			declare -g -x targetArgs="$*"
 			declare -r targetArgs
+			break
 		elif [[ "$1" = "--dbus-activation" ]]; then
 			declare -g -i _portableBusActivate
 			_portableBusActivate=1
@@ -1536,11 +1537,10 @@ function cmdlineDispatcherv2() {
 			shift
 			cmdArgCount++
 			if [[ "$1" = "debug-shell" ]]; then
-				declare -g -i _portableDebug
+				declare -g -i -x _portableDebug
 				_portableDebug=1
+				declare -r _portableDebug
 			elif [[ "$1" =~ ^opendir|openhome$ ]]; then
-				unset targetArgs
-				declare -g -r targetArgs
 				/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
 				exit $?
 			elif [[ "$1" =~ ^share-files|share-file$ ]]; then
