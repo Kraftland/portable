@@ -1568,8 +1568,6 @@ function cmdlineDispatcherv2() {
 	done
 	if [[ "${cmdArgCount}" -eq 1 ]]; then
 		trailingS=""
-	elif [[ "${cmdArgCount}" -eq 0 ]]; then
-		printHelp
 	else
 		trailingS="s"
 	fi
