@@ -14,6 +14,15 @@ if [[ "$*" =~ ^https:// ]] || [[ "$*" =~ ^http:// ]]; then
 	exit $?
 fi
 
+echo "Received arguments: $*"
+
+if [[ $1 = "--show-item" ]]; then
+	shift
+	declare -g -i showItem
+	showItem=1
+	declare -r showItem
+fi
+
 if [[ -e "$1" ]] || [[ -e "$(echo "$1" | sed 's|file:///|/|g')" ]]; then
 	echo "Arg1: $1"
 	export origReq="$1"
@@ -65,20 +74,39 @@ fi
 
 echo "[Info] received a request: $@, translated to ${link}"
 echo "[Info] Initiating D-Bus call..."
-dbus-send --print-reply --dest=org.freedesktop.FileManager1 \
-	/org/freedesktop/FileManager1 \
-	org.freedesktop.FileManager1.ShowItems \
-	array:string:"file://${link}" \
-	string:fake-dde-show-items
 
-if [[ $? = 0 ]]; then
-	exit 0
-fi
+exec 114< "${link}"
 
-/usr/lib/flatpak-xdg-utils/xdg-open $(dirname "${link}")
-
-if [[ $? = 0 ]]; then
-	exit 0
+if [[ -d "${link}" ]] || [[ ${showItem} ]]; then
+	busctl \
+		--user \
+		call \
+		org.freedesktop.portal.Desktop \
+		/org/freedesktop/portal/desktop \
+		org.freedesktop.portal.OpenURI \
+		OpenDirectory \
+		sha{sv} \
+		'parent_window' \
+		'114' \
+		3 handle_token s 0 writable b false ask b true
+	if [[ $? = 0 ]]; then
+		exit 0
+	fi
+else
+	busctl \
+		--user \
+		call \
+		org.freedesktop.portal.Desktop \
+		/org/freedesktop/portal/desktop \
+		org.freedesktop.portal.OpenURI \
+		OpenFile \
+		sha{sv} \
+		'parent_window' \
+		'114' \
+		3 handle_token s 0 writable b false ask b true
+	if [[ $? = 0 ]]; then
+		exit 0
+	fi
 fi
 
 
