@@ -6,12 +6,14 @@ if [[ $1 = "--show-item" ]]; then
 	shift
 	declare -g -i showItem
 	showItem=1
-	declare -r showItem
 fi
 
 if [[ "$1" =~ ://.*  ]]; then
 	if [[ $1 =~ ^file:// ]]; then
 		echo "That's a file link!"
+		declare -g origReq
+		origReq="$(echo ${origReq} | sed 's|file:///|/|g')"
+		echo "Decoding path as: ${origReq}"
 	else
 		echo "Querying the portal..."
 		declare schemeSupported
@@ -31,51 +33,47 @@ if [[ "$1" =~ ://.*  ]]; then
 			'parent_window' "$*" 3 handle_token s 0 writable b false ask b true
 		exit $?
 	fi
-
+else
+	declare -g origReq
+	origReq=$(realpath "${origReq}")
+	echo "Interpreting origReq as ${origReq}"
 fi
+
 if [[ -e "$1" ]] || [[ -e "$(echo "$1" | sed 's|file:///|/|g')" ]]; then
 	echo "Arg1: $1"
 	export origReq="$1"
 fi
 
-if [[ -e "$2" ]] || [[ -e "$(echo "$2" | sed 's|file:///|/|g')" ]]; then
-	echo "Arg2: $2"
-	export origReq="$2"
+if [[ -e "$*" ]] || [[ -e "$(echo "$*" | sed 's|file:///|/|g')" ]]; then
+	echo "Arg2: $*"
+	export origReq="$*"
 fi
 
-if [ ${trashAppUnsafe} ]; then
+if [ "${trashAppUnsafe}" ]; then
 	link="${origReq}"
 	xdg-open "${origReq}"
 	exit $?
-fi
-
-if [[ $(echo ${origReq} | cut -c '1-8') =~ 'file://'  ]]; then
-	echo "Received a request with file://: ${origReq}"
-	export origReq="$(echo ${origReq} | sed 's|file:///|/|g')"
-	echo "Decoding path as: ${origReq}"
-else
-	export origReq=$(realpath "${origReq}")
-	echo "Interpreting origReq as ${origReq}"
 fi
 
 if [[ "${origReq}" =~ "/tmp" ]]; then
 	echo "[Info] Detected /tmp!"
 	cp \
 		-a \
-		${origReq} \
+		"${origReq}" \
 		~/Shared/
 	link="${HOME}/Shared/$(basename "${origReq}")"
-elif [[ "${origReq}" =~ "/run/user" ]]; then
+elif [[ "${origReq}" =~ ^/run/user ]]; then
 	echo "[Info] Detected run path!"
 	cp \
 		-a \
-		${origReq} \
+		"${origReq}" \
 		~/Shared/
 	link="${HOME}/Shared/$(basename "${origReq}")"
-elif [[ "$(dirname "${origReq}")" =~ "${HOME}" ]]; then
+elif [[ "$(dirname "${origReq}")" =~ ^${HOME} ]]; then
 	echo "[Info] Detected sandbox home"
 	link="${origReq}"
 else
+	showItem=1
 	link="${HOME}/Shared/$(basename "${origReq}")"
 	ln \
 		-sfr \
@@ -126,5 +124,4 @@ elif [ -f /usr/bin/nautilus ] && [ ${XDG_CURRENT_DESKTOP} = GNOME ]; then
 	/usr/bin/nautilus $(dirname "${link}")
 else
 	xdg-open $(dirname "${link}")
-fi
 fi
