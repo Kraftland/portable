@@ -1423,11 +1423,6 @@ function questionFirstLaunch() {
 }
 
 function launch() {
-	if [[ "$*" =~ "--actions" && "$*" =~ "debug-shell" ]]; then
-		declare -g _portableDebug=1
-	elif [[ "$*" =~ "--dbus-activation" ]]; then
-		declare -g _portableBusActivate=1
-	fi
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
 		systemctl --user reset-failed "${unitName}.service" &
@@ -1597,4 +1592,4 @@ fi
 questionFirstLaunch
 manageDirs
 cmdlineDispatcherv2 $@
-launch "$@"
+launch
