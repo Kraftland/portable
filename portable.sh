@@ -984,13 +984,6 @@ function generateFlatpakInfo() {
 	readyNotify set generateFlatpakInfo
 }
 
-function resetUnit() {
-	if [[ $(systemctl --user is-failed "${1}".service) = "failed" ]]; then
-		pecho warn "${1} failed last time"
-		systemctl --user reset-failed "${1}".service
-	fi
-}
-
 function addDbusArg() {
 	if [[ -z "${extraDbusArgs}" ]]; then
 		extraDbusArgs="$*"
@@ -1384,10 +1377,6 @@ function enableSandboxFunc() {
 }
 
 function questionFirstLaunch() {
-	resetUnit "${proxyName}"
-	resetUnit "${friendlyName}" &
-	resetUnit "${proxyName}-a11y" &
-	resetUnit "${friendlyName}-wayland-proxy"
 	if [[ ! -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox" ]]; then
 		if [[ "${LANG}" =~ "zh_CN" ]]; then
 			/usr/bin/zenity \
@@ -1453,6 +1442,7 @@ function launch() {
 	sanityCheck &
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
+		cleanDUnits
 		execAppUnsafe
 	else
 		dbusProxy
