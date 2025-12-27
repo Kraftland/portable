@@ -37,6 +37,7 @@ function printHelp() {
 	echo "		reset-documents	-> Revoke granted file access permissions"
 	echo "		stats	-	-> Show basic status of the sandbox (if running)"
 	echo "	--	-	-	-> Any argument after this double dash will be passed to the application"
+	echo "	--help	-	-	-> Print this help"
 	exit 0
 }
 
