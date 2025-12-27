@@ -19,7 +19,7 @@ function startLoop() {
 		else
 			echo "Starting auxiliary application"
 			# shellcheck disable=SC2046
-			eval $(${_launch}) &
+			$(${_launch}) &
 			systemd-notify --ready 2>/dev/null
 			systemd-notify --status="Started auxiliary Application" 2>/dev/null
 		fi

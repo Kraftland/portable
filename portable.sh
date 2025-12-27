@@ -1535,7 +1535,7 @@ function cmdlineDispatcherv2() {
 			declare -r -x PORTABLE_LOGGING
 		elif [[ "$1" = "--actions" ]]; then
 			shift
-			cmdArgCount++
+			cmdArgCount+=1
 			if [[ "$1" = "debug-shell" ]]; then
 				declare -g -i -x _portableDebug
 				_portableDebug=1
