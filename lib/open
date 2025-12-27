@@ -1,5 +1,56 @@
 #!/bin/bash
 
+function callPortal() {
+	exec 114< "${link}"
+	if [[ -L "${link}" ]]; then
+		return 1
+	elif [[ -d "${link}" ]] || [[ ${showItem} ]]; then
+		if [[ -w "${link}" ]]; then
+			echo "Opening directory via Portal"
+		elif [[ -w "$(dirname "${link}")" ]] && [[ ${showItem} ]]; then
+			echo "Opening directory via Portal"
+		else
+			echo "Error: path not writable"
+			return 1
+		fi
+		busctl \
+			--user \
+			call \
+			org.freedesktop.portal.Desktop \
+			/org/freedesktop/portal/desktop \
+			org.freedesktop.portal.OpenURI \
+			OpenDirectory \
+			sha{sv} \
+			'parent_window' \
+			'114' \
+			3 handle_token s 0 writable b false ask b true
+		if [[ $? = 0 ]]; then
+			exit 0
+		fi
+	else
+		if [[ -w "${link}" ]]; then
+			echo "Opening file via Portal"
+		else
+			echo "Error: path not writable"
+			return 1
+		fi
+		busctl \
+			--user \
+			call \
+			org.freedesktop.portal.Desktop \
+			/org/freedesktop/portal/desktop \
+			org.freedesktop.portal.OpenURI \
+			OpenFile \
+			sha{sv} \
+			'parent_window' \
+			'114' \
+			3 handle_token s 0 writable b false ask b true
+		if [[ $? = 0 ]]; then
+			exit 0
+		fi
+	fi
+}
+
 echo "Received arguments: $*"
 
 if [[ $1 = "--show-item" ]]; then
@@ -69,48 +120,20 @@ else
 		"${origReq}" ~/Shared/
 fi
 
-echo "[Info] received a request: $@, translated to ${link}"
+echo "[Info] received a request: $*, translated to ${link}"
+
+declare -g link
 echo "[Info] Initiating D-Bus call..."
 
-exec 114< "${link}"
+callPortal
 
-if [[ -d "${link}" ]] || [[ ${showItem} ]]; then
-	busctl \
-		--user \
-		call \
-		org.freedesktop.portal.Desktop \
-		/org/freedesktop/portal/desktop \
-		org.freedesktop.portal.OpenURI \
-		OpenDirectory \
-		sha{sv} \
-		'parent_window' \
-		'114' \
-		3 handle_token s 0 writable b false ask b true
-	if [[ $? = 0 ]]; then
-		exit 0
-	fi
-else
-	busctl \
-		--user \
-		call \
-		org.freedesktop.portal.Desktop \
-		/org/freedesktop/portal/desktop \
-		org.freedesktop.portal.OpenURI \
-		OpenFile \
-		sha{sv} \
-		'parent_window' \
-		'114' \
-		3 handle_token s 0 writable b false ask b true
-	if [[ $? = 0 ]]; then
-		exit 0
-	fi
+dbus-send --print-reply --dest=org.freedesktop.FileManager1 \
+	/org/freedesktop/FileManager1 \
+	org.freedesktop.FileManager1.ShowItems \
+	array:string:"file://${link}" \
+	string:fake-dde-show-items
+
+if [[ $? -eq 0 ]]; then
+	exit 0
 fi
-
-
-if [ -f /usr/bin/dolphin ] && [ ${XDG_CURRENT_DESKTOP} = KDE ]; then
-	/usr/bin/dolphin --select "${link}"
-elif [ -f /usr/bin/nautilus ] && [ ${XDG_CURRENT_DESKTOP} = GNOME ]; then
-	/usr/bin/nautilus $(dirname "${link}")
-else
-	xdg-open $(dirname "${link}")
-fi
+xdg-open $(dirname "${link}")
