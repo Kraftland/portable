@@ -1538,6 +1538,7 @@ function cmdlineDispatcherv2() {
 		if [[ -z $* ]]; then
 			break
 		elif [[ $1 = "--" ]]; then
+			shift
 			declare -g -x targetArgs="$*"
 			declare -r targetArgs
 			break
