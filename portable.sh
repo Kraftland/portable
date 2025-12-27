@@ -1515,6 +1515,28 @@ function showStats() {
 	exit 0
 }
 
+function cmdlineDispatcherv2() {
+	declare -i cmdArgCount
+	declare trailingS
+	cmdArgCount=0
+	while true; do
+		if [[ -z $* ]]; then
+			if [[ "${cmdArgCount}" -le 1 ]]; then
+				trailingS=""
+			else
+				trailingS="s"
+			fi
+			pecho info "Resolution of command line arguments finished with ${cmdArgCount} argument${trailingS}"
+			break
+		elif [[ "$2" = "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ "$1" = "--actions" ]]; then
+			rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
+			questionFirstLaunch
+		fi
+		cmdArgCount++
+		shift
+	done
+}
+
 function cmdlineDispatcher() {
 	if [[ "$*" =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ "$*" =~ "--actions" ]]; then
 		rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
