@@ -1521,20 +1521,47 @@ function cmdlineDispatcherv2() {
 	cmdArgCount=0
 	while true; do
 		if [[ -z $* ]]; then
-			if [[ "${cmdArgCount}" -le 1 ]]; then
-				trailingS=""
-			else
-				trailingS="s"
-			fi
-			pecho info "Resolution of command line arguments finished with ${cmdArgCount} argument${trailingS}"
 			break
-		elif [[ "$2" = "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ "$1" = "--actions" ]]; then
-			rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
-			questionFirstLaunch
+		elif [[ $1 = "--" ]]; then
+			declare -g -r -x targetArgs="$*"
+		elif [[ "$1" = "--dbus-activation" ]]; then
+			declare -g -i -r _portableBusActivate=1
+		elif [[ "$1" = "--actions" ]]; then
+			shift
+			cmdArgCount++
+			if [[ "$1" = "debug-shell" ]]; then
+				declare -g -i -r _portableDebug=1
+			elif [[ "$1" =~ ^opendir|openhome$ ]]; then
+				unset targetArgs
+				declare -g -r targetArgs
+				/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
+				exit $?
+			elif [[ "$1" =~ ^share-files|share-file$ ]]; then
+				unset targetArgs
+				declare -g -r targetArgs
+				shareFile
+			elif [[ "$1" =~ ^reset-documents|reset-document$ ]]; then
+				unset targetArgs
+				declare -g -r targetArgs
+				resetDocuments
+			elif [[ "$1" =~ ^stats|stat$ ]]; then
+				showStats
+			elif [[ "$1" = "f5aaebc6-0014-4d30-beba-72bce57e0650" ]]; then
+				rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
+				questionFirstLaunch
+			else
+				pecho warn "Unrecognised action: $1"
+			fi
 		fi
 		cmdArgCount++
 		shift
 	done
+	if [[ "${cmdArgCount}" -le 1 ]]; then
+		trailingS=""
+	else
+		trailingS="s"
+	fi
+	pecho info "Resolution of portable command line arguments finished with ${cmdArgCount} argument${trailingS}"
 }
 
 function cmdlineDispatcher() {
