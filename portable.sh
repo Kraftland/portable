@@ -1570,39 +1570,6 @@ function cmdlineDispatcherv2() {
 	pecho info "Application argument interpreted as: ${targetArgs}"
 }
 
-function cmdlineDispatcher() {
-	if [[ "$*" =~ "f5aaebc6-0014-4d30-beba-72bce57e0650" ]] && [[ "$*" =~ "--actions" ]]; then
-		rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
-		questionFirstLaunch
-	fi
-	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "opendir" ]]; then
-		export targetArgs=""
-		/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
-		exit "$?"
-	fi
-	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "share-files" ]]; then
-		export targetArgs=""
-		shareFile
-	fi
-	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "reset-documents" ]]; then
-		export targetArgs=""
-		resetDocuments
-	fi
-	if [[ "$*" =~ "--actions" ]] && [[ "$*" =~ "stat" ]]; then
-		export targetArgs=""
-		showStats
-	fi
-	while [[ $# -gt 0 ]]; do
-		if [[ "$1" = "--" ]]; then
-			shift
-			break
-		fi
-		shift
-	done
-	export targetArgs="$*"
-	pecho info "Application argument interpreted as: ${targetArgs}"
-}
-
 set -m
 export \
 	pwCam \
