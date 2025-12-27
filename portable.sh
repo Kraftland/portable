@@ -1428,9 +1428,9 @@ function launch() {
 		systemctl --user reset-failed "${unitName}.service" &
 	fi
 	if systemctl --user --quiet is-active "${unitName}.service"; then
-		warnMulRunning "$@"
+		warnMulRunning
 	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
-		warnMulRunning "$@"
+		warnMulRunning
 	fi
 	sanityCheck &
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
