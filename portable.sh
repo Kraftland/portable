@@ -1398,14 +1398,14 @@ function questionFirstLaunch() {
 					--default-cancel \
 					--title "确认操作" \
 					--icon=security-low-symbolic \
-					--text "用户数据将不再被保护"
+					--text "若要更改设定, 运行 _portableConfig=\"${_portableConfig}\" portable --actions f5aaebc6-0014-4d30-beba-72bce57e0650"
 			else
 				zenity \
 					--question \
 					--default-cancel \
 					--title "Confirm action" \
 					--icon=security-low-symbolic \
-					--text "User data may be compromised"
+					--text "Change this anytime via command: _portableConfig=\"${_portableConfig}\" portable --actions f5aaebc6-0014-4d30-beba-72bce57e0650"
 			fi
 			if [[ $? -eq 1 ]]; then
 				pecho info "User enabled sandbox late"
