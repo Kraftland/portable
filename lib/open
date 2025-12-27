@@ -12,7 +12,7 @@ if [[ "$1" =~ ://.*  ]]; then
 	if [[ $1 =~ ^file:// ]]; then
 		echo "That's a file link!"
 		declare -g origReq
-		origReq="$(echo ${origReq} | sed 's|file:///|/|g')"
+		origReq="$(echo "$1" | sed 's|file:///|/|g')"
 		echo "Decoding path as: ${origReq}"
 	else
 		echo "Querying the portal..."
@@ -33,16 +33,9 @@ if [[ "$1" =~ ://.*  ]]; then
 			'parent_window' "$*" 3 handle_token s 0 writable b false ask b true
 		exit $?
 	fi
-fi
-
-if [[ -e "$1" ]] || [[ -e "$(echo "$1" | sed 's|file:///|/|g')" ]]; then
-	echo "Arg1: $1"
-	export origReq="$1"
-fi
-
-if [[ -e "$*" ]] || [[ -e "$(echo "$*" | sed 's|file:///|/|g')" ]]; then
-	echo "Arg2: $*"
-	export origReq="$*"
+else
+	declare -g origReq
+	origReq="$*"
 fi
 
 if [ "${trashAppUnsafe}" ]; then
