@@ -1,19 +1,5 @@
 #!/bin/bash
 
-if [[ "$*" =~ ^https:// ]] || [[ "$*" =~ ^http:// ]]; then
-	echo "[Info] Received a request: $*, interpreting as link"
-	busctl \
-		--user \
-		call \
-		org.freedesktop.portal.Desktop \
-		/org/freedesktop/portal/desktop \
-		org.freedesktop.portal.OpenURI \
-		OpenURI \
-		ssa{sv} \
-		'parent_window' "$*" 3 handle_token s 0 writable b false ask b true
-	exit $?
-fi
-
 echo "Received arguments: $*"
 
 if [[ $1 = "--show-item" ]]; then
@@ -23,6 +9,29 @@ if [[ $1 = "--show-item" ]]; then
 	declare -r showItem
 fi
 
+if [[ "$1" =~ ://.*  ]]; then
+	if [[ $1 =~ ^file:// ]]; then
+		echo "That's a file link!"
+	fi
+	echo "Querying the portal..."
+	declare schemeSupported
+	schemeSupported=$(busctl --user call org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop org.freedesktop.portal.OpenURI SchemeSupported "sa{sv}" "$(echo "${1}" | sed 's|://.*||g')" 0)
+	if [[ "${schemeSupported}" =~ false$ ]]; then
+		echo "Warning: the link is not supported by this system"
+		exit 1
+	fi
+	busctl \
+		--user \
+		call \
+		org.freedesktop.portal.Desktop \
+		/org/freedesktop/portal/desktop \
+		org.freedesktop.portal.OpenURI \
+		OpenURI \
+		"ssa{sv}" \
+		'parent_window' "$*" 3 handle_token s 0 writable b false ask b true
+	exit $?
+
+fi
 if [[ -e "$1" ]] || [[ -e "$(echo "$1" | sed 's|file:///|/|g')" ]]; then
 	echo "Arg1: $1"
 	export origReq="$1"
