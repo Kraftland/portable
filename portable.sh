@@ -1562,6 +1562,7 @@ function cmdlineDispatcherv2() {
 		trailingS="s"
 	fi
 	pecho info "Resolution of portable command line arguments finished with ${cmdArgCount} argument${trailingS}"
+	pecho info "Application argument interpreted as: ${targetArgs}"
 }
 
 function cmdlineDispatcher() {
