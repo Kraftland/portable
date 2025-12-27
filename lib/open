@@ -1,8 +1,16 @@
 #!/bin/bash
 
-if [[ "$@" =~ "https://" ]] || [[ "$@" =~ "http://" ]]; then
-	echo "[Info] Received a request: $@, interpreting as link"
-	/usr/lib/flatpak-xdg-utils/xdg-open "$@"
+if [[ "$*" =~ ^https:// ]] || [[ "$*" =~ ^http:// ]]; then
+	echo "[Info] Received a request: $*, interpreting as link"
+	busctl \
+		--user \
+		call \
+		org.freedesktop.portal.Desktop \
+		/org/freedesktop/portal/desktop \
+		org.freedesktop.portal.OpenURI \
+		OpenURI \
+		ssa{sv} \
+		'parent_window' "$*" 3 handle_token s 0 writable b false ask b true
 	exit $?
 fi
 

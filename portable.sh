@@ -1232,6 +1232,8 @@ function dbusProxy() {
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.PowerProfileMonitor \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.PowerProfileMonitor.* \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.MemoryMonitor \
+			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.MemoryMonitor.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.Lookup \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.Lookup.* \
 			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ScreenCast \
