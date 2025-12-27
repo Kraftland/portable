@@ -491,6 +491,14 @@ function inputBindv2() {
 				bwInputArg="${bwInputArg}--dev-bind\0${_device}\0${_device}\0"
 			fi
 		done
+		declare IFS
+		IFS=$'\n'
+		for _device in $(udevadm info /dev/hidraw* -qpath); do
+			bwInputArg="${bwInputArg}--dev-bind\0/sys${device}\0/sys${device}\0"
+		done
+		for _device in $(udevadm info /dev/input/event* -qpath); do
+			bwInputArg="${bwInputArg}--dev-bind\0/sys${device}\0/sys${device}\0"
+		done
 		pecho warn "Detected input preference as expose."
 		passBwrapArgs "${bwInputArg}"
 	else
