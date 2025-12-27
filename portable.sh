@@ -1568,7 +1568,7 @@ function cmdlineDispatcherv2() {
 			else
 				pecho warn "Unrecognised action: $1"
 			fi
-		else [[ "$1" =~ ^--help|-h$ ]]; then
+		elif [[ "$1" =~ ^--help|-h$ ]]; then
 			printHelp
 		else
 			pecho warn "Unrecognised argument: $1!"
