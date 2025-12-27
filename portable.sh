@@ -1552,6 +1552,8 @@ function cmdlineDispatcherv2() {
 			else
 				pecho warn "Unrecognised action: $1"
 			fi
+		else
+			pecho warn "Unrecognised argument: $1!"
 		fi
 		cmdArgCount++
 		shift
