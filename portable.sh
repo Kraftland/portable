@@ -18,8 +18,25 @@ function pecho() {
 
 function printHelp() {
 	echo "This is Portable, a fast, private and efficient Linux desktop sandbox."
-	echo "Visit https://github.com/Kraftland/portable for documentation and information."
-	echo "To get started, specify a configuration file using the environment variable \"\${_portableConfig}\""
+	echo "Visit https://github.com/Kraftland/portable for documentation."
+	echo -e "\n"
+	echo "Environment variables:"
+	echo "	PORTABLE_LOGGING	-> Optional"
+	echo "		Possible values: debug, info"
+	echo "	_portalConfig		-> Required"
+	echo "		Possible values: "
+	echo "			Application ID of installed sandbox under /usr/lib/portable/info"
+	echo "			Relative or absolute path to a configuration file"
+	echo -e "\n"
+	echo "Command line arguments (optional):"
+	echo "	-v	-	-	-> Verbose output"
+	echo "	--actions <action>"
+	echo "		debug-shell	-> Enter the sandbox via a bash shell"
+	echo "		opendir	-	-> Open the sandbox's home directory"
+	echo "		share-files	-> Place files in sandbox's \"Shared\" directory"
+	echo "		reset-documents	-> Revoke granted file access permissions"
+	echo "		stats	-	-> Show basic status of the sandbox (if running)"
+	echo "	--	-	-	-> Any argument after this double dash will be passed to the application"
 	exit 0
 }
 
@@ -28,7 +45,7 @@ if [[ "${_portalConfig}" ]]; then
 	pecho warn "Using legacy configuration variable!"
 fi
 
-if [[ -z "${_portableConfig}" ]] || [[ $1 = "--help" ]]; then
+if [[ -z "${_portableConfig}" ]]; then
 	printHelp
 elif [[ -r "${_portableConfig}" ]]; then
 	pecho info "Configuration specified as absolute path: ${_portableConfig}"
@@ -1550,14 +1567,18 @@ function cmdlineDispatcherv2() {
 			else
 				pecho warn "Unrecognised action: $1"
 			fi
+		else [[ "$1" =~ ^--help|-h$ ]]; then
+			printHelp
 		else
 			pecho warn "Unrecognised argument: $1!"
 		fi
 		cmdArgCount+=1
 		shift
 	done
-	if [[ "${cmdArgCount}" -le 1 ]]; then
+	if [[ "${cmdArgCount}" -eq 1 ]]; then
 		trailingS=""
+	elif [[ "${cmdArgCount}" -eq 0 ]]; then
+		printHelp
 	else
 		trailingS="s"
 	fi
