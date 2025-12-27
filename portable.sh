@@ -1544,12 +1544,8 @@ function cmdlineDispatcherv2() {
 				/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
 				exit $?
 			elif [[ "$1" =~ ^share-files|share-file$ ]]; then
-				unset targetArgs
-				declare -g -r targetArgs
 				shareFile
 			elif [[ "$1" =~ ^reset-documents|reset-document$ ]]; then
-				unset targetArgs
-				declare -g -r targetArgs
 				resetDocuments
 			elif [[ "$1" =~ ^stats|stat$ ]]; then
 				showStats
