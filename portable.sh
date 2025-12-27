@@ -1523,10 +1523,15 @@ function cmdlineDispatcherv2() {
 		if [[ -z $* ]]; then
 			break
 		elif [[ $1 = "--" ]]; then
-			declare -g -r -x targetArgs="$*"
+			declare -g -x targetArgs="$*"
+			declare -r targetArgs
 		elif [[ "$1" = "--dbus-activation" ]]; then
 			declare -g -i _portableBusActivate
 			_portableBusActivate=1
+		elif [[ "$1" =~ ^-v|--verbose$ ]]; then
+			declare -g PORTABLE_LOGGING
+			PORTABLE_LOGGING=debug
+			declare -r -x PORTABLE_LOGGING
 		elif [[ "$1" = "--actions" ]]; then
 			shift
 			cmdArgCount++
