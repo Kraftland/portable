@@ -659,7 +659,6 @@ function cameraBindv2() {
 
 function calcBwrapArg() {
 	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-	sync "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 
 	# Build sd-run args first!
@@ -674,10 +673,6 @@ function calcBwrapArg() {
 
 	passBwrapArgs "-p\0ExecReload=bash -c 'kill --signal SIGALRM 2'\0-p\0ReloadSignal=SIGALRM\0-p\0EnvironmentFile=${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env\0"
 	passBwrapArgs "-p\0SystemCallFilter=~@clock\0-p\0SystemCallFilter=~@cpu-emulation\0-p\0SystemCallFilter=~@module\0-p\0SystemCallFilter=~@obsolete\0-p\0SystemCallFilter=~@raw-io\0-p\0SystemCallFilter=~@reboot\0-p\0SystemCallFilter=~@swap\0-p\0SystemCallErrorNumber=EAGAIN\0-p\0ProtectHome=no\0-p\0UnsetEnvironment=GNOME_SETUP_DISPLAY\0-p\0UnsetEnvironment=PIPEWIRE_REMOTE\0-p\0UnsetEnvironment=PAM_KWALLET5_LOGIN\0-p\0UnsetEnvironment=GTK2_RC_FILES\0-p\0UnsetEnvironment=ICEAUTHORITY\0-p\0UnsetEnvironment=MANAGERPID\0"
-
-	# Do we really need this?
-	#passBwrapArgs "-p\0LimitNOFILE=524288\0"
-
 
 	passBwrapArgs "--\0bwrap\0--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-user\0" # Unshares
 	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
