@@ -692,11 +692,11 @@ function calcBwrapArg() {
 	passBwrapArgs "--perms\00000\0--tmpfs\0/boot\0--perms\00000\0--tmpfs\0/srv\0--perms\00000\0--tmpfs\0/root\0--perms\00000\0--tmpfs\0/media\0--perms\00000\0--tmpfs\0/mnt\0--tmpfs\0/home\0--tmpfs\0/var\0--symlink\0/run\0/var/run\0--symlink\0/run/lock\0/var/lock\0--tmpfs\0/var/empty\0--tmpfs\0/var/lib\0--perms\00000\0--tmpfs\0/var/log\0--perms\00000\0--tmpfs\0/var/opt\0--perms\00000\0--tmpfs\0/var/spool\0--tmpfs\0/var/tmp\0--ro-bind-try\0/var/cache/fontconfig\0/var/cache/fontconfig\0--ro-bind-try\0/opt\0/opt\0" # Create various directories for FHS
 	passBwrapArgs "--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0/run\0--bind\0${XDG_RUNTIME_DIR}/portable/${appID}\0${XDG_RUNTIME_DIR}/portable/${appID}\0--ro-bind-try\0/run/systemd/userdb/io.systemd.Home\0/run/systemd/userdb/io.systemd.Home\0--ro-bind\0${xAuthBind}\0/run/.Xauthority\0--ro-bind\0${busDir}/bus\0/run/sessionBus\0--ro-bind-try\0${busDirAy}\0${XDG_RUNTIME_DIR}/at-spi\0--dir\0/run/host\0--bind\0${XDG_RUNTIME_DIR}/doc/by-app/${appID}\0${XDG_RUNTIME_DIR}/doc\0--ro-bind\0/dev/null\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/flatpak-runtime-directory\0--ro-bind-try\0${wayDisplayBind}\0${XDG_RUNTIME_DIR}/wayland-0\0--ro-bind-try\0/run/systemd/resolve/stub-resolv.conf\0/run/systemd/resolve/stub-resolv.conf\0--bind\0${XDG_RUNTIME_DIR}/systemd/notify\0${XDG_RUNTIME_DIR}/systemd/notify\0" # Run binds
 	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0" # HOME binds
+	procDriverBind &
 	calcMountArgv2 &
 	pwBindCalc &
 	cameraBindv2 &
 	passBwrapArgs "--ro-bind-try\0${XDG_RUNTIME_DIR}/pulse\0${XDG_RUNTIME_DIR}/pulse\0" # PulseAudio Bind!
-	procDriverBind &
 	passBwrapArgs "--ro-bind\0/etc\0/etc\0--tmpfs\0/etc/kernel\0"
 	passBwrapArgs "--tmpfs\0/proc/1\0--tmpfs\0/usr/share/applications\0--tmpfs\0${HOME}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/options\0--tmpfs\0${HOME}/.var\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}/.var/app/${appID}\0--tmpfs\0${HOME}/.var/app/${appID}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options\0" # Hide some entries
 	readyNotify wait bindCheck
