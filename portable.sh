@@ -1138,7 +1138,6 @@ function dbusProxy() {
 	generateFlatpakInfo &
 	importEnv &
 	dbusArg &
-	cleanDUnits &
 	genXAuth
 	waylandDisplay
 	mkdir \
@@ -1451,10 +1450,10 @@ function launch() {
 	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
 		warnMulRunning
 	fi
+	cleanDUnits &
 	sanityCheck &
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
-		cleanDUnits
 		execAppUnsafe
 	else
 		dbusProxy
