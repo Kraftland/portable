@@ -1134,10 +1134,10 @@ function pwSecContext() {
 }
 
 function dbusProxy() {
+	dbusArg &
 	genInstanceID
 	generateFlatpakInfo &
 	importEnv &
-	dbusArg &
 	genXAuth
 	waylandDisplay
 	mkdir \
@@ -1584,7 +1584,7 @@ function cmdlineDispatcherv2() {
 		trailingS="s"
 	fi
 	pecho info "Resolution of portable command line arguments finished with ${cmdArgCount} argument${trailingS}"
-	pecho info "Application argument interpreted as: ${targetArgs}"
+	pecho info "Application argument interpreted as: \"${targetArgs}\""
 }
 
 set -m
