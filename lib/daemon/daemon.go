@@ -211,6 +211,21 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse launchTarget: " + launchTargetReadErr.Error())
 	}
 
+	busLaunchTarget, busLaunchTargetReadErr := regexp.Compile("busLaunchTarget=.*")
+	if busLaunchTargetReadErr == nil {
+		confOpts.busLaunchTarget = tryProcessConf(string(busLaunchTarget.Find(confReader)), "busLaunchTarget")
+		if len(confOpts.busLaunchTarget) == 0 {
+			if len(os.Getenv("busLaunchTarget")) > 0 {
+				pecho("warn", "Assigning busLaunchTarget using environment variable, this is not recommended")
+			} else {
+				pecho("info", "busLaunchTarget not set")
+			}
+		}
+		pecho("debug", "Determined busLaunchTarget: " + strconv.Quote(confOpts.launchTarget))
+	} else {
+		pecho("crit", "Unable to parse busLaunchTarget: " + launchTargetReadErr.Error())
+	}
+
 	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
 	if waylandOnlyReadErr != nil {
 		pecho("crit", "Unable to parse waylandOnly: " + waylandOnlyReadErr.Error())
