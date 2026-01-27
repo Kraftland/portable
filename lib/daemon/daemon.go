@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"os/exec"
 )
 
 const (
@@ -12,6 +12,8 @@ const (
 
 var (
 	internalLoggingLevel int
+	appID string
+	runtimeDir string
 )
 
 func pecho(level string, message string) {
@@ -27,7 +29,8 @@ func pecho(level string, message string) {
 		case "warn":
 			fmt.Println("[Warn] ", message)
 		case "crit":
-			log.Panicln("[Critical] ", message)
+			fmt.Println("[Critical] ", message)
+			panic("A critical error has happened")
 		default:
 			fmt.Println("[Undefined] ", message)
 	}
@@ -45,7 +48,7 @@ func getVariables() {
 		default:
 			internalLoggingLevel = 3
 	}
-	var runtimeDir string = os.Getenv("XDG_RUNTIME_DIR")
+	runtimeDir = os.Getenv("XDG_RUNTIME_DIR")
 	if len(runtimeDir) == 0 {
 		pecho("warn", "XDG_RUNTIME_DIR not set")
 	} else {
@@ -61,13 +64,30 @@ func getVariables() {
 			pecho("crit", "XDG_RUNTIME_DIR is not a directory")
 		}
 	}
+	appID = os.Getenv("appID")
+	if len(appID) == 0 {
+		pecho("crit", "Application ID unknown")
+	}
 }
 
 func startApp() {
-	//var sdArguments = os.Open("")
+	sdExec := exec.Command("xargs", "-0")
+	sdExec.Stderr = os.Stderr
+	argFile, argOpenErr := os.Open(runtimeDir + "/portable/" + appID + "/bwrapArgs")
+	sdExec.Stdin = argFile
+	if argOpenErr != nil {
+		pecho("crit", "Could not read file: " + argOpenErr.Error())
+	}
+	fmt.Println("Executing ", sdExec)
+	sdExecErr := sdExec.Run()
+	if sdExecErr != nil {
+		fmt.Println(sdExecErr)
+		pecho("crit", "Unable to start systemd-run")
+	}
 }
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	getVariables()
+	startApp()
 }
