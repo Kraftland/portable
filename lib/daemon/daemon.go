@@ -196,6 +196,21 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse mprisName: " + mprisNameReadErr.Error())
 	}
 
+	launchTarget, launchTargetReadErr := regexp.Compile("launchTarget=.*")
+	if launchTargetReadErr == nil {
+		confOpts.launchTarget = tryProcessConf(string(launchTarget.Find(confReader)), "launchTarget")
+		if len(confOpts.launchTarget) == 0 {
+			if len(os.Getenv("launchTarget")) > 0 {
+				pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
+			} else {
+				pecho("crit", "Unable to determine launchTarget")
+			}
+		}
+		pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
+	} else {
+		pecho("crit", "Unable to parse launchTarget: " + launchTargetReadErr.Error())
+	}
+
 	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
 	if waylandOnlyReadErr != nil {
 		pecho("crit", "Unable to parse waylandOnly: " + waylandOnlyReadErr.Error())
@@ -366,6 +381,36 @@ func readConf(readConfChan chan int) {
 			confOpts.allowGlobalShortcuts = false
 	}
 	pecho("debug", "Determined allowGlobalShortcuts: " + strconv.FormatBool(confOpts.allowGlobalShortcuts))
+
+	dbusWake, dbusWakeReadErr := regexp.Compile("dbusWake=.*")
+	if dbusWakeReadErr != nil {
+		pecho("crit", "Unable to parse dbusWake: " + dbusWakeReadErr.Error())
+	}
+	var dbusWakeRaw string = tryProcessConf(string(dbusWake.Find(confReader)), "dbusWake")
+	switch dbusWakeRaw {
+		case "true":
+			confOpts.dbusWake = true
+		case "false":
+			confOpts.dbusWake = false
+		default:
+			confOpts.dbusWake = false
+	}
+	pecho("debug", "Determined dbusWake: " + strconv.FormatBool(confOpts.dbusWake))
+
+	mountInfo, mountInfoReadErr := regexp.Compile("mountInfo=.*")
+	if mountInfoReadErr != nil {
+		pecho("crit", "Unable to parse mountInfo: " + mountInfoReadErr.Error())
+	}
+	var mountInfoRaw string = tryProcessConf(string(mountInfo.Find(confReader)), "mountInfo")
+	switch mountInfoRaw {
+		case "true":
+			confOpts.mountInfo = true
+		case "false":
+			confOpts.mountInfo = false
+		default:
+			confOpts.mountInfo = true
+	}
+	pecho("debug", "Determined mountInfo: " + strconv.FormatBool(confOpts.mountInfo))
 
 	readConfChan <- 1
 }
