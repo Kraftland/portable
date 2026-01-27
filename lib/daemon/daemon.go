@@ -74,10 +74,10 @@ func startApp() {
 	sdExec := exec.Command("xargs", "-0")
 	sdExec.Stderr = os.Stderr
 	argFile, argOpenErr := os.Open(runtimeDir + "/portable/" + appID + "/bwrapArgs")
-	sdExec.Stdin = argFile
 	if argOpenErr != nil {
 		pecho("crit", "Could not read file: " + argOpenErr.Error())
 	}
+	sdExec.Stdin = argFile
 	fmt.Println("Executing ", sdExec)
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
