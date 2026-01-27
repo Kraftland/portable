@@ -732,10 +732,7 @@ function execApp() {
 	readyNotify wait generateFlatpakInfo
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
-	xargs \
-		-0 \
-		-a "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs" \
-		systemd-run
+	/usr/lib/portable/daemon/portable-daemon
 	stopApp
 }
 
