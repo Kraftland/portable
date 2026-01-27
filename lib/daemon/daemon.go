@@ -24,7 +24,7 @@ type portableConfigOpts struct {
 	terminateImmediately	bool
 	useZink			bool
 	qt5Compat		bool
-	waylandOnly		string
+	waylandOnly		bool
 	gameMode		bool
 	mprisName		string // may be empty
 	bindCameras		bool
@@ -184,6 +184,27 @@ func readConf(readConfChan chan int) {
 	} else {
 		pecho("crit", "Unable to parse stateDirectory: " + stateDirectoryReadErr.Error())
 	}
+
+	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
+	if waylandOnlyReadErr != nil {
+		pecho("crit", "Unable to parse waylandOnly: " + waylandOnlyReadErr.Error())
+	}
+	var waylandOnlyRaw string = tryProcessConf(string(waylandOnly.Find(confReader)), "waylandOnly")
+	switch waylandOnlyRaw {
+		case "true":
+			confOpts.waylandOnly = true
+		case "false":
+			confOpts.waylandOnly = false
+		case "adaptive":
+			if os.Getenv("XDG_SESSION_TYPE") == "wayland" {
+				confOpts.waylandOnly = true
+			}
+		default:
+			if os.Getenv("XDG_SESSION_TYPE") == "wayland" {
+				confOpts.waylandOnly = true
+			}
+	}
+	pecho("debug", "Determined waylandOnly: " + strconv.FormatBool(confOpts.waylandOnly))
 
 	readConfChan <- 1
 }
