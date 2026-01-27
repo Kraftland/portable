@@ -221,6 +221,21 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindNetwork: " + strconv.FormatBool(confOpts.bindNetwork))
 
+	terminateImmediately, terminateImmediatelyReadErr := regexp.Compile("terminateImmediately=.*")
+	if terminateImmediatelyReadErr != nil {
+		pecho("crit", "Unable to parse terminateImmediately: " + terminateImmediatelyReadErr.Error())
+	}
+	var terminateImmediatelyRaw string = tryProcessConf(string(terminateImmediately.Find(confReader)), "terminateImmediately")
+	switch terminateImmediatelyRaw {
+		case "true":
+			confOpts.terminateImmediately = true
+		case "false":
+			confOpts.terminateImmediately = false
+		default:
+			confOpts.terminateImmediately = false
+	}
+	pecho("debug", "Determined terminateImmediately: " + strconv.FormatBool(confOpts.terminateImmediately))
+
 	readConfChan <- 1
 }
 
