@@ -206,6 +206,21 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined waylandOnly: " + strconv.FormatBool(confOpts.waylandOnly))
 
+	bindNetwork, bindNetworkReadErr := regexp.Compile("bindNetwork=.*")
+	if bindNetworkReadErr != nil {
+		pecho("crit", "Unable to parse bindNetwork: " + bindNetworkReadErr.Error())
+	}
+	var bindNetworkRaw string = tryProcessConf(string(bindNetwork.Find(confReader)), "bindNetwork")
+	switch bindNetworkRaw {
+		case "true":
+			confOpts.bindNetwork = true
+		case "false":
+			confOpts.bindNetwork = false
+		default:
+			confOpts.bindNetwork = true
+	}
+	pecho("debug", "Determined bindNetwork: " + strconv.FormatBool(confOpts.bindNetwork))
+
 	readConfChan <- 1
 }
 
