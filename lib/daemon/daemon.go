@@ -139,6 +139,9 @@ func determineConfPath() {
 }
 
 func tryUnquote(input string) (output string) {
+	if len(input) == 0 {
+		return
+	}
 	outputU, err := strconv.Unquote(input)
 	if err != nil {
 		pecho("debug", "Unable to unquote string: " + input + " : " + err.Error())
