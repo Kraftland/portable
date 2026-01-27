@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 )
@@ -52,8 +51,15 @@ func getVariables() {
 	} else {
 		var runtimeDebugMsg string = "XDG_RUNTIME_DIR set to: " + runtimeDir
 		pecho("debug", runtimeDebugMsg)
-		runtimeDirInfo := fs.FileInfo(
-		var runtimeDirExists bool = os.Open()
+		runtimeDirInfo, errRuntimeDir := os.Stat(runtimeDir)
+		var errRuntimeDirPrinted string = "Could not determine the status of XDG Runtime Directory "
+		if errRuntimeDir != nil {
+			println(errRuntimeDir)
+			pecho("crit", errRuntimeDirPrinted)
+		}
+		if runtimeDirInfo.IsDir() == false {
+			pecho("crit", "XDG_RUNTIME_DIR is not a directory")
+		}
 	}
 }
 
