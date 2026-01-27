@@ -724,7 +724,6 @@ function defineRunPath() {
 
 function execApp() {
 	calcBwrapArg &
-	desktopWorkaround &
 	addEnv targetArgs="${targetArgs}"
 	addEnv _portableDebug="${_portableDebug}"
 	addEnv _portableBusActivate="${_portableBusActivate}"
@@ -794,15 +793,6 @@ function addEnv() {
 	flock -x "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env.lock" \
 		/usr/lib/portable/addEnv "$@"
 }
-
-function desktopWorkaround() {
-	dbus-send --session \
-		--dest=org.freedesktop.impl.portal.PermissionStore \
-		/org/freedesktop/impl/portal/PermissionStore \
-		org.freedesktop.impl.portal.PermissionStore.SetPermission \
-		string:"background" boolean:true string:"background" string:"${appID}" array:string:"yes" &
-}
-
 function detectNv(){
 	if ls /dev/nvidia* &> /dev/null; then
 		pecho debug "NVIDIA GPU present"
