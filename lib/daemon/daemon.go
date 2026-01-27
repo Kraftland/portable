@@ -307,6 +307,21 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindCameras: " + strconv.FormatBool(confOpts.bindCameras))
 
+	bindPipewire, bindPipewireReadErr := regexp.Compile("bindPipewire=.*")
+	if bindPipewireReadErr != nil {
+		pecho("crit", "Unable to parse bindPipewire: " + bindPipewireReadErr.Error())
+	}
+	var bindPipewireRaw string = tryProcessConf(string(bindPipewire.Find(confReader)), "bindPipewire")
+	switch bindPipewireRaw {
+		case "true":
+			confOpts.bindPipewire = true
+		case "false":
+			confOpts.bindPipewire = false
+		default:
+			confOpts.bindPipewire = false
+	}
+	pecho("debug", "Determined bindPipewire: " + strconv.FormatBool(confOpts.bindPipewire))
+
 	readConfChan <- 1
 }
 
