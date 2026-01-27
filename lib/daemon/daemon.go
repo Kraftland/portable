@@ -500,7 +500,7 @@ func stopApp(operation string) {
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
 	}
-	cleanDirs()
+	go cleanDirs()
 }
 
 func lookUpXDG(xdgChan chan int) {

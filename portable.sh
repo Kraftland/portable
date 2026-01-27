@@ -1503,7 +1503,6 @@ function stopApp() {
 			-sSIGKILL \
 			"${unitName}.service" 2>/dev/null &
 	fi
-	cleanDirs &
 	exit 0
 }
 
