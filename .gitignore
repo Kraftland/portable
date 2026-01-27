@@ -3,3 +3,4 @@ src/
 pkg/
 portable/
 *.out
+lib/daemon/portable-daemon
