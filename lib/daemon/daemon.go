@@ -196,6 +196,21 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse mprisName: " + mprisNameReadErr.Error())
 	}
 
+	launchTarget, launchTargetReadErr := regexp.Compile("launchTarget=.*")
+	if launchTargetReadErr == nil {
+		confOpts.launchTarget = tryProcessConf(string(launchTarget.Find(confReader)), "launchTarget")
+		if len(confOpts.launchTarget) == 0 {
+			if len(os.Getenv("launchTarget")) > 0 {
+				pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
+			} else {
+				pecho("crit", "Unable to determine launchTarget")
+			}
+		}
+		pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
+	} else {
+		pecho("crit", "Unable to parse launchTarget: " + launchTargetReadErr.Error())
+	}
+
 	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
 	if waylandOnlyReadErr != nil {
 		pecho("crit", "Unable to parse waylandOnly: " + waylandOnlyReadErr.Error())
