@@ -337,6 +337,36 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindInputDevices: " + strconv.FormatBool(confOpts.bindInputDevices))
 
+	allowInhibit, allowInhibitReadErr := regexp.Compile("allowInhibit=.*")
+	if allowInhibitReadErr != nil {
+		pecho("crit", "Unable to parse allowInhibit: " + allowInhibitReadErr.Error())
+	}
+	var allowInhibitRaw string = tryProcessConf(string(allowInhibit.Find(confReader)), "allowInhibit")
+	switch allowInhibitRaw {
+		case "true":
+			confOpts.allowInhibit = true
+		case "false":
+			confOpts.allowInhibit = false
+		default:
+			confOpts.allowInhibit = false
+	}
+	pecho("debug", "Determined allowInhibit: " + strconv.FormatBool(confOpts.allowInhibit))
+
+	allowGlobalShortcuts, allowGlobalShortcutsReadErr := regexp.Compile("allowGlobalShortcuts=.*")
+	if allowGlobalShortcutsReadErr != nil {
+		pecho("crit", "Unable to parse allowGlobalShortcuts: " + allowGlobalShortcutsReadErr.Error())
+	}
+	var allowGlobalShortcutsRaw string = tryProcessConf(string(allowGlobalShortcuts.Find(confReader)), "allowGlobalShortcuts")
+	switch allowGlobalShortcutsRaw {
+		case "true":
+			confOpts.allowGlobalShortcuts = true
+		case "false":
+			confOpts.allowGlobalShortcuts = false
+		default:
+			confOpts.allowGlobalShortcuts = false
+	}
+	pecho("debug", "Determined allowGlobalShortcuts: " + strconv.FormatBool(confOpts.allowGlobalShortcuts))
+
 	readConfChan <- 1
 }
 
