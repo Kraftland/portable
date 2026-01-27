@@ -71,8 +71,9 @@ func getVariables() {
 }
 
 func startApp() {
-	sdExec := exec.Command("xargs", "-0")
+	sdExec := exec.Command("xargs", "-0", "systemd-run")
 	sdExec.Stderr = os.Stderr
+	sdExec.Stdout = os.Stdout
 	argFile, argOpenErr := os.Open(runtimeDir + "/portable/" + appID + "/bwrapArgs")
 	if argOpenErr != nil {
 		pecho("crit", "Could not read file: " + argOpenErr.Error())
