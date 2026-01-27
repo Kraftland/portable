@@ -239,6 +239,22 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined terminateImmediately: " + strconv.FormatBool(confOpts.terminateImmediately))
 
+	useZink, useZinkReadErr := regexp.Compile("useZink=.*")
+	if useZinkReadErr != nil {
+		pecho("crit", "Unable to parse useZink: " + useZinkReadErr.Error())
+	}
+	var useZinkRaw string = tryProcessConf(string(useZink.Find(confReader)), "useZink")
+	switch useZinkRaw {
+		case "true":
+			confOpts.useZink = true
+		case "false":
+			confOpts.useZink = false
+		default:
+			confOpts.useZink = false
+	}
+	pecho("debug", "Determined useZink: " + strconv.FormatBool(confOpts.useZink))
+
+
 	readConfChan <- 1
 }
 
