@@ -169,6 +169,22 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse appID: " + appIDReadErr.Error())
 	}
 
+	friendlyName, friendlyNameReadErr := regexp.Compile("friendlyName=.*")
+	if friendlyNameReadErr == nil {
+		confOpts.friendlyName = tryProcessConf(string(friendlyName.Find(confReader)), "friendlyName")
+		pecho("debug", "Determined friendlyName: " + confOpts.friendlyName)
+	} else {
+		pecho("crit", "Unable to parse friendlyName: " + friendlyNameReadErr.Error())
+	}
+
+	stateDirectory, stateDirectoryReadErr := regexp.Compile("stateDirectory=.*")
+	if stateDirectoryReadErr == nil {
+		confOpts.stateDirectory = tryProcessConf(string(stateDirectory.Find(confReader)), "stateDirectory")
+		pecho("debug", "Determined stateDirectory: " + confOpts.stateDirectory)
+	} else {
+		pecho("crit", "Unable to parse stateDirectory: " + stateDirectoryReadErr.Error())
+	}
+
 	readConfChan <- 1
 }
 
