@@ -122,19 +122,20 @@ func determineConfPath() {
 	}
 	if isPathSuitableForConf(portableConfigRaw) == true {
 		confOpts.confPath = portableConfigRaw
-		//return
+		return
 	} else if
 	isPathSuitableForConf("/usr/lib/portable/info" + portableConfigRaw + "/config") == true {
 		confOpts.confPath = "/usr/lib/portable/info" + portableConfigRaw + "/config"
+		return
 	} else if wdErr == nil {
 		if isPathSuitableForConf(currentWd + portableConfigRaw) == true {
 			confOpts.confPath = currentWd + portableConfigRaw
+			return
 		}
 	} else if wdErr != nil {
-		pecho("crit", "Unable to get working directory: " + wdErr.Error())
-	} else {
-		pecho("crit", "Unable to determine configuration location")
+		pecho("warn", "Unable to get working directory: " + wdErr.Error())
 	}
+	pecho("crit", "Unable to determine configuration location")
 }
 
 func tryUnquote(input string) (output string) {
