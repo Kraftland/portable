@@ -161,7 +161,6 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Could not read configuration file: " + readErr.Error())
 	}
 
-	confOpts.appID = ""
 	appID, appIDReadErr := regexp.Compile("appID=.*")
 	if appIDReadErr == nil {
 		confOpts.appID = tryProcessConf(string(appID.Find(confReader)), "appID")
