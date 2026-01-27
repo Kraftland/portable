@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -98,7 +101,7 @@ func isPathSuitableForConf(path string) (result bool) {
 		if confInfo.IsDir() == true {
 			pecho("debug", "Unable to pick configuration at " + path + " for reason: " + "is a directory")
 		}
-		pecho("debug", "using configuration from " + path)
+		pecho("debug", "Using configuration from " + path)
 		result = true
 		return
 	}
@@ -119,6 +122,7 @@ func determineConfPath() {
 	}
 	if isPathSuitableForConf(portableConfigRaw) == true {
 		confOpts.confPath = portableConfigRaw
+		//return
 	} else if
 	isPathSuitableForConf("/usr/lib/portable/info" + portableConfigRaw + "/config") == true {
 		confOpts.confPath = "/usr/lib/portable/info" + portableConfigRaw + "/config"
@@ -133,8 +137,37 @@ func determineConfPath() {
 	}
 }
 
+func tryUnquote(input string) (output string) {
+	outputU, err := strconv.Unquote(input)
+	if err != nil {
+		pecho("debug", "Unable to unquote string: " + input + " : " + err.Error())
+	}
+	output = outputU
+	return
+}
+
+func tryProcessConf(input string, trimObj string) (output string) {
+	var outputTrimmed string = strings.TrimPrefix(input, trimObj + "=")
+	output = tryUnquote(outputTrimmed)
+	return
+}
+
 func readConf(readConfChan chan int) {
 	determineConfPath()
+
+	confReader, readErr := os.ReadFile(confOpts.confPath)
+	if readErr != nil {
+		pecho("crit", "Could not read configuration file: " + readErr.Error())
+	}
+
+	confOpts.appID = ""
+	appID, appIDReadErr := regexp.Compile("appID=.*")
+	if appIDReadErr == nil {
+		confOpts.appID = tryProcessConf(string(appID.Find(confReader)), "appID")
+		pecho("debug", "Determined appID: " + confOpts.appID)
+	} else {
+		pecho("crit", "Unable to parse appID: " + appIDReadErr.Error())
+	}
 
 	readConfChan <- 1
 }
