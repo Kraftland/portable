@@ -1497,12 +1497,12 @@ function stopApp() {
 		exit 0
 	elif [[ "$*" =~ "force" ]]; then
 		pecho info "Force stop is called, killing service"
+		stopSlice &
 		systemctl \
 			--user kill \
 			-sSIGKILL \
 			"${unitName}.service" 2>/dev/null &
 	fi
-	stopSlice &
 	cleanDirs &
 	exit 0
 }
