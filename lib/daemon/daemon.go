@@ -335,7 +335,7 @@ func readConf(readConfChan chan int) {
 		default:
 			confOpts.bindInputDevices = false
 	}
-	pecho("debug", "Determined bindPipewire: " + strconv.FormatBool(confOpts.bindPipewire))
+	pecho("debug", "Determined bindInputDevices: " + strconv.FormatBool(confOpts.bindInputDevices))
 
 	readConfChan <- 1
 }
