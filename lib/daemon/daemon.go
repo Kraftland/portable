@@ -292,6 +292,21 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined gameMode: " + strconv.FormatBool(confOpts.gameMode))
 
+	bindCameras, bindCamerasReadErr := regexp.Compile("bindCameras=.*")
+	if bindCamerasReadErr != nil {
+		pecho("crit", "Unable to parse bindCameras: " + bindCamerasReadErr.Error())
+	}
+	var bindCamerasRaw string = tryProcessConf(string(bindCameras.Find(confReader)), "bindCameras")
+	switch bindCamerasRaw {
+		case "true":
+			confOpts.bindCameras = true
+		case "false":
+			confOpts.bindCameras = false
+		default:
+			confOpts.bindCameras = false
+	}
+	pecho("debug", "Determined bindCameras: " + strconv.FormatBool(confOpts.bindCameras))
+
 	readConfChan <- 1
 }
 
