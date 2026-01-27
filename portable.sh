@@ -733,7 +733,6 @@ function execApp() {
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
 	/usr/lib/portable/daemon/portable-daemon
-	stopApp
 }
 
 function terminateOnRequest() {
