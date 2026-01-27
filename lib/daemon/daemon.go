@@ -17,6 +17,14 @@ type runtimeParms struct {
 	flatpakInstanceID	string
 }
 
+type XDG_DIRS struct {
+	runtimeDir		string
+	confDir			string
+	cacheDir		string
+	dataDir			string
+	home			string
+}
+
 type portableConfigOpts struct {
 	confPath		string
 	friendlyName		string
@@ -42,9 +50,9 @@ type portableConfigOpts struct {
 
 var (
 	internalLoggingLevel	int
-	runtimeDir		string
 	confOpts		portableConfigOpts
 	runtimeInfo		runtimeParms
+	xdgDir			XDG_DIRS
 )
 
 func pecho(level string, message string) {
@@ -78,22 +86,6 @@ func getVariables(varChan chan int) {
 			internalLoggingLevel = 3
 		default:
 			internalLoggingLevel = 3
-	}
-	runtimeDir = os.Getenv("XDG_RUNTIME_DIR")
-	if len(runtimeDir) == 0 {
-		pecho("warn", "XDG_RUNTIME_DIR not set")
-	} else {
-		var runtimeDebugMsg string = "XDG_RUNTIME_DIR set to: " + runtimeDir
-		pecho("debug", runtimeDebugMsg)
-		runtimeDirInfo, errRuntimeDir := os.Stat(runtimeDir)
-		var errRuntimeDirPrinted string = "Could not determine the status of XDG Runtime Directory "
-		if errRuntimeDir != nil {
-			println(errRuntimeDir)
-			pecho("crit", errRuntimeDirPrinted)
-		}
-		if runtimeDirInfo.IsDir() == false {
-			pecho("crit", "XDG_RUNTIME_DIR is not a directory")
-		}
 	}
 	varChan <- 1
 }
@@ -470,7 +462,7 @@ func getFlatpakInstanceID() {
 		pecho("debug", "Not getting instance ID because mountInfo is disabled")
 		return
 	}
-	controlFile, readErr := os.ReadFile(runtimeDir + "/portable/" + confOpts.appID + "/control")
+	controlFile, readErr := os.ReadFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control")
 	instanceID := regexp.MustCompile("instanceId=.*")
 	if readErr == nil {
 		var rawInstanceID string = string(instanceID.Find(controlFile))
@@ -486,7 +478,16 @@ func getFlatpakInstanceID() {
 
 func cleanDirs() {
 	pecho("debug", "Cleaning leftovers")
-
+	getFlatpakInstanceID()
+	if len(runtimeInfo.flatpakInstanceID) > 0 && confOpts.mountInfo == true {
+		os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
+		os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
+	} else {
+		pecho("debug", "Skipped cleaning Flatpak entries")
+	}
+	os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
+	os.RemoveAll(xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
 }
 
 func stopApp(operation string) {
@@ -502,8 +503,63 @@ func stopApp(operation string) {
 	}
 }
 
+func lookUpXDG(xdgChan chan int) {
+	xdgDir.runtimeDir = os.Getenv("XDG_RUNTIME_DIR")
+	if len(xdgDir.runtimeDir) == 0 {
+		pecho("warn", "XDG_RUNTIME_DIR not set")
+	} else {
+		var runtimeDebugMsg string = "XDG_RUNTIME_DIR set to: " + xdgDir.runtimeDir
+		pecho("debug", runtimeDebugMsg)
+		runtimeDirInfo, errRuntimeDir := os.Stat(xdgDir.runtimeDir)
+		var errRuntimeDirPrinted string = "Could not determine the status of XDG Runtime Directory "
+		if errRuntimeDir != nil {
+			println(errRuntimeDir)
+			pecho("crit", errRuntimeDirPrinted)
+		}
+		if runtimeDirInfo.IsDir() == false {
+			pecho("crit", "XDG_RUNTIME_DIR is not a directory")
+		}
+	}
+
+	var cacheErr error
+	var homeErr error
+	var confErr error
+	xdgDir.home, homeErr = os.UserHomeDir()
+	if homeErr != nil {
+		pecho("crit", "Falling back to working directory: " + homeErr.Error())
+		xdgDir.home, homeErr = os.Getwd()
+		if homeErr != nil {
+			pecho("crit", "Unable to use working directory as fallback: " + homeErr.Error())
+		}
+	} else {
+		pecho("debug", "Determined home: " + xdgDir.home)
+	}
+
+	xdgDir.cacheDir, cacheErr = os.UserCacheDir()
+	if cacheErr != nil {
+		xdgDir.cacheDir = xdgDir.home + "/.cache"
+		pecho("warn", "Unable to determine cache directory, falling back to " + xdgDir.cacheDir)
+	}
+
+	xdgDir.confDir, confErr = os.UserConfigDir()
+	if confErr != nil {
+		xdgDir.confDir = xdgDir.home + "/.config"
+		pecho("warn", "Unable to determine config directory, falling back to " + xdgDir.confDir)
+	}
+
+	if len(os.Getenv("XDG_DATA_HOME")) > 0 {
+		xdgDir.dataDir = os.Getenv("XDG_DATA_HOME")
+		pecho("debug", "User specified data home: " + xdgDir.dataDir)
+	} else {
+		xdgDir.dataDir = xdgDir.home + "/.local/share"
+		pecho("debug", "Using default data home: " + xdgDir.dataDir)
+	}
+
+	xdgChan <- 1
+}
+
 func startApp() {
-	sdExec := exec.Command("xargs", "-0", "-a", runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
+	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
@@ -518,12 +574,15 @@ func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int)
 	go readConf(readConfChan)
+	xdgChan := make(chan int)
+	go lookUpXDG(xdgChan)
 	varChan := make(chan int)
 	go getVariables(varChan)
 	getVariablesReady := <- varChan
 	readConfReady := <- readConfChan
-	if getVariablesReady == 1 && readConfReady == 1 {
-		pecho("debug", "getVariables and readConf are ready")
+	xdgReady := <- xdgChan
+	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 {
+		pecho("debug", "getVariables, lookupXDG and readConf are ready")
 	}
 	startApp()
 	stopApp("normal")
