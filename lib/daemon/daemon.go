@@ -367,6 +367,36 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined allowGlobalShortcuts: " + strconv.FormatBool(confOpts.allowGlobalShortcuts))
 
+	dbusWake, dbusWakeReadErr := regexp.Compile("dbusWake=.*")
+	if dbusWakeReadErr != nil {
+		pecho("crit", "Unable to parse dbusWake: " + dbusWakeReadErr.Error())
+	}
+	var dbusWakeRaw string = tryProcessConf(string(dbusWake.Find(confReader)), "dbusWake")
+	switch dbusWakeRaw {
+		case "true":
+			confOpts.dbusWake = true
+		case "false":
+			confOpts.dbusWake = false
+		default:
+			confOpts.dbusWake = false
+	}
+	pecho("debug", "Determined dbusWake: " + strconv.FormatBool(confOpts.dbusWake))
+
+	mountInfo, mountInfoReadErr := regexp.Compile("mountInfo=.*")
+	if mountInfoReadErr != nil {
+		pecho("crit", "Unable to parse mountInfo: " + mountInfoReadErr.Error())
+	}
+	var mountInfoRaw string = tryProcessConf(string(mountInfo.Find(confReader)), "mountInfo")
+	switch mountInfoRaw {
+		case "true":
+			confOpts.mountInfo = true
+		case "false":
+			confOpts.mountInfo = false
+		default:
+			confOpts.mountInfo = true
+	}
+	pecho("debug", "Determined mountInfo: " + strconv.FormatBool(confOpts.mountInfo))
+
 	readConfChan <- 1
 }
 
