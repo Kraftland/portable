@@ -322,6 +322,21 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindPipewire: " + strconv.FormatBool(confOpts.bindPipewire))
 
+	bindInputDevices, bindInputDevicesReadErr := regexp.Compile("bindInputDevices=.*")
+	if bindInputDevicesReadErr != nil {
+		pecho("crit", "Unable to parse bindInputDevices: " + bindInputDevicesReadErr.Error())
+	}
+	var bindInputDevicesRaw string = tryProcessConf(string(bindInputDevices.Find(confReader)), "bindInputDevices")
+	switch bindInputDevicesRaw {
+		case "true":
+			confOpts.bindInputDevices = true
+		case "false":
+			confOpts.bindInputDevices = false
+		default:
+			confOpts.bindInputDevices = false
+	}
+	pecho("debug", "Determined bindPipewire: " + strconv.FormatBool(confOpts.bindPipewire))
+
 	readConfChan <- 1
 }
 
