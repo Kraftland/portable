@@ -267,7 +267,7 @@ func readConf(readConfChan chan int) {
 		default:
 			confOpts.qt5Compat = true
 	}
-	pecho("debug", "Determined useZink: " + strconv.FormatBool(confOpts.useZink))
+	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
 
 
 	readConfChan <- 1
