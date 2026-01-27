@@ -11,9 +11,26 @@ const (
 )
 
 type portableConfigOpts struct {
-	confPath	string
-	friendlyName	string
-	appID		string
+	confPath		string
+	friendlyName		string
+	appID			string
+	stateDirectory		string
+	launchTarget		string	// this one may be empty?
+	busLaunchTarget		string	// also may be empty
+	bindNetwork		bool
+	terminateImmediately	bool
+	useZink			bool
+	qt5Compat		bool
+	waylandOnly		string
+	gameMode		bool
+	mprisName		string // may be empty
+	bindCameras		bool
+	bindPipewire		bool
+	bindInputDevices	bool
+	allowInhibit		bool
+	allowGlobalShortcuts	bool
+	dbusWake		bool
+	mountInfo		bool
 }
 
 var (
