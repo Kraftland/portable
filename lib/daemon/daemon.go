@@ -499,8 +499,8 @@ func stopApp(operation string) {
 			pecho("debug", "Selected stop mode: normal")
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
-	cleanDirs()
 	}
+	go cleanDirs()
 }
 
 func lookUpXDG(xdgChan chan int) {
