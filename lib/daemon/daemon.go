@@ -254,6 +254,21 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined useZink: " + strconv.FormatBool(confOpts.useZink))
 
+	qt5Compat, qt5CompatReadErr := regexp.Compile("qt5Compat=.*")
+	if qt5CompatReadErr != nil {
+		pecho("crit", "Unable to parse qt5Compat: " + qt5CompatReadErr.Error())
+	}
+	var qt5CompatRaw string = tryProcessConf(string(qt5Compat.Find(confReader)), "qt5Compat")
+	switch qt5CompatRaw {
+		case "true":
+			confOpts.qt5Compat = true
+		case "false":
+			confOpts.qt5Compat = false
+		default:
+			confOpts.qt5Compat = true
+	}
+	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
+
 
 	readConfChan <- 1
 }
