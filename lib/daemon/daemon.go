@@ -89,7 +89,7 @@ func isPathSuitableForConf(path string) (result bool) {
 	return
 }
 
-func determineConfPath() () {
+func determineConfPath() {
 	currentWd, wdErr := os.Getwd()
 	var portableConfigRaw string = os.Getenv("_portableConfig")
 	var portableConfigLegacyRaw string = os.Getenv("_portalConfig")
@@ -116,9 +116,10 @@ func determineConfPath() () {
 	}
 }
 
-func readConf() {
+func readConf(readConfChan chan int) {
 	determineConfPath()
 
+	readConfChan <- 1
 }
 
 func stopMainAppCompat() {
@@ -174,12 +175,14 @@ func startApp() {
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
-	readConf()
+	readConfChan := make(chan int)
+	go readConf(readConfChan)
 	varChan := make(chan int)
 	go getVariables(varChan)
 	getVariablesReady := <- varChan
-	if getVariablesReady == 1 {
-		pecho("debug", "getVariables is ready")
+	readConfReady := <- readConfChan
+	if getVariablesReady == 1 && readConfReady == 1 {
+		pecho("debug", "getVariables and readConf are ready")
 	}
 	startApp()
 	stopApp("normal")
