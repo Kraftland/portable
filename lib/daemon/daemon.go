@@ -13,6 +13,11 @@ const (
 	version float32 = 0.1
 )
 
+type runtimeOpts struct {
+	action		string
+	fullCmdline	string
+}
+
 type runtimeParms struct {
 	flatpakInstanceID	string
 }
@@ -53,6 +58,7 @@ var (
 	confOpts		portableConfigOpts
 	runtimeInfo		runtimeParms
 	xdgDir			XDG_DIRS
+	runtimeOpt		runtimeOpts
 )
 
 func pecho(level string, message string) {
@@ -73,6 +79,12 @@ func pecho(level string, message string) {
 		default:
 			fmt.Println("[Undefined] ", message)
 	}
+}
+
+func cmdlineDispatcher(cmdChan chan int) {
+	runtimeOpt.fullCmdline = strings.Join(os.Args, ",")
+	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
+	cmdChan <- 1
 }
 
 func getVariables(varChan chan int) {
@@ -590,12 +602,15 @@ func main() {
 	go readConf(readConfChan)
 	xdgChan := make(chan int)
 	go lookUpXDG(xdgChan)
+	cmdChan := make(chan int)
+	go cmdlineDispatcher(cmdChan)
 	varChan := make(chan int)
 	go getVariables(varChan)
 	getVariablesReady := <- varChan
 	readConfReady := <- readConfChan
+	cmdReady := <- cmdChan
 	xdgReady := <- xdgChan
-	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 {
+	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
 		pecho("debug", "getVariables, lookupXDG and readConf are ready")
 	}
 	startApp()
