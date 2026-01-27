@@ -4,16 +4,42 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 const (
 	version float32 = 0.1
 )
 
+type portableConfigOpts struct {
+	confPath		string
+	friendlyName		string
+	appID			string
+	stateDirectory		string
+	launchTarget		string	// this one may be empty?
+	busLaunchTarget		string	// also may be empty
+	bindNetwork		bool
+	terminateImmediately	bool
+	useZink			bool
+	qt5Compat		bool
+	waylandOnly		string
+	gameMode		bool
+	mprisName		string // may be empty
+	bindCameras		bool
+	bindPipewire		bool
+	bindInputDevices	bool
+	allowInhibit		bool
+	allowGlobalShortcuts	bool
+	dbusWake		bool
+	mountInfo		bool
+}
+
 var (
-	internalLoggingLevel int
-	appID string
-	runtimeDir string
+	internalLoggingLevel	int
+	runtimeDir		string
+	confOpts		portableConfigOpts
 )
 
 func pecho(level string, message string) {
@@ -36,7 +62,7 @@ func pecho(level string, message string) {
 	}
 }
 
-func getVariables() {
+func getVariables(varChan chan int) {
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
 		case "debug":
@@ -64,18 +90,133 @@ func getVariables() {
 			pecho("crit", "XDG_RUNTIME_DIR is not a directory")
 		}
 	}
-	appID = os.Getenv("appID")
-	if len(appID) == 0 {
-		pecho("crit", "Application ID unknown")
+	varChan <- 1
+}
+
+func isPathSuitableForConf(path string) (result bool) {
+	confInfo, confReadErr := os.Stat(path)
+	if confReadErr != nil {
+		pecho("debug", "Unable to pick configuration at " + path + " for reason: " + confReadErr.Error())
+	} else {
+		if confInfo.IsDir() == true {
+			pecho("debug", "Unable to pick configuration at " + path + " for reason: " + "is a directory")
+		}
+		pecho("debug", "Using configuration from " + path)
+		result = true
+		return
+	}
+	result = false
+	return
+}
+
+func determineConfPath() {
+	currentWd, wdErr := os.Getwd()
+	var portableConfigRaw string = os.Getenv("_portableConfig")
+	var portableConfigLegacyRaw string = os.Getenv("_portalConfig")
+	if len(portableConfigLegacyRaw) > 0 {
+		pecho("warn", "Using legacy configuration variable!")
+		portableConfigRaw = portableConfigLegacyRaw
+	}
+	if len(portableConfigRaw) == 0 {
+		pecho("crit", "_portableConfig undefined")
+	}
+	if isPathSuitableForConf(portableConfigRaw) == true {
+		confOpts.confPath = portableConfigRaw
+		return
+	} else if
+	isPathSuitableForConf("/usr/lib/portable/info" + portableConfigRaw + "/config") == true {
+		confOpts.confPath = "/usr/lib/portable/info" + portableConfigRaw + "/config"
+		return
+	} else if wdErr == nil {
+		if isPathSuitableForConf(currentWd + portableConfigRaw) == true {
+			confOpts.confPath = currentWd + portableConfigRaw
+			return
+		}
+	} else if wdErr != nil {
+		pecho("warn", "Unable to get working directory: " + wdErr.Error())
+	}
+	pecho("crit", "Unable to determine configuration location")
+}
+
+func tryUnquote(input string) (output string) {
+	outputU, err := strconv.Unquote(input)
+	if err != nil {
+		pecho("debug", "Unable to unquote string: " + input + " : " + err.Error())
+	}
+	output = outputU
+	return
+}
+
+func tryProcessConf(input string, trimObj string) (output string) {
+	var outputTrimmed string = strings.TrimPrefix(input, trimObj + "=")
+	output = tryUnquote(outputTrimmed)
+	return
+}
+
+func readConf(readConfChan chan int) {
+	determineConfPath()
+
+	confReader, readErr := os.ReadFile(confOpts.confPath)
+	if readErr != nil {
+		pecho("crit", "Could not read configuration file: " + readErr.Error())
+	}
+
+	confOpts.appID = ""
+	appID, appIDReadErr := regexp.Compile("appID=.*")
+	if appIDReadErr == nil {
+		confOpts.appID = tryProcessConf(string(appID.Find(confReader)), "appID")
+		pecho("debug", "Determined appID: " + confOpts.appID)
+	} else {
+		pecho("crit", "Unable to parse appID: " + appIDReadErr.Error())
+	}
+
+	readConfChan <- 1
+}
+
+func stopMainAppCompat() {
+	stopMainExec := exec.Command("systemctl", "--user", "stop", "app-portable-" + confOpts.friendlyName + ".slice")
+	stopMainExec.Stderr = os.Stdout
+	stopMainExecErr := stopMainExec.Run()
+	if stopMainExecErr != nil {
+		pecho("debug", "Stop " + "app-portable-" + confOpts.friendlyName + ".slice" + " failed: " + stopMainExecErr.Error())
+	}
+}
+
+func stopMainApp() {
+	stopMainExec := exec.Command("systemctl", "--user", "stop", "app-portable-" + confOpts.appID + ".service")
+	stopMainExec.Stderr = os.Stdout
+	stopMainExecErr := stopMainExec.Run()
+	if stopMainExecErr != nil {
+		pecho("debug", "Stop " + "app-portable-" + confOpts.appID + ".service" + " failed: " + stopMainExecErr.Error())
+	}
+}
+
+func stopSlice() {
+	stopMainExec := exec.Command("systemctl", "--user", "stop", "portable-" + confOpts.friendlyName + ".slice")
+	stopMainExec.Stderr = os.Stdout
+	stopMainExecErr := stopMainExec.Run()
+	if stopMainExecErr != nil {
+		pecho("debug", "Stop " + "portable-" + confOpts.friendlyName + ".slice" + " failed: " + stopMainExecErr.Error())
+	}
+}
+
+func stopApp(operation string) {
+	go stopMainApp()
+	go stopMainAppCompat()
+	go stopSlice()
+	switch operation {
+		case "normal":
+			pecho("debug", "Cleaning leftovers...")
+		default:
+			pecho("crit", "Unknown operation for stopApp: " + operation)
 	}
 }
 
 func startApp() {
-	sdExec := exec.Command("xargs", "-0", "-a", runtimeDir + "/portable/" + appID + "/bwrapArgs", "systemd-run")
+	sdExec := exec.Command("xargs", "-0", "-a", runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
-	fmt.Println("Executing ", sdExec)
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
@@ -85,6 +226,15 @@ func startApp() {
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
-	getVariables()
+	readConfChan := make(chan int)
+	go readConf(readConfChan)
+	varChan := make(chan int)
+	go getVariables(varChan)
+	getVariablesReady := <- varChan
+	readConfReady := <- readConfChan
+	if getVariablesReady == 1 && readConfReady == 1 {
+		pecho("debug", "getVariables and readConf are ready")
+	}
 	startApp()
+	stopApp("normal")
 }
