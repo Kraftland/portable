@@ -188,6 +188,14 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse stateDirectory: " + stateDirectoryReadErr.Error())
 	}
 
+	mprisName, mprisNameReadErr := regexp.Compile("mprisName=.*")
+	if mprisNameReadErr == nil {
+		confOpts.mprisName = tryProcessConf(string(mprisName.Find(confReader)), "mprisName")
+		pecho("debug", "Determined mprisName: " + confOpts.mprisName)
+	} else {
+		pecho("crit", "Unable to parse mprisName: " + mprisNameReadErr.Error())
+	}
+
 	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
 	if waylandOnlyReadErr != nil {
 		pecho("crit", "Unable to parse waylandOnly: " + waylandOnlyReadErr.Error())
@@ -269,6 +277,20 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
 
+	gameMode, gameModeReadErr := regexp.Compile("gameMode=.*")
+	if gameModeReadErr != nil {
+		pecho("crit", "Unable to parse gameMode: " + gameModeReadErr.Error())
+	}
+	var gameModeRaw string = tryProcessConf(string(gameMode.Find(confReader)), "gameMode")
+	switch gameModeRaw {
+		case "true":
+			confOpts.gameMode = true
+		case "false":
+			confOpts.gameMode = false
+		default:
+			confOpts.gameMode = false
+	}
+	pecho("debug", "Determined gameMode: " + strconv.FormatBool(confOpts.gameMode))
 
 	readConfChan <- 1
 }
