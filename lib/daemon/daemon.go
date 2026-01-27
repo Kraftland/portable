@@ -13,6 +13,10 @@ const (
 	version float32 = 0.1
 )
 
+type runtimeParms struct {
+	flatpakInstanceID	string
+}
+
 type portableConfigOpts struct {
 	confPath		string
 	friendlyName		string
@@ -40,6 +44,7 @@ var (
 	internalLoggingLevel	int
 	runtimeDir		string
 	confOpts		portableConfigOpts
+	runtimeInfo		runtimeParms
 )
 
 func pecho(level string, message string) {
@@ -457,15 +462,43 @@ func stopSlice() {
 	}
 }
 
+func getFlatpakInstanceID() {
+	if len(runtimeInfo.flatpakInstanceID) > 0 {
+		pecho("debug", "Flatpak instance ID already known")
+		return
+	} else if confOpts.mountInfo == false {
+		pecho("debug", "Not getting instance ID because mountInfo is disabled")
+		return
+	}
+	controlFile, readErr := os.ReadFile(runtimeDir + "/portable/" + confOpts.appID + "/control")
+	instanceID := regexp.MustCompile("instanceId=.*")
+	if readErr == nil {
+		var rawInstanceID string = string(instanceID.Find(controlFile))
+		var unquoteErr error
+		runtimeInfo.flatpakInstanceID, unquoteErr = strconv.Unquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
+		if unquoteErr != nil {
+			pecho("debug", "Unquote not needed on instance ID: " + unquoteErr.Error())
+		}
+	} else {
+		pecho("warn", "Unable to read control file: " + readErr.Error())
+	}
+}
+
+func cleanDirs() {
+	pecho("debug", "Cleaning leftovers")
+
+}
+
 func stopApp(operation string) {
 	go stopMainApp()
 	go stopMainAppCompat()
 	go stopSlice()
 	switch operation {
 		case "normal":
-			pecho("debug", "Cleaning leftovers...")
+			pecho("debug", "Selected stop mode: normal")
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
+	cleanDirs()
 	}
 }
 
