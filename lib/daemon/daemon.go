@@ -269,6 +269,20 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
 
+	gameMode, gameModeReadErr := regexp.Compile("gameMode=.*")
+	if gameModeReadErr != nil {
+		pecho("crit", "Unable to parse gameMode: " + gameModeReadErr.Error())
+	}
+	var gameModeRaw string = tryProcessConf(string(gameMode.Find(confReader)), "gameMode")
+	switch gameModeRaw {
+		case "true":
+			confOpts.gameMode = true
+		case "false":
+			confOpts.gameMode = false
+		default:
+			confOpts.gameMode = false
+	}
+	pecho("debug", "Determined gameMode: " + strconv.FormatBool(confOpts.gameMode))
 
 	readConfChan <- 1
 }
