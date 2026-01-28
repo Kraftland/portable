@@ -1593,4 +1593,4 @@ fi
 questionFirstLaunch
 manageDirs
 cmdlineDispatcherv2 $@
-launch
+launch $@
