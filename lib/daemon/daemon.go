@@ -683,7 +683,8 @@ func lookUpXDG(xdgChan chan int) {
 }
 
 func calcDbusArg(argChan chan []string) {
-	argList := <- argChan
+	pecho("debug", "Calculating D-Bus arguments...")
+	argList := []string{}
 	argList = append(
 		argList,
 		"--quiet",
@@ -738,6 +739,8 @@ func calcDbusArg(argChan chan []string) {
 		"--call=org.freedesktop.portal.Request=*",
 		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
 	)
+
+	pecho("debug", "Expanding built-in rules")
 
 	allowedPortals := []string{
 		"Screenshot",
@@ -862,7 +865,7 @@ func calcDbusArg(argChan chan []string) {
 	for i := 2; i < 30; i++ {
 		argList = append(
 			argList,
-			"--own=org.kde.StatusNotifierItem-" + string(i) + "-1",
+			"--own=org.kde.StatusNotifierItem-" + strconv.Itoa(i) + "-1",
 		)
 	}
 
