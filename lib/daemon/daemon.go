@@ -3,13 +3,14 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"io"
 	"math/big"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"io"
+	"syscall"
 )
 
 const (
@@ -718,8 +719,77 @@ func calcDbusArg(argChan chan []string) {
 		"--talk=org.unifiedpush.Distributor.*",
 		"--own=" + confOpts.appID,
 		"--own=" + confOpts.appID + ".*",
-		"--talk=org.kde.StatusNotifierWatcher"
+		"--talk=org.kde.StatusNotifierWatcher",
+		"--talk=com.canonical.AppMenu.Registrar",
+		"--see=org.a11y.Bus",
+		"--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus",
+		"--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus",
+		// Screenshot stuff
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot",
+
+		"--see=org.freedesktop.portal.Request",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.Read",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Request=*",
+		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
 	)
+
+	allowedPortals := []string{
+		"Screenshot",
+		"Email",
+		"Usb",
+		"PowerProfileMonitor",
+		"MemoryMonitor",
+		"ProxyResolver.Lookup",
+		"ScreenCast",
+		"Account.GetUserInformation",
+		"Camera",
+		"RemoteDesktop",
+		"Documents",
+		"Device",
+		"FileChooser",
+		"FileTransfer",
+		"Notification",
+		"Print",
+		"NetworkMonitor",
+		"OpenURI",
+		"Fcitx",
+		"IBus",
+		"Secret",
+		"OpenURI",
+	}
+
+	for _, talkDest := range allowedPortals {
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal." + talkDest,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal." + talkDest + ".*",
+		)
+	}
+
+	allowedTalks := []string{
+		"org.freedesktop.portal.Documents",
+		"org.freedesktop.portal.FileTransfer",
+		"org.freedesktop.portal.Notification",
+		"org.freedesktop.portal.Print",
+		"org.freedesktop.FileManager1",
+		"org.freedesktop.portal.Fcitx",
+		"org.freedesktop.portal.IBus",
+	}
+
+	for _, talkDest := range allowedTalks {
+		argList = append(
+			argList,
+			"--talk=" + talkDest,
+			"--call=" + talkDest + "=*",
+		)
+	}
+
 	if internalLoggingLevel < 1 {
 		argList = append(argList, "--log")
 	}
@@ -814,6 +884,18 @@ func startProxy(dbusChan chan int8) {
 		"systemd-run",
 		dbusArgs...
 	)
+	busExec.Stderr = os.Stderr
+	if internalLoggingLevel <= 1 {
+		busExec.Stdout = os.Stdout
+	}
+	busExec.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGTERM,
+	}
+	busErr := busExec.Start()
+
+	if busErr != nil {
+		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
+	}
 
 	dbusChan <- 1
 }
@@ -825,6 +907,9 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	sdExecErr := sdExec.Run()
+	sdExec.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGTERM,
+	}
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
 		pecho("crit", "Unable to start systemd-run")
