@@ -529,9 +529,6 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	stringObj = strings.ReplaceAll(stringObj, "placeHolderAppName", confOpts.appID)
 	stringObj = strings.ReplaceAll(stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID)
 	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
-	//os.RemoveAll(xdgDir.runtimeDir + "/" + "portable/" + confOpts.appID + "flatpak-info")
-
-	fmt.Println(stringObj)
 
 	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info", []byte(stringObj), 0700)
 	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info", []byte(stringObj), 0700)
