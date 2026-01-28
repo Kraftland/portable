@@ -876,6 +876,43 @@ func calcDbusArg(argChan chan []string) {
 	argChan <- argList
 }
 
+func doCleanUnit(dbusChan chan int8) {
+	cleanUnits := []string{
+		confOpts.friendlyName + "*",
+		"app-portable-" + confOpts.appID,
+		"app-portable-" + confOpts.appID + "-pipewire-container",
+	}
+	resetCmd := []string{"--user", "reset-failed"}
+	resetCmd = append(
+		resetCmd,
+		cleanUnits...
+	)
+
+	cleanCmd := []string{"--user", "clean"}
+	cleanCmd = append(
+		cleanCmd,
+		cleanUnits...
+	)
+
+	killCmd := []string{"--user", "kill"}
+	killCmd = append(
+		killCmd,
+		cleanUnits...
+	)
+
+	err := exec.Command("systemctl", killCmd...)
+	err.Run()
+
+	err = exec.Command("systemctl", resetCmd...)
+	err.Run()
+
+	err = exec.Command("systemctl", cleanCmd...)
+	err.Start()
+	pecho("debug", "Cleaning ready")
+
+	dbusChan <- 1
+}
+
 func startProxy(dbusChan chan int8) {
 	argChan := make(chan []string)
 	go calcDbusArg(argChan)
@@ -956,11 +993,16 @@ func main() {
 	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
 		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	}
+
+	// Warn multi-instance here
+	cleanUnitChan := make(chan int8)
+	go doCleanUnit(cleanUnitChan)
 	genChan := make(chan int8)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
+	genReady = <- cleanUnitChan
 	if genReady == 1 {
-		pecho("debug", "Flatpak info ready")
+		pecho("debug", "Flatpak info and cleaning ready")
 	}
 	proxyChan := make(chan int8)
 	go startProxy(proxyChan)
