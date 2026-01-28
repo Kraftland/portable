@@ -718,6 +718,7 @@ func calcDbusArg(argChan chan []string) {
 		"--talk=org.unifiedpush.Distributor.*",
 		"--own=" + confOpts.appID,
 		"--own=" + confOpts.appID + ".*",
+		"--talk=org.kde.StatusNotifierWatcher"
 	)
 	if internalLoggingLevel < 1 {
 		argList = append(argList, "--log")
@@ -763,6 +764,7 @@ func calcDbusArg(argChan chan []string) {
 		argList = append(
 			argList,
 			"--talk=org.freedesktop.Notifications",
+			"--call=org.freedesktop.Notifications.*=*",
 		)
 	}
 
