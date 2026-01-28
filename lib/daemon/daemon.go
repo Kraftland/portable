@@ -506,6 +506,8 @@ func genFlatpakInstanceID(genInfo chan int8) {
 			break
 		}
 	}
+
+	genInfo <- 1
 }
 
 func getFlatpakInstanceID() {
