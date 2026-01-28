@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"os"
 	"os/exec"
 	"regexp"
@@ -480,6 +482,29 @@ func stopSlice() {
 	stopMainExecErr := stopMainExec.Run()
 	if stopMainExecErr != nil {
 		pecho("debug", "Stop " + "portable-" + confOpts.friendlyName + ".slice" + " failed: " + stopMainExecErr.Error())
+	}
+}
+
+func genFlatpakInstanceID(genInfo chan int8) {
+	if confOpts.mountInfo == false {
+		pecho("debug", "Skipping Flatpak Info generation")
+		return
+	}
+	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
+	if err != nil {
+		pecho("crit", "Failed to read preset Flatpak info")
+	}
+	var i int
+	var instanceIDCleared bool
+	for i = 0; instanceIDCleared == true; i++ {
+		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
+		err := os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
+		if err != nil {
+			pecho("warn", "Unable to use instance ID " + genId.String())
+		} else {
+			instanceIDCleared = true
+			break
+		}
 	}
 }
 
