@@ -169,6 +169,8 @@ func tryUnquote(input string) (output string) {
 	outputU, err := strconv.Unquote(input)
 	if err != nil {
 		pecho("debug", "Unable to unquote string: " + input + " : " + err.Error())
+		output = input
+		return
 	}
 	output = outputU
 	return
@@ -493,11 +495,7 @@ func getFlatpakInstanceID() {
 	instanceID := regexp.MustCompile("instanceId=.*")
 	if readErr == nil {
 		var rawInstanceID string = string(instanceID.Find(controlFile))
-		var unquoteErr error
-		runtimeInfo.flatpakInstanceID, unquoteErr = strconv.Unquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
-		if unquoteErr != nil {
-			pecho("debug", "Unquote not needed on instance ID: " + unquoteErr.Error())
-		}
+		runtimeInfo.flatpakInstanceID = tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
 	} else {
 		pecho("warn", "Unable to read control file: " + readErr.Error())
 	}
@@ -507,13 +505,24 @@ func getFlatpakInstanceID() {
 func cleanDirs() {
 	pecho("info", "Cleaning leftovers")
 	getFlatpakInstanceID()
+	var removeErr error
 	if len(runtimeInfo.flatpakInstanceID) > 0 && confOpts.mountInfo == true {
-		os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
-		os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
+		removeErr = os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
+		if removeErr != nil {
+			pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + removeErr.Error())
+		} else {
+			pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
+		}
+		removeErr = os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
+		if removeErr != nil {
+			pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + removeErr.Error())
+		} else {
+			pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
+		}
 	} else {
 		pecho("debug", "Skipped cleaning Flatpak entries")
 	}
-	removeErr := os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
 	if removeErr != nil {
 		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + removeErr.Error())
 	} else {
