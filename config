@@ -25,6 +25,9 @@ terminateImmediately="false"
 
 ########## Section: Output ##########
 
+# Allow apps to send notifications to the classic Notification endpoint, bypassing portals. Defaults to true.
+allowClassicNotifs="true"
+
 # Use zink for GL -> Vulkan translation
 useZink="false"
 

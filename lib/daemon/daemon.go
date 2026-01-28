@@ -670,6 +670,42 @@ func lookUpXDG(xdgChan chan int) {
 
 func calcDbusArg(argChan chan []string) {
 	argList := <- argChan
+	argList = append(
+		argList,
+		"--quiet",
+		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
+		"-u", confOpts.friendlyName + "-dbus",
+		"-p", "KillMode=control-group",
+		"-p", "Wants=xdg-document-portal.service xdg-desktop-portal.service",
+		"-p", "After=xdg-document-portal.service xdg-desktop-portal.service",
+		"-p", "SuccessExitStatus=SIGKILL",
+		"-p", "StandardError=file:" + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json",
+		"--",
+		"bwrap",
+		"--json-status-fd", "2",
+		"--unshare-all",
+		"--symlink", "/usr/lib64", "/lib64",
+		"--ro-bind", "/usr/lib", "/usr/lib",
+		"--ro-bind", "/usr/lib64", "/usr/lib64",
+		"--ro-bind", "/usr/bin", "/usr/bin",
+		"--ro-bind-try", "/usr/share", "/usr/share",
+		"--bind", xdgDir.runtimeDir, xdgDir.runtimeDir,
+		"--ro-bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/.flatpak-info",
+		"--ro-bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			"/.flatpak-info",
+		"--",
+		"/usr/bin/xdg-dbus-proxy",
+		os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
+		xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+		"--filter",
+		"--own=com.belmoussaoui.ashpd.demo",
+		"--talk=org.unifiedpush.Distributor.*",
+		"--own=" + confOpts.appID,
+		"--own=" + confOpts.appID + ".*",
+	)
 	if internalLoggingLevel < 1 {
 		argList = append(argList, "--log")
 	}
@@ -731,6 +767,13 @@ func calcDbusArg(argChan chan []string) {
 		mprisOwnList...
 	)
 
+	for i := 2; i < 30; i++ {
+		argList = append(
+			argList,
+			"--own=org.kde.StatusNotifierItem-" + string(i) + "-1",
+		)
+	}
+
 	pecho("debug", "Calculated D-Bus arguments: " + strings.Join(argList, ", "))
 
 }
@@ -741,6 +784,14 @@ func startProxy(dbusChan chan int8) {
 
 	dbusArgs := <- argChan
 	pecho("debug", "D-Bus argument ready")
+	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
+	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
+	pecho("info", "Starting D-Bus proxy")
+
+	busExec := exec.Command(
+		"systemd-run",
+		dbusArgs...
+	)
 
 	dbusChan <- 1
 }
