@@ -14,8 +14,9 @@ const (
 )
 
 type runtimeOpts struct {
-	action		string
+	action		bool
 	fullCmdline	string
+	quit		int8 // 1 for normal, 2 for external, 3 for forced?
 }
 
 type runtimeParms struct {
@@ -83,6 +84,20 @@ func pecho(level string, message string) {
 
 func cmdlineDispatcher(cmdChan chan int) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
+	cmdlineArray := os.Args
+	for index, value := range cmdlineArray {
+		if runtimeOpt.action == true {
+			runtimeOpt.action = false
+			continue
+		}
+		if value == "--actions" {
+			runtimeOpt.action = true
+			if cmdlineArray[index + 1] == "quit" {
+				runtimeOpt.quit = 2
+			}
+			pecho("debug", "Received quit request from user")
+		}
+	}
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
 	cmdChan <- 1
 }
