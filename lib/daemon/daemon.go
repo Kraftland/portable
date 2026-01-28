@@ -44,6 +44,7 @@ type portableConfigOpts struct {
 	busLaunchTarget		string	// also may be empty
 	bindNetwork		bool
 	terminateImmediately	bool
+	allowClassicNotifs	bool
 	useZink			bool
 	qt5Compat		bool
 	waylandOnly		bool
@@ -336,6 +337,18 @@ func readConf(readConfChan chan int) {
 			confOpts.qt5Compat = true
 	}
 	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
+
+	allowClassicNotifs := regexp.MustCompile("allowClassicNotifs=.*")
+	var allowClassicNotifsRaw string = tryProcessConf(string(allowClassicNotifs.Find(confReader)), "allowClassicNotifs")
+	switch allowClassicNotifsRaw {
+		case "true":
+			confOpts.allowClassicNotifs = true
+		case "false":
+			confOpts.allowClassicNotifs = false
+		default:
+			confOpts.allowClassicNotifs = true
+	}
+	pecho("debug", "Determined allowClassicNotifs: " + strconv.FormatBool(confOpts.allowClassicNotifs))
 
 	gameMode, gameModeReadErr := regexp.Compile("gameMode=.*")
 	if gameModeReadErr != nil {
