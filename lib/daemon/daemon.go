@@ -82,7 +82,7 @@ func pecho(level string, message string) {
 }
 
 func cmdlineDispatcher(cmdChan chan int) {
-	runtimeOpt.fullCmdline = strings.Join(os.Args, ",")
+	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
 	cmdChan <- 1
 }
