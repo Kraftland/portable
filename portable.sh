@@ -943,19 +943,6 @@ function generateFlatpakInfo() {
 	readyNotify set generateFlatpakInfo
 }
 
-function addDbusArg() {
-	if [[ -z "${extraDbusArgs}" ]]; then
-		extraDbusArgs="$*"
-	else
-		extraDbusArgs="${extraDbusArgs} $*"
-	fi
-}
-
-# $1 as arg name, $2 as value
-function passBusArgs() {
-	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1"
-}
-
 # $1 as arg name.
 function getBusArgs() {
 	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1")" 2>/dev/null
@@ -986,44 +973,6 @@ function cleanDUnits() {
 		"${unitName}-pipewire-container" \
 		"${friendlyName}-subprocess*".service 2>/dev/null
 	readyNotify set cleanDUnits
-}
-
-function dbusArg() {
-	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/busstore"
-	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
-		proxyArg="--log"
-	fi
-	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
-		local featureSet="Location"
-		pecho info "Enabling GNOME exclusive features: ${featureSet}"
-		addDbusArg \
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*"
-	fi
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
-	local \
-	defaultMprisOwn="--own=org.mpris.MediaPlayer2.${appID##*.}.* --own=org.mpris.MediaPlayer2.${appID##*.} --own=org.mpris.MediaPlayer2.${appID} --own=org.mpris.MediaPlayer2.${appID}.*"
-	if [[ -n "${mprisName}" ]]; then
-		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
-		addDbusArg \
-			"--own=${mprisBus} --own=${mprisBus}.* ${defaultMprisOwn}"
-	else
-		addDbusArg \
-			"${defaultMprisOwn}"
-	fi
-	if [[ "${allowGlobalShortcuts}" = "true" ]]; then
-		addDbusArg \
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
-	fi
-	if [[ "${allowInhibit}" = "true" ]]; then
-		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
-	fi
-	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
-	passBusArgs extraDbusArgs "${extraDbusArgs}"
-	passBusArgs proxyArg "${proxyArg}"
-	readyNotify set dbusArg
 }
 
 function writeInfo() {
@@ -1085,7 +1034,6 @@ function pwSecContext() {
 }
 
 function dbusProxy() {
-	dbusArg &
 	generateFlatpakInfo &
 	importEnv &
 	genXAuth

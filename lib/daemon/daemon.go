@@ -683,6 +683,56 @@ func calcDbusArg(argChan chan []string) {
 	}
 	os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID, 0700)
 
+	// Shitty MPRIS calc code
+	mprisOwnList := []string{}
+	/* Take an app ID top.kimiblock.test for example
+		appIDSplit would have 3 substrings
+		appIDSepNum would be 3
+		so appIDSplit[3 - 1] should be the last part
+	*/
+	appIDSplit := strings.Split(confOpts.appID, ".")
+	appIDSegNum := len(appIDSplit)
+	var appIDLastSeg string = appIDSplit[appIDSegNum - 1]
+	mprisOwnList = append(
+		mprisOwnList,
+		"--own=org.mpris.MediaPlayer2." + confOpts.appID,
+		"--own=org.mpris.MediaPlayer2." + confOpts.appID + ".*",
+		"--own=org.mpris.MediaPlayer2." + appIDLastSeg,
+		"--own=org.mpris.MediaPlayer2." + appIDLastSeg + ".*",
+	)
+	if len(confOpts.mprisName) == 0 {
+		pecho("debug", "Using default MPRIS own name")
+	} else {
+		mprisOwnList = append(
+			mprisOwnList,
+			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName,
+			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName + ".*",
+		)
+	}
+
+	if confOpts.allowInhibit == true {
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*",
+		)
+	}
+
+	if confOpts.allowGlobalShortcuts == true {
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*",
+		)
+	}
+
+	argList = append(
+		argList,
+		mprisOwnList...
+	)
+
+	pecho("debug", "Calculated D-Bus arguments: " + strings.Join(argList, ", "))
+
 }
 
 func startProxy(dbusChan chan int8) {
