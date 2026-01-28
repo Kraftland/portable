@@ -1042,12 +1042,12 @@ func main() {
 	// Warn multi-instance here
 	cleanUnitChan := make(chan int8)
 	go doCleanUnit(cleanUnitChan)
-	pwSecContextChan := make(chan string)
-	go pwSecContext(pwSecContextChan)
 	genChan := make(chan int8)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
 	genReady = <- cleanUnitChan
+	pwSecContextChan := make(chan string)
+	go pwSecContext(pwSecContextChan)
 	if genReady == 1 {
 		pecho("debug", "Flatpak info and cleaning ready")
 	}
