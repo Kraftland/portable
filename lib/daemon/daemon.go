@@ -668,6 +668,33 @@ func lookUpXDG(xdgChan chan int) {
 	xdgChan <- 1
 }
 
+func calcDbusArg(argChan chan []string) {
+	argList := <- argChan
+	if internalLoggingLevel < 1 {
+		argList = append(argList, "--log")
+	}
+	if os.Getenv("XDG_CURRENT_DESKTOP") == "gnome" {
+		pecho("debug", "Enabling GNOME exclusive feature: Location")
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*",
+			)
+	}
+	os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID, 0700)
+
+}
+
+func startProxy(dbusChan chan int8) {
+	argChan := make(chan []string)
+	go calcDbusArg(argChan)
+
+	dbusArgs := <- argChan
+	pecho("debug", "D-Bus argument ready")
+
+	dbusChan <- 1
+}
+
 func startApp() {
 	go forceBackgroundPerm()
 	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
@@ -716,6 +743,12 @@ func main() {
 	genReady := <- genChan
 	if genReady == 1 {
 		pecho("debug", "Flatpak info ready")
+	}
+	proxyChan := make(chan int8)
+	go startProxy(proxyChan)
+	ready := <- proxyChan
+	if ready == 1 {
+		pecho("debug", "Proxy ready")
 	}
 	startApp()
 	stopApp("normal")
