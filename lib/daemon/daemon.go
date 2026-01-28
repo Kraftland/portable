@@ -501,10 +501,11 @@ func getFlatpakInstanceID() {
 	} else {
 		pecho("warn", "Unable to read control file: " + readErr.Error())
 	}
+	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.flatpakInstanceID)
 }
 
 func cleanDirs() {
-	pecho("debug", "Cleaning leftovers")
+	pecho("info", "Cleaning leftovers")
 	getFlatpakInstanceID()
 	if len(runtimeInfo.flatpakInstanceID) > 0 && confOpts.mountInfo == true {
 		os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
@@ -512,22 +513,37 @@ func cleanDirs() {
 	} else {
 		pecho("debug", "Skipped cleaning Flatpak entries")
 	}
-	os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
-	os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
-	os.RemoveAll(xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
+	removeErr := os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	if removeErr != nil {
+		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + removeErr.Error())
+	} else {
+		pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	}
+	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
+	if removeErr != nil {
+		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y" + removeErr.Error())
+	} else {
+		pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
+	}
+	removeErr = os.RemoveAll(xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
+	if removeErr != nil {
+		pecho("warn", "Unable to remove directory " + xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop" + removeErr.Error())
+	} else {
+		pecho("debug", "Removed directory " + xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
+	}
 }
 
 func stopApp(operation string) {
 	go stopMainApp()
 	go stopMainAppCompat()
 	go stopSlice()
+	cleanDirs()
 	switch operation {
 		case "normal":
 			pecho("debug", "Selected stop mode: normal")
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
 	}
-	go cleanDirs()
 }
 
 func lookUpXDG(xdgChan chan int) {
