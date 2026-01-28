@@ -4,15 +4,12 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
-	"io/fs"
 	"math/big"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
-	"errors"
 )
 
 const (
@@ -689,7 +686,7 @@ func calcDbusArg(argChan chan []string) {
 	argList := []string{}
 	argList = append(
 		argList,
-		"--quiet",
+		"--no-block",
 		"--user",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
 		"-u", confOpts.friendlyName + "-dbus",
@@ -931,7 +928,7 @@ func startProxy(dbusChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		busExec.Stdout = os.Stdout
 	}
-	busErr := busExec.Start()
+	busErr := busExec.Run()
 	dbusChan <- 1
 	if busErr != nil {
 		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
@@ -944,18 +941,6 @@ func startApp() {
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
-	for {
-		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json")
-		if err == nil {
-			break
-		} else if ! errors.Is(err, fs.ErrNotExist) {
-			pecho(
-				"crit",
-				"Unable to watch bwrapinfo.json @ " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json" + " : " + err.Error(),
-			)
-		}
-		time.Sleep(500 * time.Microsecond)
-	}
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
