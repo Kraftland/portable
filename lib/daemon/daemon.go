@@ -4,13 +4,15 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/big"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
+	//"syscall"
+	"errors"
 )
 
 const (
@@ -688,6 +690,7 @@ func calcDbusArg(argChan chan []string) {
 	argList = append(
 		argList,
 		"--quiet",
+		"--user",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
 		"-u", confOpts.friendlyName + "-dbus",
 		"-p", "KillMode=control-group",
@@ -891,16 +894,11 @@ func startProxy(dbusChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		busExec.Stdout = os.Stdout
 	}
-	busExec.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
 	busErr := busExec.Start()
-
+	dbusChan <- 1
 	if busErr != nil {
 		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
 	}
-
-	dbusChan <- 1
 }
 
 func startApp() {
@@ -909,10 +907,18 @@ func startApp() {
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
-	sdExecErr := sdExec.Run()
-	sdExec.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
+	for {
+		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json")
+		if err == nil {
+			break
+		} else if ! errors.Is(err, fs.ErrNotExist) {
+			pecho(
+				"crit",
+				"Unable to watch bwrapinfo.json @ " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json" + " : " + err.Error(),
+			)
+		}
 	}
+	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
 		pecho("crit", "Unable to start systemd-run")
