@@ -759,6 +759,13 @@ func calcDbusArg(argChan chan []string) {
 		)
 	}
 
+	if confOpts.allowClassicNotifs == true {
+		argList = append(
+			argList,
+			"--talk=org.freedesktop.Notifications",
+		)
+	}
+
 	if confOpts.allowInhibit == true {
 		argList = append(
 			argList,
