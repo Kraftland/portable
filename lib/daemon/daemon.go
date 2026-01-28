@@ -169,6 +169,8 @@ func tryUnquote(input string) (output string) {
 	outputU, err := strconv.Unquote(input)
 	if err != nil {
 		pecho("debug", "Unable to unquote string: " + input + " : " + err.Error())
+		output = input
+		return
 	}
 	output = outputU
 	return
