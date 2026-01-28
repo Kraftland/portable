@@ -943,27 +943,6 @@ function generateFlatpakInfo() {
 	readyNotify set generateFlatpakInfo
 }
 
-# $1 as arg name.
-function getBusArgs() {
-	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1")" 2>/dev/null
-}
-
-function writeInfo() {
-	pecho debug "Waiting for bwrapinfo.json"
-	until grep child-pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" 1>/dev/null 2>/dev/null; do
-		inotifywait \
-			-e modify,create,attrib,close \
-			--quiet \
-			"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" \
-			1>/dev/null
-	done
-	head -n 1 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" \
-		> "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json"
-	pecho debug "bwrapinfo.json installed"
-	readyNotify set writeInfo
-}
-
 function pwSecContext() {
 	if [[ "${bindPipewire}" = 'true' ]]; then
 		pecho debug "Pipewire security context enabled"
