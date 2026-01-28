@@ -731,7 +731,7 @@ function execApp() {
 	readyNotify wait generateFlatpakInfo
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
-	/usr/lib/portable/daemon/portable-daemon
+	/usr/lib/portable/daemon/portable-daemon $@
 }
 
 function terminateOnRequest() {
@@ -1438,7 +1438,7 @@ function launch() {
 	else
 		dbusProxy
 		pecho info "Launching ${appID}..."
-		execApp
+		execApp $@
 	fi
 }
 
