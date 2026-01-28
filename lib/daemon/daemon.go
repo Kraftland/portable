@@ -25,7 +25,6 @@ type runtimeOpts struct {
 
 type runtimeParms struct {
 	flatpakInstanceID	string
-	pwSecContext		string
 }
 
 type XDG_DIRS struct {
@@ -679,14 +678,15 @@ func lookUpXDG(xdgChan chan int) {
 	xdgChan <- 1
 }
 
-func pwSecContext(pwChan chan int8) {
+func pwSecContext(pwChan chan string) {
 	if confOpts.bindPipewire == false {
+		pwChan <- "noop"
 		return
 	}
 	pwSecCmd := []string{
 		"--user",
 		"--quiet",
-		"--no-block",
+		//"--no-block",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
 		"-u", "app-portable-" + confOpts.appID + "-pipewire-container",
 		"-p", "KillMode=control-group",
@@ -700,10 +700,45 @@ func pwSecContext(pwChan chan int8) {
 		"-oL",
 		"/usr/bin/pw-container",
 		"-P",
-		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`
+		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
 	}
 
-	pwChan <- 1
+	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
+	pwSecRun.Stderr = os.Stderr
+
+	if internalLoggingLevel <= 1 {
+		pwSecRun.Stdout = os.Stdout
+	}
+
+	var err error
+	pecho("debug", "Executing pw-container")
+	err = pwSecRun.Run()
+	if err != nil {
+		pecho("warn", "Failed to start up PipeWire proxy. " + err.Error())
+	}
+
+	pwProxyInfo, openErr := os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket", os.O_RDONLY, 0700)
+	if openErr != nil {
+		pecho(
+			"crit",
+			"Failed to open PipeWire proxy status: " + openErr.Error(),
+			)
+	}
+	var pwProxySocket string
+	for {
+		pwInfoObj, ioReadErr := io.ReadAll(pwProxyInfo)
+		if ioReadErr != nil {
+			pecho("crit", "Failed to read PipeWire proxy status: " + ioReadErr.Error())
+		}
+		stringObj := string(pwInfoObj)
+		if strings.HasPrefix(stringObj, "new socket: ") {
+			pwProxySocket = strings.TrimPrefix(stringObj, "new socket: ")
+			break
+		}
+		pecho("debug", "PipeWire proxy has not yet started")
+	}
+
+	pwChan <- pwProxySocket
 }
 
 func calcDbusArg(argChan chan []string) {
@@ -960,7 +995,7 @@ func startProxy(dbusChan chan int8) {
 	}
 }
 
-func startApp() {
+func startApp(pwArg string) {
 	go forceBackgroundPerm()
 	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
@@ -1007,6 +1042,8 @@ func main() {
 	// Warn multi-instance here
 	cleanUnitChan := make(chan int8)
 	go doCleanUnit(cleanUnitChan)
+	pwSecContextChan := make(chan string)
+	go pwSecContext(pwSecContextChan)
 	genChan := make(chan int8)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
@@ -1020,6 +1057,7 @@ func main() {
 	if ready == 1 {
 		pecho("debug", "Proxy ready")
 	}
-	startApp()
+	pwBwArg := <- pwSecContextChan
+	startApp(pwBwArg)
 	stopApp("normal")
 }
