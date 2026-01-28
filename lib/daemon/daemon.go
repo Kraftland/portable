@@ -706,12 +706,7 @@ func pwSecContext(pwChan chan string) {
 	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
 	pwSecRun.Stderr = os.Stderr
 
-	if internalLoggingLevel <= 1 {
-		pwSecRun.Stdout = os.Stdout
-	}
-
 	var err error
-	pecho("debug", "Executing pw-container")
 	err = pwSecRun.Run()
 	if err != nil {
 		pecho("warn", "Failed to start up PipeWire proxy. " + err.Error())
@@ -737,6 +732,7 @@ func pwSecContext(pwChan chan string) {
 		}
 		pecho("debug", "PipeWire proxy has not yet started")
 	}
+	pecho("debug", "pw-container available at " + pwProxySocket)
 
 	pwChan <- pwProxySocket
 }
@@ -995,7 +991,9 @@ func startProxy(dbusChan chan int8) {
 	}
 }
 
-func startApp(pwArg string) {
+func startApp() {
+	// pwBwArg := <- pwSecContextChan
+	// TODO: make use of pwBwArg
 	go forceBackgroundPerm()
 	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
@@ -1057,7 +1055,6 @@ func main() {
 	if ready == 1 {
 		pecho("debug", "Proxy ready")
 	}
-	pwBwArg := <- pwSecContextChan
-	startApp(pwBwArg)
+	startApp()
 	stopApp("normal")
 }
