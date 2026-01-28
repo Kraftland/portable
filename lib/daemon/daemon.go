@@ -25,6 +25,7 @@ type runtimeOpts struct {
 
 type runtimeParms struct {
 	flatpakInstanceID	string
+	pwSecContext		string
 }
 
 type XDG_DIRS struct {
@@ -676,6 +677,33 @@ func lookUpXDG(xdgChan chan int) {
 	}
 
 	xdgChan <- 1
+}
+
+func pwSecContext(pwChan chan int8) {
+	if confOpts.bindPipewire == false {
+		return
+	}
+	pwSecCmd := []string{
+		"--user",
+		"--quiet",
+		"--no-block",
+		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
+		"-u", "app-portable-" + confOpts.appID + "-pipewire-container",
+		"-p", "KillMode=control-group",
+		"-p", "After=pipewire.service",
+		"-p", "Requires=pipewire.service",
+		"-p", "Wants=wireplumber.service",
+		"-p", "StandardOutput=file:" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket",
+		"-p", "SuccessExitStatus=SIGKILL",
+		"--",
+		"stdbuf",
+		"-oL",
+		"/usr/bin/pw-container",
+		"-P",
+		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`
+	}
+
+	pwChan <- 1
 }
 
 func calcDbusArg(argChan chan []string) {
