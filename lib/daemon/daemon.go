@@ -611,7 +611,7 @@ func main() {
 	cmdReady := <- cmdChan
 	xdgReady := <- xdgChan
 	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
-		pecho("debug", "getVariables, lookupXDG and readConf are ready")
+		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	}
 	startApp()
 	stopApp("normal")
