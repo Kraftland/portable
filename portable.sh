@@ -948,33 +948,6 @@ function getBusArgs() {
 	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1")" 2>/dev/null
 }
 
-function cleanDUnits() {
-	systemctl --user kill -sSIGKILL \
-		"${friendlyName}*" \
-		"${unitName}" \
-		"${proxyName}*".service \
-		"${proxyName}-a11y" \
-		"${friendlyName}"-wayland-proxy \
-		"${unitName}-pipewire-container" \
-		"${friendlyName}-subprocess*".service 2>/dev/null
-	systemctl --user clean "${friendlyName}*" \
-		"${unitName}" \
-		"${friendlyName}-subprocess*".service \
-		"${proxyName}*".service \
-		"${proxyName}-a11y" \
-		"${friendlyName}"-wayland-proxy \
-		"${friendlyName}*"-pipewire-container.service 2>/dev/null &
-	systemctl --user reset-failed \
-		"${friendlyName}*" \
-		"${unitName}" \
-		"${proxyName}*".service \
-		"${proxyName}-a11y" \
-		"${friendlyName}"-wayland-proxy \
-		"${unitName}-pipewire-container" \
-		"${friendlyName}-subprocess*".service 2>/dev/null
-	readyNotify set cleanDUnits
-}
-
 function writeInfo() {
 	pecho debug "Waiting for bwrapinfo.json"
 	until grep child-pid -q "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json.original" 1>/dev/null 2>/dev/null; do
@@ -1038,7 +1011,6 @@ function dbusProxy() {
 	importEnv &
 	genXAuth
 	waylandDisplay
-	readyNotify wait cleanDUnits
 	pwSecContext &
 
 	if [[ ${securityContext} -eq 1 ]]; then
@@ -1193,7 +1165,6 @@ function launch() {
 	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
 		warnMulRunning
 	fi
-	cleanDUnits &
 	sanityCheck &
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
