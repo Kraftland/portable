@@ -795,7 +795,7 @@ func calcDbusArg(argChan chan []string) {
 	}
 
 	pecho("debug", "Calculated D-Bus arguments: " + strings.Join(argList, ", "))
-
+	argChan <- argList
 }
 
 func startProxy(dbusChan chan int8) {

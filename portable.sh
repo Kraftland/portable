@@ -1042,7 +1042,7 @@ function dbusProxy() {
 	pwSecContext &
 
 
-			--talk=org.freedesktop.Notifications \
+			 \
 			--talk=org.kde.StatusNotifierWatcher \
 			--call=org.freedesktop.Notifications.*=* \
 			--see=org.a11y.Bus \
