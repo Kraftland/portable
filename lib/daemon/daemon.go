@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	//"syscall"
+	"time"
 	"errors"
 )
 
@@ -917,6 +917,7 @@ func startApp() {
 				"Unable to watch bwrapinfo.json @ " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json" + " : " + err.Error(),
 			)
 		}
+		time.Sleep(1 * time.Millisecond)
 	}
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
