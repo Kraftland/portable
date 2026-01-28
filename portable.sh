@@ -916,35 +916,6 @@ function genInstanceID() {
 }
 
 function generateFlatpakInfo() {
-	pecho debug "Installing flatpak-info..."
-	install /usr/lib/portable/flatpak-info \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	sed -i "s|placeHolderAppName|${appID}|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	sed -i "s|placeholderInstanceId|${instanceId}|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
-	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
-	echo "instanceId=${instanceId}" > "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "appID=${appID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "busDir=${busDir}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "busDirAy=${busDirAy}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "friendlyName=${friendlyName}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	if [[ -f "/usr/share/applications/${appID}.desktop" ]]; then
 		pecho debug "Application desktop file detected"
 	else
@@ -970,19 +941,6 @@ function generateFlatpakInfo() {
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"
 	fi
 	readyNotify set generateFlatpakInfo
-}
-
-function addDbusArg() {
-	if [[ -z "${extraDbusArgs}" ]]; then
-		extraDbusArgs="$*"
-	else
-		extraDbusArgs="${extraDbusArgs} $*"
-	fi
-}
-
-# $1 as arg name, $2 as value
-function passBusArgs() {
-	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/busstore/$1"
 }
 
 # $1 as arg name.
@@ -1015,44 +973,6 @@ function cleanDUnits() {
 		"${unitName}-pipewire-container" \
 		"${friendlyName}-subprocess*".service 2>/dev/null
 	readyNotify set cleanDUnits
-}
-
-function dbusArg() {
-	mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/busstore"
-	if [[ "${PORTABLE_LOGGING}" = "debug" ]]; then
-		proxyArg="--log"
-	fi
-	if [[ "${XDG_CURRENT_DESKTOP}" = "GNOME" ]]; then
-		local featureSet="Location"
-		pecho info "Enabling GNOME exclusive features: ${featureSet}"
-		addDbusArg \
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*"
-	fi
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/doc/by-app/${appID}"
-	local \
-	defaultMprisOwn="--own=org.mpris.MediaPlayer2.${appID##*.}.* --own=org.mpris.MediaPlayer2.${appID##*.} --own=org.mpris.MediaPlayer2.${appID} --own=org.mpris.MediaPlayer2.${appID}.*"
-	if [[ -n "${mprisName}" ]]; then
-		local mprisBus="org.mpris.MediaPlayer2.${mprisName}"
-		addDbusArg \
-			"--own=${mprisBus} --own=${mprisBus}.* ${defaultMprisOwn}"
-	else
-		addDbusArg \
-			"${defaultMprisOwn}"
-	fi
-	if [[ "${allowGlobalShortcuts}" = "true" ]]; then
-		addDbusArg \
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*"
-	fi
-	if [[ "${allowInhibit}" = "true" ]]; then
-		addDbusArg "--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*"
-	fi
-	pecho debug "Extra D-Bus arguments: ${extraDbusArgs}"
-	passBusArgs extraDbusArgs "${extraDbusArgs}"
-	passBusArgs proxyArg "${proxyArg}"
-	readyNotify set dbusArg
 }
 
 function writeInfo() {
@@ -1114,170 +1034,13 @@ function pwSecContext() {
 }
 
 function dbusProxy() {
-	dbusArg &
-	genInstanceID
 	generateFlatpakInfo &
 	importEnv &
 	genXAuth
 	waylandDisplay
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${busDir}"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${busDirAy}"
-	pecho info "Starting D-Bus Proxy @ ${busDir}..."
-	readyNotify wait dbusArg
 	readyNotify wait cleanDUnits
 	pwSecContext &
-	getBusArgs extraDbusArgs
-	getBusArgs proxyArg
-	systemd-run \
-		--user \
-		--quiet \
-		-p Slice="portable-${friendlyName}.slice" \
-		-u "${proxyName}" \
-		-p KillMode=control-group \
-		-p Wants="xdg-document-portal.service xdg-desktop-portal.service" \
-		-p After="xdg-document-portal.service xdg-desktop-portal.service" \
-		-p SuccessExitStatus=SIGKILL \
-		-p StandardError="file:${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/bwrapinfo.json" \
-		-- bwrap \
-			--json-status-fd 2 \
-			--unshare-all \
-			--symlink /usr/lib64 /lib64 \
-			--ro-bind /usr/lib /usr/lib \
-			--ro-bind /usr/lib64 /usr/lib64 \
-			--ro-bind /usr/bin /usr/bin \
-			--ro-bind-try /usr/share /usr/share \
-			--bind "${XDG_RUNTIME_DIR}" "${XDG_RUNTIME_DIR}" \
-			--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-				"${XDG_RUNTIME_DIR}/.flatpak-info" \
-			--ro-bind "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-				/.flatpak-info \
-			-- /usr/bin/xdg-dbus-proxy \
-			"${DBUS_SESSION_BUS_ADDRESS}" \
-			"${busDir}/bus" \
-			${proxyArg} \
-			--filter \
-			--own=org.kde.StatusNotifierItem-2-1 \
-			--own=org.kde.StatusNotifierItem-3-1 \
-			--own=org.kde.StatusNotifierItem-4-1 \
-			--own=org.kde.StatusNotifierItem-5-1 \
-			--own=org.kde.StatusNotifierItem-6-1 \
-			--own=org.kde.StatusNotifierItem-7-1 \
-			--own=org.kde.StatusNotifierItem-8-1 \
-			--own=org.kde.StatusNotifierItem-9-1 \
-			--own=org.kde.StatusNotifierItem-10-1 \
-			--own=org.kde.StatusNotifierItem-11-1 \
-			--own=org.kde.StatusNotifierItem-12-1 \
-			--own=org.kde.StatusNotifierItem-13-1 \
-			--own=org.kde.StatusNotifierItem-14-1 \
-			--own=org.kde.StatusNotifierItem-15-1 \
-			--own=org.kde.StatusNotifierItem-16-1 \
-			--own=org.kde.StatusNotifierItem-17-1 \
-			--own=org.kde.StatusNotifierItem-18-1 \
-			--own=org.kde.StatusNotifierItem-19-1 \
-			--own=org.kde.StatusNotifierItem-20-1 \
-			--own=org.kde.StatusNotifierItem-21-1 \
-			--own=org.kde.StatusNotifierItem-22-1 \
-			--own=org.kde.StatusNotifierItem-23-1 \
-			--own=org.kde.StatusNotifierItem-24-1 \
-			--own=org.kde.StatusNotifierItem-25-1 \
-			--own=org.kde.StatusNotifierItem-26-1 \
-			--own=org.kde.StatusNotifierItem-27-1 \
-			--own=org.kde.StatusNotifierItem-28-1 \
-			--own=org.kde.StatusNotifierItem-29-1 \
-			--own=com.belmoussaoui.ashpd.demo \
-			--talk="org.unifiedpush.Distributor.*" \
-			--own="${appID}" \
-			--own="${appID}".* \
-			--talk=org.freedesktop.Notifications \
-			--talk=org.kde.StatusNotifierWatcher \
-			--call=org.freedesktop.Notifications.*=* \
-			--see=org.a11y.Bus \
-			--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus \
-			--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot --call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot \
-			--see=org.freedesktop.portal.Request \
-			--talk=com.canonical.AppMenu.Registrar \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Email.ComposeEmail \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.PowerProfileMonitor \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.PowerProfileMonitor.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.MemoryMonitor \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.MemoryMonitor.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.Lookup \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.Lookup.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ScreenCast \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ScreenCast.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Account.GetUserInformation \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.RemoteDesktop.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.RemoteDesktop \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.Read \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Documents \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Device \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Device.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileTransfer.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileTransfer \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Notification.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Notification \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.NetworkMonitor.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.NetworkMonitor \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Fcitx.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Fcitx \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus.* \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.IBus \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret.RetrieveSecret \
-			${extraDbusArgs} \
-			--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop \
-			--talk=org.freedesktop.portal.Documents \
-			--call=org.freedesktop.portal.Documents=* \
-			--talk=org.freedesktop.portal.FileTransfer \
-			--call=org.freedesktop.portal.FileTransfer=* \
-			--talk=org.freedesktop.portal.FileTransfer.* \
-			--call=org.freedesktop.portal.FileTransfer.*=* \
-			--talk=org.freedesktop.portal.Notification \
-			--call=org.freedesktop.portal.Notification=* \
-			--talk=org.freedesktop.portal.Print \
-			--call=org.freedesktop.portal.Print=* \
-			--talk=org.freedesktop.FileManager1 \
-			--call=org.freedesktop.FileManager1=* \
-			--talk=org.freedesktop.portal.OpenURI \
-			--call=org.freedesktop.portal.OpenURI=* \
-			--talk=org.freedesktop.portal.OpenURI.OpenURI \
-			--call=org.freedesktop.portal.OpenURI.OpenURI=* \
-			--talk=org.freedesktop.portal.OpenURI.OpenFile \
-			--call=org.freedesktop.portal.OpenURI.OpenFile=* \
-			--talk=org.freedesktop.portal.Fcitx \
-			--call=org.freedesktop.portal.Fcitx=* \
-			--talk=org.freedesktop.portal.Fcitx.* \
-			--call=org.freedesktop.portal.Fcitx.*=* \
-			--talk=org.freedesktop.portal.IBus \
-			--call=org.freedesktop.portal.IBus=* \
-			--talk=org.freedesktop.portal.IBus.* \
-			--call=org.freedesktop.portal.IBus.*=* \
-			--call=org.freedesktop.portal.Request=* \
-			--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*
-	#writeInfo &
+
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \

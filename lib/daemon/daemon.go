@@ -3,16 +3,21 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"io"
+	"io/fs"
 	"math/big"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
+	"errors"
 )
 
 const (
-	version float32 = 0.1
+	version		float32	=	0.1
+	controlFile	string	=	"instanceId=inIdHold\nappID=idHold\nbusDir=busHold\nbusDirAy=busAyHold\nfriendlyName=friendlyHold"
 )
 
 type runtimeOpts struct {
@@ -42,6 +47,7 @@ type portableConfigOpts struct {
 	busLaunchTarget		string	// also may be empty
 	bindNetwork		bool
 	terminateImmediately	bool
+	allowClassicNotifs	bool
 	useZink			bool
 	qt5Compat		bool
 	waylandOnly		bool
@@ -96,8 +102,8 @@ func cmdlineDispatcher(cmdChan chan int) {
 			runtimeOpt.action = true
 			if cmdlineArray[index + 1] == "quit" {
 				runtimeOpt.quit = 2
+				pecho("debug", "Received quit request from user")
 			}
-			pecho("debug", "Received quit request from user")
 		}
 	}
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
@@ -335,6 +341,18 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
 
+	allowClassicNotifs := regexp.MustCompile("allowClassicNotifs=.*")
+	var allowClassicNotifsRaw string = tryProcessConf(string(allowClassicNotifs.Find(confReader)), "allowClassicNotifs")
+	switch allowClassicNotifsRaw {
+		case "true":
+			confOpts.allowClassicNotifs = true
+		case "false":
+			confOpts.allowClassicNotifs = false
+		default:
+			confOpts.allowClassicNotifs = true
+	}
+	pecho("debug", "Determined allowClassicNotifs: " + strconv.FormatBool(confOpts.allowClassicNotifs))
+
 	gameMode, gameModeReadErr := regexp.Compile("gameMode=.*")
 	if gameModeReadErr != nil {
 		pecho("crit", "Unable to parse gameMode: " + gameModeReadErr.Error())
@@ -486,28 +504,57 @@ func stopSlice() {
 }
 
 func genFlatpakInstanceID(genInfo chan int8) {
-	if confOpts.mountInfo == false {
-		pecho("debug", "Skipping Flatpak Info generation")
-		return
-	}
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
 	}
 	var i int
-	var instanceIDCleared bool
-	for i = 0; instanceIDCleared == true; i++ {
+	var instanceIDCleared bool = false
+	pecho("debug", "Generating instance ID")
+	for i = 0; instanceIDCleared == false; i++ {
 		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
+		pecho("debug", "Trying instance ID: " + genId.String())
 		err := os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
 		if err != nil {
 			pecho("warn", "Unable to use instance ID " + genId.String())
 		} else {
 			instanceIDCleared = true
+			runtimeInfo.flatpakInstanceID = genId.String()
 			break
 		}
 	}
+	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
+	infoObj, ioErr := io.ReadAll(flatpakInfo)
+	if ioErr != nil {
+		pecho("debug", "Failed to read template Flatpak info for I/O error: " + ioErr.Error())
+	}
+	stringObj := string(infoObj)
+	stringObj = strings.ReplaceAll(stringObj, "placeHolderAppName", confOpts.appID)
+	stringObj = strings.ReplaceAll(stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID)
+	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	//os.RemoveAll(xdgDir.runtimeDir + "/" + "portable/" + confOpts.appID + "flatpak-info")
+
+	fmt.Println(stringObj)
+
+	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info", []byte(stringObj), 0700)
+	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info", []byte(stringObj), 0700)
+
+	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/xdg-run", 0700)
+	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp", 0700)
+
+	var flatpakRef string = ""
+	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref", []byte(flatpakRef), 0700)
+
+	var controlContent = controlFile
+	controlContent = strings.ReplaceAll(controlContent, "inIdHold", runtimeInfo.flatpakInstanceID)
+	controlContent = strings.ReplaceAll(controlContent, "idHold", confOpts.appID)
+	controlContent = strings.ReplaceAll(controlContent, "busHold", xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	controlContent = strings.ReplaceAll(controlContent, "busAyHold", xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
+	controlContent = strings.ReplaceAll(controlContent, "friendlyHold", confOpts.friendlyName)
+	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control", []byte(controlContent), 0700)
 
 	genInfo <- 1
+	flatpakInfo.Close()
 }
 
 func getFlatpakInstanceID() {
@@ -637,12 +684,241 @@ func lookUpXDG(xdgChan chan int) {
 	xdgChan <- 1
 }
 
+func calcDbusArg(argChan chan []string) {
+	pecho("debug", "Calculating D-Bus arguments...")
+	argList := []string{}
+	argList = append(
+		argList,
+		"--quiet",
+		"--user",
+		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
+		"-u", confOpts.friendlyName + "-dbus",
+		"-p", "KillMode=control-group",
+		"-p", "Wants=xdg-document-portal.service xdg-desktop-portal.service",
+		"-p", "After=xdg-document-portal.service xdg-desktop-portal.service",
+		"-p", "SuccessExitStatus=SIGKILL",
+		"-p", "StandardError=file:" + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json",
+		"--",
+		"bwrap",
+		"--json-status-fd", "2",
+		"--unshare-all",
+		"--symlink", "/usr/lib64", "/lib64",
+		"--ro-bind", "/usr/lib", "/usr/lib",
+		"--ro-bind", "/usr/lib64", "/usr/lib64",
+		"--ro-bind", "/usr/bin", "/usr/bin",
+		"--ro-bind-try", "/usr/share", "/usr/share",
+		"--bind", xdgDir.runtimeDir, xdgDir.runtimeDir,
+		"--ro-bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/.flatpak-info",
+		"--ro-bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			"/.flatpak-info",
+		"--",
+		"/usr/bin/xdg-dbus-proxy",
+		os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
+		xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+		"--filter",
+		"--own=com.belmoussaoui.ashpd.demo",
+		"--talk=org.unifiedpush.Distributor.*",
+		"--own=" + confOpts.appID,
+		"--own=" + confOpts.appID + ".*",
+		"--talk=org.kde.StatusNotifierWatcher",
+		"--talk=com.canonical.AppMenu.Registrar",
+		"--see=org.a11y.Bus",
+		"--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus",
+		"--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus",
+		// Screenshot stuff
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot",
+
+		"--see=org.freedesktop.portal.Request",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.Read",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Request=*",
+		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
+	)
+
+	pecho("debug", "Expanding built-in rules")
+
+	allowedPortals := []string{
+		"Screenshot",
+		"Email",
+		"Usb",
+		"PowerProfileMonitor",
+		"MemoryMonitor",
+		"ProxyResolver.Lookup",
+		"ScreenCast",
+		"Account.GetUserInformation",
+		"Camera",
+		"RemoteDesktop",
+		"Documents",
+		"Device",
+		"FileChooser",
+		"FileTransfer",
+		"Notification",
+		"Print",
+		"NetworkMonitor",
+		"OpenURI",
+		"Fcitx",
+		"IBus",
+		"Secret",
+		"OpenURI",
+	}
+
+	for _, talkDest := range allowedPortals {
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal." + talkDest,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal." + talkDest + ".*",
+		)
+	}
+
+	allowedTalks := []string{
+		"org.freedesktop.portal.Documents",
+		"org.freedesktop.portal.FileTransfer",
+		"org.freedesktop.portal.Notification",
+		"org.freedesktop.portal.Print",
+		"org.freedesktop.FileManager1",
+		"org.freedesktop.portal.Fcitx",
+		"org.freedesktop.portal.IBus",
+	}
+
+	for _, talkDest := range allowedTalks {
+		argList = append(
+			argList,
+			"--talk=" + talkDest,
+			"--call=" + talkDest + "=*",
+		)
+	}
+
+	if internalLoggingLevel < 1 {
+		argList = append(argList, "--log")
+	}
+	if os.Getenv("XDG_CURRENT_DESKTOP") == "gnome" {
+		pecho("debug", "Enabling GNOME exclusive feature: Location")
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*",
+			)
+	}
+	os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID, 0700)
+
+	// Shitty MPRIS calc code
+	mprisOwnList := []string{}
+	/* Take an app ID top.kimiblock.test for example
+		appIDSplit would have 3 substrings
+		appIDSepNum would be 3
+		so appIDSplit[3 - 1] should be the last part
+	*/
+	appIDSplit := strings.Split(confOpts.appID, ".")
+	appIDSegNum := len(appIDSplit)
+	var appIDLastSeg string = appIDSplit[appIDSegNum - 1]
+	mprisOwnList = append(
+		mprisOwnList,
+		"--own=org.mpris.MediaPlayer2." + confOpts.appID,
+		"--own=org.mpris.MediaPlayer2." + confOpts.appID + ".*",
+		"--own=org.mpris.MediaPlayer2." + appIDLastSeg,
+		"--own=org.mpris.MediaPlayer2." + appIDLastSeg + ".*",
+	)
+	if len(confOpts.mprisName) == 0 {
+		pecho("debug", "Using default MPRIS own name")
+	} else {
+		mprisOwnList = append(
+			mprisOwnList,
+			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName,
+			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName + ".*",
+		)
+	}
+
+	if confOpts.allowClassicNotifs == true {
+		argList = append(
+			argList,
+			"--talk=org.freedesktop.Notifications",
+			"--call=org.freedesktop.Notifications.*=*",
+		)
+	}
+
+	if confOpts.allowInhibit == true {
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*",
+		)
+	}
+
+	if confOpts.allowGlobalShortcuts == true {
+		argList = append(
+			argList,
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*",
+		)
+	}
+
+	argList = append(
+		argList,
+		mprisOwnList...
+	)
+
+	for i := 2; i < 30; i++ {
+		argList = append(
+			argList,
+			"--own=org.kde.StatusNotifierItem-" + strconv.Itoa(i) + "-1",
+		)
+	}
+
+	pecho("debug", "Calculated D-Bus arguments: " + strings.Join(argList, ", "))
+	argChan <- argList
+}
+
+func startProxy(dbusChan chan int8) {
+	argChan := make(chan []string)
+	go calcDbusArg(argChan)
+
+	dbusArgs := <- argChan
+	pecho("debug", "D-Bus argument ready")
+	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
+	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
+	pecho("info", "Starting D-Bus proxy")
+
+	busExec := exec.Command(
+		"systemd-run",
+		dbusArgs...
+	)
+	busExec.Stderr = os.Stderr
+	if internalLoggingLevel <= 1 {
+		busExec.Stdout = os.Stdout
+	}
+	busErr := busExec.Start()
+	dbusChan <- 1
+	if busErr != nil {
+		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
+	}
+}
+
 func startApp() {
 	go forceBackgroundPerm()
 	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
+	for {
+		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json")
+		if err == nil {
+			break
+		} else if ! errors.Is(err, fs.ErrNotExist) {
+			pecho(
+				"crit",
+				"Unable to watch bwrapinfo.json @ " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json" + " : " + err.Error(),
+			)
+		}
+		time.Sleep(500 * time.Microsecond)
+	}
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
@@ -679,6 +955,18 @@ func main() {
 	xdgReady := <- xdgChan
 	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
 		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
+	}
+	genChan := make(chan int8)
+	go genFlatpakInstanceID(genChan)
+	genReady := <- genChan
+	if genReady == 1 {
+		pecho("debug", "Flatpak info ready")
+	}
+	proxyChan := make(chan int8)
+	go startProxy(proxyChan)
+	ready := <- proxyChan
+	if ready == 1 {
+		pecho("debug", "Proxy ready")
 	}
 	startApp()
 	stopApp("normal")
