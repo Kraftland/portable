@@ -917,7 +917,7 @@ func startApp() {
 				"Unable to watch bwrapinfo.json @ " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json" + " : " + err.Error(),
 			)
 		}
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(500 * time.Microsecond)
 	}
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
