@@ -9,10 +9,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"io"
 )
 
 const (
-	version float32 = 0.1
+	version		float32	=	0.1
+	controlFile	string	=	"instanceId=inIdHold\nappID=idHold\nbusDir=busHold\nbusDirAy=busAyHold\nfriendlyName=friendlyHold"
 )
 
 type runtimeOpts struct {
@@ -96,8 +98,8 @@ func cmdlineDispatcher(cmdChan chan int) {
 			runtimeOpt.action = true
 			if cmdlineArray[index + 1] == "quit" {
 				runtimeOpt.quit = 2
+				pecho("debug", "Received quit request from user")
 			}
-			pecho("debug", "Received quit request from user")
 		}
 	}
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
@@ -486,28 +488,57 @@ func stopSlice() {
 }
 
 func genFlatpakInstanceID(genInfo chan int8) {
-	if confOpts.mountInfo == false {
-		pecho("debug", "Skipping Flatpak Info generation")
-		return
-	}
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
 	}
 	var i int
-	var instanceIDCleared bool
-	for i = 0; instanceIDCleared == true; i++ {
+	var instanceIDCleared bool = false
+	pecho("debug", "Generating instance ID")
+	for i = 0; instanceIDCleared == false; i++ {
 		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
+		pecho("debug", "Trying instance ID: " + genId.String())
 		err := os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
 		if err != nil {
 			pecho("warn", "Unable to use instance ID " + genId.String())
 		} else {
 			instanceIDCleared = true
+			runtimeInfo.flatpakInstanceID = genId.String()
 			break
 		}
 	}
+	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
+	infoObj, ioErr := io.ReadAll(flatpakInfo)
+	if ioErr != nil {
+		pecho("debug", "Failed to read template Flatpak info for I/O error: " + ioErr.Error())
+	}
+	stringObj := string(infoObj)
+	stringObj = strings.ReplaceAll(stringObj, "placeHolderAppName", confOpts.appID)
+	stringObj = strings.ReplaceAll(stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID)
+	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	//os.RemoveAll(xdgDir.runtimeDir + "/" + "portable/" + confOpts.appID + "flatpak-info")
+
+	fmt.Println(stringObj)
+
+	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info", []byte(stringObj), 0700)
+	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info", []byte(stringObj), 0700)
+
+	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/xdg-run", 0700)
+	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp", 0700)
+
+	var flatpakRef string = ""
+	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref", []byte(flatpakRef), 0700)
+
+	var controlContent = controlFile
+	controlContent = strings.ReplaceAll(controlContent, "inIdHold", runtimeInfo.flatpakInstanceID)
+	controlContent = strings.ReplaceAll(controlContent, "idHold", confOpts.appID)
+	controlContent = strings.ReplaceAll(controlContent, "busHold", xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	controlContent = strings.ReplaceAll(controlContent, "busAyHold", xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
+	controlContent = strings.ReplaceAll(controlContent, "friendlyHold", confOpts.friendlyName)
+	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control", []byte(controlContent), 0700)
 
 	genInfo <- 1
+	flatpakInfo.Close()
 }
 
 func getFlatpakInstanceID() {
@@ -679,6 +710,12 @@ func main() {
 	xdgReady := <- xdgChan
 	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
 		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
+	}
+	genChan := make(chan int8)
+	go genFlatpakInstanceID(genChan)
+	genReady := <- genChan
+	if genReady == 1 {
+		pecho("debug", "Flatpak info ready")
 	}
 	startApp()
 	stopApp("normal")

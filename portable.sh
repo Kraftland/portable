@@ -916,35 +916,6 @@ function genInstanceID() {
 }
 
 function generateFlatpakInfo() {
-	pecho debug "Installing flatpak-info..."
-	install /usr/lib/portable/flatpak-info \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	sed -i "s|placeHolderAppName|${appID}|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	sed -i "s|placeholderInstanceId|${instanceId}|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	sed -i "s|placeholderPath|${XDG_DATA_HOME}/${stateDirectory}|g" \
-		"${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	install "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" \
-		"${XDG_RUNTIME_DIR}/.flatpak/${instanceId}/info"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/xdg-run"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/.flatpak/${appID}/tmp"
-	touch "${XDG_RUNTIME_DIR}/.flatpak/${appID}/.ref"
-	echo "instanceId=${instanceId}" > "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "appID=${appID}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "busDir=${busDir}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "busDirAy=${busDirAy}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	echo "friendlyName=${friendlyName}" >> "${XDG_RUNTIME_DIR}/portable/${appID}/control"
 	if [[ -f "/usr/share/applications/${appID}.desktop" ]]; then
 		pecho debug "Application desktop file detected"
 	else
@@ -1115,7 +1086,6 @@ function pwSecContext() {
 
 function dbusProxy() {
 	dbusArg &
-	genInstanceID
 	generateFlatpakInfo &
 	importEnv &
 	genXAuth
