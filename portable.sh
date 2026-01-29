@@ -884,15 +884,6 @@ function warnMulRunning() {
 	# fi
 }
 
-function genInstanceID() {
-	instanceId=$(shuf -i 1024000000-9999999999 -n 1)
-	while [[ -d "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}" ]]; do
-		pecho debug "Instance ID collision detected!"
-		instanceId=$(shuf -i 1024000000-9999999999 -n 1)
-	done
-
-}
-
 function generateFlatpakInfo() {
 	if [[ -f "/usr/share/applications/${appID}.desktop" ]]; then
 		pecho debug "Application desktop file detected"
