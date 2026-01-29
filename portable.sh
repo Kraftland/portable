@@ -473,109 +473,6 @@ function procDriverBind() {
 	readyNotify set procDriverBind
 }
 
-function bindNvDevIfExistv2(){
-	if ls /dev/nvidia* &> /dev/null; then
-		pecho debug "Binding NVIDIA GPUs in Game Mode / Single output configurations"
-		for _card in /dev/nvidia*; do
-			if [[ -e "${_card}" ]]; then
-				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0${_card}\0${_card}\0"
-			fi
-		done
-		export nvExist=1
-	fi
-}
-
-function gameModeBind() {
-	declare IFS
-	IFS=$'\n'
-	for cardOp in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
-		bindCard "$(basename "${cardOp}")"
-	done
-}
-
-# Takes card* as arg1
-function bindCard() {
-	pecho debug "Binding card: $1..."
-	cardToRender "$1"
-	bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind\0$(resolvePCICard "$1")\0$(resolvePCICard "$1")\0--dev-bind-try\0/sys/class/drm/$1\0/sys/class/drm/$1\0--dev-bind-try\0/dev/dri/$1\0/dev/dri/$1\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0"
-}
-
-function hybridBindv2() {
-	declare -i cardSums
-	unset bwSwitchableGraphicsArg
-	declare -g bwSwitchableGraphicsArg
-	declare IFS
-	IFS=$'\n'
-	cardSums="$(find /sys/class/drm -name 'card*' -not -name '*-*' | wc -l)"
-	if [[ "${cardSums}" -eq 1 || "${PORTABLE_ASSUME_SINGLE_GPU}" -eq 114514 ]]; then
-		bwSwitchableGraphicsArg=""
-		pecho debug "Single GPU"
-		bindNvDevIfExistv2
-		declare vCards
-		vCards="$(find /sys/class/drm -name 'card*' -not -name '*-*')"
-		vCards="$(basename ${vCards})"
-		bindCard "${vCards}"
-	elif [[ "${cardSums}" -eq 0 ]]; then
-		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
-		pecho warn "No GPU detected!"
-	elif [[ "${gameMode}" = "true" ]]; then
-		pecho debug "Game Mode enabled on hybrid graphics"
-		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
-		gameModeBind
-		bindNvDevIfExistv2
-		setNvOffloadEnv
-	else
-		bwSwitchableGraphicsArg="--tmpfs\0/dev/dri\0--tmpfs\0/sys/class/drm\0"
-		local activeCardSum=0
-		activeCards="placeholder"
-		for vCards in $(find /sys/class/drm -name 'card*' -not -name '*-*'); do
-			pecho debug "Working on ${vCards}"
-			for file in $(find -L "${vCards}" -maxdepth 2 -name status 2>/dev/null); do
-				pecho debug "Inspecting ${file}"
-				if grep -q "disconnected" "${file}"; then
-					continue
-				else
-					pecho debug "Active GPU"
-					activeCardSum=$(("${activeCardSum}"+1))
-					if [[ "${activeCards}" = "placeholder" ]]; then
-						activeCards="$(basename "${vCards}")"
-					else
-						activeCards="${activeCards} $(basename "${vCards}")"
-					fi
-					break
-				fi
-			done
-		done
-		if [[ "${activeCardSum}" -le 1 ]]; then
-			for _module in $(find /sys/module -maxdepth 1 -type d -name 'nvidia*'); do
-				bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--tmpfs\0${_module}\0"
-			done
-			pecho debug "${activeCardSum} card active, identified as ${activeCards}"
-			addEnv "VK_LOADER_DRIVERS_DISABLE='nvidia_icd.json'"
-			bindCard "${activeCards}"
-		else
-			pecho warn "Multiple GPU outputs detected! Report bugs if found."
-			pecho debug "${activeCardSum} cards active"
-			for vCards in ${activeCards}; do
-			# TODO: What happens to non NVIDIA, more than 1 active GPU hybrid configuration?
-				if grep -q '0x10de' "/sys/class/drm/${vCards}/device/vendor"; then
-					addEnv "VK_LOADER_DRIVERS_DISABLE=nvidia_icd.json"
-					addEnv 'DRI_PRIME=0'
-					continue
-				else
-					cardToRender "${vCards}"
-					pecho debug "Binding ${renderIndex}"
-					bwSwitchableGraphicsArg="${bwSwitchableGraphicsArg}--dev-bind-try\0/sys/class/drm/${vCards}\0/sys/class/drm/${vCards}\0--dev-bind-try\0/dev/dri/${vCards}\0/dev/dri/${vCards}\0--dev-bind\0/dev/dri/${renderIndex}\0/dev/dri/${renderIndex}\0--dev-bind\0/sys/class/drm/${renderIndex}\0/sys/class/drm/${renderIndex}\0--dev-bind\0$(resolvePCICard "${vCards}")\0$(resolvePCICard "${vCards}")\0"
-					addEnv 'DRI_PRIME=0'
-				fi
-			done
-		fi
-	fi
-	pecho debug "(v2) Generated GPU bind parameter: $(echo -e "${bwSwitchableGraphicsArg}" | xargs -0)" &
-	passBwrapArgs "${bwSwitchableGraphicsArg}"
-	readyNotify set hybridBindv2
-}
-
 # Pass NUL separated arguments!
 function calcMountArgv2() {
 	if [[ "${mountInfo}" = "false" ]]; then
@@ -614,7 +511,6 @@ function cameraBindv2() {
 
 function calcBwrapArg() {
 
-	hybridBindv2 &
 	if [ -e /usr/lib/flatpak-xdg-utils/flatpak-spawn ]; then
 		passBwrapArgs "--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0"
 	fi
@@ -635,7 +531,6 @@ function calcBwrapArg() {
 		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
 	fi
 	readyNotify wait procDriverBind
-	readyNotify wait hybridBindv2
 	readyNotify wait pwBindCalc # PW binds
 	readyNotify wait cameraBindv2
 	readyNotify wait calcMountArgv2
