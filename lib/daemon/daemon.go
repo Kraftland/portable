@@ -1110,6 +1110,8 @@ func genBwArg(argChan chan int8) {
 	go instSignalFile(instChan)
 	gpuChan := make(chan []string)
 	go gpuBind(gpuChan)
+	camChan := make(chan []string)
+	go tryBindCam(camChan)
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -1280,6 +1282,12 @@ func genBwArg(argChan chan int8) {
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		inputArgs...
+	)
+
+	camArgs := <- camChan
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		camArgs...
 	)
 
 	gpuArgs := <- gpuChan
@@ -1490,6 +1498,28 @@ func bindCard(cardName string) (cardBindArg []string) {
 	}
 
 	return
+}
+
+func tryBindCam(camChan chan []string) {
+	if confOpts.bindCameras == false {
+		return
+	}
+	camArg := []string{}
+	camEntries, err := os.ReadDir("/dev")
+	if err != nil {
+		pecho("warn", "Failed to parse camera entries")
+		return
+	}
+	for _, file := range camEntries {
+		if strings.HasPrefix(file.Name(), "video") && file.IsDir() == false {
+			camArg = append(
+				camArg,
+				"--dev-bind",
+					"/dev/" + file.Name(),
+					"/dev/" + file.Name(),
+			)
+		}
+	}
 }
 
 func tryBindNv(nvChan chan []string) {
