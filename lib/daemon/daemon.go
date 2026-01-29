@@ -25,6 +25,8 @@ type runtimeOpts struct {
 
 type runtimeParms struct {
 	flatpakInstanceID	string
+	waylandDisplay		string
+	bwCmd			[]string
 }
 
 type XDG_DIRS struct {
@@ -678,6 +680,65 @@ func lookUpXDG(xdgChan chan int) {
 	xdgChan <- 1
 }
 
+func pwSecContext(pwChan chan string) {
+	if confOpts.bindPipewire == false {
+		pwChan <- "noop"
+		return
+	}
+	pwSecCmd := []string{
+		"--user",
+		"--quiet",
+		//"--no-block",
+		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
+		"-u", "app-portable-" + confOpts.appID + "-pipewire-container",
+		"-p", "KillMode=control-group",
+		"-p", "After=pipewire.service",
+		"-p", "Requires=pipewire.service",
+		"-p", "Wants=wireplumber.service",
+		"-p", "StandardOutput=file:" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket",
+		"-p", "SuccessExitStatus=SIGKILL",
+		"--",
+		"stdbuf",
+		"-oL",
+		"/usr/bin/pw-container",
+		"-P",
+		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
+	}
+
+	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
+	pwSecRun.Stderr = os.Stderr
+
+	var err error
+	err = pwSecRun.Run()
+	if err != nil {
+		pecho("warn", "Failed to start up PipeWire proxy. " + err.Error())
+	}
+
+	pwProxyInfo, openErr := os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket", os.O_RDONLY, 0700)
+	if openErr != nil {
+		pecho(
+			"crit",
+			"Failed to open PipeWire proxy status: " + openErr.Error(),
+			)
+	}
+	var pwProxySocket string
+	for {
+		pwInfoObj, ioReadErr := io.ReadAll(pwProxyInfo)
+		if ioReadErr != nil {
+			pecho("crit", "Failed to read PipeWire proxy status: " + ioReadErr.Error())
+		}
+		stringObj := string(pwInfoObj)
+		if strings.HasPrefix(stringObj, "new socket: ") {
+			pwProxySocket = strings.TrimPrefix(stringObj, "new socket: ")
+			break
+		}
+		pecho("debug", "PipeWire proxy has not yet started")
+	}
+	pecho("debug", "pw-container available at " + pwProxySocket)
+
+	pwChan <- pwProxySocket
+}
+
 func calcDbusArg(argChan chan []string) {
 	pecho("debug", "Calculating D-Bus arguments...")
 	argList := []string{}
@@ -933,6 +994,8 @@ func startProxy(dbusChan chan int8) {
 }
 
 func startApp() {
+	// pwBwArg := <- pwSecContextChan
+	// TODO: make use of pwBwArg
 	go forceBackgroundPerm()
 	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
@@ -958,6 +1021,80 @@ func forceBackgroundPerm() {
 	}
 }
 
+func waylandDisplay(wdChan chan int8) () {
+	sessionType := os.Getenv("XDG_SESSION_TYPE")
+	switch sessionType {
+		case "x11":
+			pecho("warn", "Running on X11, this is insecure")
+			runtimeInfo.waylandDisplay = "unset"
+			wdChan <- 1
+			return
+		case "wayland":
+			pecho("debug", "Running under Wayland")
+		default:
+			pecho("warn", "Unknown XDG_SESSION_TYPE, treating as wayland")
+	}
+
+	socketInfo := os.Getenv("WAYLAND_DISPLAY")
+	if len(socketInfo) == 0 {
+		pecho("debug", "WAYLAND_DISPLAY unset, trying default")
+		_, err := os.Stat(xdgDir.runtimeDir + "/wayland-0")
+		if err != nil {
+			pecho("crit", "Unable to stat Wayland socket: " + err.Error())
+		}
+		runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/wayland-0"
+		wdChan <- 1
+		pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
+		return
+	} else {
+		_, err := os.Stat(xdgDir.runtimeDir + "/" + socketInfo)
+		if err != nil {
+			pecho(
+			"info",
+			"Unable to find Wayland socket using relative path under XDG_RUNTIME_DIR: " + err.Error(),
+			)
+		} else {
+			runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/" + socketInfo
+			wdChan <- 1
+			pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
+			return
+		}
+
+		_, absErr := os.Stat(socketInfo)
+		if absErr != nil {
+			pecho("crit", "Unable to find Wayland socket: " + absErr.Error())
+		} else {
+			runtimeInfo.waylandDisplay = socketInfo
+			wdChan <- 1
+			pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
+			return
+		}
+	}
+	wdChan <- 1
+}
+
+func instDesktopFile(instChan chan int8) {
+	_, err := os.Stat("/usr/share/applications/" + confOpts.appID + ".desktop")
+	if err == nil {
+		pecho("debug", ".desktop file detected")
+	} else {
+		const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
+		var desktopFile string
+		desktopFile = templateDesktopFile
+		strings.ReplaceAll(desktopFile, "placeholderName", confOpts.appID)
+		strings.ReplaceAll(desktopFile, "placeholderConfig", confOpts.confPath)
+		os.WriteFile(
+			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+			[]byte(desktopFile),
+			0700,
+		)
+		pecho("debug", "Done installing stub file")
+		pecho("warn", "You should supply your own .desktop file")
+	}
+
+	instChan <- 1
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int)
@@ -968,10 +1105,12 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	varChan := make(chan int)
 	go getVariables(varChan)
+	wayChan := make(chan int8)
 	getVariablesReady := <- varChan
 	readConfReady := <- readConfChan
 	cmdReady := <- cmdChan
 	xdgReady := <- xdgChan
+	go waylandDisplay(wayChan)
 	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
 		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	}
@@ -979,18 +1118,24 @@ func main() {
 	// Warn multi-instance here
 	cleanUnitChan := make(chan int8)
 	go doCleanUnit(cleanUnitChan)
+	desktopFileChan := make(chan int8)
+	go instDesktopFile(desktopFileChan)
 	genChan := make(chan int8)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
 	genReady = <- cleanUnitChan
+	genReady = <- wayChan
+	pwSecContextChan := make(chan string)
+	go pwSecContext(pwSecContextChan)
 	if genReady == 1 {
 		pecho("debug", "Flatpak info and cleaning ready")
 	}
 	proxyChan := make(chan int8)
 	go startProxy(proxyChan)
 	ready := <- proxyChan
+	ready = <- desktopFileChan
 	if ready == 1 {
-		pecho("debug", "Proxy ready")
+		pecho("debug", "Proxy and desktop file ready")
 	}
 	startApp()
 	stopApp("normal")
