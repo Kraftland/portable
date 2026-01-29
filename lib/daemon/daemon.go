@@ -1027,13 +1027,12 @@ func forceBackgroundPerm() {
 	}
 }
 
-func waylandDisplay(wdChan chan int8) () {
+func waylandDisplay(wdChan chan []string) () {
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
 	switch sessionType {
 		case "x11":
 			pecho("warn", "Running on X11, this is insecure")
-			runtimeInfo.waylandDisplay = "unset"
-			wdChan <- 1
+			runtimeInfo.waylandDisplay = "/dev/null"
 			return
 		case "wayland":
 			pecho("debug", "Running under Wayland")
@@ -1049,9 +1048,7 @@ func waylandDisplay(wdChan chan int8) () {
 			pecho("crit", "Unable to stat Wayland socket: " + err.Error())
 		}
 		runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/wayland-0"
-		wdChan <- 1
 		pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
-		return
 	} else {
 		_, err := os.Stat(xdgDir.runtimeDir + "/" + socketInfo)
 		if err != nil {
@@ -1059,24 +1056,24 @@ func waylandDisplay(wdChan chan int8) () {
 			"info",
 			"Unable to find Wayland socket using relative path under XDG_RUNTIME_DIR: " + err.Error(),
 			)
+			_, absErr := os.Stat(socketInfo)
+			if absErr != nil {
+				pecho("crit", "Unable to find Wayland socket: " + absErr.Error())
+			} else {
+				runtimeInfo.waylandDisplay = socketInfo
+				pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
+			}
 		} else {
 			runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/" + socketInfo
-			wdChan <- 1
 			pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
-			return
-		}
-
-		_, absErr := os.Stat(socketInfo)
-		if absErr != nil {
-			pecho("crit", "Unable to find Wayland socket: " + absErr.Error())
-		} else {
-			runtimeInfo.waylandDisplay = socketInfo
-			wdChan <- 1
-			pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
-			return
 		}
 	}
-	wdChan <- 1
+	var waylandArgs = []string{
+		"--ro-bind",
+			runtimeInfo.waylandDisplay,
+			xdgDir.runtimeDir + "/wayland-0",
+	}
+	wdChan <- waylandArgs
 }
 
 func instDesktopFile(instDesktopChan chan int8) {
@@ -1102,6 +1099,8 @@ func instDesktopFile(instDesktopChan chan int8) {
 }
 
 func genBwArg(argChan chan int8) {
+	wayDisplayChan := make(chan[]string, 1)
+	go waylandDisplay(wayDisplayChan)
 	inputChan := make(chan []string, 1)
 	go inputBind(inputChan)
 	instChan := make(chan int8, 1)
@@ -1320,9 +1319,6 @@ func genBwArg(argChan chan int8) {
 		"--bind",
 			xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID,
 			xdgDir.runtimeDir + "/doc",
-		"--ro-bind",
-			runtimeInfo.waylandDisplay,
-			xdgDir.runtimeDir + "/wayland-0",
 		"--ro-bind-try",
 			"/run/systemd/resolve/stub-resolv.conf",
 			"/run/systemd/resolve/stub-resolv.conf",
@@ -1355,6 +1351,12 @@ func genBwArg(argChan chan int8) {
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		xArgs...
+	)
+
+	wayArgs := <- wayDisplayChan
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		wayArgs...
 	)
 
 	miscArgs := <- miscChan
@@ -1887,12 +1889,10 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	varChan := make(chan int, 1)
 	go getVariables(varChan)
-	wayChan := make(chan int8, 1)
 	<- varChan
 	<- readConfChan
 	<- cmdChan
 	<- xdgChan
-	go waylandDisplay(wayChan)
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 
 	// Warn multi-instance here
@@ -1906,7 +1906,6 @@ func main() {
 	go genFlatpakInstanceID(genChan)
 	<- genChan
 	<- cleanUnitChan
-	<- wayChan
 	pwSecContextChan := make(chan int8, 1)
 	go pwSecContext(pwSecContextChan)
 	pecho("debug", "Flatpak info and cleaning ready")
