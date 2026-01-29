@@ -1402,6 +1402,10 @@ func gpuBind(gpuChan chan []string) {
 						}
 					}
 				}
+				pecho("debug", "Active GPU slice: " + strings.Join(activeGpus, ", "))
+				for _, cardName := range activeGpus {
+					bindCard(cardName)
+				}
 			}
 	}
 	gpuChan <- gpuArg
