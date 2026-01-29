@@ -1387,6 +1387,11 @@ func genBwArg(argChan chan int8) {
 	argChan <- chanReady
 }
 
+func translatePath(input string) (output string) {
+	output = strings.ReplaceAll(input, xdgDir.home, xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	return
+}
+
 func miscBinds(miscChan chan []string) {
 	var miscArgs = []string{}
 	if confOpts.mountInfo == true {
