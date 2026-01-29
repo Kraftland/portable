@@ -1889,14 +1889,12 @@ func main() {
 	varChan := make(chan int, 1)
 	go getVariables(varChan)
 	wayChan := make(chan int8, 1)
-	getVariablesReady := <- varChan
-	readConfReady := <- readConfChan
-	cmdReady := <- cmdChan
-	xdgReady := <- xdgChan
+	<- varChan
+	<- readConfChan
+	<- cmdChan
+	<- xdgChan
 	go waylandDisplay(wayChan)
-	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
-		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
-	}
+	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 
 	// Warn multi-instance here
 	argChan := make(chan int8, 1)
@@ -1907,24 +1905,21 @@ func main() {
 	go instDesktopFile(instDesktopChan)
 	genChan := make(chan int8, 1)
 	go genFlatpakInstanceID(genChan)
-	genReady := <- genChan
+	<- genChan
 	<- cleanUnitChan
 	<- wayChan
 	pwSecContextChan := make(chan int8, 1)
 	go pwSecContext(pwSecContextChan)
-	if genReady == 1 {
-		pecho("debug", "Flatpak info and cleaning ready")
-	}
+	pecho("debug", "Flatpak info and cleaning ready")
 
 	proxyChan := make(chan int8, 1)
 	go startProxy(proxyChan)
-	ready := <- proxyChan
+	<- proxyChan
 	<- instDesktopChan
 	<- pwSecContextChan
 	<- argChan
-	if ready == 1 {
-		pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
-	}
+	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
+
 	startApp()
 	stopApp("normal")
 }
