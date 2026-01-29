@@ -1351,9 +1351,9 @@ func gpuBind(gpuChan chan []string) {
 
 			}
 	}
+	gpuChan <- gpuArg
 	var activeGPUList string = strings.Join(activeGpus, ", ")
 	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS + ", identified active: " + activeGPUList)
-	gpuChan <- gpuArg
 }
 
 func bindCard(cardName string) (cardBindArg []string) {
