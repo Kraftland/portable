@@ -1110,6 +1110,8 @@ func genBwArg(argChan chan int8) {
 	go gpuBind(gpuChan)
 	camChan := make(chan []string)
 	go tryBindCam(camChan)
+	miscChan := make(chan []string)
+	go miscBinds(miscChan)
 	xChan := make(chan []string)
 	go bindXAuth(xChan)
 
@@ -1308,6 +1310,16 @@ func genBwArg(argChan chan int8) {
 		"--ro-bind-try",
 			"/run/systemd/userdb/io.systemd.Home",
 			"/run/systemd/userdb/io.systemd.Home",
+		"--ro-bind",
+			xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+			"/run/sessionBus",
+		"--ro-bind-try",
+			xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+			xdgDir.runtimeDir + "/at-spi",
+		"--dir",		"/run/host",
+		"--bind",
+			xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID,
+			xdgDir.runtimeDir + "/doc",
 
 	)
 
@@ -1315,6 +1327,12 @@ func genBwArg(argChan chan int8) {
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		xArgs...
+	)
+
+	miscArgs := <- miscChan
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		miscArgs...
 	)
 
 
@@ -1345,6 +1363,36 @@ func genBwArg(argChan chan int8) {
 
 	var chanReady int8 = <- instChan
 	argChan <- chanReady
+}
+
+func miscBinds(miscChan chan []string) {
+	var miscArgs = []string{}
+	if confOpts.mountInfo == true {
+		miscArgs = append(
+			miscArgs,
+			"--ro-bind",
+				"/dev/null",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "-private/run-environ",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+			"--ro-bind",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+				xdgDir.runtimeDir + "/flatpak-runtime-directory",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				"/.flatpak-info",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.runtimeDir + "/.flatpak-info",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.flatpak-info",
+
+		)
+	}
+
+	miscChan <- miscArgs
 }
 
 func bindXAuth(xauthChan chan []string) {
