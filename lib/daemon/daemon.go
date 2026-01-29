@@ -691,6 +691,7 @@ func lookUpXDG(xdgChan chan int) {
 
 func pwSecContext(pwChan chan int8) {
 	if confOpts.bindPipewire == false {
+		pwChan <- 1
 		return
 	}
 	pwSecCmd := []string{
@@ -1079,7 +1080,7 @@ func waylandDisplay(wdChan chan int8) () {
 	wdChan <- 1
 }
 
-func instDesktopFile(instChan chan int8) {
+func instDesktopFile(instDesktopChan chan int8) {
 	_, err := os.Stat("/usr/share/applications/" + confOpts.appID + ".desktop")
 	if err == nil {
 		pecho("debug", ".desktop file detected")
@@ -1098,7 +1099,7 @@ func instDesktopFile(instChan chan int8) {
 		pecho("warn", "You should supply your own .desktop file")
 	}
 
-	instChan <- 1
+	instDesktopChan <- 1
 }
 
 func genBwArg(argChan chan int8) {
@@ -1397,7 +1398,8 @@ func genBwArg(argChan chan int8) {
 	)
 
 	var chanReady int8 = <- instChan
-	argChan <- chanReady
+	chanReady++
+	argChan <- 1
 }
 
 func translatePath(input string) (output string) {
@@ -1872,21 +1874,21 @@ func instSignalFile(instChan chan int8) {
 		[]byte(content),
 		0700,
 	)
-
 	instChan <- 1
+	pecho("debug", "Created signal file")
 }
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
-	readConfChan := make(chan int)
+	readConfChan := make(chan int, 1)
 	go readConf(readConfChan)
-	xdgChan := make(chan int)
+	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
-	cmdChan := make(chan int)
+	cmdChan := make(chan int, 1)
 	go cmdlineDispatcher(cmdChan)
-	varChan := make(chan int)
+	varChan := make(chan int, 1)
 	go getVariables(varChan)
-	wayChan := make(chan int8)
+	wayChan := make(chan int8, 1)
 	getVariablesReady := <- varChan
 	readConfReady := <- readConfChan
 	cmdReady := <- cmdChan
@@ -1897,27 +1899,27 @@ func main() {
 	}
 
 	// Warn multi-instance here
-	argChan := make(chan int8)
+	argChan := make(chan int8, 1)
 	go genBwArg(argChan)
-	cleanUnitChan := make(chan int8)
+	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
-	desktopFileChan := make(chan int8)
-	go instDesktopFile(desktopFileChan)
-	genChan := make(chan int8)
+	instDesktopChan := make(chan int8, 1)
+	go instDesktopFile(instDesktopChan)
+	genChan := make(chan int8, 1)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
 	genReady = <- cleanUnitChan
 	genReady = <- wayChan
-	pwSecContextChan := make(chan int8)
+	pwSecContextChan := make(chan int8, 1)
 	go pwSecContext(pwSecContextChan)
 	if genReady == 1 {
 		pecho("debug", "Flatpak info and cleaning ready")
 	}
 
-	proxyChan := make(chan int8)
+	proxyChan := make(chan int8, 1)
 	go startProxy(proxyChan)
 	ready := <- proxyChan
-	ready = <- desktopFileChan
+	ready = <- instDesktopChan
 	ready = <- pwSecContextChan
 	ready = <- argChan
 	if ready == 1 {
