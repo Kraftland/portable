@@ -1096,6 +1096,8 @@ func instDesktopFile(instChan chan int8) {
 }
 
 func genBwArg(argChan chan int8) {
+	inputChan := make(chan []string)
+	go inputBind(inputChan)
 	instChan := make(chan int8)
 	go instSignalFile(instChan)
 
@@ -1254,9 +1256,6 @@ func genBwArg(argChan chan int8) {
 		"--ro-bind-try",	"/dev/null", "/proc/filesystems",
 
 	)
-
-	inputChan := make(chan []string)
-	go inputBind(inputChan)
 
 
 	inputArgs := <- inputChan
