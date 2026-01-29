@@ -449,15 +449,8 @@ function procDriverBind() {
 	readyNotify set procDriverBind
 }
 
-# Pass NUL separated arguments!
-function calcMountArgv2() {
-	passBwrapArgs "--ro-bind-try\0${XDG_CONFIG_HOME}/fontconfig\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/fontconfig\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-3.0/colors.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-3.0/colors.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/gtk-4.0/gtk.css\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/gtk-4.0/gtk.css\0--ro-bind-try\0${XDG_CONFIG_HOME}/qt6ct\0$(echo "${XDG_CONFIG_HOME}" | pathTranslation)/qt6ct\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0${XDG_DATA_HOME}/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/fonts\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/fonts\0--ro-bind-try\0${XDG_DATA_HOME}/icons\0${XDG_DATA_HOME}/icons\0--ro-bind-try\0${XDG_DATA_HOME}/icons\0$(echo "${XDG_DATA_HOME}" | pathTranslation)/icons\0"
-	readyNotify set calcMountArgv2
-}
-
 function calcBwrapArg() {
 	procDriverBind &
-	calcMountArgv2 &
 	passBwrapArgs "--tmpfs\0/proc/1\0--tmpfs\0/usr/share/applications\0--tmpfs\0${HOME}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/options\0--tmpfs\0${HOME}/.var\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}/.var/app/${appID}\0--tmpfs\0${HOME}/.var/app/${appID}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options\0" # Hide some entries
 	readyNotify wait bindCheck
 	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
@@ -466,7 +459,6 @@ function calcBwrapArg() {
 		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
 	fi
 	readyNotify wait procDriverBind
-	readyNotify wait calcMountArgv2
 	passBwrapArgs "--\0/usr/lib/portable/helper"
 	readyNotify set calcBwrapArg
 }
