@@ -960,12 +960,15 @@ func doCleanUnit(dbusChan chan int8) {
 	)
 
 	err := exec.Command("systemctl", killCmd...)
+	err.Stderr = os.Stderr
 	err.Run()
 
 	err = exec.Command("systemctl", resetCmd...)
+	err.Stderr = os.Stderr
 	err.Run()
 
 	err = exec.Command("systemctl", cleanCmd...)
+	err.Stderr = os.Stderr
 	err.Start()
 	pecho("debug", "Cleaning ready")
 
