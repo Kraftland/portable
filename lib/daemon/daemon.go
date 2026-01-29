@@ -1804,8 +1804,7 @@ func inputBind(inputBindChan chan []string) {
 				}
 				udevExec := exec.Command("udevadm", udevArgs...)
 				sysDevice, sysErrout := udevExec.Output()
-				err := udevExec.Run()
-				if err != nil {
+				if sysErrout != nil {
 					pecho(
 					"warn",
 					"Unable to resolve device path using udev: " + sysErrout.Error(),
@@ -1842,8 +1841,7 @@ func inputBind(inputBindChan chan []string) {
 				}
 				udevExec := exec.Command("udevadm", udevArgs...)
 				sysDevice, sysErrout := udevExec.Output()
-				err := udevExec.Run()
-				if err != nil {
+				if sysErrout != nil {
 					pecho(
 					"warn",
 					"Unable to resolve device path using udev: " + sysErrout.Error(),
