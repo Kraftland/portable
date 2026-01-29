@@ -1437,6 +1437,30 @@ func miscBinds(miscChan chan []string) {
 			"/etc/kernel",
 		)
 	}
+	miscArgs = append(
+		miscArgs,
+		"--ro-bind-try",
+			xdgDir.confDir + "/fontconfig",
+			translatePath(xdgDir.confDir + "/fontconfig"),
+		"--ro-bind-try",
+			xdgDir.confDir + "/gtk-3.0/gtk.css",
+			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css"),
+		"--ro-bind-try",
+			xdgDir.confDir + "/gtk-3.0/colors.css",
+			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css"),
+		"--ro-bind-try",
+			xdgDir.confDir + "/gtk-4.0/gtk.css",
+			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css"),
+		"--ro-bind-try",
+			xdgDir.confDir + "/qt6ct",
+			translatePath(xdgDir.confDir + "/qt6ct"),
+		"--ro-bind-try",
+			xdgDir.dataDir + "/fonts",
+			translatePath(xdgDir.dataDir + "/fonts"),
+		"--ro-bind-try",
+			xdgDir.dataDir + "/icons",
+			translatePath(xdgDir.dataDir + "/icons"),
+	)
 
 	miscChan <- miscArgs
 }
