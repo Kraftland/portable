@@ -1300,10 +1300,15 @@ func gpuBind(gpuChan chan []string) {
 		cardSums = 1
 	}
 
+	gpuArg = append(
+		gpuArg,
+		"--tmpfs", "/dev/dri",
+		"--tmpfs", "/sys/class/drm",
+	)
+
 	switch cardSums {
 		case 0:
 			pecho("warn", "Found no GPU")
-			return
 		case 1:
 			nvChan := make(chan []string)
 			go tryBindNv(nvChan)
@@ -1320,9 +1325,27 @@ func gpuBind(gpuChan chan []string) {
 			}
 		default:
 			trailingS = "s"
+			if confOpts.gameMode == true {
+				nvChan := make(chan []string)
+				go tryBindNv(nvChan)
+				nvArgs := <- nvChan
+				gpuArg = append(
+					gpuArg,
+					nvArgs...,
+				)
+				for _, cardName := range totalGpus {
+					gpuArg = append(
+						gpuArg,
+						bindCard(cardName)...
+					)
+				}
+			} else {
+
+			}
 	}
 
 	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS)
+	gpuChan <- gpuArg
 }
 
 func bindCard(cardName string) (cardBindArg []string) {
