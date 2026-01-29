@@ -1229,6 +1229,30 @@ func genBwArg(argChan chan int8) {
 		"--dev-bind",		"/sys/class/drm", "/sys/class/drm",
 		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
 		"--ro-bind",		"/sys/kernel", "/sys/kernel",
+
+		// usr binds
+		"--bind",		"/usr", "/usr",
+		"--overlay-src",	"/usr/bin",
+		"--overlay-src",	"/usr/lib/portable/overlay-usr",
+		"--ro-overlay",		"/usr/bin",
+		"--symlink",		"/usr/lib", "/lib",
+		"--symlink",		"/usr/lib", "/lib64",
+		"--symlink",		"/usr/bin", "/bin",
+		"--symlink",		"/usr/bin", "/sbin",
+
+		// Proc binds
+		"--proc",		"/proc",
+		"--dev-bind-try",	"/dev/null", "/dev/null",
+		"--ro-bind-try",	"/dev/null", "/proc/uptime",
+		"--ro-bind-try",	"/dev/null", "/proc/modules",
+		"--ro-bind-try",	"/dev/null", "/proc/cmdline",
+		"--ro-bind-try",	"/dev/null", "/proc/diskstats",
+		"--ro-bind-try",	"/dev/null", "/proc/devices",
+		"--ro-bind-try",	"/dev/null", "/proc/config.gz",
+		"--ro-bind-try",	"/dev/null", "/proc/mounts",
+		"--ro-bind-try",	"/dev/null", "/proc/loadavg",
+		"--ro-bind-try",	"/dev/null", "/proc/filesystems",
+
 	)
 
 	inputChan := make(chan []string)
