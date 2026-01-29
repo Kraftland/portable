@@ -1305,7 +1305,8 @@ func gpuBind(gpuChan chan []string) {
 			pecho("warn", "Found no GPU")
 			return
 		case 1:
-
+			nvChan := make(chan []string)
+			go tryBindNv(nvChan)
 		default:
 			trailingS = "s"
 	}
@@ -1332,6 +1333,7 @@ func tryBindNv(nvChan chan []string) {
 			}
 		}
 	}
+	nvChan <- nvDevsArg
 }
 
 func inputBind(inputBindChan chan []string) {
