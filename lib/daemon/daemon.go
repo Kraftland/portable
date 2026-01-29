@@ -1003,7 +1003,7 @@ func startProxy(dbusChan chan int8) {
 
 func startApp() {
 	go forceBackgroundPerm()
-	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
+	sdExec := exec.Command("systemd-run", runtimeInfo.bwCmd...)
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
