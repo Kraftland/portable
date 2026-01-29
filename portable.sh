@@ -463,31 +463,6 @@ function passBwrapArgs() {
 	flock --exclusive "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs.lock" 'echo' '-ne' "${bwArgWrite}" >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 }
 
-function inputBindv2() {
-	if [[ "${bindInputDevices}" = "true" ]]; then
-		bwInputArg="--dev-bind-try\0/sys/class/leds\0/sys/class/leds\0--dev-bind-try\0/sys/class/input\0/sys/class/input\0--dev-bind-try\0/sys/class/hidraw\0/sys/class/hidraw\0--dev-bind-try\0/dev/input\0/dev/input\0--dev-bind-try\0/dev/uinput\0/dev/uinput\0"
-		for _device in /dev/hidraw*; do
-			if [[ -e "${_device}" ]]; then
-				bwInputArg="${bwInputArg}--dev-bind\0${_device}\0${_device}\0"
-			fi
-		done
-		declare IFS
-		IFS=$'\n'
-		for _device in $(udevadm info /dev/hidraw* -qpath); do
-			bwInputArg="${bwInputArg}--dev-bind\0/sys${device}\0/sys${device}\0"
-		done
-		for _device in $(udevadm info /dev/input/event* -qpath); do
-			bwInputArg="${bwInputArg}--dev-bind\0/sys${device}\0/sys${device}\0"
-		done
-		pecho warn "Detected input preference as expose."
-		passBwrapArgs "${bwInputArg}"
-	else
-		bwInputArg=""
-		pecho debug "Not exposing input devices."
-	fi
-	readyNotify set inputBindv2
-}
-
 function procDriverBind() {
 	if [[ -d /proc/driver ]]; then
 		passBwrapArgs "--tmpfs\0/proc/driver\0"
@@ -636,27 +611,7 @@ function cameraBindv2() {
 }
 
 function calcBwrapArg() {
-	echo "false" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-	rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 
-	# Build sd-run args first!
-	if [[ "${bindNetwork}" = "false" ]]; then
-		pecho info "Network access disabled via config"
-		sdNetArg="PrivateNetwork=yes"
-	else
-		sdNetArg="PrivateNetwork=no"
-		pecho debug "Network access allowed"
-	fi
-	passBwrapArgs "--quiet\0--user\0--pty\0--service-type=notify-reload\0--wait\0-u\0${unitName}\0--slice=app.slice\0-p\0Delegate=yes\0-p\0BindsTo=${proxyName}.service\0-p\0Description=Portable Sandbox for ${appID}\0-p\0Documentation=https://github.com/Kraftland/portable\0-p\0ExitType=cgroup\0-p\0NotifyAccess=all\0-p\0TimeoutStartSec=infinity\0-p\0OOMPolicy=stop\0-p\0SecureBits=noroot-locked\0-p\0KillMode=control-group\0-p\0MemoryHigh=90%\0-p\0ManagedOOMSwap=kill\0-p\0ManagedOOMMemoryPressure=kill\0-p\0IPAccounting=yes\0-p\0MemoryPressureWatch=yes\0-p\0SyslogIdentifier=portable-${appID}\0-p\0SystemCallLog=@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources\0-p\0SystemCallLog=~@sandbox\0-p\0PrivateIPC=yes\0-p\0ProtectClock=yes\0-p\0CapabilityBoundingSet=\0-p\0RestrictSUIDSGID=yes\0-p\0LockPersonality=yes\0-p\0RestrictRealtime=yes\0-p\0ProtectProc=invisible\0-p\0ProcSubset=pid\0-p\0PrivateUsers=yes\0-p\0UMask=077\0-p\0OOMScoreAdjust=100\0-p\0NoNewPrivileges=yes\0-p\0ProtectControlGroups=private\0-p\0DelegateSubgroup=portable-cgroup\0-p\0PrivateMounts=yes\0-p\0KeyringMode=private\0-p\0TimeoutStopSec=10s\0-p\0Environment=instanceId=${instanceId}\0-p\0Environment=busDir=${busDir}\0-p\0${sdNetArg}\0-p\0WorkingDirectory=${XDG_DATA_HOME}/${stateDirectory}\0"
-
-	passBwrapArgs "-p\0ExecReload=bash -c 'kill --signal SIGALRM 2'\0-p\0ReloadSignal=SIGALRM\0-p\0EnvironmentFile=${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env\0"
-	passBwrapArgs "-p\0SystemCallFilter=~@clock\0-p\0SystemCallFilter=~@cpu-emulation\0-p\0SystemCallFilter=~@module\0-p\0SystemCallFilter=~@obsolete\0-p\0SystemCallFilter=~@raw-io\0-p\0SystemCallFilter=~@reboot\0-p\0SystemCallFilter=~@swap\0-p\0SystemCallErrorNumber=EAGAIN\0-p\0ProtectHome=no\0-p\0UnsetEnvironment=GNOME_SETUP_DISPLAY\0-p\0UnsetEnvironment=PIPEWIRE_REMOTE\0-p\0UnsetEnvironment=PAM_KWALLET5_LOGIN\0-p\0UnsetEnvironment=GTK2_RC_FILES\0-p\0UnsetEnvironment=ICEAUTHORITY\0-p\0UnsetEnvironment=MANAGERPID\0"
-
-	passBwrapArgs "--\0bwrap\0--new-session\0--unshare-cgroup-try\0--unshare-ipc\0--unshare-uts\0--unshare-pid\0--unshare-user\0" # Unshares
-	passBwrapArgs "--tmpfs\0/tmp\0--bind-try\0/tmp/.X11-unix\0/tmp/.X11-unix\0--bind-try\0/tmp/.XIM-unix\0/tmp/.XIM-unix\0" # /tmp binds
-	passBwrapArgs "--dev\0/dev\0--tmpfs\0/dev/shm\0--dev-bind-try\0/dev/mali\0/dev/mali\0--dev-bind-try\0/dev/mali0\0/dev/mali0\0--dev-bind-try\0/dev/umplock\0/dev/umplock\0--mqueue\0/dev/mqueue\0--dev-bind\0/dev/dri\0/dev/dri\0--dev-bind-try\0/dev/udmabuf\0/dev/udmabuf\0--dev-bind-try\0/dev/ntsync\0/dev/ntsync\0--dir\0/top.kimiblock.portable\0" # Dev binds
-	passBwrapArgs "--tmpfs\0/sys\0--ro-bind-try\0/sys/module\0/sys/module\0--ro-bind-try\0/sys/dev/char\0/sys/dev/char\0--tmpfs\0/sys/devices\0--ro-bind-try\0/sys/fs/cgroup\0/sys/fs/cgroup\0--ro-bind-try\0/sys/fs/cgroup/portable-cgroup\0/sys/fs/cgroup/portable-cgroup\0--dev-bind\0/sys/class/drm\0/sys/class/drm\0--bind-try\0/sys/devices/system\0/sys/devices/system\0--ro-bind\0/sys/kernel\0/sys/kernel\0" # sys entries
-	inputBindv2 &
 	hybridBindv2 &
 	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--proc\0/proc\0--dev-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0--symlink\0/usr/lib\0/lib\0--symlink\0/usr/lib\0/lib64\0--symlink\0/usr/bin\0/bin\0--symlink\0/usr/bin\0/sbin\0"
 	if [ -e /usr/lib/flatpak-xdg-utils/flatpak-spawn ]; then
@@ -679,7 +634,6 @@ function calcBwrapArg() {
 		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
 	fi
 	readyNotify wait procDriverBind
-	readyNotify wait inputBindv2
 	readyNotify wait hybridBindv2
 	readyNotify wait pwBindCalc # PW binds
 	readyNotify wait cameraBindv2
