@@ -1225,8 +1225,6 @@ func genBwArg(argChan chan int8) {
 
 		// Tmp binds
 		"--tmpfs",		"/tmp",
-		"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
-		"--bind-try",		"/tmp/.XIM-unix", "/tmp/.XIM-unix",
 
 		// Dev binds
 		"--dev",		"/dev",
@@ -1342,10 +1340,15 @@ func genBwArg(argChan chan int8) {
 }
 
 func bindXAuth(xauthChan chan []string) {
-	var xauthArg = []string{}
+	var xArg = []string{}
 	if confOpts.waylandOnly == true {
 		return
 	}
+	xArg = append(
+		xArg,
+		"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
+		"--bind-try",		"/tmp/.XIM-unix", "/tmp/.XIM-unix",
+	)
 }
 
 func gpuBind(gpuChan chan []string) {
@@ -1549,25 +1552,27 @@ func bindCard(cardName string) (cardBindArg []string) {
 }
 
 func tryBindCam(camChan chan []string) {
+	camArg := []string{}
 	if confOpts.bindCameras == false {
 		return
-	}
-	camArg := []string{}
-	camEntries, err := os.ReadDir("/dev")
-	if err != nil {
-		pecho("warn", "Failed to parse camera entries")
-		return
-	}
-	for _, file := range camEntries {
-		if strings.HasPrefix(file.Name(), "video") && file.IsDir() == false {
-			camArg = append(
-				camArg,
-				"--dev-bind",
-					"/dev/" + file.Name(),
-					"/dev/" + file.Name(),
-			)
+	} else {
+		camEntries, err := os.ReadDir("/dev")
+		if err != nil {
+			pecho("warn", "Failed to parse camera entries")
+			return
+		}
+		for _, file := range camEntries {
+			if strings.HasPrefix(file.Name(), "video") && file.IsDir() == false {
+				camArg = append(
+					camArg,
+					"--dev-bind",
+						"/dev/" + file.Name(),
+						"/dev/" + file.Name(),
+				)
+			}
 		}
 	}
+	camChan <- camArg
 }
 
 func tryBindPw(pwChan chan []string) {
