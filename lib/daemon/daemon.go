@@ -1008,6 +1008,7 @@ func startApp() {
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
+	flushEnvs()
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
@@ -1222,7 +1223,7 @@ func genBwArg(argChan chan int8) {
 		"-p", "WorkingDirectory=" + xdgDir.dataDir + "/" + confOpts.stateDirectory,
 		"-p", "ExecReload=bash -c 'kill --signal SIGALRM 2'",
 		"-p", "ReloadSignal=SIGALRM",
-		"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated.env",
+		"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env",
 		"-p", "SystemCallFilter=~@clock",
 		"-p", "SystemCallFilter=~@cpu-emulation",
 		"-p", "SystemCallFilter=~@module",
@@ -1436,6 +1437,19 @@ func genBwArg(argChan chan int8) {
 	var chanReady int8 = <- instChan
 	chanReady++
 	argChan <- 1
+}
+
+func flushEnvs() {
+	combinedFile, openErr := os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0700)
+	if openErr != nil {
+		pecho("crit", "Could not open file to store envs: " + openErr.Error())
+	}
+	for _, env := range runtimeInfo.sdEnvs {
+		_, err := fmt.Fprintln(combinedFile, env)
+		if err != nil {
+			pecho("debug", "Failed to write envs: " + err.Error())
+		}
+	}
 }
 
 func translatePath(input string) (output string) {
