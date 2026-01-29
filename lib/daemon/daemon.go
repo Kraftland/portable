@@ -1341,6 +1341,13 @@ func genBwArg(argChan chan int8) {
 	argChan <- chanReady
 }
 
+func bindXAuth(xauthChan chan []string) {
+	var xauthArg = []string{}
+	if confOpts.waylandOnly == true {
+		return
+	}
+}
+
 func gpuBind(gpuChan chan []string) {
 	var gpuArg = []string{}
 	// SHOULD contain strings like card0, card1 etc
