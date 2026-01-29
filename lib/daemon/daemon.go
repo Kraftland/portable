@@ -1424,6 +1424,15 @@ func miscBinds(miscChan chan []string) {
 		)
 	}
 
+	dirFd, errRead := os.Stat("/etc/kernel")
+	if errRead == nil && dirFd.IsDir() == true {
+		miscArgs = append(
+			miscArgs,
+			"--tmpfs",
+			"/etc/kernel",
+		)
+	}
+
 	miscChan <- miscArgs
 }
 
