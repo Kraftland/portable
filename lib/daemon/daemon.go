@@ -1826,6 +1826,9 @@ func inputBind(inputBindChan chan []string) {
 		pecho("warn", "Could not parse /dev/input for devices: " + err.Error())
 	} else {
 		for _, entry := range devEntries {
+			if entry.IsDir() == true {
+				continue
+			}
 			if strings.HasPrefix(entry.Name(), "event") || strings.HasPrefix(entry.Name(), "js") {
 				pecho("debug", "Detected input device " + entry.Name())
 				inputBindArg = append(
