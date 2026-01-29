@@ -1110,6 +1110,8 @@ func genBwArg(argChan chan int8) {
 	go gpuBind(gpuChan)
 	camChan := make(chan []string)
 	go tryBindCam(camChan)
+	xChan := make(chan []string)
+	go bindXAuth(xChan)
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -1309,6 +1311,12 @@ func genBwArg(argChan chan int8) {
 
 	)
 
+	xArgs := <- xChan
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		xArgs...
+	)
+
 
 	inputArgs := <- inputChan
 	runtimeInfo.bwCmd = append(
@@ -1341,14 +1349,45 @@ func genBwArg(argChan chan int8) {
 
 func bindXAuth(xauthChan chan []string) {
 	var xArg = []string{}
-	if confOpts.waylandOnly == true {
-		return
+	if confOpts.waylandOnly == false {
+		xArg = append(
+			xArg,
+			"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
+			"--bind-try",		"/tmp/.XIM-unix", "/tmp/.XIM-unix",
+		)
+		osAuth := os.Getenv("XAUTHORITY")
+		_, err := os.Stat(osAuth)
+		if err == nil {
+			pecho("debug", "XAUTHORITY specified as absolute path: " + osAuth)
+			xArg = append(
+				xArg,
+				"--ro-bind",
+					osAuth,
+					"/run/.Xauthority",
+			)
+			addEnv("XAUTHORITY=/run/.Xauthority")
+		} else {
+			osAuth = xdgDir.home + "/.Xauthority"
+			_, err = os.Stat(osAuth)
+			if err == nil {
+				pecho(
+					"warn",
+					"Implied XAUTHORITY " + osAuth + ", this is not recommended",
+				)
+				xArg = append(
+					xArg,
+					"--ro-bind",
+						osAuth,
+						"/run/.Xauthority",
+				)
+				addEnv("XAUTHORITY=/run/.Xauthority")
+			} else {
+				pecho("warn", "Could not locate XAUTHORITY file")
+			}
+		}
+		addEnv("DISPLAY=" + os.Getenv("DISPLAY"))
 	}
-	xArg = append(
-		xArg,
-		"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
-		"--bind-try",		"/tmp/.XIM-unix", "/tmp/.XIM-unix",
-	)
+	xauthChan <- xArg
 }
 
 func gpuBind(gpuChan chan []string) {
