@@ -615,7 +615,6 @@ function cameraBindv2() {
 function calcBwrapArg() {
 
 	hybridBindv2 &
-	passBwrapArgs "--bind\0/usr\0/usr\0--overlay-src\0/usr/bin\0--overlay-src\0/usr/lib/portable/overlay-usr\0--ro-overlay\0/usr/bin\0--proc\0/proc\0--dev-bind-try\0/dev/null\0/dev/null\0--ro-bind-try\0/dev/null\0/proc/uptime\0--ro-bind-try\0/dev/null\0/proc/modules\0--ro-bind-try\0/dev/null\0/proc/cmdline\0--ro-bind-try\0/dev/null\0/proc/diskstats\0--ro-bind-try\0/dev/null\0/proc/devices\0--ro-bind-try\0/dev/null\0/proc/config.gz\0--ro-bind-try\0/dev/null\0/proc/mounts\0--ro-bind-try\0/dev/null\0/proc/loadavg\0--ro-bind-try\0/dev/null\0/proc/filesystems\0--symlink\0/usr/lib\0/lib\0--symlink\0/usr/lib\0/lib64\0--symlink\0/usr/bin\0/bin\0--symlink\0/usr/bin\0/sbin\0"
 	if [ -e /usr/lib/flatpak-xdg-utils/flatpak-spawn ]; then
 		passBwrapArgs "--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0"
 	fi
