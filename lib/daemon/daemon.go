@@ -1020,6 +1020,57 @@ func forceBackgroundPerm() {
 	}
 }
 
+func waylandDisplay(wdChan chan int8) () {
+	sessionType := os.Getenv("XDG_SESSION_TYPE")
+	switch sessionType {
+		case "x11":
+			pecho("warn", "Running on X11, this is insecure")
+			runtimeInfo.waylandDisplay = "unset"
+			wdChan <- 1
+			return
+		case "wayland":
+			pecho("debug", "Running under Wayland")
+		default:
+			pecho("warn", "Unknown XDG_SESSION_TYPE, treating as wayland")
+	}
+
+	socketInfo := os.Getenv("WAYLAND_DISPLAY")
+	if len(socketInfo) == 0 {
+		pecho("debug", "WAYLAND_DISPLAY unset, trying default")
+		_, err := os.Stat(xdgDir.runtimeDir + "/wayland-0")
+		if err != nil {
+			pecho("crit", "Unable to stat Wayland socket: " + err.Error())
+		}
+		runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/wayland-0"
+		wdChan <- 1
+		return
+	} else {
+		_, err := os.Stat(xdgDir.runtimeDir + "/" + socketInfo)
+		if err != nil {
+			pecho(
+			"info",
+			"Unable to find Wayland socket using relative path under XDG_RUNTIME_DIR: " + err.Error(),
+			)
+		} else {
+			runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/" + socketInfo
+			wdChan <- 1
+			return
+		}
+
+		_, absErr := os.Stat(socketInfo)
+		if absErr != nil {
+			pecho("crit", "Unable to find Wayland socket")
+		} else {
+			runtimeInfo.waylandDisplay = socketInfo
+			wdChan <- 1
+			return
+		}
+	}
+
+
+	wdChan <- 1
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int)
