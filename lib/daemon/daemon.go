@@ -1072,6 +1072,28 @@ func waylandDisplay(wdChan chan int8) () {
 	wdChan <- 1
 }
 
+func instDesktopFile(instChan chan int8) {
+	_, err := os.Stat("/usr/share/applications/" + confOpts.appID + ".desktop")
+	if err == nil {
+		pecho("debug", ".desktop file detected")
+	} else {
+		const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
+		var desktopFile string
+		desktopFile = templateDesktopFile
+		strings.ReplaceAll(desktopFile, "placeholderName", confOpts.appID)
+		strings.ReplaceAll(desktopFile, "placeholderConfig", confOpts.confPath)
+		os.WriteFile(
+			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+			[]byte(desktopFile),
+			0700,
+		)
+		pecho("debug", "Done installing stub file")
+		pecho("warn", "You should supply your own .desktop file")
+	}
+
+	instChan <- 1
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int)
@@ -1095,6 +1117,8 @@ func main() {
 	// Warn multi-instance here
 	cleanUnitChan := make(chan int8)
 	go doCleanUnit(cleanUnitChan)
+	desktopFileChan := make(chan int8)
+	go instDesktopFile(desktopFileChan)
 	genChan := make(chan int8)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
@@ -1108,8 +1132,9 @@ func main() {
 	proxyChan := make(chan int8)
 	go startProxy(proxyChan)
 	ready := <- proxyChan
+	ready = <- desktopFileChan
 	if ready == 1 {
-		pecho("debug", "Proxy ready")
+		pecho("debug", "Proxy and desktop file ready")
 	}
 	startApp()
 	stopApp("normal")

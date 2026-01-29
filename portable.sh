@@ -708,7 +708,6 @@ function execApp() {
 	addEnv _portableDebug="${_portableDebug}"
 	addEnv _portableBusActivate="${_portableBusActivate}"
 	termExec
-	readyNotify wait generateFlatpakInfo
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
 	/usr/lib/portable/daemon/portable-daemon $@
@@ -886,36 +885,7 @@ function warnMulRunning() {
 	# fi
 }
 
-function generateFlatpakInfo() {
-	if [[ -f "/usr/share/applications/${appID}.desktop" ]]; then
-		pecho debug "Application desktop file detected"
-	else
-		pecho warn ".desktop file missing!"
-		cat <<- 'EOF' > "${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-			[Desktop Entry]
-			Name=placeholderName
-			Exec=env _portableConfig=placeholderConfig portable
-			Terminal=false
-			Type=Application
-			Icon=image-missing
-			Comment=Application info missing
-			Categories=Utility;
-		EOF
-		sed -i \
-			"s|placeholderConfig|$(pathEscape "${_portableConfig}")|g" \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-		sed -i \
-			"s|placeholderName|$(pathEscape "${appID}")|g" \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file"
-		install -Dm600 \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/desktop.file" \
-			"${XDG_DATA_HOME}/applications/${appID}.desktop"
-	fi
-	readyNotify set generateFlatpakInfo
-}
-
 function dbusProxy() {
-	generateFlatpakInfo &
 	importEnv &
 	genXAuth
 
