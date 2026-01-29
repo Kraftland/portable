@@ -1360,12 +1360,55 @@ func gpuBind(gpuChan chan []string) {
 				envReady := <- envChan
 				envReady++
 			} else {
-
+				for _, cardName := range totalGpus {
+					connectors, err := os.ReadDir("/sys" + cardName)
+					if err != nil {
+						pecho(
+							"warn",
+							"Failed to read GPU connector status: " + err.Error(),
+						)
+						continue
+					}
+					for _, connectorName := range connectors {
+						if strings.HasPrefix(connectorName.Name(), "card") == false {
+							continue
+						}
+						conStatFd, err := os.OpenFile(
+							"/sys/class/drm/" + cardName + "/" + connectorName + "/status",
+							os.O_RDONLY,
+							0700,
+						)
+						if err != nil {
+							pecho(
+								"warn",
+								"Failed to open GPU status: " + err.Error(),
+							)
+						}
+						conStat, ioErr := io.ReadAll(conStatFd)
+						if ioErr != nil {
+							pecho(
+								"warn",
+								"Failed to read GPU status: " + ioErr.Error(),
+							)
+						}
+						if strings.Contains(string(conStat), "disconnected") {
+							continue
+						} else {
+							activeGpus = append(
+								activeGpus,
+								cardName,
+							)
+							break
+						}
+					}
+				}
 			}
 	}
 	gpuChan <- gpuArg
 	var activeGPUList string = strings.Join(activeGpus, ", ")
-	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS + ", identified active: " + activeGPUList)
+	pecho(
+	"debug",
+	"Found" + strconv.Itoa(cardSums) + "GPU" + trailingS + ", identified active: " + activeGPUList)
 }
 
 func setOffloadEnvs(envsReady chan int8) () {
