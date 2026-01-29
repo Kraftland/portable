@@ -17,13 +17,13 @@ const (
 	controlFile	string	=	"instanceId=inIdHold\nappID=idHold\nbusDir=busHold\nbusDirAy=busAyHold\nfriendlyName=friendlyHold"
 )
 
-type runtimeOpts struct {
+type RUNTIME_OPT struct {
 	action		bool
 	fullCmdline	string
 	quit		int8 // 1 for normal, 2 for external, 3 for forced?
 }
 
-type runtimeParms struct {
+type RUNTIME_PARAMS struct {
 	flatpakInstanceID	string
 	waylandDisplay		string
 	bwCmd			[]string
@@ -65,9 +65,9 @@ type portableConfigOpts struct {
 var (
 	internalLoggingLevel	int
 	confOpts		portableConfigOpts
-	runtimeInfo		runtimeParms
+	runtimeInfo		RUNTIME_PARAMS
 	xdgDir			XDG_DIRS
-	runtimeOpt		runtimeOpts
+	runtimeOpt		RUNTIME_OPT
 )
 
 func pecho(level string, message string) {
