@@ -978,7 +978,7 @@ func doCleanUnit(dbusChan chan int8) {
 }
 
 func startProxy(dbusChan chan int8) {
-	argChan := make(chan []string)
+	argChan := make(chan []string, 1)
 	go calcDbusArg(argChan)
 
 	dbusArgs := <- argChan
@@ -1103,17 +1103,17 @@ func instDesktopFile(instDesktopChan chan int8) {
 }
 
 func genBwArg(argChan chan int8) {
-	inputChan := make(chan []string)
+	inputChan := make(chan []string, 1)
 	go inputBind(inputChan)
-	instChan := make(chan int8)
+	instChan := make(chan int8, 1)
 	go instSignalFile(instChan)
-	gpuChan := make(chan []string)
+	gpuChan := make(chan []string, 1)
 	go gpuBind(gpuChan)
-	camChan := make(chan []string)
+	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
-	miscChan := make(chan []string)
+	miscChan := make(chan []string, 1)
 	go miscBinds(miscChan)
-	xChan := make(chan []string)
+	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
 
 	if internalLoggingLevel > 1 {
@@ -1571,7 +1571,7 @@ func gpuBind(gpuChan chan []string) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		case 1:
-			nvChan := make(chan []string)
+			nvChan := make(chan []string, 1)
 			go tryBindNv(nvChan)
 			nvArgs := <- nvChan
 			gpuArg = append(
@@ -1588,9 +1588,9 @@ func gpuBind(gpuChan chan []string) {
 		default:
 			trailingS = "s"
 			if confOpts.gameMode == true {
-				envChan := make(chan int8)
+				envChan := make(chan int8, 1)
 				setOffloadEnvs(envChan)
-				nvChan := make(chan []string)
+				nvChan := make(chan []string, 1)
 				go tryBindNv(nvChan)
 				nvArgs := <- nvChan
 				gpuArg = append(
