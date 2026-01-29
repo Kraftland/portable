@@ -1125,6 +1125,19 @@ func prepareEnvs(readyChan chan int8) {
 			)
 		}
 	}
+	packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
+	if errPkg != nil {
+		pecho("crit", "Could not open package config " + confOpts.confPath + ": " + errPkg.Error())
+	}
+	pkgRead, errPkgR := io.ReadAll(packageEnvs)
+	if errPkgR != nil {
+		pecho("crit", "I/O error reading config: " + errPkgR.Error())
+	}
+	pkgEnv := strings.Split(strings.TrimRight(string(pkgRead), "\n"), "\n")
+	runtimeInfo.sdEnvs = append(
+		runtimeInfo.sdEnvs,
+		pkgEnv...
+	)
 	readyChan <- 1
 }
 
@@ -1905,8 +1918,6 @@ func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int, 1)
 	go readConf(readConfChan)
-	envPreChan := make(chan int8, 1)
-	go prepareEnvs(envPreChan)
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int, 1)
@@ -1917,6 +1928,8 @@ func main() {
 	<- readConfChan
 	<- cmdChan
 	<- xdgChan
+	envPreChan := make(chan int8, 1)
+	go prepareEnvs(envPreChan)
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 
 	// Warn multi-instance here
