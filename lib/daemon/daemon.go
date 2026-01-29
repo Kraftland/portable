@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+//	"errors"
 )
 
 const (
@@ -1098,6 +1099,35 @@ func instDesktopFile(instDesktopChan chan int8) {
 	instDesktopChan <- 1
 }
 
+func prepareEnvs(readyChan chan int8) {
+	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
+	if err != nil {
+		pecho("info", "Unable to read user defined environment variables: " + err.Error())
+		if os.IsNotExist(err) {
+			var template string = "# This file accepts simple KEY=VAL envs"
+			os.WriteFile(
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+				[]byte(template),
+				0700,
+			)
+		} else {
+			pecho("warn", "Unable to open file for reading environment variables: " + err.Error())
+		}
+	} else {
+		userEnvRead, errRead := io.ReadAll(userEnvs)
+		if errRead != nil {
+			pecho("warn", "I/O error reading environment variables: " + errRead.Error())
+		} else {
+			lines := strings.Split(strings.TrimRight(string(userEnvRead), "\n"), "\n")
+			runtimeInfo.sdEnvs = append(
+				runtimeInfo.sdEnvs,
+				lines...
+			)
+		}
+	}
+	readyChan <- 1
+}
+
 func genBwArg(argChan chan int8) {
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
@@ -1189,14 +1219,6 @@ func genBwArg(argChan chan int8) {
 		"-p", "SystemCallFilter=~@swap",
 		"-p", "SystemCallErrorNumber=EAGAIN",
 	)
-
-	for _, env := range runtimeInfo.sdEnvs {
-		pecho("debug", "Adding environment variables to systemd-run: " + env)
-		runtimeInfo.bwCmd = append(
-			runtimeInfo.bwCmd,
-			"-p", "Environment=" + env,
-		)
-	}
 
 	if confOpts.bindNetwork == false {
 		pecho("info", "Network Access disabled")
@@ -1883,6 +1905,8 @@ func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int, 1)
 	go readConf(readConfChan)
+	envPreChan := make(chan int8, 1)
+	go prepareEnvs(envPreChan)
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int, 1)
@@ -1916,6 +1940,7 @@ func main() {
 	<- instDesktopChan
 	<- pwSecContextChan
 	<- argChan
+	<- envPreChan
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 
 	startApp()
