@@ -1341,6 +1341,8 @@ func genBwArg(argChan chan int8) {
 			xdgDir.dataDir + "/" + confOpts.stateDirectory,
 			xdgDir.dataDir + "/" + confOpts.stateDirectory,
 
+		"--ro-bind",		"/etc", "/etc",
+
 	)
 
 	xArgs := <- xChan
