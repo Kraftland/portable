@@ -1608,6 +1608,9 @@ func tryBindNv(nvChan chan []string) {
 
 func inputBind(inputBindChan chan []string) {
 	inputBindArg := []string{}
+	if confOpts.bindInputDevices == false {
+		inputBindChan <- inputBindArg
+	}
 	inputBindArg = append(
 		inputBindArg,
 		"--dev-bind-try",	"/sys/class/leds", "/sys/class/leds",
