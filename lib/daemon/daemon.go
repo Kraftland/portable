@@ -1553,9 +1553,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 
 func tryBindCam(camChan chan []string) {
 	camArg := []string{}
-	if confOpts.bindCameras == false {
-		return
-	} else {
+	if confOpts.bindCameras == true {
 		camEntries, err := os.ReadDir("/dev")
 		if err != nil {
 			pecho("warn", "Failed to parse camera entries")
@@ -1576,13 +1574,16 @@ func tryBindCam(camChan chan []string) {
 }
 
 func tryBindPw(pwChan chan []string) {
-	if confOpts.bindPipewire == false {
-		return
+	pwArg := []string{}
+	if confOpts.bindPipewire == true {
+		pwArg = append(
+			pwArg,
+			"--bind",
+			runtimeInfo.pwSocket,
+			runtimeInfo.pwSocket,
+		)
 	}
-	pwArg := []string{
-		"--bind",
-
-	}
+	pwChan <- pwArg
 }
 
 func tryBindNv(nvChan chan []string) {
