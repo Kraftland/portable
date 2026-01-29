@@ -261,30 +261,6 @@ function sourceXDG() {
 function manageDirs() {
 	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
 }
-
-function genXAuth() {
-	if [[ "${waylandOnly}" = "true" ]] || [[ "${waylandOnly}" = "adaptive" && "${XDG_SESSION_TYPE}" = "wayland" ]]; then
-		pecho debug "Wayland only mode enforced"
-		#addEnv "DISPLAY"
-		xAuthBind="/dev/null"
-		return 1
-	elif [[ -r "${XAUTHORITY}" ]]; then
-		pecho debug "Using authority file from ${XAUTHORITY}"
-		xAuthBind="${XAUTHORITY}"
-	elif [[ -r "${HOME}/.Xauthority" ]]; then
-		pecho debug "Guessing authority as ${HOME}/.Xauthority"
-		xAuthBind="${HOME}/.Xauthority"
-	else
-		pecho warn "Could not determine Xauthority file path"
-		xAuthBind="/dev/null"
-		unset XAUTHORITY
-		xhost +localhost
-	fi
-	export XAUTHORITY="/run/.Xauthority"
-	addEnv "DISPLAY=${DISPLAY}"
-	addEnv "XAUTHORITY=${XAUTHORITY}"
-}
-
 function waylandContext() {
 	if [[ -x /usr/bin/wayland-info && -x /usr/bin/way-secure ]]; then
 		if [[ "${XDG_SESSION_TYPE}" = "wayland" && "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" && ${allowSecurityContext} -eq 1 ]]; then
@@ -489,7 +465,7 @@ function calcBwrapArg() {
 	if [ -e /usr/lib/flatpak-xdg-utils/flatpak-spawn ]; then
 		passBwrapArgs "--ro-bind\0/usr/lib/portable/overlay-usr/flatpak-spawn\0/usr/lib/flatpak-xdg-utils/flatpak-spawn\0"
 	fi
-	passBwrapArgs "--ro-bind\0${xAuthBind}\0/run/.Xauthority\0--ro-bind\0${busDir}/bus\0/run/sessionBus\0--ro-bind-try\0${busDirAy}\0${XDG_RUNTIME_DIR}/at-spi\0--dir\0/run/host\0--bind\0${XDG_RUNTIME_DIR}/doc/by-app/${appID}\0${XDG_RUNTIME_DIR}/doc\0--ro-bind\0/dev/null\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/flatpak-runtime-directory\0--ro-bind-try\0${wayDisplayBind}\0${XDG_RUNTIME_DIR}/wayland-0\0--ro-bind-try\0/run/systemd/resolve/stub-resolv.conf\0/run/systemd/resolve/stub-resolv.conf\0--bind\0${XDG_RUNTIME_DIR}/systemd/notify\0${XDG_RUNTIME_DIR}/systemd/notify\0" # Run binds
+	passBwrapArgs "--ro-bind\0${busDir}/bus\0/run/sessionBus\0--ro-bind-try\0${busDirAy}\0${XDG_RUNTIME_DIR}/at-spi\0--dir\0/run/host\0--bind\0${XDG_RUNTIME_DIR}/doc/by-app/${appID}\0${XDG_RUNTIME_DIR}/doc\0--ro-bind\0/dev/null\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}-private/run-environ\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0--ro-bind\0${XDG_RUNTIME_DIR}/.flatpak/${instanceId}\0${XDG_RUNTIME_DIR}/flatpak-runtime-directory\0--ro-bind-try\0${wayDisplayBind}\0${XDG_RUNTIME_DIR}/wayland-0\0--ro-bind-try\0/run/systemd/resolve/stub-resolv.conf\0/run/systemd/resolve/stub-resolv.conf\0--bind\0${XDG_RUNTIME_DIR}/systemd/notify\0${XDG_RUNTIME_DIR}/systemd/notify\0" # Run binds
 	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0" # HOME binds
 	procDriverBind &
 	calcMountArgv2 &
@@ -560,7 +536,6 @@ function termExec() {
 }
 
 function execAppExist() {
-	genXAuth
 	importEnv
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
@@ -705,7 +680,6 @@ function warnMulRunning() {
 
 function dbusProxy() {
 	importEnv &
-	genXAuth
 
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
