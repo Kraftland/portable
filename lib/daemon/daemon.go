@@ -1268,6 +1268,40 @@ func genBwArg(argChan chan int8) {
 	argChan <- chanReady
 }
 
+func gpuBind(gpuChan chan []string) {
+	var gpuArg = []string{}
+	// SHOULD contain strings like card0, card1 etc
+	var totalGpus = []string{}
+	var activeGpus = []string{}
+	var cardSums uint = 0
+
+	gpuEntries, err := os.ReadDir("/sys/class/drm")
+	if err != nil {
+		pecho(
+			"warn",
+			"Unable to parse GPU information: failed reading /sys/class/drm: " + err.Error())
+		return
+	}
+	for _, cardName := range gpuEntries {
+		if strings.Contains(cardName.Name(), "-") {
+			continue
+		} else if strings.HasPrefix(cardName.Name(), "card") {
+			cardSums++
+			totalGpus = append(
+				totalGpus,
+				cardName.Name(),
+			)
+		}
+	}
+
+	var trailingS string
+	if cardSums > 1 {
+		trailingS = "s"
+	}
+	pecho("debug", "Found" + strconv.Itoa(int(cardSums)) + "GPU" + trailingS)
+
+}
+
 func inputBind(inputBindChan chan []string) {
 	inputBindArg := []string{}
 	inputBindArg = append(
