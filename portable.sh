@@ -458,7 +458,6 @@ function calcMountArgv2() {
 function calcBwrapArg() {
 	procDriverBind &
 	calcMountArgv2 &
-	passBwrapArgs "--ro-bind-try\0${XDG_RUNTIME_DIR}/pulse\0${XDG_RUNTIME_DIR}/pulse\0" # PulseAudio Bind!
 	passBwrapArgs "--ro-bind\0/etc\0/etc\0--tmpfs\0/etc/kernel\0"
 	passBwrapArgs "--tmpfs\0/proc/1\0--tmpfs\0/usr/share/applications\0--tmpfs\0${HOME}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/options\0--tmpfs\0${HOME}/.var\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}/.var/app/${appID}\0--tmpfs\0${HOME}/.var/app/${appID}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options\0" # Hide some entries
 	readyNotify wait bindCheck
