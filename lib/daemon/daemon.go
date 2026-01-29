@@ -1108,6 +1108,8 @@ func genBwArg(argChan chan int8) {
 	go inputBind(inputChan)
 	instChan := make(chan int8)
 	go instSignalFile(instChan)
+	gpuChan := make(chan []string)
+	go gpuBind(gpuChan)
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -1278,6 +1280,12 @@ func genBwArg(argChan chan int8) {
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		inputArgs...
+	)
+
+	gpuArgs := <- gpuChan
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		gpuArgs...
 	)
 
 	var chanReady int8 = <- instChan
