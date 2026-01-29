@@ -1685,13 +1685,13 @@ func bindCard(cardName string) (cardBindArg []string) {
 		"--query=path",
 	}
 	resolveUdevCmd := exec.Command("/usr/bin/udevadm", resolveUdevArgs...)
-	path, err := resolveUdevCmd.Output()
 	resolveUdevCmd.Stderr = os.Stderr
+	path, err := resolveUdevCmd.Output()
 	if err != nil {
-		pecho("warn", "Failed to bind GPU " + cardName + ": " + err.Error())
+		pecho("warn", "Failed to resolve GPU " + cardName + ": " + err.Error())
 		return
 	}
-	sysfsPath := "/sys" + string(path)
+	sysfsPath := "/sys" + strings.TrimSpace(string(path))
 	cardBindArg = append(
 		cardBindArg,
 		"--dev-bind",
@@ -1703,8 +1703,9 @@ func bindCard(cardName string) (cardBindArg []string) {
 			"/dev/dri/" + cardName,
 			"/dev/dri/" + cardName,
 	)
-	devDrmPath := strings.TrimSuffix(sysfsPath, "/drm/")
+	devDrmPath := strings.TrimSuffix(sysfsPath, "/" + cardName)
 	drmEntries, readErr := os.ReadDir(devDrmPath)
+	pecho("debug", "Got sysfs path from udev: " + devDrmPath)
 	if readErr != nil {
 		pecho("warn", "Failed to read "+ devDrmPath + ": " + readErr.Error())
 		return
