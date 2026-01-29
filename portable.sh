@@ -634,7 +634,7 @@ function calcMountArgv2() {
 
 function pwBindCalc() {
 	if [[ "${bindPipewire}" = 'true' ]]; then
-		readyNotify wait pwSecContext
+		#readyNotify wait pwSecContext
 		getBusArgs pwSecContext
 		passBwrapArgs "--bind-try\0${pwSecContext}\0${XDG_RUNTIME_DIR}/pipewire-0\0"
 		pecho debug "Bound PipeWire socket w/ security context"
@@ -941,48 +941,6 @@ function generateFlatpakInfo() {
 			"${XDG_DATA_HOME}/applications/${appID}.desktop"
 	fi
 	readyNotify set generateFlatpakInfo
-}
-
-function pwSecContext() {
-	if [[ "${bindPipewire}" = 'true' ]]; then
-		pecho debug "Pipewire security context enabled"
-		rm -f "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"
-		systemd-run \
-			--user \
-			--quiet \
-			-p Slice="portable-${friendlyName}.slice" \
-			-u "${unitName}-pipewire-container" \
-			-p KillMode=control-group \
-			-p After="pipewire.service" \
-			-p Wants="pipewire.service" \
-			-p StandardOutput="file:${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" \
-			-p SuccessExitStatus=SIGKILL \
-			-p Requires=pipewire.service \
-			-- \
-			"stdbuf" \
-			"-oL" \
-			"/usr/bin/pw-container" \
-			"-P" \
-			'{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }'
-
-		if grep -q "new socket" "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"; then
-			pecho debug "Pipewire socket created"
-		else
-			while true; do
-				sleep 0.0001s
-				if [[ ! -d "${XDG_RUNTIME_DIR}/portable/${appID}" || ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
-					break
-				elif grep -q "new socket" "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket"; then
-					break
-				fi
-			done
-			pecho debug "Pipewire socket created after waiting"
-		fi
-		passBusArgs \
-			pwSecContext \
-			"$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/pipewire-socket" | sed 's|new socket: ||g')"
-	fi
-	readyNotify set pwSecContext
 }
 
 function dbusProxy() {
