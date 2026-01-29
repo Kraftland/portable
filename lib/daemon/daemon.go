@@ -1307,13 +1307,16 @@ func gpuBind(gpuChan chan []string) {
 		case 1:
 			nvChan := make(chan []string)
 			go tryBindNv(nvChan)
+			nvArgs := <- nvChan
+			gpuArg = append(
+				gpuArg,
+				nvArgs...,
+			)
 		default:
 			trailingS = "s"
 	}
 
 	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS)
-
-
 }
 
 func tryBindNv(nvChan chan []string) {
