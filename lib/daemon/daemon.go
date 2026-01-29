@@ -1582,6 +1582,7 @@ func gpuBind(gpuChan chan []string) {
 					bindCard(cardName)...
 				)
 			}
+			activeGpus = totalGpus
 		default:
 			trailingS = "s"
 			if confOpts.gameMode == true {
@@ -1655,7 +1656,7 @@ func gpuBind(gpuChan chan []string) {
 	var activeGPUList string = strings.Join(activeGpus, ", ")
 	pecho(
 	"debug",
-	"Found" + strconv.Itoa(cardSums) + "GPU" + trailingS + ", identified active: " + activeGPUList)
+	"Found " + strconv.Itoa(cardSums) + " GPU" + trailingS + ", identified active: " + activeGPUList)
 }
 
 func setOffloadEnvs(envsReady chan int8) () {
@@ -1684,11 +1685,10 @@ func bindCard(cardName string) (cardBindArg []string) {
 		"--query=path",
 	}
 	resolveUdevCmd := exec.Command("/usr/bin/udevadm", resolveUdevArgs...)
-	path, _ := resolveUdevCmd.Output()
-	err := resolveUdevCmd.Run()
+	path, err := resolveUdevCmd.Output()
 	resolveUdevCmd.Stderr = os.Stderr
 	if err != nil {
-		pecho("warn", "Failed to bind GPU " + cardName + " : " + err.Error())
+		pecho("warn", "Failed to bind GPU " + cardName + ": " + err.Error())
 		return
 	}
 	sysfsPath := "/sys" + string(path)
@@ -1706,7 +1706,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 	devDrmPath := strings.TrimSuffix(sysfsPath, "/drm/")
 	drmEntries, readErr := os.ReadDir(devDrmPath)
 	if readErr != nil {
-		pecho("warn", "Failed to read "+ devDrmPath + " : " + readErr.Error())
+		pecho("warn", "Failed to read "+ devDrmPath + ": " + readErr.Error())
 		return
 	} else {
 		for _, candidate := range drmEntries {
