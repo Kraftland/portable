@@ -1392,6 +1392,16 @@ func miscBinds(miscChan chan []string) {
 		)
 	}
 
+	_, err := os.Stat("/usr/lib/flatpak-xdg-utils/flatpak-spawn")
+	if err == nil {
+		miscArgs = append(
+			miscArgs,
+			"--ro-bind",
+			"/usr/lib/portable/overlay-usr/flatpak-spawn",
+			"/usr/lib/flatpak-xdg-utils/flatpak-spawn",
+		)
+	}
+
 	miscChan <- miscArgs
 }
 
