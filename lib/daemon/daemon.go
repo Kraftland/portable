@@ -90,6 +90,13 @@ func pecho(level string, message string) {
 	}
 }
 
+func addEnv(envToAdd string) {
+	runtimeInfo.sdEnvs = append(
+		runtimeInfo.sdEnvs,
+		envToAdd,
+	)
+}
+
 func cmdlineDispatcher(cmdChan chan int) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
