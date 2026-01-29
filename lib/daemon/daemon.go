@@ -1298,6 +1298,17 @@ func genBwArg(argChan chan int8) {
 
 		"--ro-bind-try",	"/var/cache/fontconfig", "/var/cache/fontconfig",
 
+		// Run binds
+		"--bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+			"/run",
+		"--bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+		"--ro-bind-try",
+			"/run/systemd/userdb/io.systemd.Home",
+			"/run/systemd/userdb/io.systemd.Home",
+
 	)
 
 
