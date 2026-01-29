@@ -1908,8 +1908,8 @@ func main() {
 	genChan := make(chan int8, 1)
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
-	genReady = <- cleanUnitChan
-	genReady = <- wayChan
+	<- cleanUnitChan
+	<- wayChan
 	pwSecContextChan := make(chan int8, 1)
 	go pwSecContext(pwSecContextChan)
 	if genReady == 1 {
@@ -1919,9 +1919,9 @@ func main() {
 	proxyChan := make(chan int8, 1)
 	go startProxy(proxyChan)
 	ready := <- proxyChan
-	ready = <- instDesktopChan
-	ready = <- pwSecContextChan
-	ready = <- argChan
+	<- instDesktopChan
+	<- pwSecContextChan
+	<- argChan
 	if ready == 1 {
 		pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	}
