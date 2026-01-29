@@ -1329,6 +1329,17 @@ func genBwArg(argChan chan int8) {
 		"--bind",
 			xdgDir.runtimeDir + "/systemd/notify",
 			xdgDir.runtimeDir + "/systemd/notify",
+		"--ro-bind-try",
+			xdgDir.runtimeDir + "/pulse",
+			xdgDir.runtimeDir + "/pulse",
+
+		// HOME binds
+		"--bind",
+			xdgDir.dataDir + "/" + confOpts.stateDirectory,
+			xdgDir.home,
+		"--bind",
+			xdgDir.dataDir + "/" + confOpts.stateDirectory,
+			xdgDir.dataDir + "/" + confOpts.stateDirectory,
 
 	)
 

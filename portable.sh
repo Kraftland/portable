@@ -456,8 +456,6 @@ function calcMountArgv2() {
 }
 
 function calcBwrapArg() {
-
-	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0" # HOME binds
 	procDriverBind &
 	calcMountArgv2 &
 	passBwrapArgs "--ro-bind-try\0${XDG_RUNTIME_DIR}/pulse\0${XDG_RUNTIME_DIR}/pulse\0" # PulseAudio Bind!
