@@ -1342,6 +1342,8 @@ func gpuBind(gpuChan chan []string) {
 		default:
 			trailingS = "s"
 			if confOpts.gameMode == true {
+				envChan := make(chan int8)
+				setOffloadEnvs(envChan)
 				nvChan := make(chan []string)
 				go tryBindNv(nvChan)
 				nvArgs := <- nvChan
@@ -1355,6 +1357,8 @@ func gpuBind(gpuChan chan []string) {
 						bindCard(cardName)...
 					)
 				}
+				envReady := <- envChan
+				envReady++
 			} else {
 
 			}
@@ -1362,6 +1366,25 @@ func gpuBind(gpuChan chan []string) {
 	gpuChan <- gpuArg
 	var activeGPUList string = strings.Join(activeGpus, ", ")
 	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS + ", identified active: " + activeGPUList)
+}
+
+func setOffloadEnvs(envsReady chan int8) () {
+	var nvExist bool = false
+	addEnv("VK_LOADER_DRIVERS_DISABLE=none")
+	_, err := os.Stat("/dev/nvidia0")
+	if err == nil {
+		nvExist = true
+	}
+
+	if nvExist == true {
+		addEnv("__NV_PRIME_RENDER_OFFLOAD=1")
+		addEnv("__VK_LAYER_NV_optimus=NVIDIA_only")
+		addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
+		addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
+	} else {
+		addEnv("DRI_PRIME=1")
+	}
+	envsReady <- 1
 }
 
 func bindCard(cardName string) (cardBindArg []string) {
