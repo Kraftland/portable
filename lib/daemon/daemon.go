@@ -939,8 +939,7 @@ func calcDbusArg(argChan chan []string) {
 func doCleanUnit(dbusChan chan int8) {
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
-		"app-portable-" + confOpts.appID,
-		"app-portable-" + confOpts.appID + "-pipewire-container",
+		"app-portable-" + confOpts.appID + "*",
 	}
 	resetCmd := []string{"--user", "reset-failed"}
 	resetCmd = append(
