@@ -948,7 +948,6 @@ function dbusProxy() {
 	importEnv &
 	genXAuth
 	waylandDisplay
-	pwSecContext &
 
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
