@@ -1319,6 +1319,56 @@ func gpuBind(gpuChan chan []string) {
 	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS)
 }
 
+func bindCard(cardName string) (cardBindArg []string) {
+	resolveUdevArgs := []string{
+		"info",
+		"/sys/class/drm/" + cardName,
+		"--query=path",
+	}
+	resolveUdevCmd := exec.Command("/usr/bin/udevadm", resolveUdevArgs...)
+	path, _ := resolveUdevCmd.Output()
+	err := resolveUdevCmd.Run()
+	resolveUdevCmd.Stderr = os.Stderr
+	if err != nil {
+		pecho("warn", "Failed to bind GPU " + cardName + " : " + err.Error())
+		return
+	}
+	sysfsPath := "/sys" + string(path)
+	cardBindArg = append(
+		cardBindArg,
+		"--dev-bind",
+			sysfsPath, sysfsPath,
+		"--dev-bind",
+			"/sys/class/drm/" + cardName,
+			"/sys/class/drm/" + cardName,
+		"--dev-bind",
+			"/dev/dri/" + cardName,
+			"/dev/dri/" + cardName,
+	)
+	devDrmPath := strings.TrimSuffix(sysfsPath, "/drm/")
+	drmEntries, readErr := os.ReadDir(devDrmPath)
+	if readErr != nil {
+		pecho("warn", "Failed to read "+ devDrmPath + " : " + readErr.Error())
+		return
+	} else {
+		for _, candidate := range drmEntries {
+			if strings.HasPrefix(candidate.Name(), "renderD") && candidate.IsDir() == false {
+				cardBindArg = append(
+					cardBindArg,
+					"--dev-bind",
+						"/dev/dri/" + candidate.Name(),
+						"/dev/dri/" + candidate.Name(),
+					"--dev-bind",
+						"/sys/class/drm/" + candidate.Name(),
+						"/sys/class/drm/" + candidate.Name(),
+				)
+			}
+		}
+	}
+
+	return
+}
+
 func tryBindNv(nvChan chan []string) {
 	nvDevsArg := []string{}
 	devEntries, err := os.ReadDir("/dev")
