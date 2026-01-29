@@ -1813,8 +1813,8 @@ func inputBind(inputBindChan chan []string) {
 					inputBindArg = append(
 						inputBindArg,
 						"--dev-bind",
-							"/sys" + string(sysDevice),
-							"/sys" + string(sysDevice),
+							"/sys" + strings.TrimSpace(string(sysDevice)),
+							"/sys" + strings.TrimSpace(string(sysDevice)),
 					)
 				}
 			}
@@ -1850,14 +1850,15 @@ func inputBind(inputBindChan chan []string) {
 					inputBindArg = append(
 						inputBindArg,
 						"--dev-bind",
-							"/sys" + string(sysDevice),
-							"/sys" + string(sysDevice),
+							"/sys" + strings.TrimSpace(string(sysDevice)),
+							"/sys" + strings.TrimSpace(string(sysDevice)),
 					)
 				}
 			}
 		}
 	}
 	inputBindChan <- inputBindArg
+	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
 func instSignalFile(instChan chan int8) {
