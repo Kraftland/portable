@@ -1343,6 +1343,12 @@ func genBwArg(argChan chan int8) {
 
 		"--ro-bind",		"/etc", "/etc",
 
+		// Privacy mounts
+		"--tmpfs",		"/proc/1",
+		"--tmpfs",		"/usr/share/applications",
+		"--tmpfs",		xdgDir.home + "/options",
+		"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/options",
+
 	)
 
 	xArgs := <- xChan
@@ -1422,7 +1428,13 @@ func miscBinds(miscChan chan []string) {
 			"--ro-bind",
 				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
 				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.flatpak-info",
-
+			"--tmpfs",		xdgDir.home + "/.var",
+			"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var",
+			"--bind",
+				xdgDir.dataDir + "/" + confOpts.stateDirectory,
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID,
+			"--tmpfs",
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID + "/options",
 		)
 	}
 
