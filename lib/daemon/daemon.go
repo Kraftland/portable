@@ -1095,6 +1095,256 @@ func instDesktopFile(instChan chan int8) {
 	instChan <- 1
 }
 
+func genBwArg(argChan chan int8) {
+	instChan := make(chan int8)
+	go instSignalFile(instChan)
+
+	if internalLoggingLevel > 1 {
+		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
+	}
+
+	// Define global systemd args first
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		"--user",
+		"--pty",
+		"--service-type=notify-reload",
+		"--wait",
+		"--unit", "app-portable-" + confOpts.appID,
+		"--slice=app.slice",
+		"-p", "Delegate=yes",
+		"-p", "DelegateSubgroup=portable-cgroup",
+		"-p", "BindsTo=" + confOpts.friendlyName + "-dbus",
+		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + "(" + confOpts.appID + ")",
+		"-p", "Documentation=https://github.com/Kraftland/portable",
+		"-p", "ExitType=cgroup",
+		"-p", "NotifyAccess=all",
+		"-p", "TimeoutStartSec=infinity",
+		"-p", "OOMPolicy=stop",
+		"-p", "SecureBits=noroot-locked",
+		"-p", "NoNewPrivileges=yes",
+		"-p", "KillMode=control-group",
+		"-p", "MemoryHigh=90%",
+		"-p", "ManagedOOMSwap=kill",
+		"-p", "ManagedOOMMemoryPressure=kill",
+		"-p", "OOMScoreAdjust=100",
+		"-p", "IPAccounting=yes",
+		"-p", "MemoryPressureWatch=yes",
+		"-p", "SyslogIdentifier=portable-" + confOpts.appID,
+		"-p", "SystemCallLog=@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources",
+		"-p", "SystemCallLog=~@sandbox",
+		"-p", "PrivateIPC=yes",
+		"-p", "ProtectClock=yes",
+		"-p", "CapabilityBoundingSet=",
+		"-p", "RestrictSUIDSGID=yes",
+		"-p", "LockPersonality=yes",
+		"-p", "RestrictRealtime=yes",
+		"-p", "ProtectProc=invisible",
+		"-p", "ProcSubset=pid",
+		"-p", "PrivateUsers=yes",
+		"-p", "ProtectControlGroups=private",
+		"-p", "PrivateMounts=yes",
+		"-p", "ProtectHome=no",
+		"-p", "KeyringMode=private",
+		"-p", "TimeoutStopSec=10s",
+		"-p", "UMask=077",
+		"-p", "Environment=instanceId=" + runtimeInfo.flatpakInstanceID,
+		"-p", "Environment=busDir=" + xdgDir.runtimeDir + "/app/" + confOpts.appID,
+		"-p", "UnsetEnvironment=GNOME_SETUP_DISPLAY",
+		"-p", "UnsetEnvironment=PIPEWIRE_REMOTE",
+		"-p", "UnsetEnvironment=PAM_KWALLET5_LOGIN",
+		"-p", "UnsetEnvironment=GTK2_RC_FILES",
+		"-p", "UnsetEnvironment=ICEAUTHORITY",
+		"-p", "UnsetEnvironment=MANAGERPID",
+		"-p", "UnsetEnvironment=INVOCATION_ID",
+		"-p", "UnsetEnvironment=MANAGERPIDFDID",
+		"-p", "UnsetEnvironment=SSH_AUTH_SOCK",
+		"-p", "UnsetEnvironment=MAIL",
+		"-p", "UnsetEnvironment=SYSTEMD_EXEC_PID",
+		"-p", "WorkingDirectory=" + xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		"-p", "ExecReload=bash -c 'kill --signal SIGALRM 2'",
+		"-p", "ReloadSignal=SIGALRM",
+		"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated.env",
+		"-p", "SystemCallFilter=~@clock",
+		"-p", "SystemCallFilter=~@cpu-emulation",
+		"-p", "SystemCallFilter=~@module",
+		"-p", "SystemCallFilter=~@obsolete",
+		"-p", "SystemCallFilter=~@raw-io",
+		"-p", "SystemCallFilter=~@reboot",
+		"-p", "SystemCallFilter=~@swap",
+		"-p", "SystemCallErrorNumber=EAGAIN",
+		"--",
+	)
+
+	if confOpts.bindNetwork == false {
+		pecho("info", "Network Access disabled")
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			"-p", "PrivateNetwork=yes",
+		)
+	} else {
+		pecho("info", "Network Access allowed")
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			"-p", "PrivateNetwork=no",
+		)
+	}
+
+	pecho("debug", "Built systemd-run arguments")
+
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		"bwrap",
+		// Unshares
+		"--new-session",
+		"--unshare-cgroup-try",
+		"--unshare-ipc",
+		"--unshare-uts",
+		"--unshare-pid",
+		"--unshare-user",
+
+		// Tmp binds
+		"--tmpfs",		"/tmp",
+		"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
+		"--bind-try",		"/tmp/.XIM-unix", "/tmp/.XIM-unix",
+
+		// Dev binds
+		"--dev",		"/dev",
+		"--tmpfs",		"/dev/shm",
+		"--dev-bind-try",	"/dev/mali", "/dev/mali",
+		"--dev-bind-try",	"/dev/mali0", "/dev/mali0",
+		"--dev-bind-try",	"/dev/umplock", "/dev/umplock",
+		"--mqueue",		"/dev/mqueue",
+		"--dev-bind",		"/dev/dri", "/dev/dri",
+		"--dev-bind-try",	"/dev/udmabuf", "/dev/udmabuf",
+		"--dev-bind-try",	"/dev/ntsync", "/dev/ntsync",
+		"--dir",		"/top.kimiblock.portable",
+
+		// Sysfs entries
+		"--tmpfs",		"/sys",
+		"--ro-bind-try",	"/sys/module", "/sys/module",
+		"--ro-bind-try",	"/sys/dev/char", "/sys/dev/char",
+		"--tmpfs",		"/sys/devices",
+		"--ro-bind-try",	"/sys/fs/cgroup", "/sys/fs/cgroup",
+		"--dev-bind",		"/sys/class/drm", "/sys/class/drm",
+		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
+		"--ro-bind",		"/sys/kernel", "/sys/kernel",
+	)
+
+	inputChan := make(chan []string)
+	go inputBind(inputChan)
+
+
+	inputArgs := <- inputChan
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		inputArgs...
+	)
+
+	var chanReady int8 = <- instChan
+	argChan <- chanReady
+}
+
+func inputBind(inputBindChan chan []string) {
+	inputBindArg := []string{}
+	inputBindArg = append(
+		inputBindArg,
+		"--dev-bind-try",	"/sys/class/leds", "/sys/class/leds",
+		"--dev-bind-try",	"/sys/class/input", "/sys/class/input",
+		"--dev-bind-try",	"/sys/class/hidraw", "/sys/class/hidraw",
+		"--dev-bind-try",	"/dev/input", "/dev/input",
+		"--dev-bind-try",	"/dev/uinput", "/dev/uinput",
+	)
+
+	devEntries, err := os.ReadDir("/dev")
+	if err != nil {
+		pecho("warn", "Could not parse /dev/ for hidraw devices: " + err.Error())
+	} else {
+		for _, entry := range devEntries {
+			if strings.HasPrefix(entry.Name(), "hidraw") {
+				pecho("debug", "Detected hidraw input device " + entry.Name())
+				inputBindArg = append(
+					inputBindArg,
+					"--dev-bind",
+						"/dev/" + entry.Name(),
+						"/dev/" + entry.Name(),
+				)
+				udevArgs := []string{
+					"info",
+					"/dev/" + entry.Name(),
+					"-qpath",
+				}
+				udevExec := exec.Command("udevadm", udevArgs...)
+				sysDevice, sysErrout := udevExec.Output()
+				err := udevExec.Run()
+				if err != nil {
+					pecho(
+					"warn",
+					"Unable to resolve device path using udev: " + sysErrout.Error(),
+					)
+				} else {
+					inputBindArg = append(
+						inputBindArg,
+						"--dev-bind",
+							"/sys" + string(sysDevice),
+							"/sys" + string(sysDevice),
+					)
+				}
+			}
+		}
+	}
+
+	devEntries, err = os.ReadDir("/dev/input")
+	if err != nil {
+		pecho("warn", "Could not parse /dev/input for devices: " + err.Error())
+	} else {
+		for _, entry := range devEntries {
+			if strings.HasPrefix(entry.Name(), "event") || strings.HasPrefix(entry.Name(), "js") {
+				pecho("debug", "Detected input device " + entry.Name())
+				inputBindArg = append(
+					inputBindArg,
+					"--dev-bind",
+						"/dev/input/" + entry.Name(),
+						"/dev/input/" + entry.Name(),
+				)
+				udevArgs := []string{
+					"info",
+					"/dev/input/" + entry.Name(),
+					"-qpath",
+				}
+				udevExec := exec.Command("udevadm", udevArgs...)
+				sysDevice, sysErrout := udevExec.Output()
+				err := udevExec.Run()
+				if err != nil {
+					pecho(
+					"warn",
+					"Unable to resolve device path using udev: " + sysErrout.Error(),
+					)
+				} else {
+					inputBindArg = append(
+						inputBindArg,
+						"--dev-bind",
+							"/sys" + string(sysDevice),
+							"/sys" + string(sysDevice),
+					)
+				}
+			}
+		}
+	}
+	inputBindChan <- inputBindArg
+}
+
+func instSignalFile(instChan chan int8) {
+	const content string = "false"
+	os.WriteFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+		[]byte(content),
+		0700,
+	)
+
+	instChan <- 1
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int)
@@ -1130,6 +1380,9 @@ func main() {
 	if genReady == 1 {
 		pecho("debug", "Flatpak info and cleaning ready")
 	}
+	argCalcChan := make(chan int8)
+	// TODO: Place arg gen func here
+
 	proxyChan := make(chan int8)
 	go startProxy(proxyChan)
 	ready := <- proxyChan
