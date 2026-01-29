@@ -484,16 +484,6 @@ function calcMountArgv2() {
 	readyNotify set calcMountArgv2
 }
 
-function pwBindCalc() {
-	if [[ "${bindPipewire}" = 'true' ]]; then
-		#readyNotify wait pwSecContext
-		getBusArgs pwSecContext
-		passBwrapArgs "--bind-try\0${pwSecContext}\0${XDG_RUNTIME_DIR}/pipewire-0\0"
-		pecho debug "Bound PipeWire socket w/ security context"
-	fi
-	readyNotify set pwBindCalc
-}
-
 function calcBwrapArg() {
 
 	if [ -e /usr/lib/flatpak-xdg-utils/flatpak-spawn ]; then
@@ -504,7 +494,6 @@ function calcBwrapArg() {
 	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0" # HOME binds
 	procDriverBind &
 	calcMountArgv2 &
-	pwBindCalc &
 	passBwrapArgs "--ro-bind-try\0${XDG_RUNTIME_DIR}/pulse\0${XDG_RUNTIME_DIR}/pulse\0" # PulseAudio Bind!
 	passBwrapArgs "--ro-bind\0/etc\0/etc\0--tmpfs\0/etc/kernel\0"
 	passBwrapArgs "--tmpfs\0/proc/1\0--tmpfs\0/usr/share/applications\0--tmpfs\0${HOME}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/options\0--tmpfs\0${HOME}/.var\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}/.var/app/${appID}\0--tmpfs\0${HOME}/.var/app/${appID}/options\0--tmpfs\0${XDG_DATA_HOME}/${stateDirectory}/.var/app/${appID}/options\0" # Hide some entries
@@ -515,7 +504,6 @@ function calcBwrapArg() {
 		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
 	fi
 	readyNotify wait procDriverBind
-	readyNotify wait pwBindCalc # PW binds
 	readyNotify wait calcMountArgv2
 	passBwrapArgs "--\0/usr/lib/portable/helper"
 	readyNotify set calcBwrapArg
