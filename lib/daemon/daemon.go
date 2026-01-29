@@ -753,7 +753,6 @@ func calcDbusArg(argChan chan []string) {
 	argList := []string{}
 	argList = append(
 		argList,
-		"--no-block",
 		"--user",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
 		"-u", confOpts.friendlyName + "-dbus",
@@ -1004,6 +1003,7 @@ func startProxy(dbusChan chan int8) {
 
 func startApp() {
 	go forceBackgroundPerm()
+	pecho("debug", "Calculated arguments for systemd-run: " + strings.Join(runtimeInfo.bwCmd, ", "))
 	sdExec := exec.Command("systemd-run", runtimeInfo.bwCmd...)
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
@@ -1127,11 +1127,11 @@ func genBwArg(argChan chan int8) {
 		"--pty",
 		"--service-type=notify-reload",
 		"--wait",
-		"--unit", "app-portable-" + confOpts.appID,
+		"--unit=app-portable-" + confOpts.appID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
 		"-p", "DelegateSubgroup=portable-cgroup",
-		"-p", "BindsTo=" + confOpts.friendlyName + "-dbus",
+		"-p", "BindsTo=" + confOpts.friendlyName + "-dbus.service",
 		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + "(" + confOpts.appID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
@@ -1190,7 +1190,6 @@ func genBwArg(argChan chan int8) {
 		"-p", "SystemCallFilter=~@reboot",
 		"-p", "SystemCallFilter=~@swap",
 		"-p", "SystemCallErrorNumber=EAGAIN",
-		"--",
 	)
 
 	for _, env := range runtimeInfo.sdEnvs {
@@ -1219,6 +1218,7 @@ func genBwArg(argChan chan int8) {
 
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
+		"--",
 		"bwrap",
 		// Unshares
 		"--new-session",
@@ -1297,7 +1297,7 @@ func genBwArg(argChan chan int8) {
 		"--tmpfs",		"/var/opt",
 		"--tmpfs",		"/var/spool",
 		"--tmpfs",		"/var/tmp",
-		"--ro-bind-try",	"/opt",
+		"--ro-bind-try",	"/opt", "/opt",
 
 		"--ro-bind-try",	"/var/cache/fontconfig", "/var/cache/fontconfig",
 
