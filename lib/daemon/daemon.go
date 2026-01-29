@@ -1273,6 +1273,31 @@ func genBwArg(argChan chan int8) {
 		"--ro-bind-try",	"/dev/null", "/proc/loadavg",
 		"--ro-bind-try",	"/dev/null", "/proc/filesystems",
 
+		// FHS dir
+		"--perms",		"0000",
+		"--tmpfs",		"/boot",
+		"--perms",		"0000",
+		"--tmpfs",		"/srv",
+		"--perms",		"0000",
+		"--tmpfs",		"/root",
+		"--perms",		"0000",
+		"--tmpfs",		"/media",
+		"--perms",		"0000",
+		"--tmpfs",		"/mnt",
+		"--tmpfs",		"/home",
+		"--tmpfs",		"/var",
+		"--symlink",		"/run", "/var/run",
+		"--symlink",		"/run/lock", "/var/lock",
+		"--tmpfs",		"/var/empty",
+		"--tmpfs",		"/var/lib",
+		"--tmpfs",		"/var/log",
+		"--tmpfs",		"/var/opt",
+		"--tmpfs",		"/var/spool",
+		"--tmpfs",		"/var/tmp",
+		"--ro-bind-try",	"/opt",
+
+		"--ro-bind-try",	"/var/cache/fontconfig", "/var/cache/fontconfig",
+
 	)
 
 
