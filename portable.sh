@@ -457,7 +457,6 @@ function calcMountArgv2() {
 
 function calcBwrapArg() {
 
-	passBwrapArgs "--ro-bind-try\0${wayDisplayBind}\0${XDG_RUNTIME_DIR}/wayland-0\0--ro-bind-try\0/run/systemd/resolve/stub-resolv.conf\0/run/systemd/resolve/stub-resolv.conf\0--bind\0${XDG_RUNTIME_DIR}/systemd/notify\0${XDG_RUNTIME_DIR}/systemd/notify\0" # Run binds
 	passBwrapArgs "--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${HOME}\0--bind\0${XDG_DATA_HOME}/${stateDirectory}\0${XDG_DATA_HOME}/${stateDirectory}\0" # HOME binds
 	procDriverBind &
 	calcMountArgv2 &

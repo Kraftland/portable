@@ -1320,6 +1320,15 @@ func genBwArg(argChan chan int8) {
 		"--bind",
 			xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID,
 			xdgDir.runtimeDir + "/doc",
+		"--ro-bind",
+			runtimeInfo.waylandDisplay,
+			xdgDir.runtimeDir + "/wayland-0",
+		"--ro-bind-try",
+			"/run/systemd/resolve/stub-resolv.conf",
+			"/run/systemd/resolve/stub-resolv.conf",
+		"--bind",
+			xdgDir.runtimeDir + "/systemd/notify",
+			xdgDir.runtimeDir + "/systemd/notify",
 
 	)
 
