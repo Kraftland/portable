@@ -1069,8 +1069,6 @@ func waylandDisplay(wdChan chan int8) () {
 			return
 		}
 	}
-
-
 	wdChan <- 1
 }
 
