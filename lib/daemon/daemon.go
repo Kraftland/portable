@@ -503,12 +503,9 @@ func stopMainApp() {
 }
 
 func stopSlice() {
-	stopMainExec := exec.Command("systemctl", "--user", "stop", "portable-" + confOpts.friendlyName + ".slice")
-	stopMainExec.Stderr = os.Stdout
-	stopMainExecErr := stopMainExec.Run()
-	if stopMainExecErr != nil {
-		pecho("debug", "Stop " + "portable-" + confOpts.friendlyName + ".slice" + " failed: " + stopMainExecErr.Error())
-	}
+	cleanChan := make(chan int8, 1)
+	go doCleanUnit(cleanChan)
+	<- cleanChan
 }
 
 func genFlatpakInstanceID(genInfo chan int8) {
