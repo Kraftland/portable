@@ -1374,7 +1374,7 @@ func gpuBind(gpuChan chan []string) {
 							continue
 						}
 						conStatFd, err := os.OpenFile(
-							"/sys/class/drm/" + cardName + "/" + connectorName + "/status",
+							"/sys/class/drm/" + cardName + "/" + connectorName.Name() + "/status",
 							os.O_RDONLY,
 							0700,
 						)
