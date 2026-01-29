@@ -1774,6 +1774,7 @@ func inputBind(inputBindChan chan []string) {
 	inputBindArg := []string{}
 	if confOpts.bindInputDevices == false {
 		inputBindChan <- inputBindArg
+		return
 	}
 	inputBindArg = append(
 		inputBindArg,
