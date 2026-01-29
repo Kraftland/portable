@@ -1043,6 +1043,7 @@ func waylandDisplay(wdChan chan int8) () {
 		}
 		runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/wayland-0"
 		wdChan <- 1
+		pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
 		return
 	} else {
 		_, err := os.Stat(xdgDir.runtimeDir + "/" + socketInfo)
@@ -1054,15 +1055,17 @@ func waylandDisplay(wdChan chan int8) () {
 		} else {
 			runtimeInfo.waylandDisplay = xdgDir.runtimeDir + "/" + socketInfo
 			wdChan <- 1
+			pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
 			return
 		}
 
 		_, absErr := os.Stat(socketInfo)
 		if absErr != nil {
-			pecho("crit", "Unable to find Wayland socket")
+			pecho("crit", "Unable to find Wayland socket: " + absErr.Error())
 		} else {
 			runtimeInfo.waylandDisplay = socketInfo
 			wdChan <- 1
+			pecho("debug", "Found Wayland socket: " + runtimeInfo.waylandDisplay)
 			return
 		}
 	}
@@ -1081,10 +1084,12 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	varChan := make(chan int)
 	go getVariables(varChan)
+	wayChan := make(chan int8)
 	getVariablesReady := <- varChan
 	readConfReady := <- readConfChan
 	cmdReady := <- cmdChan
 	xdgReady := <- xdgChan
+	go waylandDisplay(wayChan)
 	if getVariablesReady == 1 && readConfReady == 1 && xdgReady == 1 && cmdReady == 1 {
 		pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	}
@@ -1096,6 +1101,7 @@ func main() {
 	go genFlatpakInstanceID(genChan)
 	genReady := <- genChan
 	genReady = <- cleanUnitChan
+	genReady = <- wayChan
 	pwSecContextChan := make(chan string)
 	go pwSecContext(pwSecContextChan)
 	if genReady == 1 {

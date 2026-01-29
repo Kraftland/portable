@@ -285,26 +285,6 @@ function genXAuth() {
 	addEnv "XAUTHORITY=${XAUTHORITY}"
 }
 
-function waylandDisplay() {
-	if [[ "${XDG_SESSION_TYPE}" = "x11" ]]; then
-		pecho warn "Running on X11, be warned!"
-		wayDisplayBind="/$(uuidgen)/$(uuidgen)"
-		return 0
-	fi
-	if [[ -z "${WAYLAND_DISPLAY}" ]]; then
-		pecho debug "WAYLAND_DISPLAY not set, defaulting to wayland-0"
-		wayDisplayBind="${XDG_RUNTIME_DIR}/wayland-0"
-	fi
-	if [[ -f "${WAYLAND_DISPLAY}" ]]; then
-		pecho debug "Wayland display is specified as an absolute path"
-		wayDisplayBind="${WAYLAND_DISPLAY}"
-	elif [[ "${WAYLAND_DISPLAY}" =~ "wayland-" ]]; then
-		pecho debug "Detected Wayland display as ${WAYLAND_DISPLAY}"
-		wayDisplayBind="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
-	fi
-	waylandContext
-}
-
 function waylandContext() {
 	if [[ -x /usr/bin/wayland-info && -x /usr/bin/way-secure ]]; then
 		if [[ "${XDG_SESSION_TYPE}" = "wayland" && "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" && ${allowSecurityContext} -eq 1 ]]; then
