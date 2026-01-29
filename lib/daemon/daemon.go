@@ -27,6 +27,7 @@ type runtimeParms struct {
 	flatpakInstanceID	string
 	waylandDisplay		string
 	bwCmd			[]string
+	sdEnvs			[]string
 }
 
 type XDG_DIRS struct {
