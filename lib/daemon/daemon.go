@@ -1273,7 +1273,7 @@ func gpuBind(gpuChan chan []string) {
 	// SHOULD contain strings like card0, card1 etc
 	var totalGpus = []string{}
 	var activeGpus = []string{}
-	var cardSums uint = 0
+	var cardSums int = 0
 
 	gpuEntries, err := os.ReadDir("/sys/class/drm")
 	if err != nil {
@@ -1295,11 +1295,43 @@ func gpuBind(gpuChan chan []string) {
 	}
 
 	var trailingS string
-	if cardSums > 1 {
-		trailingS = "s"
-	}
-	pecho("debug", "Found" + strconv.Itoa(int(cardSums)) + "GPU" + trailingS)
 
+	if len(os.Getenv("PORTABLE_ASSUME_SINGLE_GPU")) != 0 {
+		cardSums = 1
+	}
+
+	switch cardSums {
+		case 0:
+			pecho("warn", "Found no GPU")
+			return
+		case 1:
+
+		default:
+			trailingS = "s"
+	}
+
+	pecho("debug", "Found" + strconv.Itoa(cardSums) + "GPU" + trailingS)
+
+
+}
+
+func tryBindNv(nvChan chan []string) {
+	nvDevsArg := []string{}
+	devEntries, err := os.ReadDir("/dev")
+	if err != nil {
+		pecho("warn", "Failed to read /dev: " + err.Error())
+	} else {
+		for _, devFile := range devEntries {
+			if strings.HasPrefix(devFile.Name(), "nvidia") {
+				nvDevsArg = append(
+					nvDevsArg,
+					"--dev-bind",
+						"/dev/" + devFile.Name(),
+						"/dev/" + devFile.Name(),
+				)
+			}
+		}
+	}
 }
 
 func inputBind(inputBindChan chan []string) {
