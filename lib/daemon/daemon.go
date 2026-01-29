@@ -1186,6 +1186,14 @@ func genBwArg(argChan chan int8) {
 		"--",
 	)
 
+	for _, env := range runtimeInfo.sdEnvs {
+		pecho("debug", "Adding environment variables to systemd-run: " + env)
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			"-p", "Environment=" + env,
+		)
+	}
+
 	if confOpts.bindNetwork == false {
 		pecho("info", "Network Access disabled")
 		runtimeInfo.bwCmd = append(
