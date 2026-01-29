@@ -1749,19 +1749,6 @@ func tryBindCam(camChan chan []string) {
 	camChan <- camArg
 }
 
-func tryBindPw(pwChan chan []string) {
-	pwArg := []string{}
-	if confOpts.bindPipewire == true {
-		pwArg = append(
-			pwArg,
-			"--bind",
-			runtimeInfo.pwSocket,
-			runtimeInfo.pwSocket,
-		)
-	}
-	pwChan <- pwArg
-}
-
 func tryBindNv(nvChan chan []string) {
 	nvDevsArg := []string{}
 	devEntries, err := os.ReadDir("/dev")
@@ -1906,6 +1893,8 @@ func main() {
 	}
 
 	// Warn multi-instance here
+	argChan := make(chan int8)
+	go genBwArg(argChan)
 	cleanUnitChan := make(chan int8)
 	go doCleanUnit(cleanUnitChan)
 	desktopFileChan := make(chan int8)
@@ -1920,16 +1909,15 @@ func main() {
 	if genReady == 1 {
 		pecho("debug", "Flatpak info and cleaning ready")
 	}
-	argCalcChan := make(chan int8)
-	// TODO: Place arg gen func here
 
 	proxyChan := make(chan int8)
 	go startProxy(proxyChan)
 	ready := <- proxyChan
 	ready = <- desktopFileChan
 	ready = <- pwSecContextChan
+	ready = <- argChan
 	if ready == 1 {
-		pecho("debug", "Proxy and desktop file ready")
+		pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	}
 	startApp()
 	stopApp("normal")
