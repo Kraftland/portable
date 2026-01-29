@@ -28,6 +28,7 @@ type RUNTIME_PARAMS struct {
 	waylandDisplay		string
 	bwCmd			[]string
 	sdEnvs			[]string
+	pwSocket		string
 }
 
 type XDG_DIRS struct {
@@ -688,9 +689,8 @@ func lookUpXDG(xdgChan chan int) {
 	xdgChan <- 1
 }
 
-func pwSecContext(pwChan chan string) {
+func pwSecContext(pwChan chan int8) {
 	if confOpts.bindPipewire == false {
-		pwChan <- "noop"
 		return
 	}
 	pwSecCmd := []string{
@@ -742,9 +742,9 @@ func pwSecContext(pwChan chan string) {
 		}
 		pecho("debug", "PipeWire proxy has not yet started")
 	}
+	runtimeInfo.pwSocket = pwProxySocket
+	pwChan <- 1
 	pecho("debug", "pw-container available at " + pwProxySocket)
-
-	pwChan <- pwProxySocket
 }
 
 func calcDbusArg(argChan chan []string) {
@@ -1002,8 +1002,6 @@ func startProxy(dbusChan chan int8) {
 }
 
 func startApp() {
-	// pwBwArg := <- pwSecContextChan
-	// TODO: make use of pwBwArg
 	go forceBackgroundPerm()
 	sdExec := exec.Command("xargs", "-0", "-a", xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bwrapArgs", "systemd-run")
 	sdExec.Stderr = os.Stderr
@@ -1296,6 +1294,13 @@ func genBwArg(argChan chan int8) {
 		gpuArgs...
 	)
 
+	if confOpts.bindPipewire == true {
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			"--bind", runtimeInfo.pwSocket, runtimeInfo.pwSocket,
+		)
+	}
+
 	var chanReady int8 = <- instChan
 	argChan <- chanReady
 }
@@ -1522,6 +1527,16 @@ func tryBindCam(camChan chan []string) {
 	}
 }
 
+func tryBindPw(pwChan chan []string) {
+	if confOpts.bindPipewire == false {
+		return
+	}
+	pwArg := []string{
+		"--bind",
+
+	}
+}
+
 func tryBindNv(nvChan chan []string) {
 	nvDevsArg := []string{}
 	devEntries, err := os.ReadDir("/dev")
@@ -1672,7 +1687,7 @@ func main() {
 	genReady := <- genChan
 	genReady = <- cleanUnitChan
 	genReady = <- wayChan
-	pwSecContextChan := make(chan string)
+	pwSecContextChan := make(chan int8)
 	go pwSecContext(pwSecContextChan)
 	if genReady == 1 {
 		pecho("debug", "Flatpak info and cleaning ready")
@@ -1684,6 +1699,7 @@ func main() {
 	go startProxy(proxyChan)
 	ready := <- proxyChan
 	ready = <- desktopFileChan
+	ready = <- pwSecContextChan
 	if ready == 1 {
 		pecho("debug", "Proxy and desktop file ready")
 	}
