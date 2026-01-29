@@ -1312,6 +1312,12 @@ func gpuBind(gpuChan chan []string) {
 				gpuArg,
 				nvArgs...,
 			)
+			for _, cardName := range totalGpus {
+				gpuArg = append(
+					gpuArg,
+					bindCard(cardName)...
+				)
+			}
 		default:
 			trailingS = "s"
 	}
