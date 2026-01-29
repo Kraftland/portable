@@ -25,7 +25,7 @@ type runtimeOpts struct {
 
 type runtimeParms struct {
 	flatpakInstanceID	string
-	waylanDisplay		string
+	waylandDisplay		string
 }
 
 type XDG_DIRS struct {
