@@ -459,7 +459,6 @@ function calcBwrapArg() {
 		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
 	fi
 	readyNotify wait procDriverBind
-	passBwrapArgs "--\0/usr/lib/portable/helper"
 	readyNotify set calcBwrapArg
 }
 

@@ -1383,6 +1383,13 @@ func genBwArg(argChan chan int8) {
 		)
 	}
 
+	// NO arg should be added below this point
+	runtimeInfo.bwCmd = append(
+		runtimeInfo.bwCmd,
+		"--",
+		"/usr/lib/portable/helper",
+	)
+
 	var chanReady int8 = <- instChan
 	argChan <- chanReady
 }
