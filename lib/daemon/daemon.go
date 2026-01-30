@@ -1194,7 +1194,15 @@ func imEnvs (imReady chan int8) {
 	imReady <- 1
 }
 
-func miscEnvs (mEnvRd, chan int8) {
+func setupSharedDir (shareDir chan int8) {
+	os.MkdirAll(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared", 0700)
+	os.Link(
+		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared",
+		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/共享文件")
+	shareDir <- 1
+}
+
+func miscEnvs (mEnvRd chan int8) {
 	if confOpts.useZink == true {
 		addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
 		addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
@@ -1205,13 +1213,18 @@ func miscEnvs (mEnvRd, chan int8) {
 	if confOpts.qt5Compat == true {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
+	mEnvRd <- 1
 }
 
 func prepareEnvs(readyChan chan int8) {
 	imChan := make(chan int8, 1)
 	xdgEnvChan := make(chan int8, 1)
+	shareDirChan := make(chan int8, 1)
+	miscEnvChan := make(chan int8, 1)
 	go imEnvs(imChan)
 	go setXDGEnvs(xdgEnvChan)
+	go setupSharedDir(shareDirChan)
+	go miscEnvs(miscEnvChan)
 	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
 	if err != nil {
 		pecho("info", "Unable to read user defined environment variables: " + err.Error())
@@ -1249,6 +1262,8 @@ func prepareEnvs(readyChan chan int8) {
 		addEnv(line)
 	}
 
+	<- shareDirChan
+	<- miscEnvChan
 	<- xdgEnvChan
 	<- imChan
 	readyChan <- 1
