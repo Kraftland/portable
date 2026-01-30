@@ -2170,7 +2170,10 @@ func gpuBind(gpuChan chan []string) {
 				}
 				for _, cardName := range activeGpus {
 					pecho("debug", "Binding active GPU: " + cardName)
-					bindCard(cardName)
+					gpuArg = append(
+						gpuArg,
+						bindCard(cardName)...
+					)
 				}
 			}
 	}
@@ -2215,6 +2218,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 		return
 	}
 	sysfsPath := "/sys" + strings.TrimSpace(string(path))
+	pecho("debug", "Got raw path from udev: " + sysfsPath)
 	cardBindArg = append(
 		cardBindArg,
 		"--dev-bind",
