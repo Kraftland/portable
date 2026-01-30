@@ -2479,7 +2479,7 @@ func multiInstance(miChan chan bool) {
 		re := regexp.MustCompile(`org.kde.StatusNotifierItem-\d+-\d+`)
 		var trayID string
 		for scanner.Scan() {
-			line :=scanner.Text()
+			line := scanner.Text()
 			match := re.FindString(line)
 			if len(match) > 0 {
 				trayID = match
