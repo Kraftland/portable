@@ -652,59 +652,6 @@ function launch() {
 	fi
 }
 
-function stopSlice() {
-	systemctl \
-		--user stop \
-		"app-portable-${friendlyName}.slice" 2>/dev/null
-	systemctl \
-		--user stop \
-		"portable-${friendlyName}.slice" 2>/dev/null
-}
-
-function cleanDirs() {
-	source "${XDG_RUNTIME_DIR}/portable/${appID}/control"
-	pecho debug "Cleaning leftovers..."
-	if [[ -n "${instanceId}" ]]; then
-		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${instanceId}"
-	else
-		pecho warn "Clean shutdown not possible due to missing information: instanceId"
-	fi
-	if [[ -n "${busDir}" ]]; then
-		rm -rf "${busDir}"
-	else
-		pecho warn "Clean shutdown not possible due to missing information: busDir"
-	fi
-	if [[ -n "${appID}" ]]; then
-		rm -rf "${XDG_RUNTIME_DIR}/.flatpak/${appID}"
-		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}"
-		rm -rf \
-			"${XDG_DATA_HOME}/applications/${appID}.desktop" \
-			2>/dev/null
-	else
-		pecho warn "Clean shutdown not possible due to missing information: appID"
-	fi
-	if [[ -e "${busDirAy}" ]]; then
-		rm -rf "${busDirAy}"
-	else
-		pecho debug "Clean shutdown not possible due to missing information: busDirAy"
-	fi
-}
-
-function stopApp() {
-	if [[ "$*" =~ "external" ]]; then
-		stopSlice
-		exit 0
-	elif [[ "$*" =~ "force" ]]; then
-		pecho info "Force stop is called, killing service"
-		stopSlice &
-		systemctl \
-			--user kill \
-			-sSIGKILL \
-			"${unitName}.service" 2>/dev/null &
-	fi
-	exit 0
-}
-
 function resetDocuments() {
 	flatpak permission-reset "${appID}"
 	exit $?
