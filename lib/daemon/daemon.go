@@ -718,6 +718,7 @@ func genFlatpakInstanceID(genInfo chan int8) {
 		}
 	}
 	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
+	os.MkdirAll(xdgDir.dataDir + "/" + confOpts.stateDirectory, 0700)
 	infoObj, ioErr := io.ReadAll(flatpakInfo)
 	if ioErr != nil {
 		pecho("debug", "Failed to read template Flatpak info for I/O error: " + ioErr.Error())
@@ -2395,6 +2396,85 @@ func instSignalFile(instChan chan int8) {
 	pecho("debug", "Created signal file")
 }
 
+func multiInstance(miChan chan bool) {
+	sdCmdArg := []string{
+		"--user",
+		"--quiet",
+		"is-active",
+		"app-portable-" + confOpts.appID,
+	}
+
+	sdCmd := exec.Command("/usr/bin/systemctl", sdCmdArg...)
+	sdCmd.Stderr = os.Stderr
+	err := sdCmd.Run()
+	if err != nil {
+		miChan <- false
+		return
+	}
+	if confOpts.dbusWake == true {
+		queryTrayArg := []string{
+			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+			"--dest=org.kde.StatusNotifierWatcher",
+			"--type=method_call",
+			"--print-reply=literal",
+			"/StatusNotifierWatcher",
+			"org.freedesktop.DBus.Properties.Get",
+			"string:org.kde.StatusNotifierWatcher",
+			"string:RegisteredStatusNotifierItems",
+		}
+		queryTrayCmd := exec.Command("/usr/bin/dbus-send", queryTrayArg...)
+		queryRaw, err := queryTrayCmd.StdoutPipe()
+		if err != nil {
+			pecho("crit", "Could not get tray ID: " + err.Error())
+		}
+		scanner := bufio.NewScanner(queryRaw)
+		err = queryTrayCmd.Run()
+		if err != nil {
+			pecho("crit", "Could not get tray ID: " + err.Error())
+		}
+		re := regexp.MustCompile(`org.kde.StatusNotifierItem-\d+-\d+`)
+		var trayID string
+		for scanner.Scan() {
+			line :=scanner.Text()
+			match := re.FindString(line)
+			if len(match) > 0 {
+				trayID = match
+				break
+			}
+		}
+		if len(trayID) > 0 {
+			wakeArgs := []string{
+				"--print-reply",
+				"--session",
+				"--dest=" + trayID,
+				"--type=method_call",
+				"/StatusNotifierItem",
+				"org.kde.StatusNotifierItem.Activate",
+				"int32:114514",
+				"int32:1919810",
+			}
+			wakeCmd := exec.Command("dbus-send", wakeArgs...)
+			wakeCmd.Stderr = os.Stderr
+			wakeCmd.Run()
+		} else {
+			pecho("crit", "Unable to get tray ID")
+		}
+	} else {
+		startExec := confOpts.launchTarget + " " + strings.Join(runtimeOpt.applicationArgs, " ")
+		openErr := os.WriteFile(
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+			[]byte(startExec),
+			0700,
+		)
+		if openErr != nil {
+			pecho("crit", "Failed to write signal file: " + openErr.Error())
+		}
+		startAct = "abort"
+		os.Exit(0)
+	}
+	miChan <- true
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int, 1)
@@ -2409,6 +2489,8 @@ func main() {
 	<- varChan
 	<- readConfChan
 	<- cmdChan
+	miChan := make(chan bool, 1)
+	go multiInstance(miChan)
 	go flushEnvs()
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
@@ -2416,8 +2498,6 @@ func main() {
 	if startAct == "abort" {
 		os.Exit(0)
 	}
-
-	// Warn multi-instance here
 	go sanityChecks()
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
@@ -2428,6 +2508,11 @@ func main() {
 	<- genChan
 	go genBwArg(argChan, pwSecContextChan)
 	instDesktopChan := make(chan int8, 1)
+	multiInstanceDetected := <- miChan
+	if multiInstanceDetected == true {
+		startAct = "abort"
+		os.Exit(0)
+	}
 	go instDesktopFile(instDesktopChan)
 	<- genChan
 	<- cleanUnitChan

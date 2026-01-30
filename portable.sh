@@ -75,48 +75,6 @@ busDirAy="${XDG_RUNTIME_DIR}/app/${busName}-a11y"
 unitName="app-portable-${appID}"
 proxyName="${friendlyName}-dbus"
 
-function readyNotify() {
-	# Notifies readiness, only usable after warnMulRunning()
-	# $1 can be: wait, set, set-fail, init
-	# $2 is the item name
-	if [[ $1 = "set" ]]; then
-		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" &
-		pecho debug "Readiness set for $2" &
-	elif [[ $1 = "set-fail" ]]; then
-		mkdir -p "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" &
-		#rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
-	elif [[ $1 = "init" ]]; then
-		readyDir="${RANDOM}"
-		while [[ -d "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; do
-			readyDir="${RANDOM}"
-		done
-		pecho debug "Chosen readiness code ${readyDir}"
-		mkdir \
-			--parents \
-			--mode=0700 \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}"
-	elif [[ $1 = "wait" ]]; then
-		if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
-			pecho debug "Component $2 ready verified" &
-			return 0
-		fi
-		pecho debug "Waiting for component: $2..." &
-		while true; do
-			if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/$2/ready" ]]; then
-				break
-			elif [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
-				exit 114
-			else
-				if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}" ]]; then
-					exit 114
-				fi
-				continue
-			fi
-		done
-		pecho debug "Done waiting for $2..." &
-	fi
-}
-
 function sourceXDG() {
 	if [[ ! "${XDG_CONFIG_HOME}" ]]; then
 		export XDG_CONFIG_HOME="${HOME}/.config"
@@ -130,9 +88,6 @@ function sourceXDG() {
 	fi
 }
 
-function manageDirs() {
-	createWrapIfNotExist "${XDG_DATA_HOME}/${stateDirectory}"
-}
 function waylandContext() {
 	if [[ -x /usr/bin/wayland-info && -x /usr/bin/way-secure ]]; then
 		if [[ "${XDG_SESSION_TYPE}" = "wayland" && "$(/usr/bin/wayland-info)" =~ "wp_security_context_manager_v1" && ${allowSecurityContext} -eq 1 ]]; then
@@ -147,30 +102,8 @@ function waylandContext() {
 	fi
 }
 
-function createWrapIfNotExist() {
-	if [[ -d "$*" ]]; then
-		return 0
-	else
-		mkdir \
-			--parents \
-			--mode=0700 \
-			"$@"
-	fi
-}
-
-function defineRunPath() {
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_RUNTIME_DIR}/portable/${appID}"
-}
-
 function execApp() {
 	/usr/lib/portable/daemon/portable-daemon $@
-}
-
-function execAppExistDirect() {
-	echo "${launchTarget}" "${targetArgs}" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
 
 function appANR() {
@@ -186,73 +119,7 @@ function appANR() {
 	fi
 }
 
-function warnMulRunning() {
-	if [[ "${dbusWake}" = "true" ]]; then
-		id=$(dbus-send \
-			--bus=unix:path="${busDir}/bus" \
-			--dest=org.kde.StatusNotifierWatcher \
-			--type=method_call \
-			--print-reply=literal /StatusNotifierWatcher \
-			org.freedesktop.DBus.Properties.Get \
-			string:org.kde.StatusNotifierWatcher \
-			string:RegisteredStatusNotifierItems | grep -oP 'org.kde.StatusNotifierItem-\d+-\d+')
-		pecho debug "Unique ID: ${id}"
-		dbus-send \
-			--print-reply \
-			--session \
-			--dest="${id}" \
-			--type=method_call \
-			/StatusNotifierItem \
-			org.kde.StatusNotifierItem.Activate \
-			int32:114514 \
-			int32:1919810
-		status="$?"
-		case $status in
-			0)
-				exit 0
-				;;
-			1)
-				appANR
-				;;
-			*)
-				appANR
-				exit "$status"
-				;;
-		esac
-	else
-		pecho info "Skipping D-Bus wake"
-	fi
-	source "${_portableConfig}"
-	execAppExistDirect
-	exit "$?"
-	# Appears to be unreachable
-	# appANR
-	# if [[ $? -eq 0 ]]; then
-	# 	stopApp force
-	# else
-	# 	pecho crit "User denied session termination"
-	# 	exit "$?"
-	# fi
-}
-
 function dbusProxy() {
-	if [[ ${securityContext} -eq 1 ]]; then
-		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
-		systemd-run \
-			--user \
-			--quiet \
-			-p Slice="portable-${friendlyName}.slice" \
-			-u "${friendlyName}"-wayland-proxy \
-			-p BindsTo="${proxyName}.service" \
-			-p Environment=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
-   			-p Environment=XDG_SESSION_TYPE="${XDG_SESSION_TYPE}" \
-			-- \
-			way-secure \
-				-e top.kimiblock.portable \
-				-a "${appID}" \
-				-i "${instanceId}" \
-				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
-	fi
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
@@ -292,23 +159,9 @@ function dbusProxy() {
 }
 
 function launch() {
-	if systemctl --user --quiet is-failed "${unitName}.service"; then
-		pecho warn "${appID} failed last time"
-		systemctl --user reset-failed "${unitName}.service" &
-	fi
-	if systemctl --user --quiet is-active "${unitName}.service"; then
-		warnMulRunning
-	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
-		warnMulRunning
-	fi
-	if [[ ${trashAppUnsafe} -eq 1 ]]; then
-		pecho warn "Launching ${appID} (unsafe)..."
-		execAppUnsafe
-	else
-		dbusProxy
-		pecho info "Launching ${appID}..."
-		execApp $@
-	fi
+	dbusProxy
+	pecho info "Launching ${appID}..."
+	execApp $@
 }
 
 set -m
@@ -330,7 +183,4 @@ export \
 	gameMode \
 	GSK_RENDERER=gl
 sourceXDG
-defineRunPath
-readyNotify init
-manageDirs
 launch $@
