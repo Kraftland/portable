@@ -142,8 +142,11 @@ func cmdlineDispatcher(cmdChan chan int) {
 				runtimeOpt.argStop = true
 		}
 	}
-	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
+	addEnv("targetArgs=" + strings.Join(runtimeOpt.applicationArgs, ""))
 	cmdChan <- 1
+	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
+	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ""))
+
 }
 
 func shareFile() {
