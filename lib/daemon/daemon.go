@@ -115,6 +115,8 @@ func cmdlineDispatcher(cmdChan chan int) {
 					runtimeOpt.quit = 2
 					stopApp("normal")
 					pecho("debug", "Received quit request from user")
+				case "debug-shell":
+					addEnv("_portableDebug=1")
 			}
 		}
 	}
