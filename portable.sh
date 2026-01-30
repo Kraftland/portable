@@ -301,34 +301,8 @@ function setStaticEnv() {
 	readyNotify set setStaticEnv
 }
 
-function genNewEnv() {
-	if [[ ! -e "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
-		touch "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
-	fi
-	if [[ -s "${XDG_DATA_HOME}/${stateDirectory}/portable.env" ]]; then
-		cat "${XDG_DATA_HOME}/${stateDirectory}/portable.env" >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-	else
-		echo "# Envs" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
-		echo "isPortableEnvPresent=1" >> "${XDG_DATA_HOME}/${stateDirectory}/portable.env"
-	fi
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/.config" &
-	rm -r "${XDG_DATA_HOME}/${stateDirectory}/Shared"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/Shared" &
-	ln -sfr \
-		"${XDG_DATA_HOME}/${stateDirectory}/Shared" \
-		"${XDG_DATA_HOME}/${stateDirectory}/共享文件" &
-	readyNotify set genNewEnv
-}
-
 function importEnv() {
 	setStaticEnv &
-	genNewEnv &
 }
 
 # Function used to escape paths for sed processing.
@@ -584,7 +558,6 @@ function dbusProxy() {
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
 	readyNotify wait setStaticEnv
-	readyNotify wait genNewEnv
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
