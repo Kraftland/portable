@@ -262,10 +262,10 @@ func cmdlineDispatcher(cmdChan chan int) {
 				pecho("warn", "Unrecognised option: " + value)
 		}
 	}
-	addEnv("targetArgs=" + strings.Join(runtimeOpt.applicationArgs, ""))
+	addEnv("targetArgs=" + strings.Join(runtimeOpt.applicationArgs, " "))
 	cmdChan <- 1
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
-	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ""))
+	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 
 }
 
