@@ -687,15 +687,15 @@ func lookUpXDG(xdgChan chan int) {
 	xdgChan <- 1
 }
 
-func pwSecContext(pwChan chan int8) {
+func pwSecContext(pwChan chan []string) {
+	var pwSecArg = []string{}
 	if confOpts.bindPipewire == false {
-		pwChan <- 1
+		pwChan <- pwSecArg
 		return
 	}
 	pwSecCmd := []string{
 		"--user",
 		"--quiet",
-		//"--no-block",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
 		"-u", "app-portable-" + confOpts.appID + "-pipewire-container",
 		"-p", "KillMode=control-group",
@@ -742,7 +742,11 @@ func pwSecContext(pwChan chan int8) {
 		pecho("debug", "PipeWire proxy has not yet started")
 	}
 	runtimeInfo.pwSocket = pwProxySocket
-	pwChan <- 1
+	pwSecArg = append(
+		pwSecArg,
+		"--bind", runtimeInfo.pwSocket, runtimeInfo.pwSocket,
+	)
+	pwChan <- pwSecArg
 	pecho("debug", "pw-container available at " + pwProxySocket)
 }
 
@@ -1142,7 +1146,7 @@ func prepareEnvs(readyChan chan int8) {
 	readyChan <- 1
 }
 
-func genBwArg(argChan chan int8) {
+func genBwArg(argChan chan int8, pwChan chan []string) {
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
 	inputChan := make(chan []string, 1)
@@ -1154,7 +1158,7 @@ func genBwArg(argChan chan int8) {
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	miscChan := make(chan []string, 1)
-	go miscBinds(miscChan)
+	go miscBinds(miscChan, pwChan)
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
 
@@ -1420,13 +1424,6 @@ func genBwArg(argChan chan int8) {
 		gpuArgs...
 	)
 
-	if confOpts.bindPipewire == true {
-		runtimeInfo.bwCmd = append(
-			runtimeInfo.bwCmd,
-			"--bind", runtimeInfo.pwSocket, runtimeInfo.pwSocket,
-		)
-	}
-
 	// NO arg should be added below this point
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
@@ -1457,8 +1454,13 @@ func translatePath(input string) (output string) {
 	return
 }
 
-func miscBinds(miscChan chan []string) {
+func miscBinds(miscChan chan []string, pwChan chan []string) {
 	var miscArgs = []string{}
+	pwArgs := <- pwChan
+	miscArgs = append(
+		miscArgs,
+		pwArgs...
+	)
 	if confOpts.mountInfo == true {
 		miscArgs = append(
 			miscArgs,
@@ -1948,7 +1950,8 @@ func main() {
 
 	// Warn multi-instance here
 	argChan := make(chan int8, 1)
-	go genBwArg(argChan)
+	pwSecContextChan := make(chan []string, 1)
+	go genBwArg(argChan, pwSecContextChan)
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	instDesktopChan := make(chan int8, 1)
@@ -1957,7 +1960,6 @@ func main() {
 	go genFlatpakInstanceID(genChan)
 	<- genChan
 	<- cleanUnitChan
-	pwSecContextChan := make(chan int8, 1)
 	go pwSecContext(pwSecContextChan)
 	pecho("debug", "Flatpak info and cleaning ready")
 
@@ -1965,11 +1967,9 @@ func main() {
 	go startProxy(proxyChan)
 	<- proxyChan
 	<- instDesktopChan
-	<- pwSecContextChan
 	<- argChan
 	<- envPreChan
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
-
 	startApp()
 	stopApp("normal")
 }
