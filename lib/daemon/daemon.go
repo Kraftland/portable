@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
+	"bufio"
 	// "errors"
 )
 
@@ -110,9 +110,11 @@ func cmdlineDispatcher(cmdChan chan int) {
 		}
 		if value == "--actions" {
 			runtimeOpt.action = true
-			if cmdlineArray[index + 1] == "quit" {
-				runtimeOpt.quit = 2
-				pecho("debug", "Received quit request from user")
+			switch cmdlineArray[index + 1] {
+				case "quit":
+					runtimeOpt.quit = 2
+					stopApp("normal")
+					pecho("debug", "Received quit request from user")
 			}
 		}
 	}
@@ -632,6 +634,7 @@ func stopApp(operation string) {
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
 	}
+	os.Exit(0)
 }
 
 func lookUpXDG(xdgChan chan int) {
@@ -691,6 +694,7 @@ func lookUpXDG(xdgChan chan int) {
 
 func pwSecContext(pwChan chan []string) {
 	var pwSecArg = []string{}
+	var pwProxySocket string
 	if confOpts.bindPipewire == false {
 		pwChan <- pwSecArg
 		return
@@ -698,13 +702,13 @@ func pwSecContext(pwChan chan []string) {
 	pwSecCmd := []string{
 		"--user",
 		"--quiet",
+		"--pipe",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
 		"-u", "app-portable-" + confOpts.appID + "-pipewire-container",
 		"-p", "KillMode=control-group",
 		"-p", "After=pipewire.service",
 		"-p", "Requires=pipewire.service",
 		"-p", "Wants=wireplumber.service",
-		"-p", "StandardOutput=file:" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket",
 		"-p", "SuccessExitStatus=SIGKILL",
 		"--",
 		"stdbuf",
@@ -716,40 +720,20 @@ func pwSecContext(pwChan chan []string) {
 
 	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
 	pwSecRun.Stderr = os.Stderr
+	stdout, pipeErr := pwSecRun.StdoutPipe()
 
-	var err error
-	err = pwSecRun.Run()
+	scanner := bufio.NewScanner(stdout)
+	err := pwSecRun.Start()
 	if err != nil {
-		pecho("warn", "Failed to start up PipeWire proxy: " + err.Error())
+		pecho("warn", "Failed to start up PipeWire proxy: " + err.Error() + pipeErr.Error())
 	}
-	var failCount int
-	pwProxyInfo, openErr := os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket", os.O_RDONLY, 0700)
-	for {
-		pwProxyInfo, openErr = os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket", os.O_RDONLY, 0700)
-		if openErr == nil {
-			break
-		}
-		if failCount == 0 {
-			failCount++
-			pecho("debug", "Waiting for PipeWire proxy...")
-		} else if failCount < 32767 {
-			time.Sleep(500 * time.Microsecond)
-		} else {
-			pecho("crit", "Timed out waiting for PipeWire proxy")
-		}
-	}
-	var pwProxySocket string
-	for {
-		pwInfoObj, ioReadErr := io.ReadAll(pwProxyInfo)
-		if ioReadErr != nil {
-			pecho("crit", "Failed to read PipeWire proxy status: " + ioReadErr.Error())
-		}
-		stringObj := string(pwInfoObj)
+	for scanner.Scan() {
+		stringObj := scanner.Text()
 		if strings.HasPrefix(stringObj, "new socket: ") {
 			pwProxySocket = strings.TrimPrefix(stringObj, "new socket: ")
+			pecho("debug", "Got PipeWire socket: " + pwProxySocket)
 			break
 		}
-		pecho("debug", "PipeWire proxy has not yet started")
 	}
 	pwSecArg = append(
 		pwSecArg,
