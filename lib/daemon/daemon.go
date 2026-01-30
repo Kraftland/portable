@@ -33,7 +33,6 @@ type RUNTIME_PARAMS struct {
 	waylandDisplay		string
 	bwCmd			[]string
 	sdEnvParm		[]string
-	startAbort		bool
 }
 
 type XDG_DIRS struct {
@@ -105,6 +104,16 @@ func addEnv(envToAdd string) {
 	envsChan <- envToAdd
 }
 
+func openHome () {
+	cmdArgs := []string{
+		xdgDir.dataDir + "/" + confOpts.stateDirectory,
+	}
+	openCmd := exec.Command("/usr/bin/xdg-open", cmdArgs...)
+	openCmd.Stderr = os.Stderr
+	openCmd.Run()
+	os.Exit(0)
+}
+
 func cmdlineDispatcher(cmdChan chan int) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
@@ -135,6 +144,15 @@ func cmdlineDispatcher(cmdChan chan int) {
 				case "share-files":
 					startAct = "abort"
 					shareFile()
+				case "openhome":
+					startAct = "abort"
+					openHome()
+				case "opendir":
+					startAct = "abort"
+					openHome()
+				case "home":
+					startAct = "abort"
+					openHome()
 			}
 			case "--dbus-activation":
 				addEnv("_portableBusActivate=1")
