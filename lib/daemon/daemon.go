@@ -2148,12 +2148,23 @@ func inputBind(inputBindChan chan []string) {
 					"Unable to resolve device path using udev: " + sysErrout.Error(),
 					)
 				} else {
+					devString := "/sys" + string(sysDevice)
+					devTrimmed := strings.TrimSpace(devString)
 					inputBindArg = append(
 						inputBindArg,
 						"--dev-bind",
-							"/sys" + strings.TrimSpace(string(sysDevice)),
-							"/sys" + strings.TrimSpace(string(sysDevice)),
+							devTrimmed,
+							devTrimmed,
 					)
+					upperDir := strings.TrimSuffix(devTrimmed, "/hidraw/" + entry.Name())
+					if stat, _ := os.Stat(upperDir); stat.IsDir() == true {
+						inputBindArg = append(
+							inputBindArg,
+							"--dev-bind",
+								upperDir,
+								upperDir,
+						)
+					}
 				}
 			}
 		}
@@ -2169,12 +2180,6 @@ func inputBind(inputBindChan chan []string) {
 			}
 			if strings.HasPrefix(entry.Name(), "event") || strings.HasPrefix(entry.Name(), "js") {
 				pecho("debug", "Detected input device " + entry.Name())
-				inputBindArg = append(
-					inputBindArg,
-					"--dev-bind",
-						"/dev/input/" + entry.Name(),
-						"/dev/input/" + entry.Name(),
-				)
 				udevArgs := []string{
 					"info",
 					"/dev/input/" + entry.Name(),
