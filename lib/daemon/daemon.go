@@ -23,6 +23,8 @@ const (
 type RUNTIME_OPT struct {
 	action		bool
 	fullCmdline	string
+	argStop		bool
+	applicationArgs	[]string
 	quit		int8 // 1 for normal, 2 for external, 3 for forced?
 }
 
@@ -110,6 +112,12 @@ func cmdlineDispatcher(cmdChan chan int) {
 		if runtimeOpt.action == true {
 			runtimeOpt.action = false
 			continue
+		} else if runtimeOpt.argStop == true {
+			runtimeOpt.applicationArgs = append(
+				runtimeOpt.applicationArgs,
+				value,
+			)
+			continue
 		}
 		switch value {
 			case "--actions" :
@@ -130,6 +138,8 @@ func cmdlineDispatcher(cmdChan chan int) {
 			}
 			case "--dbus-activation":
 				addEnv("_portableBusActivate=1")
+			case "--":
+				runtimeOpt.argStop = true
 		}
 	}
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
