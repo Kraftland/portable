@@ -88,6 +88,7 @@ func pecho(level string, message string) {
 			fmt.Println("[Warn] ", message)
 		case "crit":
 			fmt.Println("[Critical] ", message)
+			stopApp("normal")
 			panic("A critical error has happened")
 		default:
 			fmt.Println("[Undefined] ", message)
