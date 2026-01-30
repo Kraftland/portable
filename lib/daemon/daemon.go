@@ -703,6 +703,7 @@ func stopSlice() {
 
 func genFlatpakInstanceID(genInfo chan int8) {
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
+	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/", 0700)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
 	}
@@ -1821,6 +1822,7 @@ func isEnvValid(env string) bool {
 
 func flushEnvs() {
 	os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
+	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	fd, err := os.Create(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
 	if err != nil {
 		pecho("crit", "Could not store generated environment variables: " + err.Error())
