@@ -112,11 +112,44 @@ func sanityChecks() {
 		appIDValid = false
 	} else if confOpts.appID == "org.mpris.MediaPlayer2" {
 		appIDValid = false
+	} else if len(confOpts.appID) == 0 {
+		appIDValid = false
+	} else if len(strings.Split(confOpts.appID, ".")) < 2 {
+		appIDValid = false
 	}
-
 	if appIDValid == false {
 		startAct = "abort"
+		pecho("crit", "Invalid appID: " + confOpts.appID)
 	}
+
+	mountCheckArgs := []string{
+		"--quiet",
+		"--user",
+		"--tty",
+		"--wait",
+		"--",
+		"findmnt",
+		"-R",
+	}
+	mountCheckCmd := exec.Command("systemd-run", mountCheckArgs...)
+	mountCheckCmd.Stderr = os.Stderr
+	stdout, errP := mountCheckCmd.StdoutPipe()
+	if errP != nil {
+		pecho("crit", "Failed to pipe findmnt output: " + errP.Error())
+	}
+	scanner := bufio.NewScanner(stdout)
+	err := mountCheckCmd.Run()
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "/usr/bin/") {
+			startAct = "abort"
+			pecho("crit", "Found mount points inside /usr/bin")
+		}
+	}
+	if err != nil {
+		pecho("crit", "Could not check mountpoints: " + err.Error())
+	}
+
 
 	checkChan <- 1
 }
