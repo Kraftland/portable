@@ -80,6 +80,7 @@ var (
 	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 	startAct		string
 	checkChan		= make(chan int8, 1)
+	atSpiChan		= make(chan bool, 1)
 )
 
 func pecho(level string, message string) {
@@ -2479,6 +2480,57 @@ func multiInstance(miChan chan bool) {
 	miChan <- true
 }
 
+func atSpiProxy() {
+	_, err := os.Stat(xdgDir.runtimeDir + "/at-spi/bus")
+	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
+	if err != nil {
+		pecho("warn", "Could not detect accessibility bus: " + err.Error())
+		atSpiChan <- false
+		return
+	}
+	sdRunArgs := []string{
+		"--user",
+		"--quiet",
+		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
+		"-u", confOpts.friendlyName + "-a11y",
+		"--",
+		"/usr/bin/bwrap",
+		"--symlink", "/usr/lib64", "/lib64",
+		"--ro-bind", "/usr/lib", "/usr/lib",
+		"--ro-bind", "/usr/lib64", "/usr/lib64",
+		"--ro-bind", "/usr/bin", "/usr/bin",
+		"--ro-bind", "/usr/share", "/usr/share",
+		"--bind", xdgDir.runtimeDir + "/at-spi/bus", xdgDir.runtimeDir + "/at-spi/bus",
+		"--ro-bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/.flatpak-info",
+		"--ro-bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			"/.flatpak-info",
+		"--",
+		"/usr/bin/xdg-dbus-proxy",
+		"unix:path=" + xdgDir.runtimeDir + "/at-spi/bus",
+		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+		"--filter",
+		"--sloppy-names",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Unembed@/org/a11y/atspi/accessible/root",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.Registry.GetRegisteredEvents@/org/a11y/atspi/registry",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetKeystrokeListeners@/org/a11y/atspi/registry/deviceeventcontroller",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.GetDeviceEventListeners@/org/a11y/atspi/registry/deviceeventcontroller",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersSync@/org/a11y/atspi/registry/deviceeventcontroller",
+		"--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersAsync@/org/a11y/atspi/registry/deviceeventcontroller",
+	}
+
+	sdRunCmd := exec.Command("/usr/bin/systemd-run", sdRunArgs...)
+	sdRunCmd.Stderr = os.Stderr
+	if internalLoggingLevel <= 1 {
+		sdRunCmd.Stdout = os.Stdout
+	}
+	sdRunCmd.Run()
+	atSpiChan <- true
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int, 1)
@@ -2517,14 +2569,13 @@ func main() {
 		startAct = "abort"
 		os.Exit(0)
 	}
+	proxyChan := make(chan int8, 1)
+	go startProxy(proxyChan)
 	go instDesktopFile(instDesktopChan)
+	go atSpiProxy()
 	<- genChan
 	<- cleanUnitChan
 	go pwSecContext(pwSecContextChan)
-	pecho("debug", "Flatpak info and cleaning ready")
-
-	proxyChan := make(chan int8, 1)
-	go startProxy(proxyChan)
 	<- proxyChan
 	<- instDesktopChan
 	<- argChan

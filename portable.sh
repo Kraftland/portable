@@ -126,11 +126,6 @@ function dbusProxy() {
 		return 0
 	fi
 	systemd-run \
-		--user \
-		--quiet \
-		-p Slice="portable-${friendlyName}.slice" \
-		-u "${proxyName}-a11y" \
-		-p RestartMode=direct \
 		-- bwrap \
 			--symlink /usr/lib64 /lib64 \
 			--ro-bind /usr/lib /usr/lib \
