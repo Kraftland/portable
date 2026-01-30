@@ -212,6 +212,7 @@ func cmdlineDispatcher(cmdChan chan int) {
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
 				runtimeOpt.applicationArgs,
+				"\n",
 				strconv.Quote(value),
 			)
 			continue
