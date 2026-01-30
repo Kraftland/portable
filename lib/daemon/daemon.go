@@ -204,7 +204,6 @@ func cmdlineDispatcher(cmdChan chan int) {
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
-			pecho("debug", "Self found: " + value)
 			continue
 		}
 		if runtimeOpt.action == true {
@@ -213,7 +212,7 @@ func cmdlineDispatcher(cmdChan chan int) {
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
 				runtimeOpt.applicationArgs,
-				value,
+				strconv.Quote(value),
 			)
 			continue
 		}
