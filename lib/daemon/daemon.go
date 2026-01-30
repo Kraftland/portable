@@ -1147,7 +1147,7 @@ func doCleanUnit(dbusChan chan int8) {
 		cleanUnits...
 	)
 
-	killCmd := []string{"--user", "kill"}
+	killCmd := []string{"--user", "stop"}
 	killCmd = append(
 		killCmd,
 		cleanUnits...
@@ -2556,8 +2556,6 @@ func main() {
 		os.Exit(0)
 	}
 	go sanityChecks()
-	cleanUnitChan := make(chan int8, 1)
-	go doCleanUnit(cleanUnitChan)
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
 	argChan := make(chan int8, 1)
@@ -2570,6 +2568,8 @@ func main() {
 		startAct = "abort"
 		os.Exit(0)
 	}
+	cleanUnitChan := make(chan int8, 1)
+	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
 	go startProxy(proxyChan)
 	go instDesktopFile(instDesktopChan)
