@@ -26,6 +26,8 @@ type RUNTIME_OPT struct {
 	argStop		bool
 	applicationArgs	[]string
 	quit		int8 // 1 for normal, 2 for external, 3 for forced?
+	userExpose	string
+	userLang	string
 }
 
 type RUNTIME_PARAMS struct {
@@ -183,11 +185,18 @@ func cmdlineDispatcher(cmdChan chan int) {
 				case "reset-documents":
 					startAct = "abort"
 					resetDocs()
+				case "stat":
+					startAct = "abort"
+					showStats()
+				default:
+					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
 			}
 			case "--dbus-activation":
 				addEnv("_portableBusActivate=1")
 			case "--":
 				runtimeOpt.argStop = true
+			default:
+				pecho("warn", "Unrecognised option: " + value)
 		}
 	}
 	addEnv("targetArgs=" + strings.Join(runtimeOpt.applicationArgs, ""))
@@ -244,6 +253,7 @@ func getVariables(varChan chan int) {
 		default:
 			internalLoggingLevel = 3
 	}
+	runtimeOpt.userExpose = os.Getenv("bwBindPar")
 	varChan <- 1
 }
 
@@ -1790,6 +1800,22 @@ func maskDir(path string) (maskArgs []string) {
 
 func miscBinds(miscChan chan []string, pwChan chan []string) {
 	var miscArgs = []string{}
+
+	if len(runtimeOpt.userExpose) > 0 {
+		_, err := os.Stat(runtimeOpt.userExpose)
+		if err != nil {
+			pecho("warn", "Rejecting bwBindPar: " + err.Error())
+		}
+
+
+
+		miscArgs = append(
+			miscArgs,
+			"--dev-bind",
+				runtimeOpt.userExpose,
+				runtimeOpt.userExpose,
+		)
+	}
 
 	miscArgs = append(
 		miscArgs,
