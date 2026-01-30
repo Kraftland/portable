@@ -2091,13 +2091,6 @@ func gpuBind(gpuChan chan []string) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		case 1:
-			nvChan := make(chan []string, 1)
-			go tryBindNv(nvChan)
-			nvArgs := <- nvChan
-			gpuArg = append(
-				gpuArg,
-				nvArgs...,
-			)
 			for _, cardName := range totalGpus {
 				gpuArg = append(
 					gpuArg,
@@ -2110,13 +2103,6 @@ func gpuBind(gpuChan chan []string) {
 			if confOpts.gameMode == true {
 				envChan := make(chan int8, 1)
 				setOffloadEnvs(envChan)
-				nvChan := make(chan []string, 1)
-				go tryBindNv(nvChan)
-				nvArgs := <- nvChan
-				gpuArg = append(
-					gpuArg,
-					nvArgs...,
-				)
 				for _, cardName := range totalGpus {
 					gpuArg = append(
 						gpuArg,
@@ -2274,7 +2260,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 	//cardSpCn := len(cardSp)
 	//cardBase := cardSp[cardSpCn - 1]
 	//cardRoot = strings.TrimSuffix(cardRoot, cardBase)
-	cardVendorFd, openErr := os.OpenFile(cardRoot, os.O_RDONLY, 0700)
+	cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 	if openErr != nil {
 		pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
 	}
@@ -2282,7 +2268,8 @@ func bindCard(cardName string) (cardBindArg []string) {
 	if err != nil {
 		pecho("warn", "Failed to parse GPU vendor: " + err.Error())
 	}
-	if strings.TrimRight(string(cardVendor), "\n") == "0x10de" {
+	if strings.Contains(string(cardVendor), "0x10de") == true {
+		pecho("debug", "Found NVIDIA device")
 		nvChan := make(chan []string, 1)
 		go tryBindNv(nvChan)
 		nvArgs := <- nvChan
