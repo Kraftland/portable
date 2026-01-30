@@ -525,6 +525,7 @@ func genFlatpakInstanceID(genInfo chan int8) {
 		} else {
 			instanceIDCleared = true
 			runtimeInfo.flatpakInstanceID = genId.String()
+			genInfo <- 1
 			break
 		}
 	}
@@ -1947,15 +1948,16 @@ func main() {
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 
 	// Warn multi-instance here
+	genChan := make(chan int8, 2)
+	go genFlatpakInstanceID(genChan)
 	argChan := make(chan int8, 1)
 	pwSecContextChan := make(chan []string, 1)
+	<- genChan
 	go genBwArg(argChan, pwSecContextChan)
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	instDesktopChan := make(chan int8, 1)
 	go instDesktopFile(instDesktopChan)
-	genChan := make(chan int8, 1)
-	go genFlatpakInstanceID(genChan)
 	<- genChan
 	<- cleanUnitChan
 	go pwSecContext(pwSecContextChan)
