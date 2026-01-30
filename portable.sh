@@ -377,18 +377,6 @@ function execAppExist() {
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
 }
-
-function shareFile() {
-	fileList=$(zenity --file-selection --multiple | tail -n 1)
-	IFS='|' read -r -a filePaths <<< "${fileList}"
-	for filePath in "${filePaths[@]}"; do
-		pecho info "User selected path: ${filePath}"
-		cp -a \
-			"${filePath}" \
-			"${XDG_DATA_HOME}/${stateDirectory}/Shared"
-	done
-	exit 0
-}
 function addEnv() {
 	flock -x "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env.lock" \
 		/usr/lib/portable/addEnv "$@"
@@ -748,8 +736,6 @@ function cmdlineDispatcherv2() {
 			if [[ "$1" =~ ^opendir|openhome$ ]]; then
 				/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
 				exit $?
-			elif [[ "$1" =~ ^share-files|share-file$ ]]; then
-				shareFile
 			elif [[ "$1" =~ ^reset-documents|reset-document$ ]]; then
 				resetDocuments
 			elif [[ "$1" =~ ^stats|stat$ ]]; then

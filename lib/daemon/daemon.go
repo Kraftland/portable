@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"bufio"
-	// "errors"
+	"github.com/KarpelesLab/reflink"
 )
 
 const (
@@ -118,6 +118,10 @@ func cmdlineDispatcher(cmdChan chan int) {
 					pecho("debug", "Received quit request from user")
 				case "debug-shell":
 					addEnv("_portableDebug=1")
+				case "share-file":
+					shareFile()
+				case "share-files":
+					shareFile()
 			}
 			case "--dbus-activation":
 				addEnv("_portableBusActivate=1")
@@ -128,7 +132,35 @@ func cmdlineDispatcher(cmdChan chan int) {
 }
 
 func shareFile() {
-
+	var paths []string
+	zenityCmd := exec.Command("/usr/bin/zenity", "--file-selection", "--multiple")
+	zenityCmd.Stderr = os.Stderr
+	zenityOut, err := zenityCmd.StdoutPipe()
+	zenityCmd.Start()
+	if err != nil {
+		pecho("crit", "Unable to pipe zenity's output" + err.Error())
+	}
+	scanner := bufio.NewScanner(zenityOut)
+	for scanner.Scan() {
+		text := scanner.Text()
+		paths = append(
+			paths,
+			strings.Split(text, "|")...
+		)
+	}
+	if len(paths) == 0 {
+		pecho("warn", "Did not get any path from zenity")
+		os.Exit(2)
+	} else {
+		pecho("debug", "Got paths from zenity: " + strings.Join(paths, ", "))
+	}
+	for _, path := range paths {
+		// stdlib doesn't seem to do reflink
+		reflinkErr := reflink.Auto(path, xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared")
+		if reflinkErr != nil {
+			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
+		}
+	}
 }
 
 func getVariables(varChan chan int) {
@@ -2108,13 +2140,13 @@ func main() {
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int, 1)
+	<- xdgChan
 	go cmdlineDispatcher(cmdChan)
 	varChan := make(chan int, 1)
 	go getVariables(varChan)
 	<- varChan
 	<- readConfChan
 	<- cmdChan
-	<- xdgChan
 	go flushEnvs()
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
