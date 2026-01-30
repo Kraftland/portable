@@ -1763,6 +1763,7 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 
 	)
 
+
 	xArgs := <- xChan
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
@@ -1808,6 +1809,7 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	)
 
 	addEnv("stop")
+	<- atSpiChan
 
 	var chanReady int8 = <- instChan
 	chanReady++
