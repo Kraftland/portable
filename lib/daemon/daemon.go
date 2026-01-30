@@ -1839,13 +1839,13 @@ func flushEnvs() {
 			envsFlushReady <- 1
 			break
 		}
-		if isEnvValid(envPend) == false {
-			pecho("debug", "Rejecting invalid environment variable: " + envPend)
+		if isEnvValid(envPend) == true {
+
+			runtimeInfo.sdEnvParm = append(
+				runtimeInfo.sdEnvParm,
+				envPend,
+			)
 		}
-		runtimeInfo.sdEnvParm = append(
-			runtimeInfo.sdEnvParm,
-			envPend,
-		)
 	}
 }
 
