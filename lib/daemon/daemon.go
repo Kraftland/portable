@@ -1871,6 +1871,7 @@ func gpuBind(gpuChan chan []string) {
 	}
 	gpuChan <- gpuArg
 	var activeGPUList string = strings.Join(activeGpus, ", ")
+	pecho("debug", "Generated GPU bind parameters: " + strings.Join(gpuArg, ", "))
 	pecho(
 	"debug",
 	"Found " + strconv.Itoa(cardSums) + " GPU" + trailingS + ", identified active: " + activeGPUList)
@@ -1928,7 +1929,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 		return
 	} else {
 		for _, candidate := range drmEntries {
-			if strings.HasPrefix(candidate.Name(), "renderD") && candidate.IsDir() == false {
+			if strings.HasPrefix(candidate.Name(), "renderD") {
 				cardBindArg = append(
 					cardBindArg,
 					"--dev-bind",
