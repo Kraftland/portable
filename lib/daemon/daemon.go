@@ -1223,7 +1223,7 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 		"-p", "WorkingDirectory=" + xdgDir.dataDir + "/" + confOpts.stateDirectory,
 		"-p", "ExecReload=bash -c 'kill --signal SIGALRM 2'",
 		"-p", "ReloadSignal=SIGALRM",
-		"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env",
+		//"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env",
 		"-p", "SystemCallFilter=~@clock",
 		"-p", "SystemCallFilter=~@cpu-emulation",
 		"-p", "SystemCallFilter=~@module",
