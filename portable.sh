@@ -338,98 +338,17 @@ function defineRunPath() {
 function execApp() {
 	calcBwrapArg &
 	addEnv targetArgs="${targetArgs}"
-	termExec
-	terminateOnRequest &
 	readyNotify wait calcBwrapArg
 	/usr/lib/portable/daemon/portable-daemon $@
-}
-
-function terminateOnRequest() {
-	if [[ -e "${XDG_RUNTIME_DIR}/portable/${appID}/ready-${readyDir}/fail" ]]; then
-		pecho warn "One or more components failed during startup, terminating now..."
-		stopApp force
-	fi
-	pecho debug "Established termination watches"
-	while true; do
-		if [[ ! -e "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal" ]]; then
-			pecho warn "startSignal is missing! Stopping application"
-			stopApp force
-		fi
-		inotifywait \
-			--quiet \
-			"${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-		if grep -q "terminate-now" "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"; then
-			stopApp force
-		fi
-	done
 }
 
 function execAppExistDirect() {
 	echo "${launchTarget}" "${targetArgs}" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
 }
-
-function termExec() {
-	trap "stopApp force" SIGTERM SIGINT SIGHUP SIGQUIT SIGILL SIGABRT SIGUSR1 SIGSEGV
-}
-
 function execAppExist() {
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
-}
-function addEnv() {
-	flock -x "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env.lock" \
-		/usr/lib/portable/addEnv "$@"
-}
-function detectNv(){
-	if ls /dev/nvidia* &> /dev/null; then
-		pecho debug "NVIDIA GPU present"
-		export nvExist=1
-	fi
-}
-
-# Meant to run after bindNvDevIfExist() or detectNv()
-function setNvOffloadEnv() {
-	addEnv "VK_LOADER_DRIVERS_DISABLE="
-	detectNv
-	if [[ "${nvExist}" = 1 ]]; then
-		pecho debug "Specifying environment variables for dGPU utilization: NVIDIA"
-		addEnv "__NV_PRIME_RENDER_OFFLOAD=1"
-		addEnv "__VK_LAYER_NV_optimus=NVIDIA_only"
-		addEnv "__GLX_VENDOR_LIBRARY_NAME=nvidia"
-		addEnv "VK_LOADER_DRIVERS_SELECT=nvidia_icd.json"
-	else
-		pecho debug "Specifying environment variables for dGPU utilization: Mesa"
-		addEnv "DRI_PRIME=1"
-	fi
-}
-
-# $1=card[0-9], sets renderIndex in form of renderD128, etc
-function cardToRender() {
-	unset renderIndex
-	declare sysfsPath devPath
-	sysfsPath="/sys$(udevadm info /sys/class/drm/$1 --query=path)"
-	devPath="${sysfsPath}"
-	declare -g renderIndex
-	renderIndex="$(basename "$(find "${sysfsPath}/../" -maxdepth 1 -mindepth 1 -name 'render*' -print -quit)")" # head is not needed since find exits on first match
-	pecho debug "Translated $1 to ${renderIndex}"
-}
-
-# $1 as arg name, $2 as value
-function passDevArgs() {
-	echo "$2" >"${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1"
-}
-
-# $1 as arg name.
-function getDevArgs() {
-	export "$1=$(cat "${XDG_RUNTIME_DIR}/portable/${appID}/devstore/$1")" 2>/dev/null
-}
-
-# Take video card number as input $1, e.g. card0, and prints out card's PCI path
-function resolvePCICard() {
-	declare sysfsPath
-	sysfsPath="$(udevadm info /sys/class/drm/$1 --query=path)"
-	echo "/sys${sysfsPath}" | sed "s|drm/$1||g"
 }
 
 function appANR() {
@@ -550,87 +469,6 @@ function dbusProxy() {
 
 }
 
-function execAppUnsafe() {
-	inputMethod
-	source "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
-	pecho info "QT_IM_MODULE is ${QT_IM_MODULE}"
-	systemd-run --user \
-		-p Slice="portable-${friendlyName}.slice" \
-		-p Environment=QT_AUTO_SCREEN_SCALE_FACTOR="${QT_AUTO_SCREEN_SCALE_FACTOR}" \
-		-p Environment=QT_ENABLE_HIGHDPI_SCALING="${QT_ENABLE_HIGHDPI_SCALING}" \
-		-p Environment=GTK_IM_MODULE="${GTK_IM_MODULE}" \
-		-p Environment=QT_IM_MODULE="${QT_IM_MODULE}" \
-		-p Environment=XMODIFIERS="${XMODIFIERS}" \
-		-p EnvironmentFile=-"${XDG_DATA_HOME}/${stateDirectory}/portable.env" \
-		-u "${unitName}" \
-		--tty \
-		${launchTarget}
-}
-
-function enableSandboxFunc() {
-	pecho info "Sandboxing confirmed"
-	mkdir \
-		--parents \
-		--mode=0700 \
-		"${XDG_DATA_HOME}/${stateDirectory}/options"
-	touch "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
-	return 0
-}
-
-function questionFirstLaunch() {
-	if [[ ! -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox" ]]; then
-		if [[ "${LANG}" =~ "zh_CN" ]]; then
-			/usr/bin/zenity \
-				--title "${friendlyName}" \
-				--icon=security-medium-symbolic \
-				--question \
-				--text="为 ${appID} 启用沙盒?"
-		else
-			/usr/bin/zenity \
-				--title "Portable" \
-				--icon=security-medium-symbolic \
-				--question \
-				--text="Enable sandbox for ${friendlyName}(${appID})?"
-		fi
-		if [[ $? -eq 1 ]]; then
-			if [[ "${LANG}" =~ "zh_CN" ]]; then
-				zenity \
-					--question \
-					--default-cancel \
-					--title "确认操作" \
-					--icon=security-low-symbolic \
-					--text "若要更改设定, 运行 _portableConfig=\"${_portableConfig}\" portable --actions f5aaebc6-0014-4d30-beba-72bce57e0650"
-			else
-				zenity \
-					--question \
-					--default-cancel \
-					--title "Confirm action" \
-					--icon=security-low-symbolic \
-					--text "Change this anytime via command: _portableConfig=\"${_portableConfig}\" portable --actions f5aaebc6-0014-4d30-beba-72bce57e0650"
-			fi
-			if [[ $? -eq 1 ]]; then
-				pecho info "User enabled sandbox late"
-				enableSandboxFunc &
-				return 0
-			else
-				pecho warn "User disabled sandbox!"
-				mkdir \
-					--parents \
-					--mode=0700 \
-					"${XDG_DATA_HOME}/${stateDirectory}/options"
-				echo "disableSandbox" >> "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
-				export trashAppUnsafe=1
-			fi
-		else
-			enableSandboxFunc &
-			return 0
-		fi
-	elif [[ $(cat "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox") =~ "disableSandbox" ]]; then
-		export trashAppUnsafe=1
-	fi
-}
-
 function launch() {
 	if systemctl --user --quiet is-failed "${unitName}.service"; then
 		pecho warn "${appID} failed last time"
@@ -731,10 +569,6 @@ export \
 sourceXDG
 defineRunPath
 readyNotify init
-if [[ "$*" = "--actions quit" ]]; then
-	stopApp external
-fi
-questionFirstLaunch
 manageDirs
 cmdlineDispatcherv2 $@
 launch $@

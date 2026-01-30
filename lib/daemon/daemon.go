@@ -12,6 +12,7 @@ import (
 	"strings"
 	"bufio"
 	"github.com/KarpelesLab/reflink"
+	"k8s.io/utils/inotify"
 )
 
 const (
@@ -1052,6 +1053,34 @@ func startProxy(dbusChan chan int8) {
 	}
 }
 
+func watchForTerminate() {
+	openFd, err := os.OpenFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+		os.O_RDONLY,
+		0700)
+	if err != nil {
+		pecho("crit", "Unable to open signal file: " + err.Error())
+	}
+	watcher, errW := inotify.NewWatcher()
+	if errW != nil {
+		pecho("crit", "Failed to watch signal: " + errW.Error())
+	}
+	for {
+		select {
+			case ev := <- watcher.Event:
+				pecho("debug", "Got event: " + strconv.Itoa(int(ev.Mask)))
+				sigF, sigErr := io.ReadAll(openFd)
+				if sigErr != nil {
+					pecho("crit", "Unable to read event: " + sigErr.Error())
+				}
+				if strings.TrimSuffix(string(sigF), "\n") == "terminate-now" {
+					stopApp("normal")
+					os.Exit(0)
+				}
+		}
+	}
+}
+
 func startApp() {
 	go forceBackgroundPerm()
 	pecho("debug", "Calculated arguments for systemd-run: " + strings.Join(runtimeInfo.bwCmd, ", "))
@@ -1060,6 +1089,7 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
+	go watchForTerminate()
 	if startAct == "abort" {
 		os.Exit(0)
 	}
