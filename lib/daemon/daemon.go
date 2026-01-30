@@ -29,7 +29,6 @@ type RUNTIME_PARAMS struct {
 	waylandDisplay		string
 	bwCmd			[]string
 	sdEnvs			[]string
-	pwSocket		string
 }
 
 type XDG_DIRS struct {
@@ -741,10 +740,9 @@ func pwSecContext(pwChan chan []string) {
 		}
 		pecho("debug", "PipeWire proxy has not yet started")
 	}
-	runtimeInfo.pwSocket = pwProxySocket
 	pwSecArg = append(
 		pwSecArg,
-		"--bind", runtimeInfo.pwSocket, runtimeInfo.pwSocket,
+		"--bind", pwProxySocket, pwProxySocket,
 	)
 	pwChan <- pwSecArg
 	pecho("debug", "pw-container available at " + pwProxySocket)
