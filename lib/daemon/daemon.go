@@ -2498,7 +2498,7 @@ func multiInstance(miChan chan bool) {
 		if internalLoggingLevel <= 1 {
 			fmt.Println(confOpts.launchTarget)
 		}
-		startExec := confOpts.launchTarget + " " + strings.Join(runtimeOpt.applicationArgs, " ")
+		startExec := strings.Join(runtimeOpt.applicationArgs, "\n")
 		fd, openErr := os.OpenFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
 			os.O_WRONLY,
