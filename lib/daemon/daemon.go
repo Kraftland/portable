@@ -1855,7 +1855,7 @@ func translatePath(input string) (output string) {
 }
 
 func maskDir(path string) (maskArgs []string) {
-	maskT, err := os.Stat("/proc/driver")
+	maskT, err := os.Stat(path)
 	if err == nil && maskT.IsDir() == true {
 		pecho("debug", "Masking " + path)
 	}
@@ -2175,6 +2175,28 @@ func gpuBind(gpuChan chan []string) {
 						bindCard(cardName)...
 					)
 				}
+			if len(activeGpus) == 1 {
+				gpuArg = append(
+					gpuArg,
+					maskDir("/sys/module/nvidia")...
+				)
+				gpuArg = append(
+					gpuArg,
+					maskDir("/sys/module/nvidia_drm")...
+				)
+				gpuArg = append(
+					gpuArg,
+					maskDir("/sys/module/nvidia_modeset")...
+				)
+				gpuArg = append(
+					gpuArg,
+					maskDir("/sys/module/nvidia_uvm")...
+				)
+				gpuArg = append(
+					gpuArg,
+					maskDir("/sys/module/nvidia_wmi_ec_backlight")...
+				)
+			}
 			}
 	}
 	gpuChan <- gpuArg
