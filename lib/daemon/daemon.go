@@ -12,7 +12,6 @@ import (
 	"strings"
 	"bufio"
 	"github.com/KarpelesLab/reflink"
-	"k8s.io/utils/inotify"
 )
 
 const (
@@ -81,6 +80,7 @@ var (
 	startAct		string
 	checkChan		= make(chan int8, 1)
 	atSpiChan		= make(chan bool, 1)
+	launchTarget		= make(chan string, 1)
 )
 
 func pecho(level string, message string) {
@@ -431,35 +431,33 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse mprisName: " + mprisNameReadErr.Error())
 	}
 
-	launchTarget, launchTargetReadErr := regexp.Compile("launchTarget=.*")
-	if launchTargetReadErr == nil {
-		confOpts.launchTarget = tryProcessConf(string(launchTarget.Find(confReader)), "launchTarget")
-		if len(confOpts.launchTarget) == 0 {
-			if len(os.Getenv("launchTarget")) > 0 {
-				pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
-			} else {
-				pecho("crit", "Unable to determine launchTarget")
-			}
+	launchTargetre := regexp.MustCompile("(?m)^launchTarget=(.*)$")
+	confOpts.launchTarget = tryProcessConf(string(launchTargetre.Find(confReader)), "launchTarget")
+	if len(confOpts.launchTarget) == 0 {
+		if len(os.Getenv("launchTarget")) > 0 {
+			pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
+		} else {
+			pecho("crit", "Unable to determine launchTarget")
 		}
-		pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
-	} else {
-		pecho("crit", "Unable to parse launchTarget: " + launchTargetReadErr.Error())
 	}
+	pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
+	launchTarget <- confOpts.launchTarget
 
-	busLaunchTarget, busLaunchTargetReadErr := regexp.Compile("busLaunchTarget=.*")
-	if busLaunchTargetReadErr == nil {
-		confOpts.busLaunchTarget = tryProcessConf(string(busLaunchTarget.Find(confReader)), "busLaunchTarget")
+	busLaunchTargetre := regexp.MustCompile("(?m)^busLaunchTarget=(.*)$")
+	confOpts.busLaunchTarget = tryProcessConf(string(busLaunchTargetre.Find(confReader)), "busLaunchTarget")
 		if len(confOpts.busLaunchTarget) == 0 {
 			if len(os.Getenv("busLaunchTarget")) > 0 {
 				pecho("warn", "Assigning busLaunchTarget using environment variable, this is not recommended")
 			} else {
 				pecho("info", "busLaunchTarget not set")
 			}
+		} else {
+			pecho(
+				"debug",
+				"Determined busLaunchTarget: " + strconv.Quote(confOpts.busLaunchTarget))
 		}
-		pecho("debug", "Determined busLaunchTarget: " + strconv.Quote(confOpts.launchTarget))
-	} else {
-		pecho("crit", "Unable to parse busLaunchTarget: " + launchTargetReadErr.Error())
-	}
+
+
 
 	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
 	if waylandOnlyReadErr != nil {
@@ -707,18 +705,19 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
 	}
-	var i int
-	var instanceIDCleared bool = false
 	pecho("debug", "Generating instance ID")
-	for i = 0; instanceIDCleared == false; i++ {
+	for {
 		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
-		pecho("debug", "Trying instance ID: " + genId.String())
-		err := os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
-		if err != nil {
-			pecho("warn", "Unable to use instance ID " + genId.String())
+		idCandidate := int(genId.Int64())
+		pecho("debug", "Trying instance ID: " + strconv.Itoa(idCandidate))
+		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + strconv.Itoa(idCandidate))
+		if err == nil {
+			pecho("warn", "Unable to use instance ID " + strconv.Itoa(idCandidate))
+		} else if genId.Int64() < 1024 {
+			pecho("debug", "Rejecting low ID")
 		} else {
-			instanceIDCleared = true
-			runtimeInfo.flatpakInstanceID = genId.String()
+			runtimeInfo.flatpakInstanceID = strconv.Itoa(idCandidate)
+			os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + strconv.Itoa(idCandidate), 0700)
 			genInfo <- 1
 			break
 		}
@@ -1203,30 +1202,21 @@ func watchForTerminate() {
 	if err != nil {
 		pecho("crit", "Unable to open signal file: " + err.Error())
 	}
-	watcher, errW := inotify.NewWatcher()
-	if errW != nil {
-		pecho("crit", "Failed to create watcher: " + errW.Error())
-	}
-	errW = watcher.Watch(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal")
-	if errW != nil {
-		pecho("crit", "Failed to watch signal: " + errW.Error())
-	}
 	for {
-		select {
-			case ev := <- watcher.Event:
-				maskStr := strconv.Itoa(int(ev.Mask))
-				pecho("debug", "Got event: " + maskStr)
-				if maskStr != "32" {
-					continue
-				}
-				sigF, sigErr := io.ReadAll(openFd)
-				if sigErr != nil {
-					pecho("crit", "Unable to read event: " + sigErr.Error())
-				}
-				if strings.TrimSuffix(string(sigF), "\n") == "terminate-now" {
-					stopApp("normal")
-					os.Exit(0)
-				}
+		inotifyArgs := []string{
+			"--quiet",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+		}
+		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
+		inotifyCmd.Stderr = os.Stderr
+		inotifyCmd.Run()
+		sigF, sigErr := io.ReadAll(openFd)
+		if sigErr != nil {
+			pecho("crit", "Unable to read event: " + sigErr.Error())
+		}
+		if strings.TrimSuffix(string(sigF), "\n") == "terminate-now" {
+			stopApp("normal")
+			os.Exit(0)
 		}
 	}
 }
@@ -2504,14 +2494,22 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
+		confOpts.launchTarget = <- launchTarget
+		if internalLoggingLevel <= 1 {
+			fmt.Println(confOpts.launchTarget)
+		}
 		startExec := confOpts.launchTarget + " " + strings.Join(runtimeOpt.applicationArgs, " ")
-		openErr := os.WriteFile(
+		fd, openErr := os.OpenFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			[]byte(startExec),
+			os.O_WRONLY,
 			0700,
 		)
 		if openErr != nil {
-			pecho("crit", "Failed to write signal file: " + openErr.Error())
+			pecho("crit", "Failed to open signal file: " + openErr.Error())
+		}
+		_, err := fmt.Fprintln(fd, startExec)
+		if err != nil {
+			pecho("crit", "Failed to write signal: " + err.Error())
 		}
 		startAct = "abort"
 		os.Exit(0)
@@ -2572,7 +2570,7 @@ func atSpiProxy() {
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
-	readConfChan := make(chan int, 1)
+	readConfChan := make(chan int)
 	go readConf(readConfChan)
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
@@ -2584,24 +2582,24 @@ func main() {
 	<- varChan
 	<- readConfChan
 	<- cmdChan
-	miChan := make(chan bool, 1)
-	go multiInstance(miChan)
 	go flushEnvs()
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	if startAct == "abort" {
 		os.Exit(0)
 	}
+	miChan := make(chan bool, 1)
+	go multiInstance(miChan)
 	go sanityChecks()
-	genChan := make(chan int8, 2)
-	go genFlatpakInstanceID(genChan)
 	argChan := make(chan int8, 1)
 	pwSecContextChan := make(chan []string, 1)
-	<- genChan
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
 	go genBwArg(argChan, pwSecContextChan)
 	instDesktopChan := make(chan int8, 1)
 	multiInstanceDetected := <- miChan
+	genChan := make(chan int8, 2)
+	go genFlatpakInstanceID(genChan)
+	<- genChan
 	if multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
