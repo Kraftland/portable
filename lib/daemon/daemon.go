@@ -28,7 +28,7 @@ type RUNTIME_PARAMS struct {
 	flatpakInstanceID	string
 	waylandDisplay		string
 	bwCmd			[]string
-	sdEnvs			[]string
+	sdEnvParm		[]string
 }
 
 type XDG_DIRS struct {
@@ -69,6 +69,8 @@ var (
 	runtimeInfo		RUNTIME_PARAMS
 	xdgDir			XDG_DIRS
 	runtimeOpt		RUNTIME_OPT
+	envsChan		= make(chan string, 100)
+	envsReady		= make(chan int8, 1)
 )
 
 func pecho(level string, message string) {
@@ -92,10 +94,7 @@ func pecho(level string, message string) {
 }
 
 func addEnv(envToAdd string) {
-	runtimeInfo.sdEnvs = append(
-		runtimeInfo.sdEnvs,
-		envToAdd,
-	)
+	envsChan <- envToAdd
 }
 
 func cmdlineDispatcher(cmdChan chan int) {
@@ -1011,7 +1010,6 @@ func startApp() {
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
-	flushEnvs()
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
@@ -1123,10 +1121,9 @@ func prepareEnvs(readyChan chan int8) {
 			pecho("warn", "I/O error reading environment variables: " + errRead.Error())
 		} else {
 			lines := strings.Split(strings.TrimRight(string(userEnvRead), "\n"), "\n")
-			runtimeInfo.sdEnvs = append(
-				runtimeInfo.sdEnvs,
-				lines...
-			)
+			for _, line := range lines {
+				addEnv(line)
+			}
 		}
 	}
 	packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
@@ -1138,10 +1135,9 @@ func prepareEnvs(readyChan chan int8) {
 		pecho("crit", "I/O error reading config: " + errPkgR.Error())
 	}
 	pkgEnv := strings.Split(strings.TrimRight(string(pkgRead), "\n"), "\n")
-	runtimeInfo.sdEnvs = append(
-		runtimeInfo.sdEnvs,
-		pkgEnv...
-	)
+	for _, line := range pkgEnv {
+		addEnv(line)
+	}
 	readyChan <- 1
 }
 
@@ -1435,16 +1431,17 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	argChan <- 1
 }
 
-func flushEnvs() {
-	combinedFile, openErr := os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0700)
-	if openErr != nil {
-		pecho("crit", "Could not open file to store envs: " + openErr.Error())
-	}
-	for _, env := range runtimeInfo.sdEnvs {
-		_, err := fmt.Fprintln(combinedFile, env)
-		if err != nil {
-			pecho("debug", "Failed to write envs: " + err.Error())
+func flushEnvs(envsReady chan int8) {
+	for {
+		envPend := <- envsChan
+		if envPend == "stop" {
+			envsReady <- 1
+			break
 		}
+		runtimeInfo.sdEnvParm = append(
+			runtimeInfo.sdEnvParm,
+			"-p", "Environment=" + envPend,
+		)
 	}
 }
 
@@ -1933,6 +1930,7 @@ func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int, 1)
 	go readConf(readConfChan)
+	go flushEnvs(envsReady)
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int, 1)
@@ -1970,6 +1968,9 @@ func main() {
 	<- argChan
 	<- envPreChan
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
+	addEnv("stop")
+	<- envsReady
+	// TODO: add non-sandbox code here
 	startApp()
 	stopApp("normal")
 }
