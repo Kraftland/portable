@@ -2238,8 +2238,6 @@ func bindCard(cardName string) (cardBindArg []string) {
 		pecho("warn", "Failed to resolve GPU " + cardName + ": " + err.Error())
 		return
 	}
-	sysfsPath := "/sys" + strings.TrimSpace(string(path))
-	pecho("debug", "Got raw path from udev: " + sysfsPath)
 	cardBindArg = append(
 		cardBindArg,
 		"--dev-bind",
@@ -2249,6 +2247,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 			"/dev/dri/" + cardName,
 			"/dev/dri/" + cardName,
 	)
+	sysfsPath := "/sys" + strings.TrimSpace(string(path))
 	devDrmPath := strings.TrimSuffix(sysfsPath, "/" + cardName)
 	drmEntries, readErr := os.ReadDir(devDrmPath)
 	pecho("debug", "Got sysfs path from udev: " + devDrmPath)
@@ -2275,6 +2274,23 @@ func bindCard(cardName string) (cardBindArg []string) {
 	//cardSpCn := len(cardSp)
 	//cardBase := cardSp[cardSpCn - 1]
 	//cardRoot = strings.TrimSuffix(cardRoot, cardBase)
+	cardVendorFd, openErr := os.OpenFile(cardRoot, os.O_RDONLY, 0700)
+	if openErr != nil {
+		pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
+	}
+	cardVendor, err := io.ReadAll(cardVendorFd)
+	if err != nil {
+		pecho("warn", "Failed to parse GPU vendor: " + err.Error())
+	}
+	if strings.TrimRight(string(cardVendor), "\n") == "0x10de" {
+		nvChan := make(chan []string, 1)
+		go tryBindNv(nvChan)
+		nvArgs := <- nvChan
+		cardBindArg = append(
+			cardBindArg,
+			nvArgs...,
+		)
+	}
 	cardBindArg = append(
 		cardBindArg,
 		"--dev-bind",
