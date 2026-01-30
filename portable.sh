@@ -304,22 +304,6 @@ function setConfEnv() {
 	readyNotify set setConfEnv
 }
 
-function setXdgEnv() {
-	addEnv "XDG_CONFIG_HOME=$(echo "${XDG_CONFIG_HOME}" | pathTranslation)"
-	addEnv "XDG_DOCUMENTS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Documents"
-	addEnv "XDG_DATA_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/share"
-	addEnv "XDG_STATE_HOME=${XDG_DATA_HOME}/${stateDirectory}/.local/state"
-	addEnv "XDG_CACHE_HOME=${XDG_DATA_HOME}/${stateDirectory}/cache"
-	addEnv "XDG_DESKTOP_DIR=${XDG_DATA_HOME}/${stateDirectory}/Desktop"
-	addEnv "XDG_DOWNLOAD_DIR=${XDG_DATA_HOME}/${stateDirectory}/Downloads"
-	addEnv "XDG_TEMPLATES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Templates"
-	addEnv "XDG_PUBLICSHARE_DIR=${XDG_DATA_HOME}/${stateDirectory}/Public"
-	addEnv "XDG_MUSIC_DIR=${XDG_DATA_HOME}/${stateDirectory}/Music"
-	addEnv "XDG_PICTURES_DIR=${XDG_DATA_HOME}/${stateDirectory}/Pictures"
-	addEnv "XDG_VIDEOS_DIR=${XDG_DATA_HOME}/${stateDirectory}/Videos"
-	readyNotify set setXdgEnv
-}
-
 function setStaticEnv() {
 	addEnv "GDK_DEBUG=portals"
 	addEnv "GTK_USE_PORTAL=1"
@@ -361,9 +345,6 @@ function genNewEnv() {
 }
 
 function importEnv() {
-	cat "${_portableConfig}" > "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-	setIM &
-	setXdgEnv &
 	setConfEnv &
 	setStaticEnv &
 	ln -srf \
@@ -624,7 +605,6 @@ function dbusProxy() {
 				-i "${instanceId}" \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
-	readyNotify wait setXdgEnv
 	readyNotify wait setConfEnv
 	readyNotify wait setStaticEnv
 	readyNotify wait genNewEnv
