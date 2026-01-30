@@ -1213,6 +1213,24 @@ func miscEnvs (mEnvRd chan int8) {
 	if confOpts.qt5Compat == true {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
+	const file = "source /run/portable-generated.env"
+	wrErr := os.WriteFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
+		[]byte(file),
+		0700)
+	if wrErr != nil {
+		pecho("warn", "Unable to write bashrc: " + wrErr.Error())
+	}
+	addEnv("GDK_DEBUG=portals")
+	addEnv("GTK_USE_PORTAL=1")
+	addEnv("QT_AUTO_SCREEN_SCALE_FACTOR=1")
+	addEnv("QT_ENABLE_HIGHDPI_SCALING=1")
+	addEnv(`PS1=╰─>Portable·` + confOpts.appID + `·🧐⤔ `)
+	addEnv("QT_SCALE_FACTOR=" + os.Getenv("QT_SCALE_FACTOR"))
+	addEnv("HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	addEnv("XDG_SESSION_TYPE=" + os.Getenv("${XDG_SESSION_TYPE}"))
+	addEnv("WAYLAND_DISPLAY=" + xdgDir.runtimeDir + "/wayland-0")
+	addEnv("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus")
 	mEnvRd <- 1
 }
 

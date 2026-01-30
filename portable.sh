@@ -285,26 +285,6 @@ function createWrapIfNotExist() {
 			"$@"
 	fi
 }
-
-function setStaticEnv() {
-	addEnv "GDK_DEBUG=portals"
-	addEnv "GTK_USE_PORTAL=1"
-	addEnv "QT_AUTO_SCREEN_SCALE_FACTOR=1"
-	addEnv "QT_ENABLE_HIGHDPI_SCALING=1"
-	addEnv "PS1='╰─>Portable Sandbox·${appID}·🧐⤔ '"
-	addEnv "QT_SCALE_FACTOR=${QT_SCALE_FACTOR}"
-	addEnv "HOME=${XDG_DATA_HOME}/${stateDirectory}"
-	addEnv "XDG_SESSION_TYPE=${XDG_SESSION_TYPE}"
-	addEnv "WAYLAND_DISPLAY=wayland-0"
-	addEnv "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus"
-	echo "source /run/portable-generated.env" > "${XDG_RUNTIME_DIR}/portable/${appID}/bashrc"
-	readyNotify set setStaticEnv
-}
-
-function importEnv() {
-	setStaticEnv &
-}
-
 # Function used to escape paths for sed processing.
 function pathEscape() {
 	local str="$*"
@@ -395,7 +375,6 @@ function termExec() {
 }
 
 function execAppExist() {
-	importEnv
 	unitName="${unitName}-subprocess-$(uuidgen)"
 	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
 	execApp
@@ -538,8 +517,6 @@ function warnMulRunning() {
 }
 
 function dbusProxy() {
-	importEnv &
-
 	if [[ ${securityContext} -eq 1 ]]; then
 		rm -rf "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 		systemd-run \
@@ -557,7 +534,6 @@ function dbusProxy() {
 				-i "${instanceId}" \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
-	readyNotify wait setStaticEnv
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
 		pecho warn "No at-spi bus detected!"
 		touch "${busDirAy}/bus"
@@ -597,7 +573,6 @@ function dbusProxy() {
 }
 
 function execAppUnsafe() {
-	#importEnv
 	inputMethod
 	source "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
 	pecho info "GTK_IM_MODULE is ${GTK_IM_MODULE}"
