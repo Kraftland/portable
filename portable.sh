@@ -286,24 +286,6 @@ function createWrapIfNotExist() {
 	fi
 }
 
-function setConfEnv() {
-	if [[ "${qt5Compat}" = "false" ]]; then
-		pecho debug "Skipping Qt 5 compatibility workarounds"
-	else
-		pecho debug "Enabling Qt 5 compatibility workarounds"
-		addEnv "QT_QPA_PLATFORMTHEME=xdgdesktopportal"
-	fi
-	if [[ "${useZink}" = "true" ]]; then
-		pecho debug "Enabling Zink..."
-		addEnv "__GLX_VENDOR_LIBRARY_NAME=mesa"
-		addEnv "MESA_LOADER_DRIVER_OVERRIDE=zink"
-		addEnv "GALLIUM_DRIVER=zink"
-		addEnv "LIBGL_KOPPER_DRI2=1"
-		addEnv "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json"
-	fi
-	readyNotify set setConfEnv
-}
-
 function setStaticEnv() {
 	addEnv "GDK_DEBUG=portals"
 	addEnv "GTK_USE_PORTAL=1"
@@ -345,7 +327,6 @@ function genNewEnv() {
 }
 
 function importEnv() {
-	setConfEnv &
 	setStaticEnv &
 	ln -srf \
 		"${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env" \
@@ -605,7 +586,6 @@ function dbusProxy() {
 				-i "${instanceId}" \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
-	readyNotify wait setConfEnv
 	readyNotify wait setStaticEnv
 	readyNotify wait genNewEnv
 	if [[ ! -S "${XDG_RUNTIME_DIR}/at-spi/bus" ]]; then
