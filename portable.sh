@@ -117,40 +117,6 @@ function readyNotify() {
 	fi
 }
 
-function sanityCheck() {
-	configCheck
-	readyNotify set sanityCheck
-}
-
-function confEmpty() {
-	local varName="$1"
-	local varVal="${!varName}"
-	if [[ -z "${varVal}" ]]; then
-		pecho crit "Config option $1 is empty!"
-		readyNotify set-fail sanityCheck
-	fi
-}
-
-function confBool() {
-	local varName="$1"
-	local varVal="${!varName}"
-	if [[ "${varVal}" = "true" ]] || [[ "${varVal}" = "false" ]]; then
-		return 0
-	elif [[ -z "${varVal}" ]]; then
-		pecho info "Config option ${1} unspecified"
-	else
-		pecho warn "Config option ${1} should be boolean"
-		return 1
-	fi
-}
-
-function configCheck() {
-	for value in appID friendlyName stateDirectory launchTarget; do
-		confEmpty ${value}
-	done
-	unset value
-}
-
 function sourceXDG() {
 	if [[ ! "${XDG_CONFIG_HOME}" ]]; then
 		export XDG_CONFIG_HOME="${HOME}/.config"
@@ -192,11 +158,6 @@ function createWrapIfNotExist() {
 	fi
 }
 
-function calcBwrapArg() {
-	readyNotify wait bindCheck
-	readyNotify set calcBwrapArg
-}
-
 function defineRunPath() {
 	mkdir \
 		--parents \
@@ -205,18 +166,11 @@ function defineRunPath() {
 }
 
 function execApp() {
-	calcBwrapArg &
-	readyNotify wait calcBwrapArg
 	/usr/lib/portable/daemon/portable-daemon $@
 }
 
 function execAppExistDirect() {
 	echo "${launchTarget}" "${targetArgs}" > "${XDG_RUNTIME_DIR}/portable/${appID}/startSignal"
-}
-function execAppExist() {
-	unitName="${unitName}-subprocess-$(uuidgen)"
-	instanceId=$(grep instance-id "${XDG_RUNTIME_DIR}/portable/${appID}/flatpak-info" | cut -c '13-')
-	execApp
 }
 
 function appANR() {
@@ -347,7 +301,6 @@ function launch() {
 	elif systemctl --user --quiet is-active "${friendlyName}.service"; then
 		warnMulRunning
 	fi
-	sanityCheck &
 	if [[ ${trashAppUnsafe} -eq 1 ]]; then
 		pecho warn "Launching ${appID} (unsafe)..."
 		execAppUnsafe
