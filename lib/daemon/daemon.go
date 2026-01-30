@@ -2123,8 +2123,7 @@ func gpuBind(gpuChan chan []string) {
 						bindCard(cardName)...
 					)
 				}
-				envReady := <- envChan
-				envReady++
+				<- envChan
 			} else {
 				for _, cardName := range totalGpus {
 					connectors, err := os.ReadDir("/sys/class/drm/" + cardName)
