@@ -1891,12 +1891,12 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 				case "zh_CN.UTF-8":
 					zenityArgs = append(
 						zenityArgs,
-						"--text=暴露" + runtimeOpt.userExpose + "?",
+						"--text=暴露 " + runtimeOpt.userExpose + "?",
 					)
 				default:
 					zenityArgs = append(
 						zenityArgs,
-						"--text=Expose" + runtimeOpt.userExpose + "?",
+						"--text=Expose " + runtimeOpt.userExpose + "?",
 					)
 			}
 
@@ -2243,8 +2243,6 @@ func bindCard(cardName string) (cardBindArg []string) {
 	cardBindArg = append(
 		cardBindArg,
 		"--dev-bind",
-			sysfsPath, sysfsPath,
-		"--dev-bind",
 			"/sys/class/drm/" + cardName,
 			"/sys/class/drm/" + cardName,
 		"--dev-bind",
@@ -2272,6 +2270,16 @@ func bindCard(cardName string) (cardBindArg []string) {
 			}
 		}
 	}
+	cardRoot := strings.TrimSuffix(devDrmPath, "/drm")
+	//cardSp := strings.Split(cardRoot, "/")
+	//cardSpCn := len(cardSp)
+	//cardBase := cardSp[cardSpCn - 1]
+	//cardRoot = strings.TrimSuffix(cardRoot, cardBase)
+	cardBindArg = append(
+		cardBindArg,
+		"--dev-bind",
+			cardRoot, cardRoot,
+	)
 
 	return
 }
