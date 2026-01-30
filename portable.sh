@@ -286,12 +286,6 @@ function createWrapIfNotExist() {
 	fi
 }
 
-function passBwrapArgs() {
-	local bwArgWrite="$*"
-	#echo -e ${bwArgWrite} >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
-	flock --exclusive "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs.lock" 'echo' '-ne' "${bwArgWrite}" >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
-}
-
 function calcBwrapArg() {
 	readyNotify wait bindCheck
 	readyNotify set calcBwrapArg
