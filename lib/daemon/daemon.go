@@ -2127,7 +2127,7 @@ func gpuBind(gpuChan chan []string) {
 				envReady++
 			} else {
 				for _, cardName := range totalGpus {
-					connectors, err := os.ReadDir("/sys" + cardName)
+					connectors, err := os.ReadDir("/sys/class/drm/" + cardName)
 					if err != nil {
 						pecho(
 							"warn",
