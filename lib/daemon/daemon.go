@@ -1322,7 +1322,7 @@ func miscEnvs (mEnvRd chan int8) {
 	addEnv("GTK_USE_PORTAL=1")
 	addEnv("QT_AUTO_SCREEN_SCALE_FACTOR=1")
 	addEnv("QT_ENABLE_HIGHDPI_SCALING=1")
-	addEnv(`PS1=╰─>Portable·` + confOpts.appID + `·🧐⤔ `)
+	addEnv("PS1=" + strconv.Quote("╰─>Portable·" + confOpts.appID + "·🤓 ⤔ "))
 	addEnv("QT_SCALE_FACTOR=" + os.Getenv("QT_SCALE_FACTOR"))
 	addEnv("HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory)
 	addEnv("XDG_SESSION_TYPE=" + os.Getenv("${XDG_SESSION_TYPE}"))
