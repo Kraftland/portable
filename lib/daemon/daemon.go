@@ -114,6 +114,30 @@ func openHome () {
 	os.Exit(0)
 }
 
+func resetDocs () {
+	cmdArgs := []string{
+		"permission-reset",
+		confOpts.appID,
+	}
+	openCmd := exec.Command("flatpak", cmdArgs...)
+	openCmd.Stderr = os.Stderr
+	openCmd.Run()
+	os.Exit(0)
+}
+
+func showStats () {
+	cmdArgs := []string{
+		"--user",
+		"status",
+		"app-portable-" + confOpts.appID,
+	}
+	openCmd := exec.Command("flatpak", cmdArgs...)
+	openCmd.Stderr = os.Stderr
+	openCmd.Stdout = os.Stdout
+	openCmd.Run()
+	os.Exit(0)
+}
+
 func cmdlineDispatcher(cmdChan chan int) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
@@ -153,6 +177,12 @@ func cmdlineDispatcher(cmdChan chan int) {
 				case "home":
 					startAct = "abort"
 					openHome()
+				case "reset-document":
+					startAct = "abort"
+					resetDocs()
+				case "reset-documents":
+					startAct = "abort"
+					resetDocs()
 			}
 			case "--dbus-activation":
 				addEnv("_portableBusActivate=1")

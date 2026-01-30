@@ -452,61 +452,6 @@ function launch() {
 	fi
 }
 
-function resetDocuments() {
-	flatpak permission-reset "${appID}"
-	exit $?
-}
-
-function showStats() {
-	systemctl --user \
-		status \
-		"${unitName}"
-
-	exit 0
-}
-
-function cmdlineDispatcherv2() {
-	declare -i cmdArgCount
-	declare trailingS
-	cmdArgCount=0
-	while true; do
-		if [[ -z $* ]]; then
-			break
-		elif [[ $1 = "--" ]]; then
-			shift
-			declare -g -x targetArgs="$*"
-			declare -r targetArgs
-			break
-		elif [[ "$1" = "--actions" ]]; then
-			shift
-			cmdArgCount+=1
-			if [[ "$1" =~ ^reset-documents|reset-document$ ]]; then
-				resetDocuments
-			elif [[ "$1" =~ ^stats|stat$ ]]; then
-				showStats
-			elif [[ "$1" = "f5aaebc6-0014-4d30-beba-72bce57e0650" ]]; then
-				rm -f "${XDG_DATA_HOME}/${stateDirectory}/options/sandbox"
-				questionFirstLaunch
-			else
-				pecho warn "Unrecognised action: $1"
-			fi
-		elif [[ "$1" =~ ^--help|-h$ ]]; then
-			printHelp
-		else
-			pecho warn "Unrecognised argument: $1!"
-		fi
-		cmdArgCount+=1
-		shift
-	done
-	if [[ "${cmdArgCount}" -eq 1 ]]; then
-		trailingS=""
-	else
-		trailingS="s"
-	fi
-	pecho info "Resolution of portable command line arguments finished with ${cmdArgCount} argument${trailingS}"
-	pecho info "Application argument interpreted as: \"${targetArgs}\""
-}
-
 set -m
 export \
 	pwCam \
@@ -529,5 +474,4 @@ sourceXDG
 defineRunPath
 readyNotify init
 manageDirs
-cmdlineDispatcherv2 $@
 launch $@
