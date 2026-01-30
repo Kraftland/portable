@@ -1310,7 +1310,7 @@ func miscEnvs (mEnvRd chan int8) {
 	if confOpts.qt5Compat == true {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
-	const file = "source /run/portable-generated.env"
+	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env"
 	wrErr := os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
 		[]byte(file),
@@ -1715,8 +1715,29 @@ func translatePath(input string) (output string) {
 	return
 }
 
+func maskDir(path string) (maskArgs []string) {
+	maskT, err := os.Stat("/proc/driver")
+	if err == nil && maskT.IsDir() == true {
+		pecho("debug", "Masking " + path)
+	}
+	maskArgs = append(
+		maskArgs,
+		"--tmpfs", path,
+	)
+	return
+}
+
 func miscBinds(miscChan chan []string, pwChan chan []string) {
 	var miscArgs = []string{}
+
+	miscArgs = append(
+		miscArgs,
+		maskDir("/proc/bus")...
+	)
+	miscArgs = append(
+		miscArgs,
+		maskDir("/proc/driver")...
+	)
 	pwArgs := <- pwChan
 	miscArgs = append(
 		miscArgs,
