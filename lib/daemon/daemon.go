@@ -1069,12 +1069,20 @@ func watchForTerminate() {
 	}
 	watcher, errW := inotify.NewWatcher()
 	if errW != nil {
+		pecho("crit", "Failed to create watcher: " + errW.Error())
+	}
+	errW = watcher.Watch(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal")
+	if errW != nil {
 		pecho("crit", "Failed to watch signal: " + errW.Error())
 	}
 	for {
 		select {
 			case ev := <- watcher.Event:
-				pecho("debug", "Got event: " + strconv.Itoa(int(ev.Mask)))
+				maskStr := strconv.Itoa(int(ev.Mask))
+				pecho("debug", "Got event: " + maskStr)
+				if maskStr != "32" {
+					continue
+				}
 				sigF, sigErr := io.ReadAll(openFd)
 				if sigErr != nil {
 					pecho("crit", "Unable to read event: " + sigErr.Error())
