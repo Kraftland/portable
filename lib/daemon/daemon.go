@@ -2549,8 +2549,6 @@ func main() {
 	miChan := make(chan bool, 1)
 	go multiInstance(miChan)
 	go flushEnvs()
-	envPreChan := make(chan int8, 1)
-	go prepareEnvs(envPreChan)
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	if startAct == "abort" {
 		os.Exit(0)
@@ -2561,6 +2559,8 @@ func main() {
 	argChan := make(chan int8, 1)
 	pwSecContextChan := make(chan []string, 1)
 	<- genChan
+	envPreChan := make(chan int8, 1)
+	go prepareEnvs(envPreChan)
 	go genBwArg(argChan, pwSecContextChan)
 	instDesktopChan := make(chan int8, 1)
 	multiInstanceDetected := <- miChan
