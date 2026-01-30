@@ -12,7 +12,6 @@ import (
 	"strings"
 	"bufio"
 	"github.com/KarpelesLab/reflink"
-	"k8s.io/utils/inotify"
 )
 
 const (
@@ -1203,30 +1202,21 @@ func watchForTerminate() {
 	if err != nil {
 		pecho("crit", "Unable to open signal file: " + err.Error())
 	}
-	watcher, errW := inotify.NewWatcher()
-	if errW != nil {
-		pecho("crit", "Failed to create watcher: " + errW.Error())
-	}
-	errW = watcher.Watch(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal")
-	if errW != nil {
-		pecho("crit", "Failed to watch signal: " + errW.Error())
-	}
 	for {
-		select {
-			case ev := <- watcher.Event:
-				maskStr := strconv.Itoa(int(ev.Mask))
-				pecho("debug", "Got event: " + maskStr)
-				if maskStr != "32" {
-					continue
-				}
-				sigF, sigErr := io.ReadAll(openFd)
-				if sigErr != nil {
-					pecho("crit", "Unable to read event: " + sigErr.Error())
-				}
-				if strings.TrimSuffix(string(sigF), "\n") == "terminate-now" {
-					stopApp("normal")
-					os.Exit(0)
-				}
+		inotifyArgs := []string{
+			"--quiet",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+		}
+		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
+		inotifyCmd.Stderr = os.Stderr
+		inotifyCmd.Run()
+		sigF, sigErr := io.ReadAll(openFd)
+		if sigErr != nil {
+			pecho("crit", "Unable to read event: " + sigErr.Error())
+		}
+		if strings.TrimSuffix(string(sigF), "\n") == "terminate-now" {
+			stopApp("normal")
+			os.Exit(0)
 		}
 	}
 }
