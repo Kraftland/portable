@@ -1102,6 +1102,21 @@ func instDesktopFile(instDesktopChan chan int8) {
 	instDesktopChan <- 1
 }
 
+func setXDGEnvs (xdgEnvReady chan int8) {
+	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir))
+	addEnv("XDG_DOCUMENTS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Documents")
+	addEnv("XDG_DATA_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/share")
+	addEnv("XDG_STATE_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/state")
+	addEnv("XDG_CACHE_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/cache")
+	addEnv("XDG_DESKTOP_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Desktop")
+	addEnv("XDG_DOWNLOAD_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Downloads")
+	addEnv("XDG_TEMPLATES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Templates")
+	addEnv("XDG_PUBLICSHARE_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Public")
+	addEnv("XDG_MUSIC_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Music")
+	addEnv("XDG_PICTURES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Pictures")
+	addEnv("XDG_VIDEOS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Videos")
+}
+
 func imEnvs (imReady chan int8) {
 	addEnv("IBUS_USE_PORTAL=1")
 	var imKind string
