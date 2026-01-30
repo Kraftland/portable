@@ -71,6 +71,7 @@ var (
 	runtimeOpt		RUNTIME_OPT
 	envsChan		= make(chan string, 100)
 	envsReady		= make(chan int8, 1)
+	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 )
 
 func pecho(level string, message string) {
@@ -1431,12 +1432,19 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	argChan <- 1
 }
 
+func isEnvValid(env string) bool {
+		return envRegex.MatchString(env)
+}
+
 func flushEnvs(envsReady chan int8) {
 	for {
 		envPend := <- envsChan
 		if envPend == "stop" {
 			envsReady <- 1
 			break
+		}
+		if isEnvValid(envPend) == false {
+			pecho("debug", "Rejecting invalid environment variable: " + envPend)
 		}
 		runtimeInfo.sdEnvParm = append(
 			runtimeInfo.sdEnvParm,
