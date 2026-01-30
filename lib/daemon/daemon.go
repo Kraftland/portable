@@ -1115,6 +1115,7 @@ func setXDGEnvs (xdgEnvReady chan int8) {
 	addEnv("XDG_MUSIC_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Music")
 	addEnv("XDG_PICTURES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Pictures")
 	addEnv("XDG_VIDEOS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Videos")
+	xdgEnvReady <- 1
 }
 
 func imEnvs (imReady chan int8) {
