@@ -79,6 +79,7 @@ var (
 	envsFlushReady		= make(chan int8, 1)
 	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 	startAct		string
+	checkChan		= make(chan int8, 1)
 )
 
 func pecho(level string, message string) {
@@ -100,6 +101,24 @@ func pecho(level string, message string) {
 		default:
 			fmt.Println("[Undefined] ", message)
 	}
+}
+
+
+func sanityChecks() {
+	var appIDValid bool = true
+	if strings.Contains(confOpts.appID, "org.freedesktop.impl") == true {
+		appIDValid = false
+	} else if strings.Contains(confOpts.appID, "org.gtk.vfs") == true {
+		appIDValid = false
+	} else if confOpts.appID == "org.mpris.MediaPlayer2" {
+		appIDValid = false
+	}
+
+	if appIDValid == false {
+		startAct = "abort"
+	}
+
+	checkChan <- 1
 }
 
 func addEnv(envToAdd string) {
@@ -254,6 +273,7 @@ func getVariables(varChan chan int) {
 			internalLoggingLevel = 3
 	}
 	runtimeOpt.userExpose = os.Getenv("bwBindPar")
+	runtimeOpt.userLang = os.Getenv("LANG")
 	varChan <- 1
 }
 
@@ -1805,16 +1825,47 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		_, err := os.Stat(runtimeOpt.userExpose)
 		if err != nil {
 			pecho("warn", "Rejecting bwBindPar: " + err.Error())
+		} else {
+			zenityArgs := []string{
+				"--title",
+					confOpts.friendlyName,
+				"--icon=folder-open-symbolic",
+				"--question",
+				"--default-cancel",
+			}
+
+			switch runtimeOpt.userLang {
+				case "en_GB.UTF-8":
+					zenityArgs = append(
+						zenityArgs,
+						"--text=Expose" + runtimeOpt.userExpose + "?",
+					)
+				case "zh_CN.UTF-8":
+					zenityArgs = append(
+						zenityArgs,
+						"--text=暴露" + runtimeOpt.userExpose + "?",
+					)
+				default:
+					zenityArgs = append(
+						zenityArgs,
+						"--text=Expose" + runtimeOpt.userExpose + "?",
+					)
+			}
+
+			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
+			zenityRun.Stderr = os.Stderr
+			errZenity := zenityRun.Run()
+			if errZenity != nil {
+				pecho("warn", "Rejecting bwBindPar: did not receive confirmation")
+			} else {
+				miscArgs = append(
+					miscArgs,
+					"--dev-bind",
+						runtimeOpt.userExpose,
+						runtimeOpt.userExpose,
+				)
+			}
 		}
-
-
-
-		miscArgs = append(
-			miscArgs,
-			"--dev-bind",
-				runtimeOpt.userExpose,
-				runtimeOpt.userExpose,
-		)
 	}
 
 	miscArgs = append(
@@ -2328,6 +2379,7 @@ func main() {
 	}
 
 	// Warn multi-instance here
+	go sanityChecks()
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	genChan := make(chan int8, 2)
@@ -2351,7 +2403,7 @@ func main() {
 	<- envPreChan
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
-	// TODO: add non-sandbox code here
+	<- checkChan
 	startApp()
 	stopApp("normal")
 }
