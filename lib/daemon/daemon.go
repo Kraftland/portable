@@ -30,6 +30,7 @@ type RUNTIME_PARAMS struct {
 	waylandDisplay		string
 	bwCmd			[]string
 	sdEnvParm		[]string
+	startAbort		bool
 }
 
 type XDG_DIRS struct {
@@ -73,6 +74,7 @@ var (
 	envsChan		= make(chan string, 100)
 	envsFlushReady		= make(chan int8, 1)
 	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
+	startAct		string
 )
 
 func pecho(level string, message string) {
@@ -119,8 +121,10 @@ func cmdlineDispatcher(cmdChan chan int) {
 				case "debug-shell":
 					addEnv("_portableDebug=1")
 				case "share-file":
+					startAct = "abort"
 					shareFile()
 				case "share-files":
+					startAct = "abort"
 					shareFile()
 			}
 			case "--dbus-activation":
@@ -156,7 +160,10 @@ func shareFile() {
 	}
 	for _, path := range paths {
 		// stdlib doesn't seem to do reflink
-		reflinkErr := reflink.Auto(path, xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared")
+		pathSp := strings.Split(path, "/")
+		pathslices := len(pathSp)
+		basename := pathSp[pathslices - 1]
+		reflinkErr := reflink.Auto(path, xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared/" + basename)
 		if reflinkErr != nil {
 			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
 		}
@@ -1053,6 +1060,9 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
+	if startAct == "abort" {
+		os.Exit(0)
+	}
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
@@ -2156,6 +2166,9 @@ func main() {
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
+	if startAct == "abort" {
+		os.Exit(0)
+	}
 
 	// Warn multi-instance here
 	cleanUnitChan := make(chan int8, 1)
