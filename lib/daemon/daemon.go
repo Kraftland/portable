@@ -81,6 +81,7 @@ var (
 	startAct		string
 	checkChan		= make(chan int8, 1)
 	atSpiChan		= make(chan bool, 1)
+	launchTarget		= make(chan string, 1)
 )
 
 func pecho(level string, message string) {
@@ -431,35 +432,33 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Unable to parse mprisName: " + mprisNameReadErr.Error())
 	}
 
-	launchTarget, launchTargetReadErr := regexp.Compile("launchTarget=.*")
-	if launchTargetReadErr == nil {
-		confOpts.launchTarget = tryProcessConf(string(launchTarget.Find(confReader)), "launchTarget")
-		if len(confOpts.launchTarget) == 0 {
-			if len(os.Getenv("launchTarget")) > 0 {
-				pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
-			} else {
-				pecho("crit", "Unable to determine launchTarget")
-			}
+	launchTargetre := regexp.MustCompile("(?m)^launchTarget=(.*)$")
+	confOpts.launchTarget = tryProcessConf(string(launchTargetre.Find(confReader)), "launchTarget")
+	if len(confOpts.launchTarget) == 0 {
+		if len(os.Getenv("launchTarget")) > 0 {
+			pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
+		} else {
+			pecho("crit", "Unable to determine launchTarget")
 		}
-		pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
-	} else {
-		pecho("crit", "Unable to parse launchTarget: " + launchTargetReadErr.Error())
 	}
+	pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
+	launchTarget <- confOpts.launchTarget
 
-	busLaunchTarget, busLaunchTargetReadErr := regexp.Compile("busLaunchTarget=.*")
-	if busLaunchTargetReadErr == nil {
-		confOpts.busLaunchTarget = tryProcessConf(string(busLaunchTarget.Find(confReader)), "busLaunchTarget")
+	busLaunchTargetre := regexp.MustCompile("(?m)^busLaunchTarget=(.*)$")
+	confOpts.busLaunchTarget = tryProcessConf(string(busLaunchTargetre.Find(confReader)), "busLaunchTarget")
 		if len(confOpts.busLaunchTarget) == 0 {
 			if len(os.Getenv("busLaunchTarget")) > 0 {
 				pecho("warn", "Assigning busLaunchTarget using environment variable, this is not recommended")
 			} else {
 				pecho("info", "busLaunchTarget not set")
 			}
+		} else {
+			pecho(
+				"debug",
+				"Determined busLaunchTarget: " + strconv.Quote(confOpts.busLaunchTarget))
 		}
-		pecho("debug", "Determined busLaunchTarget: " + strconv.Quote(confOpts.launchTarget))
-	} else {
-		pecho("crit", "Unable to parse busLaunchTarget: " + launchTargetReadErr.Error())
-	}
+
+
 
 	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
 	if waylandOnlyReadErr != nil {
@@ -707,18 +706,16 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
 	}
-	var i int
-	var instanceIDCleared bool = false
 	pecho("debug", "Generating instance ID")
-	for i = 0; instanceIDCleared == false; i++ {
+	for {
 		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
 		pecho("debug", "Trying instance ID: " + genId.String())
-		err := os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
-		if err != nil {
+		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + genId.String())
+		if err == nil {
 			pecho("warn", "Unable to use instance ID " + genId.String())
 		} else {
-			instanceIDCleared = true
 			runtimeInfo.flatpakInstanceID = genId.String()
+			os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
 			genInfo <- 1
 			break
 		}
@@ -2504,6 +2501,10 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
+		confOpts.launchTarget = <- launchTarget
+		if internalLoggingLevel <= 1 {
+			fmt.Println(confOpts.launchTarget)
+		}
 		startExec := confOpts.launchTarget + " " + strings.Join(runtimeOpt.applicationArgs, " ")
 		openErr := os.WriteFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
@@ -2572,7 +2573,7 @@ func atSpiProxy() {
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
-	readConfChan := make(chan int, 1)
+	readConfChan := make(chan int)
 	go readConf(readConfChan)
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
@@ -2584,13 +2585,13 @@ func main() {
 	<- varChan
 	<- readConfChan
 	<- cmdChan
-	miChan := make(chan bool, 1)
-	go multiInstance(miChan)
 	go flushEnvs()
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 	if startAct == "abort" {
 		os.Exit(0)
 	}
+	miChan := make(chan bool, 1)
+	go multiInstance(miChan)
 	go sanityChecks()
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
