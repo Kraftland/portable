@@ -2506,13 +2506,17 @@ func multiInstance(miChan chan bool) {
 			fmt.Println(confOpts.launchTarget)
 		}
 		startExec := confOpts.launchTarget + " " + strings.Join(runtimeOpt.applicationArgs, " ")
-		openErr := os.WriteFile(
+		fd, openErr := os.OpenFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			[]byte(startExec),
+			os.O_WRONLY,
 			0700,
 		)
 		if openErr != nil {
-			pecho("crit", "Failed to write signal file: " + openErr.Error())
+			pecho("crit", "Failed to open signal file: " + openErr.Error())
+		}
+		_, err := fmt.Fprintln(fd, startExec)
+		if err != nil {
+			pecho("crit", "Failed to write signal: " + err.Error())
 		}
 		startAct = "abort"
 		os.Exit(0)
