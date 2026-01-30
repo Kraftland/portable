@@ -285,15 +285,6 @@ function createWrapIfNotExist() {
 			"$@"
 	fi
 }
-# Function used to escape paths for sed processing.
-function pathEscape() {
-	local str="$*"
-	local delimiter="|"
-	# Escape the delimiter and &
-	str="${str//${delimiter}/\\${delimiter}}"
-	str="${str//&/\\&}"
-	echo "$str"
-}
 
 function passBwrapArgs() {
 	local bwArgWrite="$*"
@@ -302,19 +293,8 @@ function passBwrapArgs() {
 }
 
 function calcBwrapArg() {
-	procDriverBind &
 	readyNotify wait bindCheck
-	if [[ -z "${bwBindPar}" || ! -e "${bwBindPar}" ]]; then
-		unset bwBindPar
-	else
-		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
-	fi
 	readyNotify set calcBwrapArg
-}
-
-# Translates path based on ~ to state directory
-function pathTranslation() {
-	sed "s|$(pathEscape "${HOME}")|$(pathEscape "${XDG_DATA_HOME}/${stateDirectory}")|g"
 }
 
 function defineRunPath() {
