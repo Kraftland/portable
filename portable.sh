@@ -301,16 +301,6 @@ function passBwrapArgs() {
 	flock --exclusive "${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs.lock" 'echo' '-ne' "${bwArgWrite}" >>"${XDG_RUNTIME_DIR}/portable/${appID}/bwrapArgs"
 }
 
-function procDriverBind() {
-	if [[ -d /proc/driver ]]; then
-		passBwrapArgs "--tmpfs\0/proc/driver\0"
-	fi
-	if [[ -d "/proc/bus" ]]; then
-		passBwrapArgs "--tmpfs\0/proc/bus\0"
-	fi
-	readyNotify set procDriverBind
-}
-
 function calcBwrapArg() {
 	procDriverBind &
 	readyNotify wait bindCheck
@@ -319,7 +309,6 @@ function calcBwrapArg() {
 	else
 		passBwrapArgs "--dev-bind\0${bwBindPar}\0${bwBindPar}\0"
 	fi
-	readyNotify wait procDriverBind
 	readyNotify set calcBwrapArg
 }
 
