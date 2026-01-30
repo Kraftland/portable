@@ -709,13 +709,16 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	pecho("debug", "Generating instance ID")
 	for {
 		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
-		pecho("debug", "Trying instance ID: " + genId.String())
-		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + genId.String())
+		idCandidate := int(genId.Int64())
+		pecho("debug", "Trying instance ID: " + strconv.Itoa(idCandidate))
+		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + strconv.Itoa(idCandidate))
 		if err == nil {
-			pecho("warn", "Unable to use instance ID " + genId.String())
+			pecho("warn", "Unable to use instance ID " + strconv.Itoa(idCandidate))
+		} else if genId.Int64() < 1024 {
+			pecho("debug", "Rejecting low ID")
 		} else {
-			runtimeInfo.flatpakInstanceID = genId.String()
-			os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + genId.String(), 0700)
+			runtimeInfo.flatpakInstanceID = strconv.Itoa(idCandidate)
+			os.Mkdir(xdgDir.runtimeDir + "/.flatpak/" + strconv.Itoa(idCandidate), 0700)
 			genInfo <- 1
 			break
 		}
@@ -2597,16 +2600,16 @@ func main() {
 	miChan := make(chan bool, 1)
 	go multiInstance(miChan)
 	go sanityChecks()
-	genChan := make(chan int8, 2)
-	go genFlatpakInstanceID(genChan)
 	argChan := make(chan int8, 1)
 	pwSecContextChan := make(chan []string, 1)
-	<- genChan
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
 	go genBwArg(argChan, pwSecContextChan)
 	instDesktopChan := make(chan int8, 1)
 	multiInstanceDetected := <- miChan
+	genChan := make(chan int8, 2)
+	go genFlatpakInstanceID(genChan)
+	<- genChan
 	if multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
