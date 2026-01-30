@@ -657,6 +657,12 @@ func cleanDirs() {
 	} else {
 		pecho("debug", "Skipped cleaning Flatpak entries")
 	}
+	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID)
+	if removeErr != nil {
+		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + removeErr.Error())
+	} else {
+		pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/portable/" + confOpts.appID)
+	}
 	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
 	if removeErr != nil {
 		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + removeErr.Error())
