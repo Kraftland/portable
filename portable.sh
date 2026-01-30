@@ -286,57 +286,6 @@ function createWrapIfNotExist() {
 	fi
 }
 
-function inputMethod() {
-	if [[ "${waylandOnly}" = "true" ]]; then
-		pecho debug "Using Wayland Input Method"
-		export QT_IM_MODULE=wayland
-		export GTK_IM_MODULE=wayland
-		export IBUS_USE_PORTAL=1
-		return 0
-	elif [[ "${waylandOnly}" =~ "adaptive" && "${XDG_SESSION_TYPE}" =~ "wayland" ]]; then
-		pecho debug "Using Wayland Input Method"
-		export QT_IM_MODULE=wayland
-		export GTK_IM_MODULE=wayland
-		export IBUS_USE_PORTAL=1
-		return 0
-	fi
-	if [[ "${XMODIFIERS}" =~ "fcitx" || "${QT_IM_MODULE}" =~ "fcitx" || "${GTK_IM_MODULE}" =~ "fcitx" ]]; then
-		export QT_IM_MODULE=fcitx
-		export GTK_IM_MODULE=fcitx
-	elif [[ "${XMODIFIERS}" =~ "ibus" || "${QT_IM_MODULE}" =~ "ibus" || "${GTK_IM_MODULE}" =~ "ibus" ]]; then
-		export QT_IM_MODULE=ibus
-		export GTK_IM_MODULE=ibus
-		export IBUS_USE_PORTAL=1
-	elif [[ "${XMODIFIERS}" =~ "gcin" ]]; then
-		export QT_IM_MODULE=ibus
-		export GTK_IM_MODULE=gcin
-		export LC_CTYPE=zh_TW.UTF-8
-	else
-		pecho warn "Input Method potentially broken! Please set \$XMODIFIERS properly"
-		# Guess the true IM based on running processes
-		runningProcess=$(ps -U "$(whoami)")
-		if [[ "${runningProcess}" =~ "ibus-daemon" ]]; then
-			pecho warn "Guessing Input Method as iBus"
-			export QT_IM_MODULE=ibus
-			export GTK_IM_MODULE=ibus
-			export XMODIFIERS=@im=ibus
-		elif [[ "${runningProcess}" =~ "fcitx" ]]; then
-			pecho warn "Guessing Input Method as Fcitx"
-			export QT_IM_MODULE=fcitx
-			export GTK_IM_MODULE=fcitx
-			export XMODIFIERS=@im=fcitx
-		fi
-	fi
-
-}
-
-function setIM() {
-	inputMethod
-	addEnv "GTK_IM_MODULE=${GTK_IM_MODULE}"
-	addEnv "QT_IM_MODULE=${QT_IM_MODULE}"
-	readyNotify set im
-}
-
 function setConfEnv() {
 	if [[ "${qt5Compat}" = "false" ]]; then
 		pecho debug "Skipping Qt 5 compatibility workarounds"
@@ -675,7 +624,6 @@ function dbusProxy() {
 				-i "${instanceId}" \
 				--socket-path "${XDG_RUNTIME_DIR}/portable/${appID}/wayland.sock"
 	fi
-	readyNotify wait im
 	readyNotify wait setXdgEnv
 	readyNotify wait setConfEnv
 	readyNotify wait setStaticEnv
