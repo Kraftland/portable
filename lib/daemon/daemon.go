@@ -10,7 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-//	"errors"
+	"time"
+	// "errors"
 )
 
 const (
@@ -719,15 +720,23 @@ func pwSecContext(pwChan chan []string) {
 	var err error
 	err = pwSecRun.Run()
 	if err != nil {
-		pecho("warn", "Failed to start up PipeWire proxy. " + err.Error())
+		pecho("warn", "Failed to start up PipeWire proxy: " + err.Error())
 	}
-
+	var failCount int
 	pwProxyInfo, openErr := os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket", os.O_RDONLY, 0700)
-	if openErr != nil {
-		pecho(
-			"crit",
-			"Failed to open PipeWire proxy status: " + openErr.Error(),
-			)
+	for {
+		pwProxyInfo, openErr = os.OpenFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket", os.O_RDONLY, 0700)
+		if openErr == nil {
+			break
+		}
+		if failCount == 0 {
+			failCount++
+			pecho("debug", "Waiting for PipeWire proxy...")
+		} else if failCount < 32767 {
+			time.Sleep(500 * time.Microsecond)
+		} else {
+			pecho("crit", "Timed out waiting for PipeWire proxy")
+		}
 	}
 	var pwProxySocket string
 	for {
@@ -942,6 +951,7 @@ func calcDbusArg(argChan chan []string) {
 }
 
 func doCleanUnit(dbusChan chan int8) {
+	os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket")
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
 		"app-portable-" + confOpts.appID + "*",
@@ -2117,14 +2127,14 @@ func main() {
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
 
 	// Warn multi-instance here
+	cleanUnitChan := make(chan int8, 1)
+	go doCleanUnit(cleanUnitChan)
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
 	argChan := make(chan int8, 1)
 	pwSecContextChan := make(chan []string, 1)
 	<- genChan
 	go genBwArg(argChan, pwSecContextChan)
-	cleanUnitChan := make(chan int8, 1)
-	go doCleanUnit(cleanUnitChan)
 	instDesktopChan := make(chan int8, 1)
 	go instDesktopFile(instDesktopChan)
 	<- genChan
