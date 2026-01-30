@@ -70,7 +70,7 @@ var (
 	xdgDir			XDG_DIRS
 	runtimeOpt		RUNTIME_OPT
 	envsChan		= make(chan string, 100)
-	envsReady		= make(chan int8, 1)
+	envsFlushReady		= make(chan int8, 1)
 	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 )
 
@@ -1011,6 +1011,7 @@ func startApp() {
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
+	<- envsFlushReady
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
@@ -1353,6 +1354,8 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 		"-p", "KeyringMode=private",
 		"-p", "TimeoutStopSec=10s",
 		"-p", "UMask=077",
+		"-p",
+		"EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
 		"-p", "Environment=instanceId=" + runtimeInfo.flatpakInstanceID,
 		"-p", "Environment=busDir=" + xdgDir.runtimeDir + "/app/" + confOpts.appID,
 		"-p", "UnsetEnvironment=GNOME_SETUP_DISPLAY",
@@ -1573,6 +1576,8 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 		"/usr/lib/portable/helper",
 	)
 
+	addEnv("stop")
+
 	var chanReady int8 = <- instChan
 	chanReady++
 	argChan <- 1
@@ -1582,11 +1587,22 @@ func isEnvValid(env string) bool {
 		return envRegex.MatchString(env)
 }
 
-func flushEnvs(envsReady chan int8) {
+func flushEnvs() {
+	os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
+	fd, err := os.Create(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
+	if err != nil {
+		pecho("crit", "Could not store generated environment variables: " + err.Error())
+	}
 	for {
 		envPend := <- envsChan
 		if envPend == "stop" {
-			envsReady <- 1
+			for _, env := range runtimeInfo.sdEnvParm {
+				_, err = fmt.Fprintln(fd, env)
+				if err != nil {
+					pecho("crit", "I/O error writing envs: " + err.Error())
+				}
+			}
+			envsFlushReady <- 1
 			break
 		}
 		if isEnvValid(envPend) == false {
@@ -1594,7 +1610,7 @@ func flushEnvs(envsReady chan int8) {
 		}
 		runtimeInfo.sdEnvParm = append(
 			runtimeInfo.sdEnvParm,
-			"-p", "Environment=" + envPend,
+			envPend,
 		)
 	}
 }
@@ -2084,7 +2100,6 @@ func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	readConfChan := make(chan int, 1)
 	go readConf(readConfChan)
-	go flushEnvs(envsReady)
 	xdgChan := make(chan int, 1)
 	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int, 1)
@@ -2095,6 +2110,7 @@ func main() {
 	<- readConfChan
 	<- cmdChan
 	<- xdgChan
+	go flushEnvs()
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
@@ -2123,7 +2139,6 @@ func main() {
 	<- envPreChan
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
-	<- envsReady
 	// TODO: add non-sandbox code here
 	startApp()
 	stopApp("normal")
