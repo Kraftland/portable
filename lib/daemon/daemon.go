@@ -179,6 +179,7 @@ func getVariables(varChan chan int) {
 }
 
 func isPathSuitableForConf(path string) (result bool) {
+	pecho("debug", "Trying configuration: " + path)
 	confInfo, confReadErr := os.Stat(path)
 	if confReadErr != nil {
 		pecho("debug", "Unable to pick configuration at " + path + " for reason: " + confReadErr.Error())
@@ -196,20 +197,20 @@ func isPathSuitableForConf(path string) (result bool) {
 
 func determineConfPath() {
 	currentWd, wdErr := os.Getwd()
-	var portableConfigRaw string = os.Getenv("_portableConfig")
 	var portableConfigLegacyRaw string = os.Getenv("_portalConfig")
 	if len(portableConfigLegacyRaw) > 0 {
 		pecho("warn", "Using legacy configuration variable!")
 		portableConfigRaw = portableConfigLegacyRaw
 	}
+	var portableConfigRaw string = os.Getenv("_portableConfig")
 	if len(portableConfigRaw) == 0 {
 		pecho("crit", "_portableConfig undefined")
 	}
 	if isPathSuitableForConf(portableConfigRaw) == true {
 		confOpts.confPath = portableConfigRaw
 		return
-	} else if
-	isPathSuitableForConf("/usr/lib/portable/info" + portableConfigRaw + "/config") == true {
+	}
+	if isPathSuitableForConf("/usr/lib/portable/info" + portableConfigRaw + "/config") == true {
 		confOpts.confPath = "/usr/lib/portable/info" + portableConfigRaw + "/config"
 		return
 	} else if wdErr == nil {
