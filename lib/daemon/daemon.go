@@ -108,7 +108,8 @@ func cmdlineDispatcher(cmdChan chan int) {
 			runtimeOpt.action = false
 			continue
 		}
-		if value == "--actions" {
+		switch value {
+			case "--actions" :
 			runtimeOpt.action = true
 			switch cmdlineArray[index + 1] {
 				case "quit":
@@ -118,10 +119,16 @@ func cmdlineDispatcher(cmdChan chan int) {
 				case "debug-shell":
 					addEnv("_portableDebug=1")
 			}
+			case "--dbus-activation":
+				addEnv("_portableBusActivate=1")
 		}
 	}
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
 	cmdChan <- 1
+}
+
+func shareFile() {
+
 }
 
 func getVariables(varChan chan int) {

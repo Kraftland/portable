@@ -338,8 +338,6 @@ function defineRunPath() {
 function execApp() {
 	calcBwrapArg &
 	addEnv targetArgs="${targetArgs}"
-	addEnv _portableDebug="${_portableDebug}"
-	addEnv _portableBusActivate="${_portableBusActivate}"
 	termExec
 	terminateOnRequest &
 	readyNotify wait calcBwrapArg
@@ -381,14 +379,6 @@ function execAppExist() {
 }
 
 function shareFile() {
-	if [[ ${trashAppUnsafe} -eq 1 ]]; then
-		zenity \
-			--error \
-			--title "Sandbox disabled" \
-			--text "Feature is intended for sandbox users"
-		pecho crit "Sandbox is disabled"
-		exit 1
-	fi
 	fileList=$(zenity --file-selection --multiple | tail -n 1)
 	IFS='|' read -r -a filePaths <<< "${fileList}"
 	for filePath in "${filePaths[@]}"; do
@@ -752,21 +742,10 @@ function cmdlineDispatcherv2() {
 			declare -g -x targetArgs="$*"
 			declare -r targetArgs
 			break
-		elif [[ "$1" = "--dbus-activation" ]]; then
-			declare -g -i _portableBusActivate
-			_portableBusActivate=1
-		elif [[ "$1" =~ ^-v|--verbose$ ]]; then
-			declare -g PORTABLE_LOGGING
-			PORTABLE_LOGGING=debug
-			declare -r -x PORTABLE_LOGGING
 		elif [[ "$1" = "--actions" ]]; then
 			shift
 			cmdArgCount+=1
-			if [[ "$1" = "debug-shell" ]]; then
-				declare -g -i -x _portableDebug
-				_portableDebug=1
-				declare -r _portableDebug
-			elif [[ "$1" =~ ^opendir|openhome$ ]]; then
+			if [[ "$1" =~ ^opendir|openhome$ ]]; then
 				/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
 				exit $?
 			elif [[ "$1" =~ ^share-files|share-file$ ]]; then
