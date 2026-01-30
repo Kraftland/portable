@@ -1102,7 +1102,86 @@ func instDesktopFile(instDesktopChan chan int8) {
 	instDesktopChan <- 1
 }
 
+func imEnvs (imReady chan int8) {
+	addEnv("IBUS_USE_PORTAL=1")
+	var imKind string
+	if confOpts.waylandOnly == true {
+		addEnv("QT_IM_MODULE=wayland")
+		addEnv("GTK_IM_MODULE=wayland")
+	} else {
+		var envToCheck = []string{
+			"XMODIFIERS",
+			"QT_IM_MODULE",
+			"GTK_IM_MODULE",
+		}
+		for _, env := range envToCheck {
+			if strings.Contains(os.Getenv(env), "fcitx") == true {
+				imKind = "Fcitx 5"
+				break
+			} else if strings.Contains(os.Getenv(env), "ibus") == true {
+				imKind = "iBus"
+				break
+			} else if strings.Contains(os.Getenv(env), "gcin") == true {
+				imKind = "gcin"
+				break
+			}
+		}
+		pecho("debug", "Determined input method type: " + imKind)
+		switch imKind {
+			case "Fcitx 5":
+				addEnv("GTK_IM_MODULE=fcitx")
+				addEnv("QT_IM_MODULE=fcitx")
+			case "iBus":
+				addEnv("QT_IM_MODULE=ibus")
+				addEnv("GTK_IM_MODULE=ibus")
+			case "gcin":
+				addEnv("QT_IM_MODULE=ibus")
+				addEnv("GTK_IM_MODULE=gcin")
+			default:
+				pecho("warn", "Could not determine IM via environment variables")
+				procEntries, err := os.ReadDir("/proc")
+				if err != nil {
+					pecho(
+					"warn",
+					"Could not determine input method via process lookup: " + err.Error(),
+					)
+				} else {
+					for _, pid := range procEntries {
+						if _, err := strconv.Atoi(pid.Name()); err != nil {
+							continue
+						}
+						commFd, fdErr := os.OpenFile(
+							"/proc/" + pid.Name() + "/comm",
+							os.O_RDONLY,
+							0644,
+						)
+						if fdErr == nil {
+							commContent, rdErr := io.ReadAll(commFd)
+							if rdErr == nil {
+								stringObj := string(commContent)
+								if strings.Contains(stringObj, "fcitx") {
+									pecho("debug", "Guessing IM: Fcitx")
+									addEnv("GTK_IM_MODULE=fcitx")
+									addEnv("QT_IM_MODULE=fcitx")
+									break
+								} else if strings.Contains(stringObj, "ibus") {
+									pecho("debug", "Guessing IM: iBus")
+									addEnv("QT_IM_MODULE=ibus")
+									addEnv("GTK_IM_MODULE=ibus")
+									break
+								}
+							}
+						}
+					}
+				}
+		}
+	}
+	imReady <- 1
+}
+
 func prepareEnvs(readyChan chan int8) {
+	imChan := make(chan int8, 1)
+	go imEnvs(imChan)
 	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
 	if err != nil {
 		pecho("info", "Unable to read user defined environment variables: " + err.Error())
@@ -1139,6 +1218,7 @@ func prepareEnvs(readyChan chan int8) {
 	for _, line := range pkgEnv {
 		addEnv(line)
 	}
+	<- imChan
 	readyChan <- 1
 }
 
