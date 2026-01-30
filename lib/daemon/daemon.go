@@ -121,6 +121,12 @@ func sanityChecks() {
 		startAct = "abort"
 		pecho("crit", "Invalid appID: " + confOpts.appID)
 	}
+	if len(confOpts.friendlyName) == 0 {
+		pecho("crit", "Could not parse friendlyName")
+	}
+	if len(confOpts.stateDirectory) == 0 {
+		pecho("crit", "Could not parse stateDirectory")
+	}
 
 	mountCheckArgs := []string{
 		"--quiet",
