@@ -1131,7 +1131,6 @@ func calcDbusArg(argChan chan []string) {
 }
 
 func doCleanUnit(dbusChan chan int8) {
-	os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/pipewire-socket")
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
 		"app-portable-" + confOpts.appID + "*",
