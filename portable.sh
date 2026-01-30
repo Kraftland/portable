@@ -300,7 +300,6 @@ function defineRunPath() {
 
 function execApp() {
 	calcBwrapArg &
-	addEnv targetArgs="${targetArgs}"
 	readyNotify wait calcBwrapArg
 	/usr/lib/portable/daemon/portable-daemon $@
 }
@@ -481,10 +480,7 @@ function cmdlineDispatcherv2() {
 		elif [[ "$1" = "--actions" ]]; then
 			shift
 			cmdArgCount+=1
-			if [[ "$1" =~ ^opendir|openhome$ ]]; then
-				/usr/bin/xdg-open "${XDG_DATA_HOME}/${stateDirectory}"
-				exit $?
-			elif [[ "$1" =~ ^reset-documents|reset-document$ ]]; then
+			if [[ "$1" =~ ^reset-documents|reset-document$ ]]; then
 				resetDocuments
 			elif [[ "$1" =~ ^stats|stat$ ]]; then
 				showStats
