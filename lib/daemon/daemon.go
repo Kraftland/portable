@@ -2168,8 +2168,8 @@ func gpuBind(gpuChan chan []string) {
 						}
 					}
 				}
-				pecho("debug", "Active GPU slice: " + strings.Join(activeGpus, ", "))
 				for _, cardName := range activeGpus {
+					pecho("debug", "Binding active GPU: " + cardName)
 					bindCard(cardName)
 				}
 			}
@@ -2573,11 +2573,11 @@ func main() {
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
-	go startProxy(proxyChan)
 	go instDesktopFile(instDesktopChan)
-	go atSpiProxy()
 	<- genChan
 	<- cleanUnitChan
+	go startProxy(proxyChan)
+	go atSpiProxy()
 	go pwSecContext(pwSecContextChan)
 	<- proxyChan
 	<- instDesktopChan
