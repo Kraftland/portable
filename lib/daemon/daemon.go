@@ -1196,7 +1196,9 @@ func imEnvs (imReady chan int8) {
 
 func prepareEnvs(readyChan chan int8) {
 	imChan := make(chan int8, 1)
+	xdgEnvChan := make(chan int8, 1)
 	go imEnvs(imChan)
+	go setXDGEnvs(xdgEnvChan)
 	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
 	if err != nil {
 		pecho("info", "Unable to read user defined environment variables: " + err.Error())
@@ -1233,6 +1235,8 @@ func prepareEnvs(readyChan chan int8) {
 	for _, line := range pkgEnv {
 		addEnv(line)
 	}
+
+	<- xdgEnvChan
 	<- imChan
 	readyChan <- 1
 }
