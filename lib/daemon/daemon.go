@@ -202,6 +202,10 @@ func cmdlineDispatcher(cmdChan chan int) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
+		if index == 0 {
+			pecho("debug", "Self found: " + value)
+			continue
+		}
 		if runtimeOpt.action == true {
 			runtimeOpt.action = false
 			continue
