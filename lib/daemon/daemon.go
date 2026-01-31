@@ -2534,7 +2534,7 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Failed to write signal: " + err.Error())
 		}
 		fd.Close()
-		const file = "updated"
+		const file = ""
 		err = os.WriteFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
 			[]byte(file),
