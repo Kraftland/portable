@@ -14,30 +14,28 @@ var (
 	startNotifier		= make(chan bool, 32767)
 )
 
-func statusNotifier(count chan int) {
-	for {
-		stringNum := strconv.Itoa(<-count)
-		fmt.Println("Updating tracking status: " + stringNum)
-		systemd.UpdateStatus("Tracking processes: " + stringNum)
-	}
-}
-
 func startCounter () {
 	var startedCount int = 0
-	var notifierChan = make(chan int, 2147483647)
-	go statusNotifier(notifierChan)
+	fmt.Println("Start counter init done")
 	for {
 		incoming := <- startNotifier
+		fmt.Println("Got incoming notification")
 		if incoming == true {
 			startedCount++
 		} else {
-			startedCount--
+			startedCount = startedCount - 1
 		}
 
-		notifierChan <- startedCount
+		systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(startedCount))
 
 		if startedCount == 0 {
 			fmt.Println("All tracked processes have exited")
+			const text = "terminate-now"
+			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY, 0700)
+			if err != nil {
+				fmt.Println("Unable to open signal file: " + err.Error())
+			}
+			fmt.Fprint(fd, text)
 			os.Exit(0)
 		}
 	}
@@ -95,8 +93,8 @@ func startMaster(targetExec string, targetArgs []string) {
 	startCmd.Start()
 	systemd.Notify()
 	startCmd.Wait()
-	fmt.Println("Main process exited")
 	startNotifier <- false
+	fmt.Println("Main process exited")
 }
 
 func main () {
