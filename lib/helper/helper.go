@@ -114,5 +114,30 @@ func main () {
 		argsSlice...
 	)
 	go auxStart(targetSlice[0])
+	if os.Getenv("_portableDebug") == "1" {
+		targetSlice[0] = "/usr/bin/bash"
+		newArgSlice := []string{
+			"--noprofile",
+			"--rcfile", "/run/bashrc",
+		}
+		targetArgs = append(
+			newArgSlice,
+			targetArgs...
+		)
+	} else if os.Getenv("_portableBusActivate") == "1" {
+		rawBus := os.Getenv("busLaunchTarget")
+		if len(rawBus) > 0 {
+			busTarget := strings.Split(rawBus, " ")
+			busArg := busTarget[1:]
+			targetSlice[0] = busTarget[0]
+			newArgs := []string{}
+			newArgs = append(
+				newArgs,
+				busArg...
+			)
+		} else {
+			fmt.Println("Undefined busLaunchTarget!")
+		}
+	}
 	startMaster(targetSlice[0], targetArgs)
 }
