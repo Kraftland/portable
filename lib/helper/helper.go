@@ -63,9 +63,9 @@ func auxStart (launchTarget string) {
 		fmt.Println("Failed to open signal file: " + err.Error())
 		os.Exit(1)
 	}
-	inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
-	inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 	for {
+		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
+		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 		err := inotifyCmd.Run()
 		if err != nil {
 			fmt.Println("Could not watch signal file: ", err.Error())
