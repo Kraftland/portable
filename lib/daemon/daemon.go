@@ -1195,14 +1195,15 @@ func startProxy(dbusChan chan int8) {
 }
 
 func watchForTerminate() {
-	openFd, err := os.OpenFile(
+	for {
+		openFd, err := os.OpenFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
 		os.O_RDONLY,
-		0700)
-	if err != nil {
-		pecho("crit", "Unable to open signal file: " + err.Error())
-	}
-	for {
+		0700,
+		)
+		if err != nil {
+			pecho("crit", "Unable to open signal file: " + err.Error())
+		}
 		inotifyArgs := []string{
 			"--quiet",
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
@@ -1214,10 +1215,13 @@ func watchForTerminate() {
 		if sigErr != nil {
 			pecho("crit", "Unable to read event: " + sigErr.Error())
 		}
-		if strings.TrimSuffix(string(sigF), "\n") == "terminate-now" {
+		sigContent := strings.TrimSuffix(string(sigF), "\n")
+		pecho("debug", "Signal updated: " + sigContent)
+		if sigContent == "terminate-now" {
 			stopApp("normal")
 			os.Exit(0)
 		}
+		openFd.Close()
 	}
 }
 
