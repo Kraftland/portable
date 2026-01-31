@@ -2447,6 +2447,15 @@ func instSignalFile(instChan chan int8) {
 		pecho("crit", "Failed to write signal file: " + err.Error())
 	}
 	fd.Close()
+	fd, err = os.OpenFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal.new",
+		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
+		0700,
+	)
+	if err != nil {
+		pecho("crit", "Failed to install signal content: " + err.Error())
+	}
+	fd.Close()
 	instChan <- 1
 	pecho("debug", "Created signal file")
 }
@@ -2513,8 +2522,8 @@ func multiInstance(miChan chan bool) {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
 		}
 		fd, openErr := os.OpenFile(
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			os.O_WRONLY|os.O_TRUNC,
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal.new",
+			os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 			0700,
 		)
 		if openErr != nil {
@@ -2523,6 +2532,16 @@ func multiInstance(miChan chan bool) {
 		_, err := fmt.Fprintln(fd, string(startJson))
 		if err != nil {
 			pecho("crit", "Failed to write signal: " + err.Error())
+		}
+		fd.Close()
+		const file = "updated"
+		err = os.WriteFile(
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+			[]byte(file),
+			0700,
+		)
+		if err != nil {
+			pecho("crit", "Failed to create signal: " + err.Error())
 		}
 		startAct = "abort"
 		os.Exit(0)

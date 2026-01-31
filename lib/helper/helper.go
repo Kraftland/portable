@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
@@ -56,6 +57,7 @@ func executeAndWait (launchTarget string, args []string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	fmt.Println("Executing auxiliary target: ", launchTarget + " with " + strings.Join(args, " "))
+	fmt.Println("Argument count: ", len(args))
 	cmd.Start()
 	startNotifier <- true
 	cmd.Wait()
@@ -69,17 +71,35 @@ func auxStart (launchTarget string, launchArgs []string) {
 		"modify",
 		"/run/startSignal",
 	}
+	// var previousSig string
 	for {
-		fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
-		if err != nil {
-			fmt.Println("Failed to open signal file: " + err.Error())
-			os.Exit(1)
-		}
 		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
 		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 		errInotify := inotifyCmd.Run()
+		inotifyCmd.Stdout = io.Discard
+		//time.Sleep(50 * time.Millisecond)
 		if errInotify != nil {
-			fmt.Println("Could not watch signal file: ", err.Error())
+			fmt.Println("Could not watch signal file: ", errInotify.Error())
+			os.Exit(1)
+		}
+		// sigFd, sigErr := os.OpenFile(
+		// 	"/run/startSignal",
+		// 	os.O_RDONLY, 0700,
+		// )
+		// if sigErr != nil {
+		// 	fmt.Println("Could not read signal ", sigErr.Error())
+		// } else {
+		// 	sigRead, _ := io.ReadAll(sigFd)
+		// 	if strings.Contains(string(sigRead), previousSig) {
+		// 		continue
+		// 	}
+		// 	fmt.Println("Signal validated")
+		// 	previousSig = string(sigRead)
+		// }
+		// sigFd.Close()
+		fd, err := os.OpenFile("/run/startSignal.new", os.O_RDONLY, 0700)
+		if err != nil {
+			fmt.Println("Failed to open signal content: " + err.Error())
 			os.Exit(1)
 		}
 		scanner := bufio.NewScanner(fd)
@@ -95,6 +115,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 			args = args + line
 			index++
 		}
+		fmt.Println("Got raw argument line: " + args)
 		targetArgs := []string{}
 		extArgs := []string{}
 		json.Unmarshal([]byte(args), &extArgs)
