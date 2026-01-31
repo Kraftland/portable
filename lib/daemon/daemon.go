@@ -1810,7 +1810,7 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		"--",
-		"/usr/lib/portable/helper",
+		"/usr/lib/portable/helper/helper",
 	)
 
 	addEnv("stop")
