@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
@@ -56,6 +57,7 @@ func executeAndWait (launchTarget string, args []string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	fmt.Println("Executing auxiliary target: ", launchTarget + " with " + strings.Join(args, " "))
+	fmt.Println("Argument count: ", len(args))
 	cmd.Start()
 	startNotifier <- true
 	cmd.Wait()
@@ -66,20 +68,24 @@ func auxStart (launchTarget string, launchArgs []string) {
 	inotifyArgs := []string{
 		"--quiet",
 		"-e",
-		"modify",
+		"close_write",
 		"/run/startSignal",
 	}
+	// var previousSig string
 	for {
-		fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
-		if err != nil {
-			fmt.Println("Failed to open signal file: " + err.Error())
-			os.Exit(1)
-		}
 		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
 		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 		errInotify := inotifyCmd.Run()
+		inotifyCmd.Stdout = io.Discard
+		time.Sleep(50 * time.Millisecond)
+		// TODO: use UNIX socket for signalling
 		if errInotify != nil {
-			fmt.Println("Could not watch signal file: ", err.Error())
+			fmt.Println("Could not watch signal file: ", errInotify.Error())
+			os.Exit(1)
+		}
+		fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
+		if err != nil {
+			fmt.Println("Failed to open signal content: " + err.Error())
 			os.Exit(1)
 		}
 		scanner := bufio.NewScanner(fd)
@@ -95,6 +101,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 			args = args + line
 			index++
 		}
+		fmt.Println("Got raw argument line: " + args)
 		targetArgs := []string{}
 		extArgs := []string{}
 		json.Unmarshal([]byte(args), &extArgs)
@@ -103,6 +110,10 @@ func auxStart (launchTarget string, launchArgs []string) {
 			extArgs...
 		)
 		go executeAndWait(launchTarget, targetArgs)
+		fd.Close()
+		fd, _ = os.OpenFile("/run/startSignal", os.O_WRONLY|os.O_TRUNC, 0700)
+		var content string = ""
+		fmt.Fprint(fd, content)
 		fd.Close()
 	}
 }

@@ -1222,7 +1222,6 @@ func watchForTerminate() {
 			pecho("crit", "Unable to read event: " + sigErr.Error())
 		}
 		sigContent := strings.TrimSuffix(string(sigF), "\n")
-		pecho("debug", "Signal updated: " + sigContent)
 		if sigContent == "terminate-now" {
 			stopApp("normal")
 			os.Exit(0)
@@ -2448,6 +2447,15 @@ func instSignalFile(instChan chan int8) {
 		pecho("crit", "Failed to write signal file: " + err.Error())
 	}
 	fd.Close()
+	fd, err = os.OpenFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal.new",
+		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
+		0700,
+	)
+	if err != nil {
+		pecho("crit", "Failed to install signal content: " + err.Error())
+	}
+	fd.Close()
 	instChan <- 1
 	pecho("debug", "Created signal file")
 }
@@ -2515,7 +2523,7 @@ func multiInstance(miChan chan bool) {
 		}
 		fd, openErr := os.OpenFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			os.O_WRONLY|os.O_TRUNC,
+			os.O_WRONLY,
 			0700,
 		)
 		if openErr != nil {
@@ -2525,6 +2533,7 @@ func multiInstance(miChan chan bool) {
 		if err != nil {
 			pecho("crit", "Failed to write signal: " + err.Error())
 		}
+		fd.Close()
 		startAct = "abort"
 		os.Exit(0)
 	}
