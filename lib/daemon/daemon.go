@@ -264,6 +264,11 @@ func cmdlineDispatcher(cmdChan chan int) {
 				pecho("warn", "Unrecognised option: " + value)
 		}
 	}
+	for index, _ := range runtimeOpt.applicationArgs {
+		runtimeOpt.applicationArgs[index] = strings.TrimSuffix(
+			runtimeOpt.applicationArgs[index],
+			"\n")
+	}
 	encodedArg, errEncode := json.Marshal(runtimeOpt.applicationArgs)
 	if errEncode != nil {
 		pecho("warn", "Could not encode arguments as json")
