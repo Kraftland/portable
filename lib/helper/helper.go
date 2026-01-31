@@ -68,7 +68,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 	inotifyArgs := []string{
 		"--quiet",
 		"-e",
-		"modify",
+		"close_write",
 		"/run/startSignal",
 	}
 	// var previousSig string
@@ -77,27 +77,13 @@ func auxStart (launchTarget string, launchArgs []string) {
 		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 		errInotify := inotifyCmd.Run()
 		inotifyCmd.Stdout = io.Discard
-		//time.Sleep(50 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
+		// TODO: use UNIX socket for signalling
 		if errInotify != nil {
 			fmt.Println("Could not watch signal file: ", errInotify.Error())
 			os.Exit(1)
 		}
-		// sigFd, sigErr := os.OpenFile(
-		// 	"/run/startSignal",
-		// 	os.O_RDONLY, 0700,
-		// )
-		// if sigErr != nil {
-		// 	fmt.Println("Could not read signal ", sigErr.Error())
-		// } else {
-		// 	sigRead, _ := io.ReadAll(sigFd)
-		// 	if strings.Contains(string(sigRead), previousSig) {
-		// 		continue
-		// 	}
-		// 	fmt.Println("Signal validated")
-		// 	previousSig = string(sigRead)
-		// }
-		// sigFd.Close()
-		fd, err := os.OpenFile("/run/startSignal.new", os.O_RDONLY, 0700)
+		fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
 		if err != nil {
 			fmt.Println("Failed to open signal content: " + err.Error())
 			os.Exit(1)
@@ -124,6 +110,10 @@ func auxStart (launchTarget string, launchArgs []string) {
 			extArgs...
 		)
 		go executeAndWait(launchTarget, targetArgs)
+		fd.Close()
+		fd, _ = os.OpenFile("/run/startSignal", os.O_WRONLY|os.O_TRUNC, 0700)
+		var content string = ""
+		fmt.Fprint(fd, content)
 		fd.Close()
 	}
 }

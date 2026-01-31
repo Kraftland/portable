@@ -2522,8 +2522,8 @@ func multiInstance(miChan chan bool) {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
 		}
 		fd, openErr := os.OpenFile(
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal.new",
-			os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
+			os.O_WRONLY,
 			0700,
 		)
 		if openErr != nil {
@@ -2534,15 +2534,6 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Failed to write signal: " + err.Error())
 		}
 		fd.Close()
-		const file = ""
-		err = os.WriteFile(
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			[]byte(file),
-			0700,
-		)
-		if err != nil {
-			pecho("crit", "Failed to create signal: " + err.Error())
-		}
 		startAct = "abort"
 		os.Exit(0)
 	}
