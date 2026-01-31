@@ -1222,7 +1222,6 @@ func watchForTerminate() {
 			pecho("crit", "Unable to read event: " + sigErr.Error())
 		}
 		sigContent := strings.TrimSuffix(string(sigF), "\n")
-		pecho("debug", "Signal updated: " + sigContent)
 		if sigContent == "terminate-now" {
 			stopApp("normal")
 			os.Exit(0)
