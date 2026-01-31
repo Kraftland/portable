@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"bufio"
-	"github.com/rclone/rclone/lib/systemd"
 	"time"
+
+	"github.com/rclone/rclone/lib/systemd"
 )
 
 var (
@@ -53,13 +55,14 @@ func executeAndWait (launchTarget string, args []string) {
 	cmd := exec.Command(launchTarget, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	fmt.Println("Executing auxiliary target: ", launchTarget + " with " + strings.Join(args, " "))
 	cmd.Start()
 	startNotifier <- true
 	cmd.Wait()
 	startNotifier <- false
 }
 
-func auxStart (launchTarget string) {
+func auxStart (launchTarget string, launchArgs []string) {
 	inotifyArgs := []string{
 		"--quiet",
 		"-e",
@@ -80,7 +83,7 @@ func auxStart (launchTarget string) {
 			os.Exit(1)
 		}
 		scanner := bufio.NewScanner(fd)
-		args := []string{}
+		var args string
 		var index int = 1
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -89,13 +92,17 @@ func auxStart (launchTarget string) {
 			} else if line == "false" && index == 1 {
 				continue
 			}
-			args = append(
-				args,
-				line,
-			)
+			args = args + line
 			index++
 		}
-		go executeAndWait(launchTarget, args)
+		targetArgs := []string{}
+		extArgs := []string{}
+		json.Unmarshal([]byte(args), &extArgs)
+		targetArgs = append(
+			launchArgs,
+			extArgs...
+		)
+		go executeAndWait(launchTarget, targetArgs)
 		fd.Close()
 	}
 }
@@ -121,15 +128,16 @@ func main () {
 	// This is horrible, but launchTarget may have spaces
 	var rawTarget = os.Getenv("launchTarget")
 	targetSlice := strings.Split(rawTarget, " ")
-	var rawArgs string = os.Getenv("targetArgs")
-	fmt.Println("Got raw command line arguments: " + rawArgs)
-	argsSlice := strings.Split(rawArgs, "\n")
+	//var rawArgs string = os.Getenv("targetArgs")
+	var rawArgs = []string{}
+	json.Unmarshal([]byte(os.Getenv("targetArgs")), &rawArgs)
+	fmt.Println("Got raw command line arguments: " + strings.Join(rawArgs, " "))
 	targetArgs := targetSlice[1:]
 	targetArgs = append(
 		targetArgs,
-		argsSlice...
+		rawArgs...
 	)
-	go auxStart(targetSlice[0])
+	go auxStart(targetSlice[0], targetSlice[1:])
 	if os.Getenv("_portableDebug") == "1" {
 		targetSlice[0] = "/usr/bin/bash"
 		newArgSlice := []string{
