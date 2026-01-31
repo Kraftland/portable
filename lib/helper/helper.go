@@ -19,7 +19,6 @@ func startCounter () {
 	fmt.Println("Start counter init done")
 	for {
 		incoming := <- startNotifier
-		fmt.Println("Got incoming notification")
 		if incoming == true {
 			startedCount++
 		} else {
@@ -28,7 +27,7 @@ func startCounter () {
 
 		systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(startedCount))
 
-		if startedCount == 0 {
+		if startedCount < 1 {
 			fmt.Println("All tracked processes have exited")
 			const text = "terminate-now"
 			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY, 0700)
@@ -36,6 +35,7 @@ func startCounter () {
 				fmt.Println("Unable to open signal file: " + err.Error())
 			}
 			fmt.Fprint(fd, text)
+			fmt.Println("Sent termination signal")
 			os.Exit(0)
 		}
 	}
