@@ -2456,26 +2456,15 @@ func multiInstance(miChan chan bool) {
 			"string:org.kde.StatusNotifierWatcher",
 			"string:RegisteredStatusNotifierItems",
 		}
-		queryTrayCmd := exec.Command("/usr/bin/dbus-send", queryTrayArg...)
-		queryRaw, err := queryTrayCmd.StdoutPipe()
+		out, err := exec.Command("/usr/bin/dbus-send", queryTrayArg...).CombinedOutput()
 		if err != nil {
 			pecho("crit", "Could not get tray ID: " + err.Error())
 		}
-		scanner := bufio.NewScanner(queryRaw)
-		err = queryTrayCmd.Run()
-		if err != nil {
-			pecho("crit", "Could not get tray ID: " + err.Error())
-		}
-		re := regexp.MustCompile(`org.kde.StatusNotifierItem-\d+-\d+`)
-		var trayID string
-		for scanner.Scan() {
-			line := scanner.Text()
-			match := re.FindString(line)
-			if len(match) > 0 {
-				trayID = match
-				break
-			}
-		}
+		re := regexp.MustCompile(`org\.kde\.StatusNotifierItem-[0-9-]+`)
+		output := string(out)
+		match := re.FindString(output)
+		trayID := match
+
 		if len(trayID) > 0 {
 			wakeArgs := []string{
 				"--print-reply",
