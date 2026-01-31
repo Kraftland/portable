@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -10,7 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"bufio"
+	"time"
+
 	"github.com/KarpelesLab/reflink"
 )
 
@@ -1242,6 +1244,7 @@ func startApp() {
 		fmt.Println(sdExecErr)
 		pecho("crit", "Unable to start systemd-run")
 	}
+	stopApp("normal")
 }
 
 func forceBackgroundPerm() {
@@ -2625,5 +2628,7 @@ func main() {
 	addEnv("stop")
 	<- checkChan
 	startApp()
-	stopApp("normal")
+	for {
+		time.Sleep(360000 * time.Minute)
+	}
 }
