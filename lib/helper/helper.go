@@ -14,18 +14,23 @@ var (
 	startNotifier		= make(chan bool, 32767)
 )
 
+func updateSd(count int) {
+	systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(count))
+}
+
 func startCounter () {
 	var startedCount int = 0
 	fmt.Println("Start counter init done")
 	for {
 		incoming := <- startNotifier
+		fmt.Println("Got signal: ", incoming)
 		if incoming == true {
 			startedCount++
 		} else {
 			startedCount = startedCount - 1
 		}
 
-		systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(startedCount))
+		go updateSd(startedCount)
 
 		if startedCount < 1 {
 			fmt.Println("All tracked processes have exited")
