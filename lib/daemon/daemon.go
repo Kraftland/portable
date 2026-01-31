@@ -2424,6 +2424,7 @@ func inputBind(inputBindChan chan []string) {
 
 func instSignalFile(instChan chan int8) {
 	const content string = "false"
+	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	fd, err := os.OpenFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
 		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
