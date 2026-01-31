@@ -64,16 +64,16 @@ func auxStart (launchTarget string) {
 		"modify",
 		"/run/startSignal",
 	}
-	fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
-	if err != nil {
-		fmt.Println("Failed to open signal file: " + err.Error())
-		os.Exit(1)
-	}
 	for {
+		fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
+		if err != nil {
+			fmt.Println("Failed to open signal file: " + err.Error())
+			os.Exit(1)
+		}
 		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
 		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
-		err := inotifyCmd.Run()
-		if err != nil {
+		errInotify := inotifyCmd.Run()
+		if errInotify != nil {
 			fmt.Println("Could not watch signal file: ", err.Error())
 			os.Exit(1)
 		}
@@ -87,6 +87,7 @@ func auxStart (launchTarget string) {
 			)
 		}
 		go executeAndWait(launchTarget, args)
+		fd.Close()
 	}
 }
 
