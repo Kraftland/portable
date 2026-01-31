@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -214,7 +215,6 @@ func cmdlineDispatcher(cmdChan chan int) {
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
 				runtimeOpt.applicationArgs,
-				"\n",
 				value,
 			)
 			continue
@@ -264,7 +264,11 @@ func cmdlineDispatcher(cmdChan chan int) {
 				pecho("warn", "Unrecognised option: " + value)
 		}
 	}
-	addEnv("targetArgs=" + strings.Join(runtimeOpt.applicationArgs, " "))
+	encodedArg, errEncode := json.Marshal(runtimeOpt.applicationArgs)
+	if errEncode != nil {
+		pecho("warn", "Could not encode arguments as json")
+	}
+	addEnv("targetArgs=" + string(encodedArg))
 	cmdChan <- 1
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
@@ -2505,7 +2509,10 @@ func multiInstance(miChan chan bool) {
 		if internalLoggingLevel <= 1 {
 			fmt.Println(confOpts.launchTarget)
 		}
-		startExec := strings.Join(runtimeOpt.applicationArgs, "\n")
+		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
+		if jsonErr != nil {
+			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
+		}
 		fd, openErr := os.OpenFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
 			os.O_WRONLY|os.O_TRUNC,
@@ -2514,7 +2521,7 @@ func multiInstance(miChan chan bool) {
 		if openErr != nil {
 			pecho("crit", "Failed to open signal file: " + openErr.Error())
 		}
-		_, err := fmt.Fprintln(fd, startExec)
+		_, err := fmt.Fprintln(fd, string(startJson))
 		if err != nil {
 			pecho("crit", "Failed to write signal: " + err.Error())
 		}
