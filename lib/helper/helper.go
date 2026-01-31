@@ -14,29 +14,35 @@ var (
 	startNotifier		= make(chan bool, 32767)
 )
 
+func updateSd(count int) {
+	systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(count))
+}
+
 func startCounter () {
 	var startedCount int = 0
 	fmt.Println("Start counter init done")
 	for {
 		incoming := <- startNotifier
+		fmt.Println("Got signal: ", incoming)
 		if incoming == true {
 			startedCount++
 		} else {
 			startedCount = startedCount - 1
 		}
 
-		systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(startedCount))
+		go updateSd(startedCount)
 
 		if startedCount < 1 {
 			fmt.Println("All tracked processes have exited")
 			const text = "terminate-now"
-			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY, 0700)
+			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY|os.O_TRUNC, 0700)
 			if err != nil {
 				fmt.Println("Unable to open signal file: " + err.Error())
 			}
-			fmt.Fprint(fd, text)
+			fmt.Fprintln(fd, text)
+			fd.Close()
 			fmt.Println("Sent termination signal")
-			os.Exit(0)
+			break
 		}
 	}
 }
@@ -63,9 +69,9 @@ func auxStart (launchTarget string) {
 		fmt.Println("Failed to open signal file: " + err.Error())
 		os.Exit(1)
 	}
-	inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
-	inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 	for {
+		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
+		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
 		err := inotifyCmd.Run()
 		if err != nil {
 			fmt.Println("Could not watch signal file: ", err.Error())
