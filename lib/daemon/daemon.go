@@ -2341,6 +2341,8 @@ func inputBind(inputBindChan chan []string) {
 		"--dev-bind-try",	"/sys/class/hidraw", "/sys/class/hidraw",
 		"--dev-bind-try",	"/dev/input", "/dev/input",
 		"--dev-bind-try",	"/dev/uinput", "/dev/uinput",
+		"--dev-bind-try",	"/sys/devices/virtual/misc/uinput",
+			"/sys/devices/virtual/misc/uinput",
 	)
 
 	devEntries, err := os.ReadDir("/dev")
