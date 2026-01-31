@@ -30,13 +30,14 @@ func startCounter () {
 		if startedCount < 1 {
 			fmt.Println("All tracked processes have exited")
 			const text = "terminate-now"
-			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY, 0700)
+			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY|os.O_TRUNC, 0700)
 			if err != nil {
 				fmt.Println("Unable to open signal file: " + err.Error())
 			}
-			fmt.Fprint(fd, text)
+			fmt.Fprintln(fd, text)
+			fd.Close()
 			fmt.Println("Sent termination signal")
-			os.Exit(0)
+			break
 		}
 	}
 }
