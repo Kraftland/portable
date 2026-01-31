@@ -4,3 +4,4 @@ pkg/
 portable/
 *.out
 lib/daemon/portable-daemon
+lib/helper/helper

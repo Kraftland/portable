@@ -204,7 +204,6 @@ func cmdlineDispatcher(cmdChan chan int) {
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
-			pecho("debug", "Self found: " + value)
 			continue
 		}
 		if runtimeOpt.action == true {
@@ -213,6 +212,7 @@ func cmdlineDispatcher(cmdChan chan int) {
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
 				runtimeOpt.applicationArgs,
+				"\n",
 				value,
 			)
 			continue
@@ -2498,7 +2498,7 @@ func multiInstance(miChan chan bool) {
 		if internalLoggingLevel <= 1 {
 			fmt.Println(confOpts.launchTarget)
 		}
-		startExec := confOpts.launchTarget + " " + strings.Join(runtimeOpt.applicationArgs, " ")
+		startExec := strings.Join(runtimeOpt.applicationArgs, "\n")
 		fd, openErr := os.OpenFile(
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
 			os.O_WRONLY,
