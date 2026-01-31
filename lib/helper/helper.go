@@ -8,6 +8,7 @@ import (
 	"strings"
 	"bufio"
 	"github.com/rclone/rclone/lib/systemd"
+	"time"
 )
 
 var (
@@ -15,6 +16,7 @@ var (
 )
 
 func updateSd(count int) {
+	fmt.Println("Updating signal: ", count)
 	systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(count))
 }
 
@@ -79,12 +81,19 @@ func auxStart (launchTarget string) {
 		}
 		scanner := bufio.NewScanner(fd)
 		args := []string{}
+		var index int = 1
 		for scanner.Scan() {
 			line := scanner.Text()
+			if len(line) == 0 {
+				continue
+			} else if line == "false" && index == 1 {
+				continue
+			}
 			args = append(
 				args,
 				line,
 			)
+			index++
 		}
 		go executeAndWait(launchTarget, args)
 		fd.Close()
@@ -97,6 +106,7 @@ func startMaster(targetExec string, targetArgs []string) {
 	startCmd.Stdout = os.Stdout
 	startCmd.Stderr = os.Stderr
 	startNotifier <- true
+	fmt.Println("Starting main application " + targetExec + " with cmdline: " + strings.Join(targetArgs, " "))
 	startCmd.Start()
 	systemd.Notify()
 	startCmd.Wait()
@@ -112,6 +122,7 @@ func main () {
 	var rawTarget = os.Getenv("launchTarget")
 	targetSlice := strings.Split(rawTarget, " ")
 	var rawArgs string = os.Getenv("targetArgs")
+	fmt.Println("Got raw command line arguments: " + rawArgs)
 	argsSlice := strings.Split(rawArgs, "\n")
 	targetArgs := targetSlice[1:]
 	targetArgs = append(
@@ -144,5 +155,17 @@ func main () {
 			fmt.Println("Undefined busLaunchTarget!")
 		}
 	}
-	startMaster(targetSlice[0], targetArgs)
+	args := []string{}
+	for _, arg := range targetArgs {
+		if len(arg) > 0 {
+			args = append(
+				args,
+				arg,
+			)
+		}
+	}
+	startMaster(targetSlice[0], args)
+	for {
+		time.Sleep(360000 * time.Second)
+	}
 }
