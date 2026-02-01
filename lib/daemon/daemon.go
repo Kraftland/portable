@@ -1560,7 +1560,7 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 		"-p", "Delegate=yes",
 		"-p", "DelegateSubgroup=portable-cgroup",
 		"-p", "BindsTo=" + confOpts.friendlyName + "-dbus.service",
-		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + "(" + confOpts.appID + ")",
+		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
 		"-p", "NotifyAccess=all",
