@@ -787,50 +787,26 @@ func getFlatpakInstanceID() {
 	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.flatpakInstanceID)
 }
 
+func removeWrap(path string) {
+	removeErr := os.RemoveAll(path)
+	if removeErr != nil {
+		pecho("debug", "Unable to remove path " + path + ": " + removeErr.Error())
+	}
+}
+
 func cleanDirs() {
 	pecho("info", "Cleaning leftovers")
 	getFlatpakInstanceID()
-	var removeErr error
 	if len(runtimeInfo.flatpakInstanceID) > 0 && confOpts.mountInfo == true {
-		removeErr = os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
-		if removeErr != nil {
-			pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + removeErr.Error())
-		} else {
-			pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
-		}
-		removeErr = os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
-		if removeErr != nil {
-			pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + removeErr.Error())
-		} else {
-			pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
-		}
+		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
+		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
 	} else {
 		pecho("debug", "Skipped cleaning Flatpak entries")
 	}
-	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID)
-	if removeErr != nil {
-		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + removeErr.Error())
-	} else {
-		pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/portable/" + confOpts.appID)
-	}
-	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID)
-	if removeErr != nil {
-		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + removeErr.Error())
-	} else {
-		pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID)
-	}
-	removeErr = os.RemoveAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
-	if removeErr != nil {
-		pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y" + removeErr.Error())
-	} else {
-		pecho("debug", "Removed directory " + xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
-	}
-	removeErr = os.RemoveAll(xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
-	if removeErr != nil {
-		pecho("warn", "Unable to remove directory " + xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop" + removeErr.Error())
-	} else {
-		pecho("debug", "Removed directory " + xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
-	}
+	removeWrap(xdgDir.runtimeDir + "/portable/" + confOpts.appID)
+	removeWrap(xdgDir.runtimeDir + "/app/" + confOpts.appID)
+	removeWrap(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
+	removeWrap(xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
 }
 
 func stopApp(operation string) {
