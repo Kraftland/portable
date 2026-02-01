@@ -189,13 +189,13 @@ func resetDocs () {
 	os.Exit(0)
 }
 
-func showStats () {
+func showStats() {
 	cmdArgs := []string{
 		"--user",
 		"status",
 		"app-portable-" + confOpts.appID,
 	}
-	openCmd := exec.Command("flatpak", cmdArgs...)
+	openCmd := exec.Command("systemctl", cmdArgs...)
 	openCmd.Stderr = os.Stderr
 	openCmd.Stdout = os.Stdout
 	openCmd.Run()
