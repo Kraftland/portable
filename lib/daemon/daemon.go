@@ -772,9 +772,6 @@ func getFlatpakInstanceID() {
 	if len(runtimeInfo.flatpakInstanceID) > 0 {
 		pecho("debug", "Flatpak instance ID already known")
 		return
-	} else if confOpts.mountInfo == false {
-		pecho("debug", "Not getting instance ID because mountInfo is disabled")
-		return
 	}
 	controlFile, readErr := os.ReadFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control")
 	instanceID := regexp.MustCompile("instanceId=.*")
@@ -797,7 +794,7 @@ func removeWrap(path string) {
 func cleanDirs() {
 	pecho("info", "Cleaning leftovers")
 	getFlatpakInstanceID()
-	if len(runtimeInfo.flatpakInstanceID) > 0 && confOpts.mountInfo == true {
+	if len(runtimeInfo.flatpakInstanceID) > 0 {
 		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
 		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
 	} else {
