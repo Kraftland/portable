@@ -253,6 +253,9 @@ func cmdlineDispatcher(cmdChan chan int) {
 				case "stat":
 					startAct = "abort"
 					showStats()
+				case "stats":
+					startAct = "abort"
+					showStats()
 				default:
 					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
 			}
