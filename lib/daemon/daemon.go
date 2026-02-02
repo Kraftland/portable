@@ -14,7 +14,10 @@ import (
 	"strings"
 	"time"
 	"net"
+	"sync"
 	"github.com/KarpelesLab/reflink"
+	"runtime"
+	"runtime/pprof"
 )
 
 const (
@@ -1122,7 +1125,7 @@ func doCleanUnit(dbusChan chan int8) {
 	dbusChan <- 1
 }
 
-func startProxy(dbusChan chan int8, cleanUnitChan chan int8) {
+func startProxy(cleanUnitChan chan int8) {
 	dbusArgs := <- busArgChan
 	pecho("debug", "D-Bus argument ready")
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
@@ -1138,7 +1141,6 @@ func startProxy(dbusChan chan int8, cleanUnitChan chan int8) {
 	}
 	waitChan(cleanUnitChan, "unit clean-up")
 	busErr := busExec.Run()
-	dbusChan <- 1
 	if busErr != nil {
 		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
 	}
@@ -1266,7 +1268,7 @@ func waylandDisplay(wdChan chan []string) () {
 	wdChan <- waylandArgs
 }
 
-func instDesktopFile(instDesktopChan chan int8) {
+func instDesktopFile() {
 	_, err := os.Stat("/usr/share/applications/" + confOpts.appID + ".desktop")
 	if err == nil {
 		pecho("debug", ".desktop file detected")
@@ -1284,8 +1286,6 @@ func instDesktopFile(instDesktopChan chan int8) {
 		pecho("debug", "Done installing stub file")
 		pecho("warn", "You should supply your own .desktop file")
 	}
-
-	instDesktopChan <- 1
 }
 
 func setXDGEnvs (xdgEnvReady chan int8) {
@@ -2527,6 +2527,8 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
+	var postWg sync.WaitGroup
+	runtime.SetBlockProfileRate(1)
 	fmt.Println("Portable daemon", version, "starting")
 	var startTime = time.Now()
 	go gpuBind(gpuChan)
@@ -2556,7 +2558,6 @@ func main() {
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
 	go genBwArg(argChan, pwSecContextChan)
-	instDesktopChan := make(chan int8, 1)
 	multiInstanceDetected := <- miChan
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
@@ -2568,22 +2569,34 @@ func main() {
 		go doCleanUnit(cleanUnitChan)
 	}
 	go watchSignalSocket(signalWatcherReady)
-	proxyChan := make(chan int8, 1)
-	waitChan(genChan, "Flatpak instance ID stage 1")
+	<- genChan // Stage one, ensures that IDs are actually present
 	go calcDbusArg(busArgChan)
-	go instDesktopFile(instDesktopChan)
+	postWg.Add(1)
+	go func() {
+		defer postWg.Done()
+		instDesktopFile()
+	} ()
+
 	waitChan(genChan, "Flatpak instance ID stage 2")
-	go startProxy(proxyChan, cleanUnitChan)
-	go atSpiProxy(cleanUnitChan)
+	postWg.Add(2)
+	go func() {
+		defer postWg.Done()
+		startProxy(cleanUnitChan)
+	} ()
+	go func() {
+		defer postWg.Done()
+		atSpiProxy(cleanUnitChan)
+	} ()
+
 	go pwSecContext(pwSecContextChan, cleanUnitChan)
-	waitChan(proxyChan, "D-Bus proxy")
-	waitChan(instDesktopChan, "desktop file")
+	postWg.Wait()
 	waitChan(argChan, "bubblewrap arguments calculation")
 	waitChan(envPreChan, "env preparation")
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
 	<- checkChan
 	pecho("info", "Preparations done in " + strconv.Itoa(int(time.Since(startTime).Milliseconds())) + "ms")
+	pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
 	for {
 		time.Sleep(360000 * time.Hour)

@@ -11,6 +11,7 @@ import (
 	"time"
 	"net"
 	"github.com/rclone/rclone/lib/systemd"
+
 )
 
 var (
@@ -90,7 +91,6 @@ func auxStart (launchTarget string, launchArgs []string) {
 		fmt.Println("Could not listen for aux start: " + err.Error())
 		return
 	}
-	defer socket.Close()
 	var connCount int
 	for {
 		conn, connErr := socket.Accept()
