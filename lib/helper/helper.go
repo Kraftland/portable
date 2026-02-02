@@ -18,7 +18,7 @@ var (
 )
 
 func updateSd(count int) {
-	fmt.Println("Updating signal: ", count)
+	fmt.Println("Updating tracking status: ", count)
 	systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(count))
 }
 
@@ -92,8 +92,11 @@ func auxStart (launchTarget string, launchArgs []string) {
 		return
 	}
 	defer socket.Close()
+	var connCount int
 	for {
 		conn, connErr := socket.Accept()
+		connCount++
+		fmt.Println("Handling aux signal, total count: ", connCount)
 		if connErr != nil {
 			fmt.Println("Could not listen for aux start: " + connErr.Error())
 		}
