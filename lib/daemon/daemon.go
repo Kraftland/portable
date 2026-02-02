@@ -80,7 +80,7 @@ var (
 	runtimeInfo		RUNTIME_PARAMS
 	xdgDir			XDG_DIRS
 	runtimeOpt		RUNTIME_OPT
-	envsChan		= make(chan string, 100)
+	envsChan		= make(chan string, 512)
 	envsFlushReady		= make(chan int8, 1)
 	startAct		string
 	launchTarget		= make(chan string, 1)
