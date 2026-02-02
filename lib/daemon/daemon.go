@@ -1143,7 +1143,6 @@ func doCleanUnit(dbusChan chan int8) {
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
 		"app-portable-" + confOpts.appID + "-pipewire-container",
-		"app-portable-" + confOpts.appID,
 		confOpts.friendlyName + "-a11y",
 		confOpts.friendlyName + "-dbus",
 	}
