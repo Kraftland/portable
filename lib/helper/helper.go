@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,7 +18,7 @@ var (
 )
 
 func updateSd(count int) {
-	fmt.Println("Updating signal: ", count)
+	fmt.Println("Updating tracking status: ", count)
 	systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(count))
 }
 
@@ -59,57 +58,49 @@ func executeAndWait (launchTarget string, args []string) {
 	startNotifier <- false
 }
 
-func auxStart (launchTarget string, launchArgs []string) {
-	inotifyArgs := []string{
-		"--quiet",
-		"-e",
-		"close_write",
-		"/run/startSignal",
+func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []string) {
+	ioRead, err := io.ReadAll(conn)
+	if err != nil {
+		fmt.Println("Could not read connection: " + err.Error())
+		return
 	}
-	// var previousSig string
+	rawCmdline := strings.TrimRight(string(ioRead), "\n")
+	targetArgs := []string{}
+	targetArgs = append(
+		targetArgs,
+		launchArgs...
+	)
+	decodedArgs := []string{}
+	err = json.Unmarshal([]byte(rawCmdline), &targetArgs)
+	if err != nil {
+		fmt.Println("Could not unmarshal cmdline: " + err.Error())
+		return
+	}
+	targetArgs = append(
+		targetArgs,
+		decodedArgs...
+	)
+	go executeAndWait(launchTarget, targetArgs)
+}
+
+func auxStart (launchTarget string, launchArgs []string) {
+	var signalSocket string = "/run/portable-control/auxStart"
+	os.RemoveAll(signalSocket)
+	socket, err := net.Listen("unix", signalSocket)
+	if err != nil {
+		fmt.Println("Could not listen for aux start: " + err.Error())
+		return
+	}
+	defer socket.Close()
+	var connCount int
 	for {
-		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
-		inotifyCmd.Stderr = os.Stderr // Delete this if inotifywait becomes annoying
-		errInotify := inotifyCmd.Run()
-		inotifyCmd.Stdout = io.Discard
-		time.Sleep(50 * time.Millisecond)
-		// TODO: use UNIX socket for signalling
-		if errInotify != nil {
-			fmt.Println("Could not watch signal file: ", errInotify.Error())
-			os.Exit(1)
+		conn, connErr := socket.Accept()
+		connCount++
+		fmt.Println("Handling aux signal, total count: ", connCount)
+		if connErr != nil {
+			fmt.Println("Could not listen for aux start: " + connErr.Error())
 		}
-		fd, err := os.OpenFile("/run/startSignal", os.O_RDONLY, 0700)
-		if err != nil {
-			fmt.Println("Failed to open signal content: " + err.Error())
-			os.Exit(1)
-		}
-		scanner := bufio.NewScanner(fd)
-		var args string
-		var index int = 1
-		for scanner.Scan() {
-			line := scanner.Text()
-			if len(line) == 0 {
-				continue
-			} else if line == "false" && index == 1 {
-				continue
-			}
-			args = args + line
-			index++
-		}
-		fmt.Println("Got raw argument line: " + args)
-		targetArgs := []string{}
-		extArgs := []string{}
-		json.Unmarshal([]byte(args), &extArgs)
-		targetArgs = append(
-			launchArgs,
-			extArgs...
-		)
-		go executeAndWait(launchTarget, targetArgs)
-		fd.Close()
-		fd, _ = os.OpenFile("/run/startSignal", os.O_WRONLY|os.O_TRUNC, 0700)
-		var content string = ""
-		fmt.Fprint(fd, content)
-		fd.Close()
+		go handleIncomingAuxConn(conn, launchTarget, launchArgs)
 	}
 }
 

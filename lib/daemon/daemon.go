@@ -1385,6 +1385,7 @@ func miscEnvs (mEnvRd chan int8) {
 	if confOpts.qt5Compat == true {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
+	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env"
 	wrErr := os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
@@ -1464,8 +1465,6 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	go waylandDisplay(wayDisplayChan)
 	inputChan := make(chan []string, 1)
 	go inputBind(inputChan)
-	instChan := make(chan int8, 1)
-	go instSignalFile(instChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	miscChan := make(chan []string, 1)
@@ -1747,8 +1746,6 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 
 	addEnv("stop")
 	<- atSpiChan
-
-	<- instChan
 	argChan <- 1
 }
 
@@ -2367,38 +2364,6 @@ func inputBind(inputBindChan chan []string) {
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
-func instSignalFile(instChan chan int8) {
-	const content string = "false"
-	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	fd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
-		0700,
-	)
-	if err != nil {
-		pecho("crit", "Failed to install signal file: " + err.Error())
-	}
-	_, err = fmt.Fprintln(
-		fd,
-		content,
-	)
-	if err != nil {
-		pecho("crit", "Failed to write signal file: " + err.Error())
-	}
-	fd.Close()
-	fd, err = os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal.new",
-		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
-		0700,
-	)
-	if err != nil {
-		pecho("crit", "Failed to install signal content: " + err.Error())
-	}
-	fd.Close()
-	instChan <- 1
-	pecho("debug", "Created signal file")
-}
-
 func multiInstance(miChan chan bool) {
 	sdCmdArg := []string{
 		"--user",
@@ -2460,19 +2425,31 @@ func multiInstance(miChan chan bool) {
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
 		}
-		fd, openErr := os.OpenFile(
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			os.O_WRONLY,
-			0700,
-		)
-		if openErr != nil {
-			pecho("crit", "Failed to open signal file: " + openErr.Error())
+		var socketPath string = xdgDir.runtimeDir + "/portable/"
+		socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+		var waitCounter int
+		for {
+			_, statErr := os.Stat(socketPath)
+			if statErr != nil && os.IsNotExist(statErr) {
+				if waitCounter > 1000 * 60 {
+					pecho("warn", "Timed out waiting for socket, terminating")
+					stopApp("normal")
+				}
+				waitCounter++
+				time.Sleep(1 * time.Millisecond)
+			} else {
+				break
+			}
 		}
-		_, err := fmt.Fprintln(fd, string(startJson))
-		if err != nil {
-			pecho("crit", "Failed to write signal: " + err.Error())
+		socket, errDial := net.Dial("unix", socketPath)
+		if errDial != nil {
+			pecho("crit", "Could not dial socket: " + errDial.Error())
 		}
-		fd.Close()
+		defer socket.Close()
+		_, wrErr := socket.Write(startJson)
+		if wrErr != nil {
+			pecho("crit", "Could not write signal: " + wrErr.Error())
+		}
 		startAct = "abort"
 		os.Exit(0)
 	}
