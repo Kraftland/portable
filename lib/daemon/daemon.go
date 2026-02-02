@@ -827,18 +827,24 @@ func cleanDirs() {
 }
 
 func stopApp(operation string) {
-	go stopMainApp()
-	go stopMainAppCompat()
-	cleanChan := make(chan int8, 1)
-	go doCleanUnit(cleanChan)
-	cleanDirs()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func () {
+		defer wg.Done()
+		doCleanUnit()
+	} ()
+	go func () {
+		defer wg.Done()
+		cleanDirs()
+	} ()
+	wg.Wait()
+
 	switch operation {
 		case "normal":
 			pecho("debug", "Selected stop mode: normal")
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
 	}
-	<- cleanChan
 	os.Exit(0)
 }
 
@@ -1138,7 +1144,7 @@ func calcDbusArg(argChan chan []string) {
 	argChan <- argList
 }
 
-func doCleanUnit(dbusChan chan int8) {
+func doCleanUnit() {
 
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
@@ -1146,30 +1152,27 @@ func doCleanUnit(dbusChan chan int8) {
 		confOpts.friendlyName + "-a11y",
 		confOpts.friendlyName + "-dbus",
 	}
-	resetCmd := []string{"--user", "reset-failed"}
-	resetCmd = append(
-		resetCmd,
-		cleanUnits...
-	)
 
-	killCmd := []string{"--user", "--no-block", "kill", "-sSIGKILL"}
-	killCmd = append(
-		killCmd,
-		cleanUnits...
-	)
+	for _, unit := range cleanUnits {
+		_, err := os.Stat(
+			xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service",
+		)
+		if err != nil {
+			continue
+		}
+		killCmd := []string{"--user", "--no-block", "kill", "-sSIGKILL", unit}
+		resetCmd := []string{"--user", "reset-failed", unit}
 
-	err := exec.Command("systemctl", killCmd...)
-	err.Stderr = os.Stderr
-	err.Run()
+		cmd := exec.Command("systemctl", killCmd...)
+		cmd.Stderr = os.Stderr
+		cmd.Run()
 
-	err = exec.Command("systemctl", resetCmd...)
-	err.Stderr = os.Stderr
-	err.Run()
+		cmd = exec.Command("systemctl", resetCmd...)
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+	}
+
 	pecho("debug", "Cleaning ready")
-
-	dbusChan <- 1
-	dbusChan <- 1
-	dbusChan <- 1
 }
 
 func startProxy() {
