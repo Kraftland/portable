@@ -2637,10 +2637,11 @@ func main() {
 	go prepareEnvs(envPreChan)
 	go genBwArg(argChan, pwSecContextChan)
 	instDesktopChan := make(chan int8, 1)
+	multiInstanceDetected := <- miChan
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
 	<- genChan
-	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
+	if multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
 	}
