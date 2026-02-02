@@ -84,6 +84,7 @@ var (
 	checkChan		= make(chan int8, 1)
 	atSpiChan		= make(chan bool, 1)
 	launchTarget		= make(chan string, 1)
+	gpuChan 		= make(chan []string, 1)
 )
 
 func pecho(level string, message string) {
@@ -1508,8 +1509,6 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	go inputBind(inputChan)
 	instChan := make(chan int8, 1)
 	go instSignalFile(instChan)
-	gpuChan := make(chan []string, 1)
-	go gpuBind(gpuChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	miscChan := make(chan []string, 1)
@@ -2576,6 +2575,7 @@ func atSpiProxy() {
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
+	go gpuBind(gpuChan)
 	readConfChan := make(chan int)
 	go readConf(readConfChan)
 	xdgChan := make(chan int, 1)
