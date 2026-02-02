@@ -1220,7 +1220,6 @@ func handleSignal (conn net.Conn) {
 			case "terminate-now":
 				pecho("debug", "Got termination request from socket")
 				stopApp()
-				os.Exit(0)
 				return
 			default:
 				pecho("warn", "Unrecognised signal from socket: " + line)
@@ -1268,14 +1267,14 @@ func startApp() {
 	waitChan(signalWatcherReady, "Signal Watcher")
 	if startAct == "abort" {
 		stopApp()
-		os.Exit(0)
+	} else {
+		sdExecErr := sdExec.Run()
+		if sdExecErr != nil {
+			fmt.Println(sdExecErr)
+			pecho("warn", "systemd-run returned non 0 exit code")
+		}
+		stopApp()
 	}
-	sdExecErr := sdExec.Run()
-	if sdExecErr != nil {
-		fmt.Println(sdExecErr)
-		pecho("warn", "systemd-run returned non 0 exit code")
-	}
-	stopApp()
 }
 
 func forceBackgroundPerm() {
@@ -2606,7 +2605,7 @@ func main() {
 	waitChan(cmdChan, "cmdlineDispatcher")
 	if startAct == "abort" {
 		stopApp()
-		os.Exit(0)
+		return
 	}
 	miChan := make(chan bool, 1)
 
@@ -2637,7 +2636,7 @@ func main() {
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "abort"
 		stopApp()
-		os.Exit(0)
+		return
 	}
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
