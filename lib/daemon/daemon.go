@@ -1200,7 +1200,7 @@ func startApp() {
 	sdExecErr := sdExec.Run()
 	if sdExecErr != nil {
 		fmt.Println(sdExecErr)
-		pecho("crit", "Unable to start systemd-run")
+		pecho("warn", "systemd-run returned non 0 exit code")
 	}
 	stopApp("normal")
 }
