@@ -1551,6 +1551,7 @@ func genBwArg(pwChan chan []string) {
 		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
+		"-p", "SuccessExitStatus=SIGKILL",
 		"-p", "NotifyAccess=all",
 		"-p", "TimeoutStartSec=infinity",
 		"-p", "OOMPolicy=stop",
