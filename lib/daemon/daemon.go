@@ -825,7 +825,7 @@ func lookUpXDG(xdgChan chan int8) {
 	xdgChan <- 1
 }
 
-func pwSecContext(pwChan chan []string) {
+func pwSecContext(pwChan chan []string, cleanUnitChan chan int8) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
 	if confOpts.bindPipewire == false {
@@ -850,7 +850,7 @@ func pwSecContext(pwChan chan []string) {
 		"-P",
 		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
 	}
-
+	waitChan(cleanUnitChan, "unit clean-up")
 	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
 	pwSecRun.Stderr = os.Stderr
 	stdout, pipeErr := pwSecRun.StdoutPipe()
@@ -1084,7 +1084,7 @@ func doCleanUnit(dbusChan chan int8) {
 		cleanUnits...
 	)
 
-	killCmd := []string{"--user", "stop"}
+	killCmd := []string{"--user", "--no-block", "kill", "-sSIGKILL"}
 	killCmd = append(
 		killCmd,
 		cleanUnits...
@@ -1098,19 +1098,20 @@ func doCleanUnit(dbusChan chan int8) {
 	err.Stderr = os.Stderr
 	err.Run()
 
-	err = exec.Command("systemctl", cleanCmd...)
-	err.Stderr = os.Stderr
-	err.Run()
+	//err = exec.Command("systemctl", cleanCmd...)
+	//err.Stderr = os.Stderr
+	//err.Run()
 	pecho("debug", "Cleaning ready")
 
 	dbusChan <- 1
+	dbusChan <- 1
+	dbusChan <- 1
 }
 
-func startProxy(dbusChan chan int8) {
+func startProxy(dbusChan chan int8, cleanUnitChan chan int8) {
 	dbusArgs := <- busArgChan
 	pecho("debug", "D-Bus argument ready")
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
-	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
 	pecho("info", "Starting D-Bus proxy")
 
 	busExec := exec.Command(
@@ -1121,6 +1122,7 @@ func startProxy(dbusChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		busExec.Stdout = os.Stdout
 	}
+	waitChan(cleanUnitChan, "unit clean-up")
 	busErr := busExec.Run()
 	dbusChan <- 1
 	if busErr != nil {
@@ -2456,7 +2458,7 @@ func multiInstance(miChan chan bool) {
 	miChan <- true
 }
 
-func atSpiProxy() {
+func atSpiProxy(cleanUnitChan chan int8) {
 	_, err := os.Stat(xdgDir.runtimeDir + "/at-spi/bus")
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
 	if err != nil {
@@ -2503,14 +2505,13 @@ func atSpiProxy() {
 	if internalLoggingLevel <= 1 {
 		sdRunCmd.Stdout = os.Stdout
 	}
+	waitChan(cleanUnitChan, "unit clean-up")
 	sdRunCmd.Run()
 	atSpiChan <- true
 }
 
 func waitChan(tgChan chan int8, chanName string) {
-	startTime := time.Now()
 	<- tgChan
-	pecho("debug", "Waited " + strconv.Itoa(int(time.Since(startTime).Microseconds())) + " for " + chanName)
 }
 
 func main() {
@@ -2527,9 +2528,9 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	go getVariables(varChan)
 	waitChan(readConfChan, "configurations")
-	waitChan(cmdChan, "cmdlineDispatcher")
 	go flushEnvs()
 	waitChan(varChan, "variables")
+	waitChan(cmdChan, "cmdlineDispatcher")
 	if startAct == "abort" {
 		os.Exit(0)
 	}
@@ -2547,22 +2548,22 @@ func main() {
 	multiInstanceDetected := <- miChan
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
+	cleanUnitChan := make(chan int8, 3)
 	if multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
+	} else {
+		go doCleanUnit(cleanUnitChan)
 	}
 	go watchSignalSocket(signalWatcherReady)
-	cleanUnitChan := make(chan int8, 1)
-	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
 	waitChan(genChan, "Flatpak instance ID stage 1")
 	go calcDbusArg(busArgChan)
 	go instDesktopFile(instDesktopChan)
 	waitChan(genChan, "Flatpak instance ID stage 2")
-	waitChan(cleanUnitChan, "unit clean-up")
-	go startProxy(proxyChan)
-	go atSpiProxy()
-	go pwSecContext(pwSecContextChan)
+	go startProxy(proxyChan, cleanUnitChan)
+	go atSpiProxy(cleanUnitChan)
+	go pwSecContext(pwSecContextChan, cleanUnitChan)
 	waitChan(proxyChan, "D-Bus proxy")
 	waitChan(instDesktopChan, "desktop file")
 	waitChan(argChan, "bubblewrap arguments calculation")
