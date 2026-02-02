@@ -2422,16 +2422,10 @@ func inputBind(inputBindChan chan []string) {
 }
 
 func multiInstance(miChan chan bool) {
-	sdCmdArg := []string{
-		"--user",
-		"--quiet",
-		"is-active",
-		"app-portable-" + confOpts.appID,
-	}
-
-	sdCmd := exec.Command("/usr/bin/systemctl", sdCmdArg...)
-	sdCmd.Stderr = os.Stderr
-	err := sdCmd.Run()
+	var serviceFileName string = "app-portable-" + confOpts.appID + ".service"
+	_, err := os.Stat(
+		xdgDir.runtimeDir + "/systemd/transient/" + serviceFileName,
+	)
 	if err != nil {
 		miChan <- false
 		return
