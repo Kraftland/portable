@@ -41,6 +41,7 @@ func startCounter () {
 			text := []string{"terminate-now"}
 			sendSignal(text)
 			fmt.Println("Sent termination signal")
+			os.Exit(0)
 			break
 		}
 	}
