@@ -84,6 +84,7 @@ var (
 	checkChan		= make(chan int8, 1)
 	atSpiChan		= make(chan bool, 1)
 	launchTarget		= make(chan string, 1)
+	signalWatcherReady	= make(chan int8, 1)
 )
 
 func pecho(level string, message string) {
@@ -2672,6 +2673,7 @@ func main() {
 		startAct = "abort"
 		os.Exit(0)
 	}
+	go watchSignalSocket(signalWatcherReady)
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
@@ -2688,6 +2690,7 @@ func main() {
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
 	<- checkChan
+	<- signalWatcherReady
 	startApp()
 	for {
 		time.Sleep(360000 * time.Minute)
