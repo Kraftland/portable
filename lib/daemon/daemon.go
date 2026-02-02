@@ -2582,11 +2582,11 @@ func main() {
 	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int, 1)
 	<- xdgChan
-	go cmdlineDispatcher(cmdChan)
 	varChan := make(chan int, 1)
 	go getVariables(varChan)
 	<- varChan
 	<- readConfChan
+	go cmdlineDispatcher(cmdChan)
 	<- cmdChan
 	go flushEnvs()
 	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
