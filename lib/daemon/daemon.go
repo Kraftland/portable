@@ -1206,36 +1206,6 @@ func startProxy(dbusChan chan int8) {
 	}
 }
 
-func watchForTerminate() {
-	for {
-		openFd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-		os.O_RDONLY,
-		0700,
-		)
-		if err != nil {
-			pecho("crit", "Unable to open signal file: " + err.Error())
-		}
-		inotifyArgs := []string{
-			"--quiet",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-		}
-		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
-		inotifyCmd.Stderr = os.Stderr
-		inotifyCmd.Run()
-		sigF, sigErr := io.ReadAll(openFd)
-		if sigErr != nil {
-			pecho("crit", "Unable to read event: " + sigErr.Error())
-		}
-		sigContent := strings.TrimSuffix(string(sigF), "\n")
-		if sigContent == "terminate-now" {
-			stopApp("normal")
-			os.Exit(0)
-		}
-		openFd.Close()
-	}
-}
-
 func handleSignal (conn net.Conn) {
 	defer conn.Close()
 	scanner := bufio.NewScanner(conn)
@@ -1284,7 +1254,7 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
-	go watchForTerminate()
+	<- signalWatcherReady
 	if startAct == "abort" {
 		os.Exit(0)
 	}
@@ -2692,7 +2662,6 @@ func main() {
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
 	<- checkChan
-	<- signalWatcherReady
 	startApp()
 	for {
 		time.Sleep(360000 * time.Minute)
