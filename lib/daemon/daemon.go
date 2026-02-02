@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"net"
 	"github.com/KarpelesLab/reflink"
 )
 
@@ -1232,6 +1232,44 @@ func watchForTerminate() {
 			os.Exit(0)
 		}
 		openFd.Close()
+	}
+}
+
+func handleSignal (conn net.Conn) {
+	defer conn.Close()
+	scanner := bufio.NewScanner(conn)
+	for scanner.Scan() {
+		line := scanner.Text()
+		switch line {
+			case "terminate-now":
+				pecho("debug", "Got termination request from socket")
+				go stopApp("normal")
+				return
+			default:
+				pecho("warn", "Unrecognised signal from socket: " + line)
+		}
+	}
+}
+
+func watchSignalSocket(readyChan chan int8) {
+	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/signal"
+	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
+	if err != nil {
+		pecho("crit", "Could not create control directory: " + err.Error())
+	}
+	socket, listenErr := net.Listen("unix", signalSocketPath)
+	if listenErr != nil {
+		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
+	}
+	defer socket.Close()
+
+	readyChan <- 1
+	for {
+		conn, errListen := socket.Accept()
+		if errListen != nil {
+			pecho("warn", "Could not accept connection: " + errListen.Error())
+		}
+		go handleSignal(conn)
 	}
 }
 
