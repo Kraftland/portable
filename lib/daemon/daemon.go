@@ -1464,8 +1464,6 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 	go waylandDisplay(wayDisplayChan)
 	inputChan := make(chan []string, 1)
 	go inputBind(inputChan)
-	instChan := make(chan int8, 1)
-	go instSignalFile(instChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	miscChan := make(chan []string, 1)
@@ -1747,8 +1745,6 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 
 	addEnv("stop")
 	<- atSpiChan
-
-	<- instChan
 	argChan <- 1
 }
 
@@ -2365,38 +2361,6 @@ func inputBind(inputBindChan chan []string) {
 	}
 	inputBindChan <- inputBindArg
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
-}
-
-func instSignalFile(instChan chan int8) {
-	const content string = "false"
-	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	fd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
-		0700,
-	)
-	if err != nil {
-		pecho("crit", "Failed to install signal file: " + err.Error())
-	}
-	_, err = fmt.Fprintln(
-		fd,
-		content,
-	)
-	if err != nil {
-		pecho("crit", "Failed to write signal file: " + err.Error())
-	}
-	fd.Close()
-	fd, err = os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal.new",
-		os.O_TRUNC|os.O_CREATE|os.O_WRONLY,
-		0700,
-	)
-	if err != nil {
-		pecho("crit", "Failed to install signal content: " + err.Error())
-	}
-	fd.Close()
-	instChan <- 1
-	pecho("debug", "Created signal file")
 }
 
 func multiInstance(miChan chan bool) {
