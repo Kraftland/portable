@@ -16,8 +16,8 @@ import (
 	"net"
 	"sync"
 	"github.com/KarpelesLab/reflink"
-	"runtime"
-	"runtime/pprof"
+	//"runtime"
+	//"runtime/pprof"
 )
 
 const (
@@ -2043,6 +2043,7 @@ func bindXAuth(xauthChan chan []string) {
 }
 
 func gpuBind(gpuChan chan []string) {
+	var wg sync.WaitGroup
 	var gpuArg = []string{}
 	// SHOULD contain strings like card0, card1 etc
 	var totalGpus = []string{}
@@ -2089,15 +2090,17 @@ func gpuBind(gpuChan chan []string) {
 		default:
 			trailingS = "s"
 			if confOpts.gameMode == true {
-				envChan := make(chan int8, 1)
-				setOffloadEnvs(envChan)
+				wg.Add(1)
+				go func () {
+					defer wg.Done()
+					setOffloadEnvs()
+				} ()
 				for _, cardName := range totalGpus {
 					gpuArg = append(
 						gpuArg,
 						bindCard(cardName)...
 					)
 				}
-				<- envChan
 			} else {
 				for _, cardName := range totalGpus {
 					connectors, err := os.ReadDir("/sys/class/drm/" + cardName)
@@ -2172,6 +2175,7 @@ func gpuBind(gpuChan chan []string) {
 			}
 			}
 	}
+	wg.Wait()
 	gpuChan <- gpuArg
 	close(gpuChan)
 	var activeGPUList string = strings.Join(activeGpus, ", ")
@@ -2181,7 +2185,7 @@ func gpuBind(gpuChan chan []string) {
 	"Found " + strconv.Itoa(cardSums) + " GPU" + trailingS + ", identified active: " + activeGPUList)
 }
 
-func setOffloadEnvs(envsReady chan int8) () {
+func setOffloadEnvs() () {
 	var nvExist bool = false
 	addEnv("VK_LOADER_DRIVERS_DISABLE=none")
 	_, err := os.Stat("/dev/nvidia0")
@@ -2197,7 +2201,6 @@ func setOffloadEnvs(envsReady chan int8) () {
 	} else {
 		addEnv("DRI_PRIME=1")
 	}
-	envsReady <- 1
 }
 
 func bindCard(cardName string) (cardBindArg []string) {
@@ -2561,9 +2564,9 @@ func waitChan(tgChan chan int8, chanName string) {
 
 func main() {
 	var wg sync.WaitGroup
-	runtime.SetBlockProfileRate(1)
+	//runtime.SetBlockProfileRate(1)
+	//var startTime = time.Now()
 	fmt.Println("Portable daemon", version, "starting")
-	var startTime = time.Now()
 	go gpuBind(gpuChan)
 	readConfChan := make(chan int8)
 	go readConf(readConfChan)
@@ -2632,8 +2635,7 @@ func main() {
 	go pwSecContext(pwSecContextChan)
 	wg.Wait()
 	close(envsChan)
-	pecho("info", "Preparations done in " + strconv.Itoa(int(time.Since(startTime).Milliseconds())) + "ms")
-	pprof.Lookup("block").WriteTo(os.Stdout, 1)
+	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
 	for {
 		time.Sleep(360000 * time.Hour)
