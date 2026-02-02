@@ -85,6 +85,7 @@ var (
 	atSpiChan		= make(chan bool, 1)
 	launchTarget		= make(chan string, 1)
 	gpuChan 		= make(chan []string, 1)
+	busArgChan		= make(chan []string, 1)
 )
 
 func pecho(level string, message string) {
@@ -1160,10 +1161,7 @@ func doCleanUnit(dbusChan chan int8) {
 }
 
 func startProxy(dbusChan chan int8) {
-	argChan := make(chan []string, 1)
-	go calcDbusArg(argChan)
-
-	dbusArgs := <- argChan
+	dbusArgs := <- busArgChan
 	pecho("debug", "D-Bus argument ready")
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
@@ -2596,6 +2594,8 @@ func main() {
 		os.Exit(0)
 	}
 	miChan := make(chan bool, 1)
+
+	// MI
 	go multiInstance(miChan)
 	go sanityChecks()
 	argChan := make(chan int8, 1)
@@ -2615,6 +2615,7 @@ func main() {
 	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
 	<- genChan
+	go calcDbusArg(busArgChan)
 	go instDesktopFile(instDesktopChan)
 	<- genChan
 	<- cleanUnitChan
