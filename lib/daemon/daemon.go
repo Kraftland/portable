@@ -686,6 +686,7 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
 	}
+	defer flatpakInfo.Close()
 	pecho("debug", "Generating instance ID")
 	for {
 		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
@@ -733,8 +734,6 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	controlContent = strings.ReplaceAll(controlContent, "busAyHold", xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
 	controlContent = strings.ReplaceAll(controlContent, "friendlyHold", confOpts.friendlyName)
 	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control", []byte(controlContent), 0700)
-	genInfo <- 1
-	flatpakInfo.Close()
 }
 
 func getFlatpakInstanceID() {
@@ -2558,11 +2557,14 @@ func main() {
 	envPreChan := make(chan int8, 1)
 	go prepareEnvs(envPreChan)
 	go genBwArg(argChan, pwSecContextChan)
-	multiInstanceDetected := <- miChan
-	genChan := make(chan int8, 2)
-	go genFlatpakInstanceID(genChan)
+	genChan := make(chan int8, 1)
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		genFlatpakInstanceID(genChan)
+	} ()
 	cleanUnitChan := make(chan int8, 3)
-	if multiInstanceDetected == true {
+	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
 	} else {
@@ -2576,8 +2578,6 @@ func main() {
 		defer wg.Done()
 		instDesktopFile()
 	} ()
-
-	waitChan(genChan, "Flatpak instance ID stage 2")
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
