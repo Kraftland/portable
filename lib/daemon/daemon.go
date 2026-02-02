@@ -2663,6 +2663,6 @@ func main() {
 	<- checkChan
 	startApp()
 	for {
-		time.Sleep(360000 * time.Minute)
+		time.Sleep(360000 * time.Hour)
 	}
 }
