@@ -1442,7 +1442,7 @@ func miscEnvs (mEnvRd chan int8) {
 	addEnv("PS1=" + strconv.Quote("╰─>Portable·" + confOpts.appID + "·🤓 ⤔ "))
 	addEnv("QT_SCALE_FACTOR=" + os.Getenv("QT_SCALE_FACTOR"))
 	addEnv("HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory)
-	addEnv("XDG_SESSION_TYPE=" + os.Getenv("${XDG_SESSION_TYPE}"))
+	addEnv("XDG_SESSION_TYPE=" + os.Getenv("XDG_SESSION_TYPE"))
 	addEnv("WAYLAND_DISPLAY=" + xdgDir.runtimeDir + "/wayland-0")
 	addEnv("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus")
 	mEnvRd <- 1
