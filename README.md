@@ -7,7 +7,8 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 	- Note that `/lib` `/lib64` `/bin` `/sbin` should be symlinks to their respective locations under `/usr`
 
 - Does not have mount points under /usr/bin, and use a supported fs of OverlayFS (NOT BcacheFS)
-- MUST NOT have spaces in various paths until all parsing logic is fully examined
+
+This is the rewrite of the original Portable. For the legacy version, see `legacy` branch.
 
 # Why Portable?
 
