@@ -636,6 +636,19 @@ func readConf(readConfChan chan int8) {
 	readConfChan <- 1
 }
 
+func determineBoolConf (conChan chan bool, confName string, defaults bool, confReader []byte) {
+	confRe := regexp.MustCompile(confName + "=.*")
+	var confReadRaw string = tryProcessConf(string(confRe.Find(confReader)), confName)
+	switch confReadRaw {
+		case "true":
+			conChan <- true
+		case "false":
+			conChan <- false
+		default:
+			conChan <- defaults
+	}
+}
+
 func stopMainAppCompat() {
 	stopMainExec := exec.Command("systemctl", "--user", "stop", "app-portable-" + confOpts.friendlyName + ".slice")
 	stopMainExec.Stderr = os.Stdout
