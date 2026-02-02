@@ -655,12 +655,6 @@ func stopMainApp() {
 	}
 }
 
-func stopSlice() {
-	cleanChan := make(chan int8, 1)
-	go doCleanUnit(cleanChan)
-	<- cleanChan
-}
-
 func mkdirWrapper(dir string, readyChan chan int8) {
 	os.MkdirAll(dir, 0700)
 	readyChan <- 1
@@ -783,7 +777,8 @@ func cleanDirs() {
 func stopApp(operation string) {
 	go stopMainApp()
 	go stopMainAppCompat()
-	go stopSlice()
+	cleanChan := make(chan int8, 1)
+	go doCleanUnit(cleanChan)
 	cleanDirs()
 	switch operation {
 		case "normal":
@@ -791,6 +786,7 @@ func stopApp(operation string) {
 		default:
 			pecho("crit", "Unknown operation for stopApp: " + operation)
 	}
+	<- cleanChan
 	os.Exit(0)
 }
 
@@ -1167,7 +1163,6 @@ func handleSignal (conn net.Conn) {
 
 func watchSignalSocket(readyChan chan int8) {
 	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
-	os.RemoveAll(signalSocketPath)
 	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
 	if err != nil {
 		pecho("crit", "Could not create control directory: " + err.Error())
@@ -1774,7 +1769,6 @@ func isEnvValid(env string) bool {
 }
 
 func flushEnvs() {
-	os.RemoveAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
 	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	fd, err := os.Create(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
 	if err != nil {
