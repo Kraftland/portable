@@ -2173,6 +2173,7 @@ func gpuBind(gpuChan chan []string) {
 			}
 	}
 	gpuChan <- gpuArg
+	close(gpuChan)
 	var activeGPUList string = strings.Join(activeGpus, ", ")
 	pecho("debug", "Generated GPU bind parameters: " + strings.Join(gpuArg, ", "))
 	pecho(
