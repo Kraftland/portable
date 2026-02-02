@@ -83,7 +83,6 @@ var (
 	envsChan		= make(chan string, 100)
 	envsFlushReady		= make(chan int8, 1)
 	startAct		string
-	checkChan		= make(chan int8, 1)
 	launchTarget		= make(chan string, 1)
 	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
@@ -163,9 +162,6 @@ func sanityChecks() {
 	if err != nil {
 		pecho("crit", "Could not check mountpoints: " + err.Error())
 	}
-
-
-	checkChan <- 1
 }
 
 func addEnv(envToAdd string) {
