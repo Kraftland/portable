@@ -789,6 +789,8 @@ func removeWrap(path string) {
 	removeErr := os.RemoveAll(path)
 	if removeErr != nil {
 		pecho("debug", "Unable to remove path " + path + ": " + removeErr.Error())
+	} else {
+		pecho("debug", "Removed path " + path)
 	}
 }
 
