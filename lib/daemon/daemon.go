@@ -1244,7 +1244,7 @@ func watchSignalSocket(readyChan chan int8) {
 	for {
 		conn, errListen := socket.Accept()
 		if errListen != nil {
-			pecho("crit", "Could not accept connection: " + errListen.Error())
+			pecho("warn", "Could not accept connection: " + errListen.Error())
 			break
 		}
 		go handleSignal(conn)
