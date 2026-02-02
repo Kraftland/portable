@@ -85,7 +85,6 @@ var (
 	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 	startAct		string
 	checkChan		= make(chan int8, 1)
-	atSpiChan		= make(chan bool, 1)
 	launchTarget		= make(chan string, 1)
 	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
@@ -872,7 +871,7 @@ func pwSecContext(pwChan chan []string, cleanUnitChan chan int8) {
 		"-P",
 		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
 	}
-	waitChan(cleanUnitChan, "unit clean-up")
+	<- cleanUnitChan
 	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
 	pwSecRun.Stderr = os.Stderr
 	stdout, pipeErr := pwSecRun.StdoutPipe()
@@ -1138,7 +1137,7 @@ func startProxy(cleanUnitChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		busExec.Stdout = os.Stdout
 	}
-	waitChan(cleanUnitChan, "unit clean-up")
+	<- cleanUnitChan
 	busErr := busExec.Run()
 	if busErr != nil {
 		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
@@ -1758,7 +1757,6 @@ func genBwArg(pwChan chan []string) {
 	)
 
 	addEnv("stop")
-	<- atSpiChan
 }
 
 func isEnvValid(env string) bool {
@@ -2472,7 +2470,6 @@ func atSpiProxy(cleanUnitChan chan int8) {
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
 	if err != nil {
 		pecho("warn", "Could not detect accessibility bus: " + err.Error())
-		atSpiChan <- false
 		return
 	}
 	sdRunArgs := []string{
@@ -2514,9 +2511,8 @@ func atSpiProxy(cleanUnitChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		sdRunCmd.Stdout = os.Stdout
 	}
-	waitChan(cleanUnitChan, "unit clean-up")
-	sdRunCmd.Run()
-	atSpiChan <- true
+	<- cleanUnitChan
+	sdRunCmd.Start()
 }
 
 func waitChan(tgChan chan int8, chanName string) {
