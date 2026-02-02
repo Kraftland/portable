@@ -2527,7 +2527,7 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
-	var postWg sync.WaitGroup
+	var wg sync.WaitGroup
 	runtime.SetBlockProfileRate(1)
 	fmt.Println("Portable daemon", version, "starting")
 	var startTime = time.Now()
@@ -2571,25 +2571,25 @@ func main() {
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go calcDbusArg(busArgChan)
-	postWg.Add(1)
+	wg.Add(1)
 	go func() {
-		defer postWg.Done()
+		defer wg.Done()
 		instDesktopFile()
 	} ()
 
 	waitChan(genChan, "Flatpak instance ID stage 2")
-	postWg.Add(2)
+	wg.Add(2)
 	go func() {
-		defer postWg.Done()
+		defer wg.Done()
 		startProxy(cleanUnitChan)
 	} ()
 	go func() {
-		defer postWg.Done()
+		defer wg.Done()
 		atSpiProxy(cleanUnitChan)
 	} ()
 
 	go pwSecContext(pwSecContextChan, cleanUnitChan)
-	postWg.Wait()
+	wg.Wait()
 	waitChan(argChan, "bubblewrap arguments calculation")
 	waitChan(envPreChan, "env preparation")
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
