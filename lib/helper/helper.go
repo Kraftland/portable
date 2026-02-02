@@ -71,7 +71,7 @@ func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []stri
 		launchArgs...
 	)
 	decodedArgs := []string{}
-	err = json.Unmarshal([]byte(rawCmdline), &targetArgs)
+	err = json.Unmarshal([]byte(rawCmdline), &decodedArgs)
 	if err != nil {
 		fmt.Println("Could not unmarshal cmdline: " + err.Error())
 		return

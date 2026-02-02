@@ -2447,13 +2447,15 @@ func inputBind(inputBindChan chan []string) {
 
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
-	_, err := os.Stat(
-		socketPath,
-	)
+	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
+	_, err := net.DialTimeout("unix", socketPath, 5 * time.Millisecond)
 	if err != nil {
 		miChan <- false
 		return
+	} else {
+		pecho("debug", "Another instance running")
+		startAct = "aux"
+		miChan <- true
 	}
 	if confOpts.dbusWake == true {
 		queryTrayArg := []string{
@@ -2526,9 +2528,7 @@ func multiInstance(miChan chan bool) {
 		if wrErr != nil {
 			pecho("crit", "Could not write signal: " + wrErr.Error())
 		}
-		startAct = "abort"
 	}
-	miChan <- true
 }
 
 func atSpiProxy() {
@@ -2634,10 +2634,8 @@ func main() {
 	} ()
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
-		startAct = "abort"
-		stopApp()
-		return
-	}
+		startAct = "aux"
+	} else {
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go calcDbusArg(busArgChan)
@@ -2661,4 +2659,5 @@ func main() {
 	close(envsChan)
 	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
+	}
 }
