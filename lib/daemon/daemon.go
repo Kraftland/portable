@@ -2545,7 +2545,11 @@ func main() {
 
 	// MI
 	go multiInstance(miChan)
-	go sanityChecks()
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		sanityChecks()
+	} ()
 	pwSecContextChan := make(chan []string, 1)
 
 	wg.Add(3)
@@ -2592,7 +2596,6 @@ func main() {
 	wg.Wait()
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
-	<- checkChan
 	pecho("info", "Preparations done in " + strconv.Itoa(int(time.Since(startTime).Milliseconds())) + "ms")
 	pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
