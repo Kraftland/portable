@@ -2573,6 +2573,13 @@ func atSpiProxy() {
 	atSpiChan <- true
 }
 
+func waitChan(tgChan chan int8, chanName string) {
+	startTime := time.Now()
+	<- tgChan
+	endTime := time.Now()
+	pecho("debug", "Waited " + strconv.Itoa(int(endTime.Sub(startTime).Milliseconds())) + "for " + chanName)
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	go gpuBind(gpuChan)
