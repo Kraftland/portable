@@ -799,7 +799,7 @@ func cleanDirs() {
 		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
 		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
 	} else {
-		pecho("debug", "Skipped cleaning Flatpak entries")
+		pecho("warn", "Skipped cleaning Flatpak entries")
 	}
 	removeWrap(xdgDir.runtimeDir + "/portable/" + confOpts.appID)
 	removeWrap(xdgDir.runtimeDir + "/app/" + confOpts.appID)
