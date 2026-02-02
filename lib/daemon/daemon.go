@@ -657,26 +657,20 @@ func stopMainApp() {
 	}
 }
 
-func mkdirWrapper(dir string, readyChan chan int8) {
+func mkdirWrapper(dir string) {
 	os.MkdirAll(dir, 0700)
-	readyChan <- 1
 }
 
 func parallelMkdir(readyChan chan int8, dirs []string) {
-	mkdirReady := make(chan int8, 32767)
-	totalCnt := len(dirs)
+	var wg sync.WaitGroup
 	for _, dir := range dirs {
-		go mkdirWrapper(dir, mkdirReady)
+		wg.Add(1)
+		go func () {
+			defer wg.Done()
+			mkdirWrapper(dir)
+		} ()
 	}
 
-	cycleCnt := 0
-	for {
-		if cycleCnt == totalCnt {
-			break
-		}
-		<- mkdirReady
-		cycleCnt++
-	}
 	readyChan <- 1
 }
 
