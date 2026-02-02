@@ -82,7 +82,6 @@ var (
 	runtimeOpt		RUNTIME_OPT
 	envsChan		= make(chan string, 100)
 	envsFlushReady		= make(chan int8, 1)
-	envRegex		= regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 	startAct		string
 	checkChan		= make(chan int8, 1)
 	launchTarget		= make(chan string, 1)
@@ -1811,43 +1810,39 @@ func genBwArg(pwChan chan []string) {
 		"--",
 		"/usr/lib/portable/helper/helper",
 	)
-
-	addEnv("stop")
 }
 
 func flushEnvs() {
 	//os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	for {
-		envPend := <- envsChan
-		if envPend == "stop" {
-			fd, err := os.OpenFile(
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
-				os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
-				0700,
-			)
-			if err != nil {
-				pecho(
-					"crit",
-					"Could not open environment variables: " + err.Error(),
-				)
-			}
-			defer fd.Close()
-			writer := bufio.NewWriter(fd)
-			for _, env := range runtimeInfo.sdEnvParm {
-				_, err = fmt.Fprintln(writer, env)
-			}
-			err = writer.Flush()
-			if err != nil {
-				pecho("crit", "Could not write environment variables: " + err.Error())
-			}
-			envsFlushReady <- 1
-			break
-		}
+
+	for env := range envsChan {
 		runtimeInfo.sdEnvParm = append(
 			runtimeInfo.sdEnvParm,
-			envPend,
+			env,
 		)
 	}
+
+	fd, err := os.OpenFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
+			os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
+			0700,
+	)
+	if err != nil {
+		pecho(
+			"crit",
+			"Could not open environment variables: " + err.Error(),
+		)
+	}
+	defer fd.Close()
+	writer := bufio.NewWriter(fd)
+	for _, env := range runtimeInfo.sdEnvParm {
+		_, err = fmt.Fprintln(writer, env)
+	}
+	err = writer.Flush()
+	if err != nil {
+		pecho("crit", "Could not write environment variables: " + err.Error())
+	}
+	envsFlushReady <- 1
 }
 
 func translatePath(input string) (output string) {
@@ -2653,8 +2648,7 @@ func main() {
 
 	go pwSecContext(pwSecContextChan, cleanUnitChan)
 	wg.Wait()
-	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
-	addEnv("stop")
+	close(envsChan)
 	pecho("info", "Preparations done in " + strconv.Itoa(int(time.Since(startTime).Milliseconds())) + "ms")
 	pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
