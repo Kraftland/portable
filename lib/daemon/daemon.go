@@ -204,7 +204,7 @@ func showStats() {
 	os.Exit(0)
 }
 
-func cmdlineDispatcher(cmdChan chan int) {
+func cmdlineDispatcher(cmdChan chan int8) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
@@ -320,7 +320,7 @@ func shareFile() {
 	}
 }
 
-func getVariables(varChan chan int) {
+func getVariables(varChan chan int8) {
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
 		case "debug":
@@ -407,7 +407,7 @@ func tryProcessConf(input string, trimObj string) (output string) {
 	return
 }
 
-func readConf(readConfChan chan int) {
+func readConf(readConfChan chan int8) {
 	determineConfPath()
 
 	confReader, readErr := os.ReadFile(confOpts.confPath)
@@ -824,7 +824,7 @@ func stopApp(operation string) {
 	os.Exit(0)
 }
 
-func lookUpXDG(xdgChan chan int) {
+func lookUpXDG(xdgChan chan int8) {
 	xdgDir.runtimeDir = os.Getenv("XDG_RUNTIME_DIR")
 	if len(xdgDir.runtimeDir) == 0 {
 		pecho("warn", "XDG_RUNTIME_DIR not set")
@@ -2577,26 +2577,25 @@ func waitChan(tgChan chan int8, chanName string) {
 	startTime := time.Now()
 	<- tgChan
 	endTime := time.Now()
-	pecho("debug", "Waited " + strconv.Itoa(int(endTime.Sub(startTime).Milliseconds())) + "for " + chanName)
+	pecho("debug", "Waited " + strconv.Itoa(int(endTime.Sub(startTime).Microseconds())) + " for " + chanName)
 }
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	go gpuBind(gpuChan)
-	readConfChan := make(chan int)
+	readConfChan := make(chan int8)
 	go readConf(readConfChan)
-	xdgChan := make(chan int, 1)
+	xdgChan := make(chan int8, 1)
 	go lookUpXDG(xdgChan)
-	cmdChan := make(chan int, 1)
-	<- xdgChan
-	varChan := make(chan int, 1)
-	go getVariables(varChan)
-	<- varChan
-	<- readConfChan
+	cmdChan := make(chan int8, 1)
+	waitChan(xdgChan, "XDG lookup")
+	varChan := make(chan int8, 1)
 	go cmdlineDispatcher(cmdChan)
-	<- cmdChan
+	go getVariables(varChan)
+	waitChan(readConfChan, "configurations")
+	waitChan(cmdChan, "cmdlineDispatcher")
 	go flushEnvs()
-	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
+	waitChan(varChan, "variables")
 	if startAct == "abort" {
 		os.Exit(0)
 	}
