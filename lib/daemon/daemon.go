@@ -897,7 +897,7 @@ func lookUpXDG(xdgChan chan int8) {
 	xdgChan <- 1
 }
 
-func pwSecContext(pwChan chan []string, cleanUnitChan chan int8) {
+func pwSecContext(pwChan chan []string) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
 	if confOpts.bindPipewire == false {
@@ -922,7 +922,6 @@ func pwSecContext(pwChan chan []string, cleanUnitChan chan int8) {
 		"-P",
 		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
 	}
-	<- cleanUnitChan
 	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
 	pwSecRun.Stderr = os.Stderr
 	stdout, pipeErr := pwSecRun.StdoutPipe()
@@ -1174,7 +1173,7 @@ func doCleanUnit(dbusChan chan int8) {
 	dbusChan <- 1
 }
 
-func startProxy(cleanUnitChan chan int8) {
+func startProxy() {
 	dbusArgs := <- busArgChan
 	pecho("debug", "D-Bus argument ready")
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
@@ -1188,7 +1187,6 @@ func startProxy(cleanUnitChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		busExec.Stdout = os.Stdout
 	}
-	<- cleanUnitChan
 	busErr := busExec.Run()
 	if busErr != nil {
 		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
@@ -2515,7 +2513,7 @@ func multiInstance(miChan chan bool) {
 	miChan <- true
 }
 
-func atSpiProxy(cleanUnitChan chan int8) {
+func atSpiProxy() {
 	_, err := os.Stat(xdgDir.runtimeDir + "/at-spi/bus")
 	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
 	if err != nil {
@@ -2561,7 +2559,6 @@ func atSpiProxy(cleanUnitChan chan int8) {
 	if internalLoggingLevel <= 1 {
 		sdRunCmd.Stdout = os.Stdout
 	}
-	<- cleanUnitChan
 	sdRunCmd.Start()
 }
 
@@ -2617,12 +2614,9 @@ func main() {
 		genFlatpakInstanceID(genChan)
 	} ()
 
-	cleanUnitChan := make(chan int8, 3)
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
-	} else {
-		go doCleanUnit(cleanUnitChan)
 	}
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
@@ -2635,14 +2629,14 @@ func main() {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		startProxy(cleanUnitChan)
+		startProxy()
 	} ()
 	go func() {
 		defer wg.Done()
-		atSpiProxy(cleanUnitChan)
+		atSpiProxy()
 	} ()
 
-	go pwSecContext(pwSecContextChan, cleanUnitChan)
+	go pwSecContext(pwSecContextChan)
 	wg.Wait()
 	close(envsChan)
 	pecho("info", "Preparations done in " + strconv.Itoa(int(time.Since(startTime).Milliseconds())) + "ms")
