@@ -661,7 +661,7 @@ func mkdirWrapper(dir string) {
 	os.MkdirAll(dir, 0700)
 }
 
-func parallelMkdir(readyChan chan int8, dirs []string) {
+func parallelMkdir(dirs []string) {
 	var wg sync.WaitGroup
 	for _, dir := range dirs {
 		wg.Add(1)
@@ -670,11 +670,10 @@ func parallelMkdir(readyChan chan int8, dirs []string) {
 			mkdirWrapper(dir)
 		} ()
 	}
-
-	readyChan <- 1
 }
 
 func genFlatpakInstanceID(genInfo chan int8) {
+	var wg sync.WaitGroup
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
@@ -703,8 +702,12 @@ func genFlatpakInstanceID(genInfo chan int8) {
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/xdg-run",
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
 	}
-	mkdirReady := make(chan int8, 1)
-	parallelMkdir(mkdirReady, dirs)
+
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		parallelMkdir(dirs)
+	} ()
 	infoObj, ioErr := io.ReadAll(flatpakInfo)
 	if ioErr != nil {
 		pecho("debug", "Failed to read template Flatpak info for I/O error: " + ioErr.Error())
@@ -713,9 +716,13 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	stringObj = strings.ReplaceAll(stringObj, "placeHolderAppName", confOpts.appID)
 	stringObj = strings.ReplaceAll(stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID)
 	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
-	<- mkdirReady
-	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info", []byte(stringObj), 0700)
-	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info", []byte(stringObj), 0700)
+	wg.Wait()
+
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		writeInfoFile(stringObj)
+	} ()
 
 	var flatpakRef string = ""
 	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref", []byte(flatpakRef), 0700)
@@ -727,6 +734,29 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	controlContent = strings.ReplaceAll(controlContent, "busAyHold", xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
 	controlContent = strings.ReplaceAll(controlContent, "friendlyHold", confOpts.friendlyName)
 	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control", []byte(controlContent), 0700)
+	wg.Wait()
+}
+
+func writeInfoFile(content string) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func () {
+		defer wg.Done()
+		os.WriteFile(
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			[]byte(content),
+			0700,
+			)
+	} ()
+	go func () {
+		defer wg.Done()
+		os.WriteFile(
+			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info",
+			[]byte(content),
+			0700,
+			)
+	} ()
+	wg.Wait()
 }
 
 func getFlatpakInstanceID() {
