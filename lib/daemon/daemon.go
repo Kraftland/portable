@@ -1068,19 +1068,17 @@ func calcDbusArg(argChan chan []string) {
 }
 
 func doCleanUnit(dbusChan chan int8) {
+
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
-		"app-portable-" + confOpts.appID + "*",
+		"app-portable-" + confOpts.appID + "-pipewire-container",
+		"app-portable-" + confOpts.appID,
+		confOpts.friendlyName + "-a11y",
+		confOpts.friendlyName + "-dbus",
 	}
 	resetCmd := []string{"--user", "reset-failed"}
 	resetCmd = append(
 		resetCmd,
-		cleanUnits...
-	)
-
-	cleanCmd := []string{"--user", "clean"}
-	cleanCmd = append(
-		cleanCmd,
 		cleanUnits...
 	)
 
@@ -1097,10 +1095,6 @@ func doCleanUnit(dbusChan chan int8) {
 	err = exec.Command("systemctl", resetCmd...)
 	err.Stderr = os.Stderr
 	err.Run()
-
-	//err = exec.Command("systemctl", cleanCmd...)
-	//err.Stderr = os.Stderr
-	//err.Run()
 	pecho("debug", "Cleaning ready")
 
 	dbusChan <- 1
