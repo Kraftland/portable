@@ -1820,19 +1820,29 @@ func isEnvValid(env string) bool {
 }
 
 func flushEnvs() {
-	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	fd, err := os.Create(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env")
-	if err != nil {
-		pecho("crit", "Could not store generated environment variables: " + err.Error())
-	}
+	//os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	for {
 		envPend := <- envsChan
 		if envPend == "stop" {
+			fd, err := os.OpenFile(
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
+				os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
+				0700,
+			)
+			if err != nil {
+				pecho(
+					"crit",
+					"Could not open environment variables: " + err.Error(),
+				)
+			}
+			defer fd.Close()
+			writer := bufio.NewWriter(fd)
 			for _, env := range runtimeInfo.sdEnvParm {
-				_, err = fmt.Fprintln(fd, env)
-				if err != nil {
-					pecho("crit", "I/O error writing envs: " + err.Error())
-				}
+				_, err = fmt.Fprintln(writer, env)
+			}
+			err = writer.Flush()
+			if err != nil {
+				pecho("crit", "Could not write environment variables: " + err.Error())
 			}
 			envsFlushReady <- 1
 			break
