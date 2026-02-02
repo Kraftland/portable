@@ -1815,10 +1815,6 @@ func genBwArg(pwChan chan []string) {
 	addEnv("stop")
 }
 
-func isEnvValid(env string) bool {
-		return envRegex.MatchString(env)
-}
-
 func flushEnvs() {
 	//os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	for {
@@ -1847,13 +1843,10 @@ func flushEnvs() {
 			envsFlushReady <- 1
 			break
 		}
-		if isEnvValid(envPend) == true {
-
-			runtimeInfo.sdEnvParm = append(
-				runtimeInfo.sdEnvParm,
-				envPend,
-			)
-		}
+		runtimeInfo.sdEnvParm = append(
+			runtimeInfo.sdEnvParm,
+			envPend,
+		)
 	}
 }
 
