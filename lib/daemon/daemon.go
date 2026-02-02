@@ -1385,6 +1385,7 @@ func miscEnvs (mEnvRd chan int8) {
 	if confOpts.qt5Compat == true {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
+	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env"
 	wrErr := os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
