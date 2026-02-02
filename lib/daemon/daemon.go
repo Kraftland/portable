@@ -204,7 +204,7 @@ func showStats() {
 	os.Exit(0)
 }
 
-func cmdlineDispatcher(cmdChan chan int) {
+func cmdlineDispatcher(cmdChan chan int8) {
 	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
@@ -320,7 +320,7 @@ func shareFile() {
 	}
 }
 
-func getVariables(varChan chan int) {
+func getVariables(varChan chan int8) {
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
 		case "debug":
@@ -407,7 +407,7 @@ func tryProcessConf(input string, trimObj string) (output string) {
 	return
 }
 
-func readConf(readConfChan chan int) {
+func readConf(readConfChan chan int8) {
 	determineConfPath()
 
 	confReader, readErr := os.ReadFile(confOpts.confPath)
@@ -415,37 +415,21 @@ func readConf(readConfChan chan int) {
 		pecho("crit", "Could not read configuration file: " + readErr.Error())
 	}
 
-	appID, appIDReadErr := regexp.Compile("appID=.*")
-	if appIDReadErr == nil {
-		confOpts.appID = tryProcessConf(string(appID.Find(confReader)), "appID")
-		pecho("debug", "Determined appID: " + confOpts.appID)
-	} else {
-		pecho("crit", "Unable to parse appID: " + appIDReadErr.Error())
-	}
+	appID := regexp.MustCompile("appID=.*")
+	confOpts.appID = tryProcessConf(string(appID.Find(confReader)), "appID")
+	pecho("debug", "Determined appID: " + confOpts.appID)
 
-	friendlyName, friendlyNameReadErr := regexp.Compile("friendlyName=.*")
-	if friendlyNameReadErr == nil {
-		confOpts.friendlyName = tryProcessConf(string(friendlyName.Find(confReader)), "friendlyName")
-		pecho("debug", "Determined friendlyName: " + confOpts.friendlyName)
-	} else {
-		pecho("crit", "Unable to parse friendlyName: " + friendlyNameReadErr.Error())
-	}
+	friendlyName := regexp.MustCompile("friendlyName=.*")
+	confOpts.friendlyName = tryProcessConf(string(friendlyName.Find(confReader)), "friendlyName")
+	pecho("debug", "Determined friendlyName: " + confOpts.friendlyName)
 
-	stateDirectory, stateDirectoryReadErr := regexp.Compile("stateDirectory=.*")
-	if stateDirectoryReadErr == nil {
-		confOpts.stateDirectory = tryProcessConf(string(stateDirectory.Find(confReader)), "stateDirectory")
-		pecho("debug", "Determined stateDirectory: " + confOpts.stateDirectory)
-	} else {
-		pecho("crit", "Unable to parse stateDirectory: " + stateDirectoryReadErr.Error())
-	}
+	stateDirectory := regexp.MustCompile("stateDirectory=.*")
+	confOpts.stateDirectory = tryProcessConf(string(stateDirectory.Find(confReader)), "stateDirectory")
+	pecho("debug", "Determined stateDirectory: " + confOpts.stateDirectory)
 
-	mprisName, mprisNameReadErr := regexp.Compile("mprisName=.*")
-	if mprisNameReadErr == nil {
-		confOpts.mprisName = tryProcessConf(string(mprisName.Find(confReader)), "mprisName")
-		pecho("debug", "Determined mprisName: " + confOpts.mprisName)
-	} else {
-		pecho("crit", "Unable to parse mprisName: " + mprisNameReadErr.Error())
-	}
+	mprisName := regexp.MustCompile("mprisName=.*")
+	confOpts.mprisName = tryProcessConf(string(mprisName.Find(confReader)), "mprisName")
+	pecho("debug", "Determined mprisName: " + confOpts.mprisName)
 
 	launchTargetre := regexp.MustCompile("(?m)^launchTarget=(.*)$")
 	confOpts.launchTarget = tryProcessConf(string(launchTargetre.Find(confReader)), "launchTarget")
@@ -475,10 +459,7 @@ func readConf(readConfChan chan int) {
 
 
 
-	waylandOnly, waylandOnlyReadErr := regexp.Compile("waylandOnly=.*")
-	if waylandOnlyReadErr != nil {
-		pecho("crit", "Unable to parse waylandOnly: " + waylandOnlyReadErr.Error())
-	}
+	waylandOnly := regexp.MustCompile("waylandOnly=.*")
 	var waylandOnlyRaw string = tryProcessConf(string(waylandOnly.Find(confReader)), "waylandOnly")
 	switch waylandOnlyRaw {
 		case "true":
@@ -496,10 +477,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined waylandOnly: " + strconv.FormatBool(confOpts.waylandOnly))
 
-	bindNetwork, bindNetworkReadErr := regexp.Compile("bindNetwork=.*")
-	if bindNetworkReadErr != nil {
-		pecho("crit", "Unable to parse bindNetwork: " + bindNetworkReadErr.Error())
-	}
+	bindNetwork := regexp.MustCompile("bindNetwork=.*")
 	var bindNetworkRaw string = tryProcessConf(string(bindNetwork.Find(confReader)), "bindNetwork")
 	switch bindNetworkRaw {
 		case "true":
@@ -511,10 +489,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindNetwork: " + strconv.FormatBool(confOpts.bindNetwork))
 
-	terminateImmediately, terminateImmediatelyReadErr := regexp.Compile("terminateImmediately=.*")
-	if terminateImmediatelyReadErr != nil {
-		pecho("crit", "Unable to parse terminateImmediately: " + terminateImmediatelyReadErr.Error())
-	}
+	terminateImmediately := regexp.MustCompile("terminateImmediately=.*")
 	var terminateImmediatelyRaw string = tryProcessConf(string(terminateImmediately.Find(confReader)), "terminateImmediately")
 	switch terminateImmediatelyRaw {
 		case "true":
@@ -526,10 +501,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined terminateImmediately: " + strconv.FormatBool(confOpts.terminateImmediately))
 
-	useZink, useZinkReadErr := regexp.Compile("useZink=.*")
-	if useZinkReadErr != nil {
-		pecho("crit", "Unable to parse useZink: " + useZinkReadErr.Error())
-	}
+	useZink := regexp.MustCompile("useZink=.*")
 	var useZinkRaw string = tryProcessConf(string(useZink.Find(confReader)), "useZink")
 	switch useZinkRaw {
 		case "true":
@@ -541,10 +513,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined useZink: " + strconv.FormatBool(confOpts.useZink))
 
-	qt5Compat, qt5CompatReadErr := regexp.Compile("qt5Compat=.*")
-	if qt5CompatReadErr != nil {
-		pecho("crit", "Unable to parse qt5Compat: " + qt5CompatReadErr.Error())
-	}
+	qt5Compat := regexp.MustCompile("qt5Compat=.*")
 	var qt5CompatRaw string = tryProcessConf(string(qt5Compat.Find(confReader)), "qt5Compat")
 	switch qt5CompatRaw {
 		case "true":
@@ -568,10 +537,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined allowClassicNotifs: " + strconv.FormatBool(confOpts.allowClassicNotifs))
 
-	gameMode, gameModeReadErr := regexp.Compile("gameMode=.*")
-	if gameModeReadErr != nil {
-		pecho("crit", "Unable to parse gameMode: " + gameModeReadErr.Error())
-	}
+	gameMode := regexp.MustCompile("gameMode=.*")
 	var gameModeRaw string = tryProcessConf(string(gameMode.Find(confReader)), "gameMode")
 	switch gameModeRaw {
 		case "true":
@@ -583,10 +549,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined gameMode: " + strconv.FormatBool(confOpts.gameMode))
 
-	bindCameras, bindCamerasReadErr := regexp.Compile("bindCameras=.*")
-	if bindCamerasReadErr != nil {
-		pecho("crit", "Unable to parse bindCameras: " + bindCamerasReadErr.Error())
-	}
+	bindCameras := regexp.MustCompile("bindCameras=.*")
 	var bindCamerasRaw string = tryProcessConf(string(bindCameras.Find(confReader)), "bindCameras")
 	switch bindCamerasRaw {
 		case "true":
@@ -598,10 +561,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindCameras: " + strconv.FormatBool(confOpts.bindCameras))
 
-	bindPipewire, bindPipewireReadErr := regexp.Compile("bindPipewire=.*")
-	if bindPipewireReadErr != nil {
-		pecho("crit", "Unable to parse bindPipewire: " + bindPipewireReadErr.Error())
-	}
+	bindPipewire := regexp.MustCompile("bindPipewire=.*")
 	var bindPipewireRaw string = tryProcessConf(string(bindPipewire.Find(confReader)), "bindPipewire")
 	switch bindPipewireRaw {
 		case "true":
@@ -613,10 +573,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindPipewire: " + strconv.FormatBool(confOpts.bindPipewire))
 
-	bindInputDevices, bindInputDevicesReadErr := regexp.Compile("bindInputDevices=.*")
-	if bindInputDevicesReadErr != nil {
-		pecho("crit", "Unable to parse bindInputDevices: " + bindInputDevicesReadErr.Error())
-	}
+	bindInputDevices := regexp.MustCompile("bindInputDevices=.*")
 	var bindInputDevicesRaw string = tryProcessConf(string(bindInputDevices.Find(confReader)), "bindInputDevices")
 	switch bindInputDevicesRaw {
 		case "true":
@@ -628,10 +585,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined bindInputDevices: " + strconv.FormatBool(confOpts.bindInputDevices))
 
-	allowInhibit, allowInhibitReadErr := regexp.Compile("allowInhibit=.*")
-	if allowInhibitReadErr != nil {
-		pecho("crit", "Unable to parse allowInhibit: " + allowInhibitReadErr.Error())
-	}
+	allowInhibit := regexp.MustCompile("allowInhibit=.*")
 	var allowInhibitRaw string = tryProcessConf(string(allowInhibit.Find(confReader)), "allowInhibit")
 	switch allowInhibitRaw {
 		case "true":
@@ -643,10 +597,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined allowInhibit: " + strconv.FormatBool(confOpts.allowInhibit))
 
-	allowGlobalShortcuts, allowGlobalShortcutsReadErr := regexp.Compile("allowGlobalShortcuts=.*")
-	if allowGlobalShortcutsReadErr != nil {
-		pecho("crit", "Unable to parse allowGlobalShortcuts: " + allowGlobalShortcutsReadErr.Error())
-	}
+	allowGlobalShortcuts := regexp.MustCompile("allowGlobalShortcuts=.*")
 	var allowGlobalShortcutsRaw string = tryProcessConf(string(allowGlobalShortcuts.Find(confReader)), "allowGlobalShortcuts")
 	switch allowGlobalShortcutsRaw {
 		case "true":
@@ -658,10 +609,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined allowGlobalShortcuts: " + strconv.FormatBool(confOpts.allowGlobalShortcuts))
 
-	dbusWake, dbusWakeReadErr := regexp.Compile("dbusWake=.*")
-	if dbusWakeReadErr != nil {
-		pecho("crit", "Unable to parse dbusWake: " + dbusWakeReadErr.Error())
-	}
+	dbusWake := regexp.MustCompile("dbusWake=.*")
 	var dbusWakeRaw string = tryProcessConf(string(dbusWake.Find(confReader)), "dbusWake")
 	switch dbusWakeRaw {
 		case "true":
@@ -673,10 +621,7 @@ func readConf(readConfChan chan int) {
 	}
 	pecho("debug", "Determined dbusWake: " + strconv.FormatBool(confOpts.dbusWake))
 
-	mountInfo, mountInfoReadErr := regexp.Compile("mountInfo=.*")
-	if mountInfoReadErr != nil {
-		pecho("crit", "Unable to parse mountInfo: " + mountInfoReadErr.Error())
-	}
+	mountInfo := regexp.MustCompile("mountInfo=.*")
 	var mountInfoRaw string = tryProcessConf(string(mountInfo.Find(confReader)), "mountInfo")
 	switch mountInfoRaw {
 		case "true":
@@ -824,7 +769,7 @@ func stopApp(operation string) {
 	os.Exit(0)
 }
 
-func lookUpXDG(xdgChan chan int) {
+func lookUpXDG(xdgChan chan int8) {
 	xdgDir.runtimeDir = os.Getenv("XDG_RUNTIME_DIR")
 	if len(xdgDir.runtimeDir) == 0 {
 		pecho("warn", "XDG_RUNTIME_DIR not set")
@@ -2573,23 +2518,29 @@ func atSpiProxy() {
 	atSpiChan <- true
 }
 
+func waitChan(tgChan chan int8, chanName string) {
+	startTime := time.Now()
+	<- tgChan
+	endTime := time.Now()
+	pecho("debug", "Waited " + strconv.Itoa(int(endTime.Sub(startTime).Microseconds())) + " for " + chanName)
+}
+
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	go gpuBind(gpuChan)
-	readConfChan := make(chan int)
+	readConfChan := make(chan int8)
 	go readConf(readConfChan)
-	xdgChan := make(chan int, 1)
+	xdgChan := make(chan int8, 1)
 	go lookUpXDG(xdgChan)
-	cmdChan := make(chan int, 1)
-	<- xdgChan
-	varChan := make(chan int, 1)
-	go getVariables(varChan)
-	<- varChan
-	<- readConfChan
+	cmdChan := make(chan int8, 1)
+	waitChan(xdgChan, "XDG lookup")
+	varChan := make(chan int8, 1)
 	go cmdlineDispatcher(cmdChan)
-	<- cmdChan
+	go getVariables(varChan)
+	waitChan(readConfChan, "configurations")
+	waitChan(cmdChan, "cmdlineDispatcher")
 	go flushEnvs()
-	pecho("debug", "getVariables, lookupXDG, cmdlineDispatcher and readConf are ready")
+	waitChan(varChan, "variables")
 	if startAct == "abort" {
 		os.Exit(0)
 	}
