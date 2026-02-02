@@ -1421,7 +1421,7 @@ func miscEnvs (mEnvRd chan int8) {
 	mEnvRd <- 1
 }
 
-func prepareEnvs(readyChan chan int8) {
+func prepareEnvs() {
 	imChan := make(chan int8, 1)
 	xdgEnvChan := make(chan int8, 1)
 	shareDirChan := make(chan int8, 1)
@@ -1471,10 +1471,9 @@ func prepareEnvs(readyChan chan int8) {
 	<- miscEnvChan
 	<- xdgEnvChan
 	<- imChan
-	readyChan <- 1
 }
 
-func genBwArg(argChan chan int8, pwChan chan []string) {
+func genBwArg(pwChan chan []string) {
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
 	inputChan := make(chan []string, 1)
@@ -1760,7 +1759,6 @@ func genBwArg(argChan chan int8, pwChan chan []string) {
 
 	addEnv("stop")
 	<- atSpiChan
-	argChan <- 1
 }
 
 func isEnvValid(env string) bool {
@@ -2552,17 +2550,23 @@ func main() {
 	// MI
 	go multiInstance(miChan)
 	go sanityChecks()
-	argChan := make(chan int8, 1)
 	pwSecContextChan := make(chan []string, 1)
-	envPreChan := make(chan int8, 1)
-	go prepareEnvs(envPreChan)
-	go genBwArg(argChan, pwSecContextChan)
-	genChan := make(chan int8, 1)
-	wg.Add(1)
+
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		prepareEnvs()
+	} ()
+	go func () {
+		defer wg.Done()
+		genBwArg(pwSecContextChan)
+	} ()
+	genChan := make(chan int8, 1) // Signals when an ID has been chosen
 	go func () {
 		defer wg.Done()
 		genFlatpakInstanceID(genChan)
 	} ()
+
 	cleanUnitChan := make(chan int8, 3)
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "abort"
@@ -2590,8 +2594,6 @@ func main() {
 
 	go pwSecContext(pwSecContextChan, cleanUnitChan)
 	wg.Wait()
-	waitChan(argChan, "bubblewrap arguments calculation")
-	waitChan(envPreChan, "env preparation")
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
 	<- checkChan
