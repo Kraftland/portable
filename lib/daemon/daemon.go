@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"net"
 	"github.com/KarpelesLab/reflink"
 )
 
@@ -84,6 +84,7 @@ var (
 	checkChan		= make(chan int8, 1)
 	atSpiChan		= make(chan bool, 1)
 	launchTarget		= make(chan string, 1)
+	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
 )
@@ -1127,33 +1128,44 @@ func startProxy(dbusChan chan int8) {
 	}
 }
 
-func watchForTerminate() {
+func handleSignal (conn net.Conn) {
+	defer conn.Close()
+	scanner := bufio.NewScanner(conn)
+	for scanner.Scan() {
+		line := scanner.Text()
+		pecho("debug", "Handling signal: " + line)
+		switch line {
+			case "terminate-now":
+				pecho("debug", "Got termination request from socket")
+				go stopApp("normal")
+				return
+			default:
+				pecho("warn", "Unrecognised signal from socket: " + line)
+		}
+	}
+}
+
+func watchSignalSocket(readyChan chan int8) {
+	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
+	os.RemoveAll(signalSocketPath)
+	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
+	if err != nil {
+		pecho("crit", "Could not create control directory: " + err.Error())
+	}
+	socket, listenErr := net.Listen("unix", signalSocketPath)
+	if listenErr != nil {
+		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
+	}
+	defer socket.Close()
+
+	readyChan <- 1
+	pecho("debug", "Accepting signals")
 	for {
-		openFd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-		os.O_RDONLY,
-		0700,
-		)
-		if err != nil {
-			pecho("crit", "Unable to open signal file: " + err.Error())
+		conn, errListen := socket.Accept()
+		if errListen != nil {
+			pecho("warn", "Could not accept connection: " + errListen.Error())
 		}
-		inotifyArgs := []string{
-			"--quiet",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-		}
-		inotifyCmd := exec.Command("/usr/bin/inotifywait", inotifyArgs...)
-		inotifyCmd.Stderr = os.Stderr
-		inotifyCmd.Run()
-		sigF, sigErr := io.ReadAll(openFd)
-		if sigErr != nil {
-			pecho("crit", "Unable to read event: " + sigErr.Error())
-		}
-		sigContent := strings.TrimSuffix(string(sigF), "\n")
-		if sigContent == "terminate-now" {
-			stopApp("normal")
-			os.Exit(0)
-		}
-		openFd.Close()
+		go handleSignal(conn)
 	}
 }
 
@@ -1165,7 +1177,7 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
-	go watchForTerminate()
+	<- signalWatcherReady
 	if startAct == "abort" {
 		os.Exit(0)
 	}
@@ -2562,6 +2574,7 @@ func main() {
 		startAct = "abort"
 		os.Exit(0)
 	}
+	go watchSignalSocket(signalWatcherReady)
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
@@ -2582,6 +2595,6 @@ func main() {
 	<- checkChan
 	startApp()
 	for {
-		time.Sleep(360000 * time.Minute)
+		time.Sleep(360000 * time.Hour)
 	}
 }

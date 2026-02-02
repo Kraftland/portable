@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"net"
 	"github.com/rclone/rclone/lib/systemd"
 )
 
@@ -28,7 +28,6 @@ func startCounter () {
 	fmt.Println("Start counter init done")
 	for {
 		incoming := <- startNotifier
-		fmt.Println("Got signal: ", incoming)
 		if incoming == true {
 			startedCount++
 		} else {
@@ -39,14 +38,10 @@ func startCounter () {
 
 		if startedCount < 1 {
 			fmt.Println("All tracked processes have exited")
-			const text = "terminate-now"
-			fd, err := os.OpenFile("/run/startSignal", os.O_WRONLY|os.O_TRUNC, 0700)
-			if err != nil {
-				fmt.Println("Unable to open signal file: " + err.Error())
-			}
-			fmt.Fprintln(fd, text)
-			fd.Close()
+			text := []string{"terminate-now"}
+			sendSignal(text)
 			fmt.Println("Sent termination signal")
+			os.Exit(0)
 			break
 		}
 	}
@@ -130,6 +125,21 @@ func startMaster(targetExec string, targetArgs []string) {
 	startCmd.Wait()
 	startNotifier <- false
 	fmt.Println("Main process exited")
+}
+
+func sendSignal(signal []string) {
+	socket, err := net.Dial("unix", "/run/portable-control/daemon")
+	if err != nil {
+		panic("Could not dial signal socket" + err.Error())
+	}
+	var finalSignal string
+	for _, value := range signal {
+		finalSignal = value + "\n"
+	}
+	_, errWrite := socket.Write([]byte(finalSignal))
+	if errWrite != nil {
+		panic("Could not write signal " + finalSignal + ": " + errWrite.Error())
+	}
 }
 
 func main () {
