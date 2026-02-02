@@ -2069,11 +2069,6 @@ func gpuBind(gpuChan chan []string) {
 	}
 
 	var trailingS string
-
-	if len(os.Getenv("PORTABLE_ASSUME_SINGLE_GPU")) != 0 {
-		cardSums = 1
-	}
-
 	gpuArg = append(
 		gpuArg,
 		"--tmpfs", "/dev/dri",
