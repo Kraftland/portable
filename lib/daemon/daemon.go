@@ -2511,9 +2511,7 @@ func atSpiProxy(cleanUnitChan chan int8) {
 }
 
 func waitChan(tgChan chan int8, chanName string) {
-	startTime := time.Now()
 	<- tgChan
-	pecho("debug", "Waited " + strconv.Itoa(int(time.Since(startTime).Microseconds())) + " for " + chanName)
 }
 
 func main() {
