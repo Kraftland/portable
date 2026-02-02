@@ -1224,7 +1224,7 @@ func handleSignal (conn net.Conn) {
 }
 
 func watchSignalSocket(readyChan chan int8) {
-	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/signal"
+	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
 	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
 	if err != nil {
 		pecho("crit", "Could not create control directory: " + err.Error())
