@@ -1153,7 +1153,7 @@ func handleSignal (conn net.Conn) {
 		switch line {
 			case "terminate-now":
 				pecho("debug", "Got termination request from socket")
-				go stopApp("normal")
+				stopApp("normal")
 				return
 			default:
 				pecho("warn", "Unrecognised signal from socket: " + line)
