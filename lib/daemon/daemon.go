@@ -87,6 +87,7 @@ var (
 	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
+	socketStop		= make(chan int8, 2)
 )
 
 func pecho(level string, message string) {
@@ -103,7 +104,7 @@ func pecho(level string, message string) {
 			fmt.Println("[Warn] ", message)
 		case "crit":
 			fmt.Println("[Critical] ", message)
-			stopApp("normal")
+			stopApp()
 			panic("A critical error has happened")
 		default:
 			fmt.Println("[Undefined] ", message)
@@ -225,8 +226,9 @@ func cmdlineDispatcher(cmdChan chan int8) {
 			switch cmdlineArray[index + 1] {
 				case "quit":
 					runtimeOpt.quit = 2
-					stopApp("normal")
+					stopApp()
 					pecho("debug", "Received quit request from user")
+					os.Exit(0)
 				case "debug-shell":
 					addEnv("_portableDebug=1")
 				case "share-file":
@@ -802,31 +804,49 @@ func getFlatpakInstanceID() {
 	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.flatpakInstanceID)
 }
 
-func removeWrap(path string) {
-	removeErr := os.RemoveAll(path)
-	if removeErr != nil {
-		pecho("debug", "Unable to remove path " + path + ": " + removeErr.Error())
-	} else {
-		pecho("debug", "Removed path " + path)
+func removeWrapCon(paths []string) {
+	var wg sync.WaitGroup
+	wg.Add(len(paths))
+	for _, path := range paths {
+		p := path
+		go func () {
+			err := os.RemoveAll(p)
+			wg.Done()
+			if err != nil {
+				pecho(
+					"warn",
+					"Unable to remove " + path + ": " + err.Error(),
+				)
+			}
+		} ()
 	}
+	wg.Wait()
 }
 
 func cleanDirs() {
 	pecho("info", "Cleaning leftovers")
+	var serviceFileName string = "app-portable-" + confOpts.appID + ".service"
+	var paths = []string{
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+		xdgDir.runtimeDir + "/app/" + confOpts.appID,
+		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+		xdgDir.runtimeDir + "/portable/" + serviceFileName,
+	}
 	getFlatpakInstanceID()
 	if len(runtimeInfo.flatpakInstanceID) > 0 {
-		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
-		removeWrap(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID)
+		paths = append(
+			paths,
+			xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID,
+			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+		)
 	} else {
 		pecho("warn", "Skipped cleaning Flatpak entries")
 	}
-	removeWrap(xdgDir.runtimeDir + "/portable/" + confOpts.appID)
-	removeWrap(xdgDir.runtimeDir + "/app/" + confOpts.appID)
-	removeWrap(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
-	removeWrap(xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop")
+	removeWrapCon(paths)
 }
 
-func stopApp(operation string) {
+func stopApp() {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func () {
@@ -837,15 +857,10 @@ func stopApp(operation string) {
 		defer wg.Done()
 		cleanDirs()
 	} ()
+	socketStop <- 1
 	wg.Wait()
-
-	switch operation {
-		case "normal":
-			pecho("debug", "Selected stop mode: normal")
-		default:
-			pecho("crit", "Unknown operation for stopApp: " + operation)
-	}
-	os.Exit(0)
+	<- socketStop
+	//os.Exit(0)
 }
 
 func lookUpXDG(xdgChan chan int8) {
@@ -1204,7 +1219,8 @@ func handleSignal (conn net.Conn) {
 		switch line {
 			case "terminate-now":
 				pecho("debug", "Got termination request from socket")
-				stopApp("normal")
+				stopApp()
+				os.Exit(0)
 				return
 			default:
 				pecho("warn", "Unrecognised signal from socket: " + line)
@@ -1222,17 +1238,23 @@ func watchSignalSocket(readyChan chan int8) {
 	if listenErr != nil {
 		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
 	}
-	defer socket.Close()
-
 	readyChan <- 1
 	pecho("debug", "Accepting signals")
+	go closeSocketOnDemand(socketStop, socket)
 	for {
 		conn, errListen := socket.Accept()
 		if errListen != nil {
-			pecho("warn", "Could not accept connection: " + errListen.Error())
+			pecho("crit", "Could not accept connection: " + errListen.Error())
+			break
 		}
 		go handleSignal(conn)
 	}
+}
+
+func closeSocketOnDemand (chann chan int8, socket net.Listener) {
+	<- chann
+	socket.Close()
+	chann <- 1
 }
 
 func startApp() {
@@ -1245,6 +1267,7 @@ func startApp() {
 	<- envsFlushReady
 	waitChan(signalWatcherReady, "Signal Watcher")
 	if startAct == "abort" {
+		stopApp()
 		os.Exit(0)
 	}
 	sdExecErr := sdExec.Run()
@@ -1252,7 +1275,7 @@ func startApp() {
 		fmt.Println(sdExecErr)
 		pecho("warn", "systemd-run returned non 0 exit code")
 	}
-	stopApp("normal")
+	stopApp()
 }
 
 func forceBackgroundPerm() {
@@ -2424,9 +2447,10 @@ func inputBind(inputBindChan chan []string) {
 }
 
 func multiInstance(miChan chan bool) {
-	var serviceFileName string = "app-portable-" + confOpts.appID + ".service"
+	var socketPath string = xdgDir.runtimeDir + "/portable/"
+	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
 	_, err := os.Stat(
-		xdgDir.runtimeDir + "/systemd/transient/" + serviceFileName,
+		socketPath,
 	)
 	if err != nil {
 		miChan <- false
@@ -2478,15 +2502,15 @@ func multiInstance(miChan chan bool) {
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
 		}
-		var socketPath string = xdgDir.runtimeDir + "/portable/"
-		socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+
 		var waitCounter int
 		for {
 			_, statErr := os.Stat(socketPath)
 			if statErr != nil && os.IsNotExist(statErr) {
 				if waitCounter > 1000 * 60 {
 					pecho("warn", "Timed out waiting for socket, terminating")
-					stopApp("normal")
+					stopApp()
+					os.Exit(1)
 				}
 				waitCounter++
 				time.Sleep(1 * time.Millisecond)
@@ -2504,7 +2528,6 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Could not write signal: " + wrErr.Error())
 		}
 		startAct = "abort"
-		os.Exit(0)
 	}
 	miChan <- true
 }
@@ -2582,6 +2605,7 @@ func main() {
 	waitChan(varChan, "variables")
 	waitChan(cmdChan, "cmdlineDispatcher")
 	if startAct == "abort" {
+		stopApp()
 		os.Exit(0)
 	}
 	miChan := make(chan bool, 1)
@@ -2612,6 +2636,7 @@ func main() {
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "abort"
+		stopApp()
 		os.Exit(0)
 	}
 	go watchSignalSocket(signalWatcherReady)
@@ -2637,7 +2662,4 @@ func main() {
 	close(envsChan)
 	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
-	for {
-		time.Sleep(360000 * time.Hour)
-	}
 }
