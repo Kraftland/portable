@@ -1241,6 +1241,7 @@ func handleSignal (conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		line := scanner.Text()
+		pecho("debug", "Handling signal: " + line)
 		switch line {
 			case "terminate-now":
 				pecho("debug", "Got termination request from socket")
@@ -1265,6 +1266,7 @@ func watchSignalSocket(readyChan chan int8) {
 	defer socket.Close()
 
 	readyChan <- 1
+	pecho("debug", "Accepting signals")
 	for {
 		conn, errListen := socket.Accept()
 		if errListen != nil {
