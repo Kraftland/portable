@@ -2605,7 +2605,6 @@ func main() {
 	multiInstanceDetected := <- miChan
 	genChan := make(chan int8, 2)
 	go genFlatpakInstanceID(genChan)
-	<- genChan
 	if multiInstanceDetected == true {
 		startAct = "abort"
 		os.Exit(0)
@@ -2613,6 +2612,7 @@ func main() {
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
+	<- genChan
 	go instDesktopFile(instDesktopChan)
 	<- genChan
 	<- cleanUnitChan
