@@ -2426,6 +2426,20 @@ func multiInstance(miChan chan bool) {
 		}
 		var socketPath string = xdgDir.runtimeDir + "/portable/"
 		socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+		var waitCounter int
+		for {
+			_, statErr := os.Stat(socketPath)
+			if statErr != nil && os.IsNotExist(statErr) {
+				if waitCounter > 1000 * 60 {
+					pecho("warn", "Timed out waiting for socket, terminating")
+					stopApp("normal")
+				}
+				waitCounter++
+				time.Sleep(1 * time.Millisecond)
+			} else {
+				break
+			}
+		}
 		socket, errDial := net.Dial("unix", socketPath)
 		if errDial != nil {
 			pecho("crit", "Could not dial socket: " + errDial.Error())
