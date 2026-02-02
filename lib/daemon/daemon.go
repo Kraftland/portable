@@ -718,23 +718,55 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
 	wg.Wait()
 
-	wg.Add(1)
+	wg.Add(3)
+	go func () {
+		defer wg.Done()
+		writeControlFile()
+	} ()
 	go func () {
 		defer wg.Done()
 		writeInfoFile(stringObj)
 	} ()
+	go func () {
+		defer wg.Done()
+		writeFlatpakRef()
+	} ()
+	wg.Wait()
+}
 
-	var flatpakRef string = ""
-	os.WriteFile(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref", []byte(flatpakRef), 0700)
-
+func writeControlFile() {
 	var controlContent = controlFile
 	controlContent = strings.ReplaceAll(controlContent, "inIdHold", runtimeInfo.flatpakInstanceID)
 	controlContent = strings.ReplaceAll(controlContent, "idHold", confOpts.appID)
-	controlContent = strings.ReplaceAll(controlContent, "busHold", xdgDir.runtimeDir + "/app/" + confOpts.appID)
-	controlContent = strings.ReplaceAll(controlContent, "busAyHold", xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y")
-	controlContent = strings.ReplaceAll(controlContent, "friendlyHold", confOpts.friendlyName)
-	os.WriteFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control", []byte(controlContent), 0700)
-	wg.Wait()
+	controlContent = strings.ReplaceAll(
+		controlContent,
+		"busHold",
+		xdgDir.runtimeDir + "/app/" + confOpts.appID,
+	)
+	controlContent = strings.ReplaceAll(
+		controlContent,
+		"busAyHold",
+		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+	)
+	controlContent = strings.ReplaceAll(
+		controlContent,
+		"friendlyHold",
+		confOpts.friendlyName,
+	)
+	os.WriteFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control",
+		[]byte(controlContent),
+		0700,
+	)
+}
+
+func writeFlatpakRef() {
+	var flatpakRef string = ""
+	os.WriteFile(
+		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref",
+		[]byte(flatpakRef),
+		0700,
+	)
 }
 
 func writeInfoFile(content string) {
