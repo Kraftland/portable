@@ -1177,7 +1177,7 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
-	<- signalWatcherReady
+	waitChan(signalWatcherReady, "Signal Watcher")
 	if startAct == "abort" {
 		os.Exit(0)
 	}
@@ -2510,12 +2510,12 @@ func atSpiProxy() {
 func waitChan(tgChan chan int8, chanName string) {
 	startTime := time.Now()
 	<- tgChan
-	endTime := time.Now()
-	pecho("debug", "Waited " + strconv.Itoa(int(endTime.Sub(startTime).Microseconds())) + " for " + chanName)
+	pecho("debug", "Waited " + strconv.Itoa(int(time.Since(startTime).Microseconds())) + " for " + chanName)
 }
 
 func main() {
 	fmt.Println("Portable daemon", version, "starting")
+	var startTime = time.Now()
 	go gpuBind(gpuChan)
 	readConfChan := make(chan int8)
 	go readConf(readConfChan)
@@ -2555,21 +2555,22 @@ func main() {
 	cleanUnitChan := make(chan int8, 1)
 	go doCleanUnit(cleanUnitChan)
 	proxyChan := make(chan int8, 1)
-	<- genChan
+	waitChan(genChan, "Flatpak instance ID stage 1")
 	go calcDbusArg(busArgChan)
 	go instDesktopFile(instDesktopChan)
-	<- genChan
-	<- cleanUnitChan
+	waitChan(genChan, "Flatpak instance ID stage 2")
+	waitChan(cleanUnitChan, "unit clean-up")
 	go startProxy(proxyChan)
 	go atSpiProxy()
 	go pwSecContext(pwSecContextChan)
-	<- proxyChan
-	<- instDesktopChan
-	<- argChan
-	<- envPreChan
+	waitChan(proxyChan, "D-Bus proxy")
+	waitChan(instDesktopChan, "desktop file")
+	waitChan(argChan, "bubblewrap arguments calculation")
+	waitChan(envPreChan, "env preparation")
 	pecho("debug", "Proxy, PipeWire, argument generation and desktop file ready")
 	addEnv("stop")
 	<- checkChan
+	pecho("info", "Preparations done in " + strconv.Itoa(int(time.Since(startTime).Milliseconds())) + "ms")
 	startApp()
 	for {
 		time.Sleep(360000 * time.Hour)
