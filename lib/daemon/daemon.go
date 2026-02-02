@@ -2424,19 +2424,17 @@ func multiInstance(miChan chan bool) {
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
 		}
-		fd, openErr := os.OpenFile(
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/startSignal",
-			os.O_WRONLY,
-			0700,
-		)
-		if openErr != nil {
-			pecho("crit", "Failed to open signal file: " + openErr.Error())
+		var socketPath string = xdgDir.runtimeDir + "/portable/"
+		socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+		socket, errDial := net.Dial("unix", socketPath)
+		if errDial != nil {
+			pecho("crit", "Could not dial socket: " + errDial.Error())
 		}
-		_, err := fmt.Fprintln(fd, string(startJson))
-		if err != nil {
-			pecho("crit", "Failed to write signal: " + err.Error())
+		defer socket.Close()
+		_, wrErr := socket.Write(startJson)
+		if wrErr != nil {
+			pecho("crit", "Could not write signal: " + wrErr.Error())
 		}
-		fd.Close()
 		startAct = "abort"
 		os.Exit(0)
 	}
