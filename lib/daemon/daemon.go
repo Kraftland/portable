@@ -2109,7 +2109,6 @@ func gpuBind(gpuChan chan []string) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		default:
-			trailingS = "s"
 			if confOpts.gameMode == true {
 				wg.Add(1)
 				go func () {
