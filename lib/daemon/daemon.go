@@ -1560,6 +1560,7 @@ func genBwArg(
 		"--dev-bind",		"/sys/class/drm", "/sys/class/drm",
 		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
 		"--ro-bind",		"/sys/kernel", "/sys/kernel",
+		"--ro-bind",		"/sys/devices/virtual", "/sys/devices/virtual",
 
 		// usr binds
 		"--bind",		"/usr", "/usr",
@@ -2235,8 +2236,6 @@ func inputBind(inputBindChan chan []string) {
 		"--dev-bind-try",	"/sys/class/hidraw", "/sys/class/hidraw",
 		"--dev-bind-try",	"/dev/input", "/dev/input",
 		"--dev-bind-try",	"/dev/uinput", "/dev/uinput",
-		"--dev-bind-try",	"/sys/devices/virtual/misc/uinput",
-			"/sys/devices/virtual/misc/uinput",
 	)
 
 	devEntries, err := os.ReadDir("/dev")
