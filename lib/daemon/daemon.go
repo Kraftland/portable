@@ -36,7 +36,7 @@ type RUNTIME_OPT struct {
 }
 
 type RUNTIME_PARAMS struct {
-	flatpakInstanceID	string
+	instanceID		string
 	waylandDisplay		string
 	bwCmd			[]string
 	sdEnvParm		[]string
@@ -650,7 +650,7 @@ func mkdirPool(dirs []string) {
 	wg.Wait()
 }
 
-func genFlatpakInstanceID(genInfo chan int8) {
+func genInstanceID(genInfo chan int8) {
 	var wg sync.WaitGroup
 	pecho("debug", "Generating instance ID")
 	for {
@@ -663,7 +663,7 @@ func genFlatpakInstanceID(genInfo chan int8) {
 		} else if genId.Int64() < 1024 {
 			pecho("debug", "Rejecting low ID")
 		} else {
-			runtimeInfo.flatpakInstanceID = strconv.Itoa(idCandidate)
+			runtimeInfo.instanceID = strconv.Itoa(idCandidate)
 			genInfo <- 1
 			break
 		}
@@ -701,7 +701,7 @@ func genFlatpakInstanceID(genInfo chan int8) {
 func writeControlFile() {
 	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	var controlContent = controlFile
-	controlContent = strings.ReplaceAll(controlContent, "inIdHold", runtimeInfo.flatpakInstanceID)
+	controlContent = strings.ReplaceAll(controlContent, "inIdHold", runtimeInfo.instanceID)
 	controlContent = strings.ReplaceAll(controlContent, "idHold", confOpts.appID)
 	controlContent = strings.ReplaceAll(
 		controlContent,
@@ -748,25 +748,25 @@ func writeInfoFile() {
 	stringObj := string(infoObj)
 	replacer := strings.NewReplacer(
 		"placeHolderAppName", confOpts.appID,
-		"placeholderInstanceId", runtimeInfo.flatpakInstanceID,
+		"placeholderInstanceId", runtimeInfo.instanceID,
 		"placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory,
 	)
 	stringObj = replacer.Replace(stringObj)
-	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID, 0700)
+	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID, 0700)
 	os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
 		[]byte(stringObj),
 		0700,
 	)
 	os.WriteFile(
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info",
+		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info",
 		[]byte(stringObj),
 		0700,
 	)
 }
 
 func getFlatpakInstanceID() {
-	if len(runtimeInfo.flatpakInstanceID) > 0 {
+	if len(runtimeInfo.instanceID) > 0 {
 		pecho("debug", "Flatpak instance ID already known")
 		return
 	}
@@ -774,11 +774,11 @@ func getFlatpakInstanceID() {
 	instanceID := regexp.MustCompile("instanceId=.*")
 	if readErr == nil {
 		var rawInstanceID string = string(instanceID.Find(controlFile))
-		runtimeInfo.flatpakInstanceID = tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
+		runtimeInfo.instanceID = tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
 	} else {
 		pecho("warn", "Unable to read control file: " + readErr.Error())
 	}
-	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.flatpakInstanceID)
+	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.instanceID)
 }
 
 func removeWrapCon(paths []string) {
@@ -811,11 +811,11 @@ func cleanDirs() {
 		xdgDir.runtimeDir + "/portable/" + serviceFileName,
 	}
 	getFlatpakInstanceID()
-	if len(runtimeInfo.flatpakInstanceID) > 0 {
+	if len(runtimeInfo.instanceID) > 0 {
 		paths = append(
 			paths,
 			xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID,
-			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
 		)
 	} else {
 		pecho("warn", "Skipped cleaning Flatpak entries")
@@ -964,7 +964,7 @@ func calcDbusArg(argChan chan []string) {
 		"-p", "Wants=xdg-document-portal.service xdg-desktop-portal.service",
 		"-p", "After=xdg-document-portal.service xdg-desktop-portal.service",
 		"-p", "SuccessExitStatus=SIGKILL",
-		"-p", "StandardError=file:" + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/bwrapinfo.json",
+		"-p", "StandardError=file:" + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/bwrapinfo.json",
 		"--",
 		"bwrap",
 		"--json-status-fd", "2",
@@ -1144,7 +1144,6 @@ func calcDbusArg(argChan chan []string) {
 }
 
 func doCleanUnit() {
-
 	cleanUnits := []string{
 		confOpts.friendlyName + "*",
 		"app-portable-" + confOpts.appID + "-pipewire-container",
@@ -1172,8 +1171,10 @@ func doCleanUnit() {
 		cmd = exec.Command("systemctl", resetCmd...)
 		cmd.Stderr = os.Stderr
 		cmd.Run()
-		os.RemoveAll(xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service")
+		//os.RemoveAll(xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service")
 	}
+
+
 	pecho("debug", "Cleaning ready")
 }
 
@@ -1597,7 +1598,7 @@ func genBwArg(
 		"-p", "UMask=077",
 		"-p",
 		"EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
-		"-p", "Environment=instanceId=" + runtimeInfo.flatpakInstanceID,
+		"-p", "Environment=instanceId=" + runtimeInfo.instanceID,
 		"-p", "Environment=busDir=" + xdgDir.runtimeDir + "/app/" + confOpts.appID,
 		"-p", "UnsetEnvironment=GNOME_SETUP_DISPLAY",
 		"-p", "UnsetEnvironment=PIPEWIRE_REMOTE",
@@ -1939,12 +1940,12 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			miscArgs,
 			"--ro-bind",
 				"/dev/null",
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "-private/run-environ",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "-private/run-environ",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
 			"--ro-bind",
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID,
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
 				xdgDir.runtimeDir + "/flatpak-runtime-directory",
 			"--ro-bind",
 				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
@@ -2582,7 +2583,7 @@ func main() {
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
-		genFlatpakInstanceID(genChan)
+		genInstanceID(genChan)
 	} ()
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
