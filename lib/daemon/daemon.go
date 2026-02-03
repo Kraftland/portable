@@ -1858,6 +1858,8 @@ func maskDir(path string) (maskArgs []string) {
 	maskT, err := os.Stat(path)
 	if err == nil && maskT.IsDir() == true {
 		pecho("debug", "Masking " + path)
+	} else {
+		return
 	}
 	maskArgs = append(
 		maskArgs,
