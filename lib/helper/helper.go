@@ -37,6 +37,9 @@ func startCounter () {
 		go updateSd(startedCount)
 
 		if startedCount < 1 {
+			if os.Getenv("terminateImmediately") == "false" {
+				continue
+			}
 			fmt.Println("All tracked processes have exited")
 			text := []string{"terminate-now"}
 			sendSignal(text)
