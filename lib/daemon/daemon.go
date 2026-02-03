@@ -636,24 +636,6 @@ func readConf(readConfChan chan int8) {
 	readConfChan <- 1
 }
 
-func stopMainAppCompat() {
-	stopMainExec := exec.Command("systemctl", "--user", "stop", "app-portable-" + confOpts.friendlyName + ".slice")
-	stopMainExec.Stderr = os.Stdout
-	stopMainExecErr := stopMainExec.Run()
-	if stopMainExecErr != nil {
-		pecho("debug", "Stop " + "app-portable-" + confOpts.friendlyName + ".slice" + " failed: " + stopMainExecErr.Error())
-	}
-}
-
-func stopMainApp() {
-	stopMainExec := exec.Command("systemctl", "--user", "stop", "app-portable-" + confOpts.appID + ".service")
-	stopMainExec.Stderr = os.Stdout
-	stopMainExecErr := stopMainExec.Run()
-	if stopMainExecErr != nil {
-		pecho("debug", "Stop " + "app-portable-" + confOpts.appID + ".service" + " failed: " + stopMainExecErr.Error())
-	}
-}
-
 func mkdirWrapper(dir string) {
 	os.MkdirAll(dir, 0700)
 }
