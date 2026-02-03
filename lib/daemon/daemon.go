@@ -650,7 +650,7 @@ func mkdirPool(dirs []string) {
 	wg.Wait()
 }
 
-func genInstanceID(genInfo chan int8) {
+func genInstanceID(genInfo chan int8, proceed chan int8) {
 	var wg sync.WaitGroup
 	pecho("debug", "Generating instance ID")
 	for {
@@ -674,7 +674,7 @@ func genInstanceID(genInfo chan int8) {
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
 	}
 
-	<- genInfo
+	<- proceed
 
 	wg.Add(1)
 	go func () {
@@ -802,13 +802,11 @@ func removeWrapCon(paths []string) {
 
 func cleanDirs() {
 	pecho("info", "Cleaning leftovers")
-	var serviceFileName string = "app-portable-" + confOpts.appID + ".service"
 	var paths = []string{
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID,
 		xdgDir.runtimeDir + "/app/" + confOpts.appID,
 		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
 		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
-		xdgDir.runtimeDir + "/portable/" + serviceFileName,
 	}
 	getFlatpakInstanceID()
 	if len(runtimeInfo.instanceID) > 0 {
@@ -914,7 +912,7 @@ func pwSecContext(pwChan chan []string) {
 		"--quiet",
 		"--pipe",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", "app-portable-" + confOpts.appID + "-pipewire-container",
+		"-u", "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container",
 		"-p", "KillMode=control-group",
 		"-p", "After=pipewire.service",
 		"-p", "Requires=pipewire.service",
@@ -959,7 +957,7 @@ func calcDbusArg(argChan chan []string) {
 		argList,
 		"--user",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", confOpts.friendlyName + "-dbus",
+		"-u", confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus",
 		"-p", "KillMode=control-group",
 		"-p", "Wants=xdg-document-portal.service xdg-desktop-portal.service",
 		"-p", "After=xdg-document-portal.service xdg-desktop-portal.service",
@@ -1144,36 +1142,14 @@ func calcDbusArg(argChan chan []string) {
 }
 
 func doCleanUnit() {
-	cleanUnits := []string{
-		confOpts.friendlyName + "*",
-		"app-portable-" + confOpts.appID + "-pipewire-container",
-		confOpts.friendlyName + "-a11y",
-		confOpts.friendlyName + "-dbus",
-	}
-
-	for _, unit := range cleanUnits {
-		_, err := os.Stat(
-			xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service",
-		)
-		if err != nil {
-			pecho("debug", "Not cleaning unit: " + unit)
-			continue
-		} else {
-			pecho("debug", "Cleaning unit: " + unit)
-		}
-		killCmd := []string{"--user", "--no-block", "kill", "-sSIGKILL", unit}
-		resetCmd := []string{"--user", "reset-failed", unit}
-
-		cmd := exec.Command("systemctl", killCmd...)
-		cmd.Stderr = os.Stderr
-		cmd.Run()
-
-		cmd = exec.Command("systemctl", resetCmd...)
-		cmd.Stderr = os.Stderr
-		cmd.Run()
-		//os.RemoveAll(xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service")
-	}
-
+	cmd := exec.Command(
+		"/usr/bin/systemctl",
+		"--user",
+		"kill",
+		"portable" + confOpts.friendlyName + ".slice",
+	)
+	cmd.Stderr = os.Stderr
+	cmd.Run()
 
 	pecho("debug", "Cleaning ready")
 }
@@ -1557,11 +1533,11 @@ func genBwArg(
 		"--pty",
 		"--service-type=notify-reload",
 		"--wait",
-		"--unit=app-portable-" + confOpts.appID,
+		"--unit=app-portable-" + "-" + runtimeInfo.instanceID + confOpts.appID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
 		"-p", "DelegateSubgroup=portable-cgroup",
-		"-p", "BindsTo=" + confOpts.friendlyName + "-dbus.service",
+		"-p", "BindsTo=" + confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
@@ -2519,7 +2495,7 @@ func atSpiProxy() {
 		"--user",
 		"--quiet",
 		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", confOpts.friendlyName + "-a11y",
+		"-u", confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-a11y",
 		"--",
 		"/usr/bin/bwrap",
 		"--symlink", "/usr/lib64", "/lib64",
@@ -2579,11 +2555,13 @@ func main() {
 	go getVariables(varChan)
 	waitChan(readConfChan, "configurations")
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
-		and we signal back when multi-instance is cleared */
+		and we signal back when multi-instance is cleared
+		in another channel */
+	genChanProceed := make(chan int8, 1)
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
-		genInstanceID(genChan)
+		genInstanceID(genChan, genChanProceed)
 	} ()
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
@@ -2614,17 +2592,17 @@ func main() {
 		defer wg.Done()
 		prepareEnvs()
 	} ()
-	go func () {
-		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan, inputChan)
-	} ()
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
 	} else {
-	genChan <- 1
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
+	go func () {
+		defer wg.Done()
+		genBwArg(pwSecContextChan, xChan, camChan, inputChan)
+	} ()
+	genChanProceed <- 1
 	go calcDbusArg(busArgChan)
 	wg.Add(1)
 	go func() {
