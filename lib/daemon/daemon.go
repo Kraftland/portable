@@ -676,6 +676,8 @@ func genFlatpakInstanceID(genInfo chan int8) {
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
 	}
 
+	<- genInfo
+
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
@@ -749,26 +751,17 @@ func writeInfoFile() {
 	stringObj = strings.ReplaceAll(stringObj, "placeHolderAppName", confOpts.appID)
 	stringObj = strings.ReplaceAll(stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID)
 	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
-	var wg sync.WaitGroup
-	wg.Add(2)
 	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID, 0700)
-	go func () {
-		defer wg.Done()
-		os.WriteFile(
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-			[]byte(stringObj),
-			0700,
-			)
-	} ()
-	go func () {
-		defer wg.Done()
-		os.WriteFile(
-			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info",
-			[]byte(stringObj),
-			0700,
-			)
-	} ()
-	wg.Wait()
+	os.WriteFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+		[]byte(stringObj),
+		0700,
+	)
+	os.WriteFile(
+		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID + "/info",
+		[]byte(stringObj),
+		0700,
+	)
 }
 
 func getFlatpakInstanceID() {
@@ -2583,6 +2576,13 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	go getVariables(varChan)
 	waitChan(readConfChan, "configurations")
+	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
+		and we signal back when multi-instance is cleared */
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		genFlatpakInstanceID(genChan)
+	} ()
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
 	inputChan := make(chan []string, 1)
@@ -2607,7 +2607,7 @@ func main() {
 	} ()
 	pwSecContextChan := make(chan []string, 1)
 
-	wg.Add(3)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		prepareEnvs()
@@ -2616,15 +2616,11 @@ func main() {
 		defer wg.Done()
 		genBwArg(pwSecContextChan, xChan, camChan, inputChan)
 	} ()
-	genChan := make(chan int8, 1) // Signals when an ID has been chosen
-	go func () {
-		defer wg.Done()
-		genFlatpakInstanceID(genChan)
-	} ()
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
 	} else {
+	genChan <- 1
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go calcDbusArg(busArgChan)
