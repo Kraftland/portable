@@ -11,6 +11,7 @@ import (
 	"time"
 	"net"
 	"github.com/rclone/rclone/lib/systemd"
+
 )
 
 var (
@@ -70,7 +71,7 @@ func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []stri
 		launchArgs...
 	)
 	decodedArgs := []string{}
-	err = json.Unmarshal([]byte(rawCmdline), &targetArgs)
+	err = json.Unmarshal([]byte(rawCmdline), &decodedArgs)
 	if err != nil {
 		fmt.Println("Could not unmarshal cmdline: " + err.Error())
 		return
@@ -84,13 +85,11 @@ func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []stri
 
 func auxStart (launchTarget string, launchArgs []string) {
 	var signalSocket string = "/run/portable-control/auxStart"
-	os.RemoveAll(signalSocket)
 	socket, err := net.Listen("unix", signalSocket)
 	if err != nil {
 		fmt.Println("Could not listen for aux start: " + err.Error())
 		return
 	}
-	defer socket.Close()
 	var connCount int
 	for {
 		conn, connErr := socket.Accept()
