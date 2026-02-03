@@ -636,20 +636,16 @@ func readConf(readConfChan chan int8) {
 	readConfChan <- 1
 }
 
-func mkdirWrapper(dir string) {
-	os.MkdirAll(dir, 0700)
-}
-
-func parallelMkdir(dirs []string) {
-	//var wg sync.WaitGroup
+func mkdirPool(dirs []string) {
+	var wg sync.WaitGroup
 	for _, dir := range dirs {
-		//wg.Add(1)
-		//go func () {
-		//	defer wg.Done()
-			mkdirWrapper(dir)
-		//} ()
+		wg.Add(1)
+		go func () {
+			defer wg.Done()
+			os.MkdirAll(dir, 0700)
+		} ()
 	}
-	//wg.Wait()
+	wg.Wait()
 }
 
 func genFlatpakInstanceID(genInfo chan int8) {
@@ -681,7 +677,7 @@ func genFlatpakInstanceID(genInfo chan int8) {
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
-		parallelMkdir(dirs)
+		mkdirPool(dirs)
 	} ()
 
 	wg.Add(3)
