@@ -749,9 +749,9 @@ func writeInfoFile() {
 	}
 	stringObj := string(infoObj)
 	replacer := strings.NewReplacer(
-		stringObj, "placeHolderAppName", confOpts.appID,
-		stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID,
-		stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		"placeHolderAppName", confOpts.appID,
+		"placeholderInstanceId", runtimeInfo.flatpakInstanceID,
+		"placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory,
 	)
 	stringObj = replacer.Replace(stringObj)
 	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID, 0700)
