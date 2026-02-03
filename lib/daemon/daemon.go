@@ -792,7 +792,7 @@ func cleanDirs() {
 	pecho("info", "Cleaning leftovers")
 	getFlatpakInstanceID()
 	var removeErr error
-	if len(runtimeInfo.flatpakInstanceID) > 0 && confOpts.mountInfo == true {
+	if len(runtimeInfo.flatpakInstanceID) > 0 {
 		removeErr = os.RemoveAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID)
 		if removeErr != nil {
 			pecho("warn", "Unable to remove directory " + xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + removeErr.Error())
