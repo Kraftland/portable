@@ -245,10 +245,11 @@ func resetDocs () {
 }
 
 func showStats() {
+	getFlatpakInstanceID()
 	cmdArgs := []string{
 		"--user",
 		"status",
-		"app-portable-" + confOpts.appID,
+		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
 	}
 	openCmd := exec.Command("systemctl", cmdArgs...)
 	openCmd.Stderr = os.Stderr
@@ -1439,7 +1440,7 @@ func genBwArg(
 		"--pty",
 		"--service-type=notify-reload",
 		"--wait",
-		"--unit=app-portable-" + "-" + runtimeInfo.instanceID + confOpts.appID,
+		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
 		"-p", "DelegateSubgroup=portable-cgroup",
@@ -2459,9 +2460,9 @@ func main() {
 	cmdChan := make(chan int8, 1)
 	waitChan(xdgChan, "XDG lookup")
 	varChan := make(chan int8, 1)
-	go cmdlineDispatcher(cmdChan)
 	go getVariables(varChan)
 	waitChan(readConfChan, "configurations")
+	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
 		and we signal back when multi-instance is cleared
