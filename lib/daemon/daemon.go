@@ -1225,7 +1225,7 @@ func watchSignalSocket(readyChan chan int8) {
 	if err != nil {
 		pecho("crit", "Could not create control directory: " + err.Error())
 	}
-	socket, listenErr := net.Listen("unix", signalSocketPath)
+	socket, listenErr := net.Listen("unixpacket", signalSocketPath)
 	if listenErr != nil {
 		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
 	}

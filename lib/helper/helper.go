@@ -127,7 +127,7 @@ func startMaster(targetExec string, targetArgs []string) {
 }
 
 func sendSignal(signal []string) {
-	socket, err := net.Dial("unix", "/run/portable-control/daemon")
+	socket, err := net.Dial("unixpacket", "/run/portable-control/daemon")
 	if err != nil {
 		panic("Could not dial signal socket" + err.Error())
 	}
