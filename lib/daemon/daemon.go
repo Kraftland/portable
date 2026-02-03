@@ -2104,7 +2104,7 @@ func gpuBind(gpuChan chan []string) {
 		"--tmpfs", "/dev/dri",
 		"--tmpfs", "/sys/class/drm",
 	)
-
+	var argChan = make(chan []string, 128)
 	switch cardSums {
 		case 0:
 			pecho("warn", "Found no GPU")
@@ -2116,10 +2116,7 @@ func gpuBind(gpuChan chan []string) {
 					setOffloadEnvs()
 				} ()
 				for _, cardName := range totalGpus {
-					gpuArg = append(
-						gpuArg,
-						bindCard(cardName)...
-					)
+						bindCard(cardName, argChan)
 				}
 			} else {
 				for _, cardName := range totalGpus {
@@ -2134,15 +2131,20 @@ func gpuBind(gpuChan chan []string) {
 					activeGpus,
 					<-cardList...
 				)
+
 				for _, cardName := range activeGpus {
-					pecho("debug", "Binding active GPU: " + cardName)
-					gpuArg = append(
-						gpuArg,
-						bindCard(cardName)...
-					)
+					wg.Add(1)
+					go func (card string) {
+						defer wg.Done()
+						bindCard(card, argChan)
+					} (cardName)
 				}
 			}
 	}
+	gpuArg = append(
+		gpuArg,
+		<-argChan...
+	)
 	wg.Wait()
 	gpuChan <- gpuArg
 	close(gpuChan)
@@ -2173,7 +2175,8 @@ func setOffloadEnvs() () {
 	}
 }
 
-func bindCard(cardName string) (cardBindArg []string) {
+func bindCard(cardName string, argChan chan []string) {
+	var cardBindArg []string
 	resolveUdevArgs := []string{
 		"info",
 		"/sys/class/drm/" + cardName,
@@ -2268,8 +2271,7 @@ func bindCard(cardName string) (cardBindArg []string) {
 		"--dev-bind",
 			cardRoot, cardRoot,
 	)
-
-	return
+	argChan <- cardBindArg
 }
 
 func tryBindCam(camChan chan []string) {
