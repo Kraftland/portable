@@ -79,6 +79,7 @@ type confTarget struct {
 	b			*bool
 }
 
+// Defaults should be set in readConf()
 var targets = map[string]confTarget{
 	"appID":		{str: &confOpts.appID},
 	"friendlyName":		{str: &confOpts.friendlyName},
@@ -123,27 +124,6 @@ var confInfo = map[string]string{
 	"allowGlobalShortcuts":	"bool",
 	"dbusWake":		"bool",
 	"mountInfo":		"bool",
-}
-var confDefaults = map[string]string {
-	"appID":		"noop",
-	"stateDirectory":	"noop",
-	"launchTarget":		os.Getenv("launchTarget"),
-	"busLaunchTarget":	os.Getenv("busLaunchTarget"),
-	"bindNetwork":		"true",
-	"terminateImmediately":	"true",
-	"allowClassicNotifs":	"true",
-	"useZink":		"false",
-	"qt5Compat":		"true",
-	"waylandOnly":		"true",
-	"gameMode":		"false",
-	"mprisName":		"",
-	"bindCameras":		"false",
-	"bindPipewire":		"false",
-	"bindInputDevices":	"false",
-	"allowInhibit":		"false",
-	"allowGlobalShortcuts":	"false",
-	"dbusWake":		"false",
-	"mountInfo":		"false",
 }
 
 var (
@@ -484,17 +464,24 @@ func tryProcessConf(input string, trimObj string) (output string) {
 func readConf(readConfChan chan int8) {
 	determineConfPath()
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
+
 	switch sessionType {
 		case "wayland":
-			confDefaults["waylandOnly"] = "true"
+			confOpts.waylandOnly = true
 		default:
-			confDefaults["waylandOnly"] = "false"
+			confOpts.waylandOnly = false
 	}
+	confOpts.launchTarget = os.Getenv("launchTarget")
+	confOpts.bindNetwork = true
+	confOpts.terminateImmediately = true
+	confOpts.allowClassicNotifs = true
+	confOpts.qt5Compat = true
+
 	if len(os.Getenv("launchTarget")) > 0 {
-		confDefaults["launchTarget"] = os.Getenv("launchTarget")
+		confOpts.launchTarget = os.Getenv("launchTarget")
 	}
 	if len(os.Getenv("busLaunchTarget")) > 0 {
-		confDefaults["busLaunchTarget"] = os.Getenv("busLaunchTarget")
+		confOpts.busLaunchTarget = os.Getenv("busLaunchTarget")
 	}
 	confFd, fdErr := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
 	if fdErr != nil {
@@ -527,11 +514,7 @@ func readConf(readConfChan chan int8) {
 					continue
 				}
 				if len(val) == 0 {
-					if confDefaults[val] == "noop" {
-						continue
-					} else {
-						val = confDefaults[val]
-					}
+					continue
 				}
 				*target.str = val
 			case "bool":
@@ -540,7 +523,7 @@ func readConf(readConfChan chan int8) {
 					continue
 				}
 				if len(val) == 0 {
-					val = confDefaults[key]
+					continue
 				}
 				switch val {
 					case "true":
@@ -1069,7 +1052,7 @@ func doCleanUnit() {
 		"/usr/bin/systemctl",
 		"--user",
 		"kill",
-		"portable" + confOpts.friendlyName + ".slice",
+		"portable-" + confOpts.friendlyName + ".slice",
 	)
 	cmd.Stderr = os.Stderr
 	cmd.Run()
