@@ -2099,7 +2099,6 @@ func gpuBind(gpuChan chan []string) {
 			)
 		}
 	}
-	var trailingS string
 	gpuArg = append(
 		gpuArg,
 		"--tmpfs", "/dev/dri",
@@ -2152,7 +2151,7 @@ func gpuBind(gpuChan chan []string) {
 	pecho("debug", "Generated GPU bind parameters: " + strings.Join(gpuArg, ", "))
 	pecho(
 	"debug",
-	"Found " + strconv.Itoa(cardSums) + " GPU" + trailingS + ", identified active: " + activeGPUList)
+	"Total GPU count " + strconv.Itoa(cardSums) + ", active: " + activeGPUList)
 }
 
 func setOffloadEnvs() () {
