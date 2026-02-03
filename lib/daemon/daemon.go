@@ -748,9 +748,12 @@ func writeInfoFile() {
 		pecho("debug", "Failed to read template Flatpak info for I/O error: " + ioErr.Error())
 	}
 	stringObj := string(infoObj)
-	stringObj = strings.ReplaceAll(stringObj, "placeHolderAppName", confOpts.appID)
-	stringObj = strings.ReplaceAll(stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID)
-	stringObj = strings.ReplaceAll(stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	replacer := strings.NewReplacer(
+		stringObj, "placeHolderAppName", confOpts.appID,
+		stringObj, "placeholderInstanceId", runtimeInfo.flatpakInstanceID,
+		stringObj, "placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory,
+	)
+	stringObj = replacer.Replace(stringObj)
 	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.flatpakInstanceID, 0700)
 	os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
