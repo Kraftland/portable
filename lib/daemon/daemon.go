@@ -1545,11 +1545,14 @@ func prepareEnvs() {
 	<- imChan
 }
 
-func genBwArg(pwChan chan []string, xChan chan []string, camChan chan []string) {
+func genBwArg(
+	pwChan chan []string,
+	xChan chan []string,
+	camChan chan []string,
+	inputChan chan []string,
+	) {
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
-	inputChan := make(chan []string, 1)
-	go inputBind(inputChan)
 	miscChan := make(chan []string, 1)
 	go miscBinds(miscChan, pwChan)
 
@@ -2599,6 +2602,8 @@ func main() {
 	waitChan(readConfChan, "configurations")
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
+	inputChan := make(chan []string, 1)
+	go inputBind(inputChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	go flushEnvs()
@@ -2626,7 +2631,7 @@ func main() {
 	} ()
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan)
+		genBwArg(pwSecContextChan, xChan, camChan, inputChan)
 	} ()
 	genChan := make(chan int8, 1) // Signals when an ID has been chosen
 	go func () {
