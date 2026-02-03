@@ -129,7 +129,7 @@ var confDefaults = map[string]string {
 	"stateDirectory":	"noop",
 	"launchTarget":		os.Getenv("launchTarget"),
 	"busLaunchTarget":	os.Getenv("busLaunchTarget"),
-	"bindNetwork":		"false",
+	"bindNetwork":		"true",
 	"terminateImmediately":	"true",
 	"allowClassicNotifs":	"true",
 	"useZink":		"false",
