@@ -87,7 +87,9 @@ var (
 	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
-	socketStop		= make(chan int8, 2)
+	socketStop		= make(chan int8, 10)
+	stopAppChan		= make(chan int8, 512)
+	stopAppDone		= make(chan int8)
 )
 
 func pecho(level string, message string) {
@@ -821,7 +823,8 @@ func cleanDirs() {
 	removeWrapCon(paths)
 }
 
-func stopApp() {
+func stopAppWorker() {
+	<- stopAppChan
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func () {
@@ -832,10 +835,16 @@ func stopApp() {
 		defer wg.Done()
 		cleanDirs()
 	} ()
-	socketStop <- 1
+	close(socketStop)
+	//socketStop <- 1
 	wg.Wait()
-	<- socketStop
-	//os.Exit(0)
+	stopAppDone <- 1
+	os.Exit(0)
+}
+
+func stopApp() {
+	stopAppChan <- 1
+	<- stopAppDone
 }
 
 func lookUpXDG(xdgChan chan int8) {
@@ -1214,7 +1223,7 @@ func watchSignalSocket(readyChan chan int8) {
 	}
 	readyChan <- 1
 	pecho("debug", "Accepting signals")
-	go closeSocketOnDemand(socketStop, socket)
+	go closeSocketOnDemand(socket)
 	for {
 		conn, errListen := socket.Accept()
 		if errListen != nil {
@@ -1225,10 +1234,9 @@ func watchSignalSocket(readyChan chan int8) {
 	}
 }
 
-func closeSocketOnDemand (chann chan int8, socket net.Listener) {
-	<- chann
+func closeSocketOnDemand (socket net.Listener) {
+	<- socketStop
 	socket.Close()
-	chann <- 1
 }
 
 func startApp() {
@@ -1240,6 +1248,8 @@ func startApp() {
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
 	waitChan(signalWatcherReady, "Signal Watcher")
+	// Profiler
+	pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	if startAct == "abort" {
 		stopApp()
 	} else {
@@ -2544,6 +2554,7 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
+	go stopAppWorker()
 	var wg sync.WaitGroup
 	runtime.SetBlockProfileRate(1)
 	//var startTime = time.Now()
@@ -2626,8 +2637,5 @@ func main() {
 	wg.Wait()
 	close(envsChan)
 	startApp()
-
-	// Profiler
-	pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	}
 }
