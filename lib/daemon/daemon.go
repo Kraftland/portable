@@ -2234,8 +2234,7 @@ func bindCard(cardName string, argChan chan []string) {
 		pecho("warn", "Failed to parse GPU vendor: " + err.Error())
 	}
 
-	// TODO: remove the debug switch
-	if strings.Contains(string(cardVendor), "0x10de") == true && len(os.Getenv("PORTABLE_IGNORE_NV")) == 0 {
+	if strings.Contains(string(cardVendor), "0x10de") == true {
 		pecho("debug", "Found NVIDIA device")
 		nvChan := make(chan []string, 1)
 		go tryBindNv(nvChan)
