@@ -2131,6 +2131,7 @@ func gpuBind(gpuChan chan []string) {
 						detectCardStatus(cardList, card)
 					} (cardName)
 				}
+				wg.Wait()
 				activeGpus = append(
 					activeGpus,
 					<-cardList...
