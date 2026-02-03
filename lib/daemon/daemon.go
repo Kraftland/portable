@@ -2142,28 +2142,6 @@ func gpuBind(gpuChan chan []string) {
 						bindCard(cardName)...
 					)
 				}
-			if len(activeGpus) == 1 {
-				gpuArg = append(
-					gpuArg,
-					maskDir("/sys/module/nvidia")...
-				)
-				gpuArg = append(
-					gpuArg,
-					maskDir("/sys/module/nvidia_drm")...
-				)
-				gpuArg = append(
-					gpuArg,
-					maskDir("/sys/module/nvidia_modeset")...
-				)
-				gpuArg = append(
-					gpuArg,
-					maskDir("/sys/module/nvidia_uvm")...
-				)
-				gpuArg = append(
-					gpuArg,
-					maskDir("/sys/module/nvidia_wmi_ec_backlight")...
-				)
-			}
 			}
 	}
 	wg.Wait()
@@ -2260,6 +2238,27 @@ func bindCard(cardName string) (cardBindArg []string) {
 			cardBindArg,
 			nvArgs...,
 		)
+	} else {
+		cardBindArg = append(
+					cardBindArg,
+					maskDir("/sys/module/nvidia")...
+				)
+				cardBindArg = append(
+					cardBindArg,
+					maskDir("/sys/module/nvidia_drm")...
+				)
+				cardBindArg = append(
+					cardBindArg,
+					maskDir("/sys/module/nvidia_modeset")...
+				)
+				cardBindArg = append(
+					cardBindArg,
+					maskDir("/sys/module/nvidia_uvm")...
+				)
+				cardBindArg = append(
+					cardBindArg,
+					maskDir("/sys/module/nvidia_wmi_ec_backlight")...
+				)
 	}
 	cardBindArg = append(
 		cardBindArg,
