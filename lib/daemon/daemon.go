@@ -1157,7 +1157,10 @@ func doCleanUnit() {
 			xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service",
 		)
 		if err != nil {
+			pecho("debug", "Not cleaning unit: " + unit)
 			continue
+		} else {
+			pecho("debug", "Cleaning unit: " + unit)
 		}
 		killCmd := []string{"--user", "--no-block", "kill", "-sSIGKILL", unit}
 		resetCmd := []string{"--user", "reset-failed", unit}
@@ -1169,8 +1172,8 @@ func doCleanUnit() {
 		cmd = exec.Command("systemctl", resetCmd...)
 		cmd.Stderr = os.Stderr
 		cmd.Run()
+		os.RemoveAll(xdgDir.runtimeDir + "/systemd/transient/" + unit + ".service")
 	}
-
 	pecho("debug", "Cleaning ready")
 }
 
