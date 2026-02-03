@@ -74,6 +74,58 @@ type portableConfigOpts struct {
 	mountInfo		bool
 }
 
+type confTarget struct {
+	str			*string
+	b			*bool
+}
+
+// Defaults should be set in readConf()
+var targets = map[string]confTarget{
+	"appID":		{str: &confOpts.appID},
+	"friendlyName":		{str: &confOpts.friendlyName},
+	"stateDirectory":	{str: &confOpts.stateDirectory},
+	"launchTarget":		{str: &confOpts.launchTarget},
+	"busLaunchTarget":	{str: &confOpts.busLaunchTarget},
+	"mprisName":		{str: &confOpts.mprisName},
+	"bindNetwork":		{b: &confOpts.bindNetwork},
+	"terminateImmediately":	{b: &confOpts.terminateImmediately},
+	"allowClassicNotifs":	{b: &confOpts.allowClassicNotifs},
+	"useZink":		{b: &confOpts.useZink},
+	"qt5Compat":		{b: &confOpts.qt5Compat},
+	"waylandOnly":		{b: &confOpts.waylandOnly},
+	"gameMode":		{b: &confOpts.gameMode},
+	"bindCameras":		{b: &confOpts.bindCameras},
+	"bindPipewire":		{b: &confOpts.bindPipewire},
+	"bindInputDevices":	{b: &confOpts.bindInputDevices},
+	"allowInhibit":		{b: &confOpts.allowInhibit},
+	"allowGlobalShortcuts":	{b: &confOpts.allowGlobalShortcuts},
+	"dbusWake":		{b: &confOpts.dbusWake},
+	"mountInfo":		{b: &confOpts.mountInfo},
+}
+
+var confInfo = map[string]string{
+	"appID":		"string",
+	"friendlyName":		"string",
+	"stateDirectory":	"string",
+	"launchTarget":		"string",
+	"busLaunchTarget":	"string",
+	"bindNetwork":		"bool",
+	"terminateImmediately":	"bool",
+	"allowClassicNotifs":	"bool",
+	"useZink":		"bool",
+	"qt5Compat":		"bool",
+	"waylandOnly":		"bool",
+	"gameMode":		"bool",
+	"mprisName":		"string",
+	"bindCameras":		"bool",
+	"bindPipewire":		"bool",
+	"bindInputDevices":	"bool",
+	"allowInhibit":		"bool",
+	"allowGlobalShortcuts":	"bool",
+	"dbusWake":		"bool",
+	"mountInfo":		"bool",
+}
+
 var (
 	internalLoggingLevel	int
 	confOpts		portableConfigOpts
@@ -411,229 +463,83 @@ func tryProcessConf(input string, trimObj string) (output string) {
 
 func readConf(readConfChan chan int8) {
 	determineConfPath()
+	sessionType := os.Getenv("XDG_SESSION_TYPE")
 
-	confReader, readErr := os.ReadFile(confOpts.confPath)
-	if readErr != nil {
-		pecho("crit", "Could not read configuration file: " + readErr.Error())
-	}
-
-	appID := regexp.MustCompile("appID=.*")
-	confOpts.appID = tryProcessConf(string(appID.Find(confReader)), "appID")
-	pecho("debug", "Determined appID: " + confOpts.appID)
-
-	friendlyName := regexp.MustCompile("friendlyName=.*")
-	confOpts.friendlyName = tryProcessConf(string(friendlyName.Find(confReader)), "friendlyName")
-	pecho("debug", "Determined friendlyName: " + confOpts.friendlyName)
-
-	stateDirectory := regexp.MustCompile("stateDirectory=.*")
-	confOpts.stateDirectory = tryProcessConf(string(stateDirectory.Find(confReader)), "stateDirectory")
-	pecho("debug", "Determined stateDirectory: " + confOpts.stateDirectory)
-
-	mprisName := regexp.MustCompile("mprisName=.*")
-	confOpts.mprisName = tryProcessConf(string(mprisName.Find(confReader)), "mprisName")
-	pecho("debug", "Determined mprisName: " + confOpts.mprisName)
-
-	launchTargetre := regexp.MustCompile("(?m)^launchTarget=(.*)$")
-	confOpts.launchTarget = tryProcessConf(string(launchTargetre.Find(confReader)), "launchTarget")
-	if len(confOpts.launchTarget) == 0 {
-		if len(os.Getenv("launchTarget")) > 0 {
-			pecho("warn", "Assigning launchTarget using environment variable, this is not recommended")
-		} else {
-			pecho("crit", "Unable to determine launchTarget")
-		}
-	}
-	pecho("debug", "Determined launchTarget: " + strconv.Quote(confOpts.launchTarget))
-	launchTarget <- confOpts.launchTarget
-
-	busLaunchTargetre := regexp.MustCompile("(?m)^busLaunchTarget=(.*)$")
-	confOpts.busLaunchTarget = tryProcessConf(string(busLaunchTargetre.Find(confReader)), "busLaunchTarget")
-		if len(confOpts.busLaunchTarget) == 0 {
-			if len(os.Getenv("busLaunchTarget")) > 0 {
-				pecho("warn", "Assigning busLaunchTarget using environment variable, this is not recommended")
-			} else {
-				pecho("info", "busLaunchTarget not set")
-			}
-		} else {
-			pecho(
-				"debug",
-				"Determined busLaunchTarget: " + strconv.Quote(confOpts.busLaunchTarget))
-		}
-
-
-
-	waylandOnly := regexp.MustCompile("waylandOnly=.*")
-	var waylandOnlyRaw string = tryProcessConf(string(waylandOnly.Find(confReader)), "waylandOnly")
-	switch waylandOnlyRaw {
-		case "true":
+	switch sessionType {
+		case "wayland":
 			confOpts.waylandOnly = true
-		case "false":
+		default:
 			confOpts.waylandOnly = false
-		case "adaptive":
-			if os.Getenv("XDG_SESSION_TYPE") == "wayland" {
-				confOpts.waylandOnly = true
-			}
-		default:
-			if os.Getenv("XDG_SESSION_TYPE") == "wayland" {
-				confOpts.waylandOnly = true
-			}
 	}
-	pecho("debug", "Determined waylandOnly: " + strconv.FormatBool(confOpts.waylandOnly))
+	confOpts.launchTarget = os.Getenv("launchTarget")
+	confOpts.bindNetwork = true
+	confOpts.terminateImmediately = true
+	confOpts.allowClassicNotifs = true
+	confOpts.qt5Compat = true
 
-	bindNetwork := regexp.MustCompile("bindNetwork=.*")
-	var bindNetworkRaw string = tryProcessConf(string(bindNetwork.Find(confReader)), "bindNetwork")
-	switch bindNetworkRaw {
-		case "true":
-			confOpts.bindNetwork = true
-		case "false":
-			confOpts.bindNetwork = false
-		default:
-			confOpts.bindNetwork = true
+	if len(os.Getenv("launchTarget")) > 0 {
+		confOpts.launchTarget = os.Getenv("launchTarget")
 	}
-	pecho("debug", "Determined bindNetwork: " + strconv.FormatBool(confOpts.bindNetwork))
+	if len(os.Getenv("busLaunchTarget")) > 0 {
+		confOpts.busLaunchTarget = os.Getenv("busLaunchTarget")
+	}
+	confFd, fdErr := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
+	if fdErr != nil {
+		pecho("crit", "Could not open configuration for reading: " + fdErr.Error())
+	}
+	scanner := bufio.NewScanner(confFd)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
+			continue
+		}
+		confSlice := strings.SplitN(line, "=", 2)
+		var val string
 
-	terminateImmediately := regexp.MustCompile("terminateImmediately=.*")
-	var terminateImmediatelyRaw string = tryProcessConf(string(terminateImmediately.Find(confReader)), "terminateImmediately")
-	switch terminateImmediatelyRaw {
-		case "true":
-			confOpts.terminateImmediately = true
-		case "false":
-			confOpts.terminateImmediately = false
-		default:
-			confOpts.terminateImmediately = false
+		if len(confSlice) < 2 {
+			pecho("debug", "Using default value for" + confSlice[0])
+		} else {
+			val = tryUnquote(confSlice[1])
+		}
+		key := confSlice[0]
+		target, ok := targets[key]
+		if ! ok {
+			pecho("warn", "Unknown option " + confSlice[0])
+			continue
+		}
+		switch confInfo[key] {
+			case "string":
+				if target.str == nil {
+					pecho("warn", "Unknown option: " + key)
+					continue
+				}
+				if len(val) == 0 {
+					continue
+				}
+				*target.str = val
+			case "bool":
+				if target.b == nil {
+					pecho("warn", "Unknown option: " + key)
+					continue
+				}
+				if len(val) == 0 {
+					continue
+				}
+				switch val {
+					case "true":
+						*target.b = true
+					case "false":
+						*target.b = false
+					default:
+						if key == "waylandOnly" {
+							if val == "adaptive" {
+								continue
+							}
+						}
+						pecho("warn", "Invalid value for boolean option: " + key)
+				}
+		}
 	}
-	pecho("debug", "Determined terminateImmediately: " + strconv.FormatBool(confOpts.terminateImmediately))
-
-	useZink := regexp.MustCompile("useZink=.*")
-	var useZinkRaw string = tryProcessConf(string(useZink.Find(confReader)), "useZink")
-	switch useZinkRaw {
-		case "true":
-			confOpts.useZink = true
-		case "false":
-			confOpts.useZink = false
-		default:
-			confOpts.useZink = false
-	}
-	pecho("debug", "Determined useZink: " + strconv.FormatBool(confOpts.useZink))
-
-	qt5Compat := regexp.MustCompile("qt5Compat=.*")
-	var qt5CompatRaw string = tryProcessConf(string(qt5Compat.Find(confReader)), "qt5Compat")
-	switch qt5CompatRaw {
-		case "true":
-			confOpts.qt5Compat = true
-		case "false":
-			confOpts.qt5Compat = false
-		default:
-			confOpts.qt5Compat = true
-	}
-	pecho("debug", "Determined qt5Compat: " + strconv.FormatBool(confOpts.qt5Compat))
-
-	allowClassicNotifs := regexp.MustCompile("allowClassicNotifs=.*")
-	var allowClassicNotifsRaw string = tryProcessConf(string(allowClassicNotifs.Find(confReader)), "allowClassicNotifs")
-	switch allowClassicNotifsRaw {
-		case "true":
-			confOpts.allowClassicNotifs = true
-		case "false":
-			confOpts.allowClassicNotifs = false
-		default:
-			confOpts.allowClassicNotifs = true
-	}
-	pecho("debug", "Determined allowClassicNotifs: " + strconv.FormatBool(confOpts.allowClassicNotifs))
-
-	gameMode := regexp.MustCompile("gameMode=.*")
-	var gameModeRaw string = tryProcessConf(string(gameMode.Find(confReader)), "gameMode")
-	switch gameModeRaw {
-		case "true":
-			confOpts.gameMode = true
-		case "false":
-			confOpts.gameMode = false
-		default:
-			confOpts.gameMode = false
-	}
-	pecho("debug", "Determined gameMode: " + strconv.FormatBool(confOpts.gameMode))
-
-	bindCameras := regexp.MustCompile("bindCameras=.*")
-	var bindCamerasRaw string = tryProcessConf(string(bindCameras.Find(confReader)), "bindCameras")
-	switch bindCamerasRaw {
-		case "true":
-			confOpts.bindCameras = true
-		case "false":
-			confOpts.bindCameras = false
-		default:
-			confOpts.bindCameras = false
-	}
-	pecho("debug", "Determined bindCameras: " + strconv.FormatBool(confOpts.bindCameras))
-
-	bindPipewire := regexp.MustCompile("bindPipewire=.*")
-	var bindPipewireRaw string = tryProcessConf(string(bindPipewire.Find(confReader)), "bindPipewire")
-	switch bindPipewireRaw {
-		case "true":
-			confOpts.bindPipewire = true
-		case "false":
-			confOpts.bindPipewire = false
-		default:
-			confOpts.bindPipewire = false
-	}
-	pecho("debug", "Determined bindPipewire: " + strconv.FormatBool(confOpts.bindPipewire))
-
-	bindInputDevices := regexp.MustCompile("bindInputDevices=.*")
-	var bindInputDevicesRaw string = tryProcessConf(string(bindInputDevices.Find(confReader)), "bindInputDevices")
-	switch bindInputDevicesRaw {
-		case "true":
-			confOpts.bindInputDevices = true
-		case "false":
-			confOpts.bindInputDevices = false
-		default:
-			confOpts.bindInputDevices = false
-	}
-	pecho("debug", "Determined bindInputDevices: " + strconv.FormatBool(confOpts.bindInputDevices))
-
-	allowInhibit := regexp.MustCompile("allowInhibit=.*")
-	var allowInhibitRaw string = tryProcessConf(string(allowInhibit.Find(confReader)), "allowInhibit")
-	switch allowInhibitRaw {
-		case "true":
-			confOpts.allowInhibit = true
-		case "false":
-			confOpts.allowInhibit = false
-		default:
-			confOpts.allowInhibit = false
-	}
-	pecho("debug", "Determined allowInhibit: " + strconv.FormatBool(confOpts.allowInhibit))
-
-	allowGlobalShortcuts := regexp.MustCompile("allowGlobalShortcuts=.*")
-	var allowGlobalShortcutsRaw string = tryProcessConf(string(allowGlobalShortcuts.Find(confReader)), "allowGlobalShortcuts")
-	switch allowGlobalShortcutsRaw {
-		case "true":
-			confOpts.allowGlobalShortcuts = true
-		case "false":
-			confOpts.allowGlobalShortcuts = false
-		default:
-			confOpts.allowGlobalShortcuts = false
-	}
-	pecho("debug", "Determined allowGlobalShortcuts: " + strconv.FormatBool(confOpts.allowGlobalShortcuts))
-
-	dbusWake := regexp.MustCompile("dbusWake=.*")
-	var dbusWakeRaw string = tryProcessConf(string(dbusWake.Find(confReader)), "dbusWake")
-	switch dbusWakeRaw {
-		case "true":
-			confOpts.dbusWake = true
-		case "false":
-			confOpts.dbusWake = false
-		default:
-			confOpts.dbusWake = false
-	}
-	pecho("debug", "Determined dbusWake: " + strconv.FormatBool(confOpts.dbusWake))
-
-	mountInfo := regexp.MustCompile("mountInfo=.*")
-	var mountInfoRaw string = tryProcessConf(string(mountInfo.Find(confReader)), "mountInfo")
-	switch mountInfoRaw {
-		case "true":
-			confOpts.mountInfo = true
-		case "false":
-			confOpts.mountInfo = false
-		default:
-			confOpts.mountInfo = true
-	}
-	pecho("debug", "Determined mountInfo: " + strconv.FormatBool(confOpts.mountInfo))
 
 	readConfChan <- 1
 }
@@ -1146,7 +1052,7 @@ func doCleanUnit() {
 		"/usr/bin/systemctl",
 		"--user",
 		"kill",
-		"portable" + confOpts.friendlyName + ".slice",
+		"portable-" + confOpts.friendlyName + ".slice",
 	)
 	cmd.Stderr = os.Stderr
 	cmd.Run()
