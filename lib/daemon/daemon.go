@@ -2049,6 +2049,47 @@ func bindXAuth(xauthChan chan []string) {
 	xauthChan <- xArg
 }
 
+func detectCardStatus(cardList chan []string, cardName string) {
+	connectors, err := os.ReadDir("/sys/class/drm/" + cardName)
+	if err != nil {
+		pecho(
+			"warn",
+			"Failed to read GPU connector status: " + err.Error(),
+		)
+		return
+	}
+	for _, connectorName := range connectors {
+		if strings.HasPrefix(connectorName.Name(), "card") == false {
+			continue
+		}
+		conStatFd, err := os.OpenFile(
+			"/sys/class/drm/" + cardName + "/" + connectorName.Name() + "/status",
+			os.O_RDONLY,
+			0700,
+		)
+		if err != nil {
+			pecho(
+				"warn",
+				"Failed to open GPU status: " + err.Error(),
+			)
+		}
+		conStat, ioErr := io.ReadAll(conStatFd)
+		if ioErr != nil {
+			pecho(
+				"warn",
+				"Failed to read GPU status: " + ioErr.Error(),
+			)
+		}
+		if strings.Contains(string(conStat), "disconnected") {
+			continue
+		} else {
+			var activeGpus = []string{cardName}
+			cardList <- activeGpus
+			break
+		}
+	}
+}
+
 func gpuBind(gpuChan chan []string) {
 	var wg sync.WaitGroup
 	var gpuArg = []string{}
@@ -2056,6 +2097,7 @@ func gpuBind(gpuChan chan []string) {
 	var totalGpus = []string{}
 	var activeGpus = []string{}
 	var cardSums int = 0
+	var cardList = make(chan []string, 5)
 
 	gpuEntries, err := os.ReadDir("/sys/class/drm")
 	if err != nil {
@@ -2075,7 +2117,6 @@ func gpuBind(gpuChan chan []string) {
 			)
 		}
 	}
-
 	var trailingS string
 	gpuArg = append(
 		gpuArg,
@@ -2086,14 +2127,6 @@ func gpuBind(gpuChan chan []string) {
 	switch cardSums {
 		case 0:
 			pecho("warn", "Found no GPU")
-		case 1:
-			for _, cardName := range totalGpus {
-				gpuArg = append(
-					gpuArg,
-					bindCard(cardName)...
-				)
-			}
-			activeGpus = totalGpus
 		default:
 			trailingS = "s"
 			if confOpts.gameMode == true {
@@ -2110,47 +2143,16 @@ func gpuBind(gpuChan chan []string) {
 				}
 			} else {
 				for _, cardName := range totalGpus {
-					connectors, err := os.ReadDir("/sys/class/drm/" + cardName)
-					if err != nil {
-						pecho(
-							"warn",
-							"Failed to read GPU connector status: " + err.Error(),
-						)
-						continue
-					}
-					for _, connectorName := range connectors {
-						if strings.HasPrefix(connectorName.Name(), "card") == false {
-							continue
-						}
-						conStatFd, err := os.OpenFile(
-							"/sys/class/drm/" + cardName + "/" + connectorName.Name() + "/status",
-							os.O_RDONLY,
-							0700,
-						)
-						if err != nil {
-							pecho(
-								"warn",
-								"Failed to open GPU status: " + err.Error(),
-							)
-						}
-						conStat, ioErr := io.ReadAll(conStatFd)
-						if ioErr != nil {
-							pecho(
-								"warn",
-								"Failed to read GPU status: " + ioErr.Error(),
-							)
-						}
-						if strings.Contains(string(conStat), "disconnected") {
-							continue
-						} else {
-							activeGpus = append(
-								activeGpus,
-								cardName,
-							)
-							break
-						}
-					}
+					wg.Add(1)
+					go func (card string) {
+						defer wg.Done()
+						detectCardStatus(cardList, card)
+					} (cardName)
 				}
+				activeGpus = append(
+					activeGpus,
+					<-cardList...
+				)
 				for _, cardName := range activeGpus {
 					pecho("debug", "Binding active GPU: " + cardName)
 					gpuArg = append(
