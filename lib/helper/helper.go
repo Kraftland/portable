@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 	"net"
-	"github.com/rclone/rclone/lib/systemd"
+	"github.com/coreos/go-systemd/v22/daemon"
 
 )
 
@@ -20,7 +20,8 @@ var (
 
 func updateSd(count int) {
 	fmt.Println("Updating tracking status: ", count)
-	systemd.UpdateStatus("Tracking processes: " + strconv.Itoa(count))
+	status := "Tracking processes: " + strconv.Itoa(count)
+	daemon.SdNotify(false, status)
 }
 
 func startCounter () {
@@ -110,7 +111,7 @@ func startMaster(targetExec string, targetArgs []string) {
 	startNotifier <- true
 	fmt.Println("Starting main application " + targetExec + " with cmdline: " + strings.Join(targetArgs, " "))
 	startCmd.Start()
-	systemd.Notify()
+	daemon.SdNotify(false, daemon.SdNotifyReady)
 	startCmd.Wait()
 	startNotifier <- false
 	fmt.Println("Main process exited")
