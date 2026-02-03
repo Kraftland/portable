@@ -2244,7 +2244,7 @@ func bindCard(cardName string, argChan chan []string) {
 			cardBindArg,
 			nvArgs...,
 		)
-	} else {
+	} else if confOpts.gameMode == false {
 		cardBindArg = append(
 					cardBindArg,
 					maskDir("/sys/module/nvidia")...
