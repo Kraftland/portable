@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
+	//"time"
 	"net"
 	"sync"
 	"github.com/KarpelesLab/reflink"
@@ -1208,7 +1208,7 @@ func watchSignalSocket(readyChan chan int8) {
 	if err != nil {
 		pecho("crit", "Could not create control directory: " + err.Error())
 	}
-	socket, listenErr := net.Listen("unixpacket", signalSocketPath)
+	socket, listenErr := net.Listen("unix", signalSocketPath)
 	if listenErr != nil {
 		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
 	}
@@ -2423,7 +2423,9 @@ func inputBind(inputBindChan chan []string) {
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
-	_, err := net.DialTimeout("unixpacket", socketPath, 5 * time.Millisecond)
+	_, err := net.Dial("unix", socketPath)
+	socketPath = xdgDir.runtimeDir + "/portable/"
+	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
 	if err != nil {
 		miChan <- false
 		return
@@ -2470,29 +2472,9 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
-		confOpts.launchTarget = <- launchTarget
-		if internalLoggingLevel <= 1 {
-			fmt.Println(confOpts.launchTarget)
-		}
 		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
-		}
-
-		var waitCounter int
-		for {
-			_, statErr := os.Stat(socketPath)
-			if statErr != nil && os.IsNotExist(statErr) {
-				if waitCounter > 1000 * 60 {
-					pecho("warn", "Timed out waiting for socket, terminating")
-					stopApp()
-					os.Exit(1)
-				}
-				waitCounter++
-				time.Sleep(1 * time.Millisecond)
-			} else {
-				break
-			}
 		}
 		socket, errDial := net.Dial("unix", socketPath)
 		if errDial != nil {
@@ -2502,6 +2484,8 @@ func multiInstance(miChan chan bool) {
 		_, wrErr := socket.Write(startJson)
 		if wrErr != nil {
 			pecho("crit", "Could not write signal: " + wrErr.Error())
+		} else {
+			pecho("debug", "Wrote signal: " + string(startJson))
 		}
 	}
 }
