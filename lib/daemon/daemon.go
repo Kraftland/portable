@@ -16,8 +16,8 @@ import (
 	"net"
 	"sync"
 	"github.com/KarpelesLab/reflink"
-	//"runtime"
-	//"runtime/pprof"
+	"runtime"
+	"runtime/pprof"
 )
 
 const (
@@ -1233,7 +1233,7 @@ func watchSignalSocket(readyChan chan int8) {
 	if err != nil {
 		pecho("crit", "Could not create control directory: " + err.Error())
 	}
-	socket, listenErr := net.Listen("unix", signalSocketPath)
+	socket, listenErr := net.Listen("unixpacket", signalSocketPath)
 	if listenErr != nil {
 		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
 	}
@@ -1545,7 +1545,7 @@ func prepareEnvs() {
 	<- imChan
 }
 
-func genBwArg(pwChan chan []string) {
+func genBwArg(pwChan chan []string, xChan chan []string) {
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
 	inputChan := make(chan []string, 1)
@@ -1554,8 +1554,7 @@ func genBwArg(pwChan chan []string) {
 	go tryBindCam(camChan)
 	miscChan := make(chan []string, 1)
 	go miscBinds(miscChan, pwChan)
-	xChan := make(chan []string, 1)
-	go bindXAuth(xChan)
+
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -2448,7 +2447,7 @@ func inputBind(inputBindChan chan []string) {
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
-	_, err := net.DialTimeout("unix", socketPath, 5 * time.Millisecond)
+	_, err := net.DialTimeout("unixpacket", socketPath, 5 * time.Millisecond)
 	if err != nil {
 		miChan <- false
 		return
@@ -2586,7 +2585,7 @@ func waitChan(tgChan chan int8, chanName string) {
 
 func main() {
 	var wg sync.WaitGroup
-	//runtime.SetBlockProfileRate(1)
+	runtime.SetBlockProfileRate(1)
 	//var startTime = time.Now()
 	fmt.Println("Portable daemon", version, "starting")
 	go gpuBind(gpuChan)
@@ -2600,6 +2599,8 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	go getVariables(varChan)
 	waitChan(readConfChan, "configurations")
+	xChan := make(chan []string, 1)
+	go bindXAuth(xChan)
 	go flushEnvs()
 	waitChan(varChan, "variables")
 	waitChan(cmdChan, "cmdlineDispatcher")
@@ -2625,7 +2626,7 @@ func main() {
 	} ()
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan)
+		genBwArg(pwSecContextChan, xChan)
 	} ()
 	genChan := make(chan int8, 1) // Signals when an ID has been chosen
 	go func () {
@@ -2657,7 +2658,9 @@ func main() {
 	go pwSecContext(pwSecContextChan)
 	wg.Wait()
 	close(envsChan)
-	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	startApp()
+
+	// Profiler
+	pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	}
 }
