@@ -2547,7 +2547,6 @@ func main() {
 	runtime.SetBlockProfileRate(1)
 	//var startTime = time.Now()
 	fmt.Println("Portable daemon", version, "starting")
-	go gpuBind(gpuChan)
 	readConfChan := make(chan int8)
 	go readConf(readConfChan)
 	xdgChan := make(chan int8, 1)
@@ -2558,6 +2557,7 @@ func main() {
 	go cmdlineDispatcher(cmdChan)
 	go getVariables(varChan)
 	waitChan(readConfChan, "configurations")
+	go gpuBind(gpuChan)
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
 		and we signal back when multi-instance is cleared
 		in another channel */
