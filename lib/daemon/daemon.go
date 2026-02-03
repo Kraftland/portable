@@ -12,10 +12,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"context"
 	//"time"
 	"net"
 	"sync"
 	"github.com/KarpelesLab/reflink"
+	"github.com/coreos/go-systemd/v22/dbus"
 	"runtime"
 	"runtime/pprof"
 )
@@ -1049,14 +1051,48 @@ func calcDbusArg(argChan chan []string) {
 }
 
 func doCleanUnit() {
-	cmd := exec.Command(
-		"/usr/bin/systemctl",
-		"--user",
-		"kill",
-		"portable-" + confOpts.friendlyName + ".slice",
-	)
-	cmd.Stderr = os.Stderr
-	cmd.Run()
+	sdContext, sdCancelFunc := context.WithCancel(context.Background())
+	conn, err := dbus.NewUserConnectionContext(sdContext)
+	defer sdCancelFunc()
+	if err != nil {
+		pecho("warn", "Could not connect to user service manager: " + err.Error())
+		return
+	}
+	var wg sync.WaitGroup
+	var units = []string{
+		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container.service",
+		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-a11y.service",
+	}
+	for _, unit := range units {
+		wg.Add(1)
+		go func (u string) {
+			defer wg.Done()
+			errBus := conn.KillUnitWithTarget(
+				sdContext,
+				u,
+				dbus.All,
+				15,
+			)
+			if errBus != nil {
+				if strings.Contains(u, "-dbus") {
+					pecho(
+						"warn",
+						"User manager returned error: " + errBus.Error(),
+					)
+				} else {
+					pecho(
+						"debug",
+						"User manager returned error: " + errBus.Error(),
+					)
+				}
+			} else {
+
+			}
+		} (unit)
+	}
+	wg.Wait()
+	conn.Close()
 
 	pecho("debug", "Cleaning ready")
 }
