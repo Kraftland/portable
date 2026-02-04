@@ -20,6 +20,7 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	"runtime"
 	"runtime/pprof"
+	godbus "github.com/godbus/dbus/v5"
 )
 
 const (
@@ -583,13 +584,13 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
 	}
 
-	<- proceed
-
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
 		mkdirPool(dirs)
 	} ()
+
+	<- proceed
 
 	wg.Add(3)
 	go func () {
@@ -598,7 +599,7 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 	} ()
 	go func () {
 		defer wg.Done()
-		writeInfoFile()
+		writeInfoFile(genInfo)
 	} ()
 	go func () {
 		defer wg.Done()
@@ -644,7 +645,7 @@ func writeFlatpakRef() {
 	)
 }
 
-func writeInfoFile() {
+func writeInfoFile(ready chan int8) {
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
@@ -663,15 +664,31 @@ func writeInfoFile() {
 	stringObj = replacer.Replace(stringObj)
 	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID, 0700)
 	os.WriteFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info.tmp",
 		[]byte(stringObj),
 		0700,
 	)
-	os.WriteFile(
+	err = os.Rename(
+		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info.tmp",
 		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info",
+	)
+	if err != nil {
+		panic(err)
+	}
+	os.WriteFile(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info.tmp",
 		[]byte(stringObj),
 		0700,
 	)
+	err = os.Rename(
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info.tmp",
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+	)
+	if err != nil {
+		panic(err)
+	}
+	ready <- 1
+	pecho("debug", "Wrote info file")
 }
 
 func getFlatpakInstanceID() {
@@ -730,13 +747,13 @@ func cleanDirs() {
 	removeWrapCon(paths)
 }
 
-func stopAppWorker() {
+func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
 	<- stopAppChan
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func () {
 		defer wg.Done()
-		doCleanUnit()
+		doCleanUnit(conn, sdCancelFunc, sdContext)
 	} ()
 	go func () {
 		defer wg.Done()
@@ -860,19 +877,9 @@ func pwSecContext(pwChan chan []string) {
 }
 
 func calcDbusArg(argChan chan []string) {
-	pecho("debug", "Calculating D-Bus arguments...")
 	argList := []string{}
 	argList = append(
 		argList,
-		"--user",
-		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus",
-		"-p", "KillMode=control-group",
-		"-p", "Wants=xdg-document-portal.service xdg-desktop-portal.service",
-		"-p", "After=xdg-document-portal.service xdg-desktop-portal.service",
-		"-p", "SuccessExitStatus=SIGKILL",
-		"-p", "StandardError=file:" + xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/bwrapinfo.json",
-		"--",
 		"bwrap",
 		"--json-status-fd", "2",
 		"--unshare-all",
@@ -1050,14 +1057,8 @@ func calcDbusArg(argChan chan []string) {
 	argChan <- argList
 }
 
-func doCleanUnit() {
-	sdContext, sdCancelFunc := context.WithCancel(context.Background())
-	conn, err := dbus.NewUserConnectionContext(sdContext)
+func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
 	defer sdCancelFunc()
-	if err != nil {
-		pecho("warn", "Could not connect to user service manager: " + err.Error())
-		return
-	}
 	var wg sync.WaitGroup
 	var units = []string{
 		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container.service",
@@ -1097,23 +1098,82 @@ func doCleanUnit() {
 	pecho("debug", "Cleaning ready")
 }
 
-func startProxy() {
-	dbusArgs := <- busArgChan
-	pecho("debug", "D-Bus argument ready")
-	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID, 0700)
+func startProxy(conn *dbus.Conn, ctx context.Context) {
+	dbusProps := []dbus.Property{}
+	var wg sync.WaitGroup
+	var dbusArgs []string
+	var bwInfoPath string = xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/bwrapinfo.json"
+	type exitStruct struct {
+		SIGKILL		[]int32;
+		SIGTERM		[]int32;
+	}
+	var exit exitStruct
+	exit.SIGKILL = []int32{9}
+	exit.SIGTERM = []int32{15}
+	wg.Add(2)
+	go func () {
+		defer wg.Done()
+		dbusArgs = <- busArgChan
+	} ()
+	go func () {
+		defer wg.Done()
+		os.MkdirAll(
+			xdgDir.runtimeDir + "/app/" + confOpts.appID,
+			0700,
+		)
+		os.MkdirAll(
+			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+			0700,
+		)
+	} ()
+	var unitWants = []string{
+		"xdg-document-portal.service",
+		"xdg-desktop-portal.service",
+	}
+	dbusProps = append(
+		dbusProps,
+		dbus.Property{
+			Name: "SuccessExitStatus",
+			Value: godbus.MakeVariant(exit),
+		},
+		dbus.Property{
+			Name: "KillMode",
+			Value: godbus.MakeVariant("control-group"),
+		},
+		dbus.Property{
+			Name: "StandardError",
+			Value: godbus.MakeVariant("file"),
+		},
+		dbus.Property{
+			Name: "StandardErrorFile",
+			Value: godbus.MakeVariant(bwInfoPath),
+		},
+		)
+		dbusProps = append(
+			dbusProps,
+			dbus.PropSlice("portable-" + confOpts.friendlyName + ".slice"),
+			dbus.PropWants(unitWants...),
+			dbus.PropDescription("D-Bus proxy for portable sandbox " + confOpts.appID),
+	)
+	wg.Wait()
+	dbusProps = append(
+		dbusProps,
+		dbus.PropExecStart(
+			dbusArgs,
+			false,
+		),
+	)
 	pecho("info", "Starting D-Bus proxy")
 
-	busExec := exec.Command(
-		"systemd-run",
-		dbusArgs...
+	_, err := conn.StartTransientUnitContext(
+		ctx,
+		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		"replace",
+		dbusProps,
+		nil,
 	)
-	busExec.Stderr = os.Stderr
-	if internalLoggingLevel <= 1 {
-		busExec.Stdout = os.Stdout
-	}
-	busErr := busExec.Run()
-	if busErr != nil {
-		pecho("crit", "D-Bus proxy has failed! " + busErr.Error())
+	if err != nil {
+		pecho("crit", "Could not start D-Bus proxy: " + err.Error())
 	}
 }
 
@@ -2483,7 +2543,13 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
-	go stopAppWorker()
+	sdContext, sdCancelFunc := context.WithCancel(context.Background())
+	conn, err := dbus.NewUserConnectionContext(sdContext)
+	if err != nil {
+		pecho("crit", "Could not connect to user service manager: " + err.Error())
+		return
+	}
+	go stopAppWorker(conn, sdCancelFunc, sdContext)
 	var wg sync.WaitGroup
 	runtime.SetBlockProfileRate(1)
 	//var startTime = time.Now()
@@ -2499,6 +2565,11 @@ func main() {
 	waitChan(readConfChan, "configurations")
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		instDesktopFile()
+	} ()
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
 		and we signal back when multi-instance is cleared
 		in another channel */
@@ -2549,15 +2620,11 @@ func main() {
 	} ()
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		instDesktopFile()
-	} ()
 	wg.Add(2)
+	<- genChan // Stage 2, ensures that info file is ready
 	go func() {
 		defer wg.Done()
-		startProxy()
+		startProxy(conn, sdContext)
 	} ()
 	go func() {
 		defer wg.Done()
