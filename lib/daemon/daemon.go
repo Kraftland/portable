@@ -2035,8 +2035,8 @@ func bindXAuth(xauthChan chan []string) {
 	xauthChan <- xArg
 }
 
-func detectCardStatus(cardList chan []string, cardName string) {
-	connectors, err := os.ReadDir("/sys/class/drm/" + cardName)
+func detectCardStatus(cardList chan []string, cardPath string, cardNamed string) {
+	connectors, err := os.ReadDir(cardPath)
 	if err != nil {
 		pecho(
 			"warn",
@@ -2049,7 +2049,7 @@ func detectCardStatus(cardList chan []string, cardName string) {
 			continue
 		}
 		conStatFd, err := os.OpenFile(
-			"/sys/class/drm/" + cardName + "/" + connectorName.Name() + "/status",
+			cardPath + "/" + connectorName.Name() + "/status",
 			os.O_RDONLY,
 			0700,
 		)
@@ -2069,7 +2069,7 @@ func detectCardStatus(cardList chan []string, cardName string) {
 		if strings.Contains(string(conStat), "disconnected") {
 			continue
 		} else {
-			var activeGpus = []string{cardName}
+			var activeGpus = []string{cardNamed}
 			cardList <- activeGpus
 			break
 		}
@@ -2092,18 +2092,27 @@ func gpuBind(gpuChan chan []string) {
 	var activeGpus = []string{}
 	var cardSums int = 0
 	var cardList = make(chan []string, 5)
+	var cardPaths []string
 
 
 	for _, card := range devs {
 		cardName := card.Sysname()
-		if len(cardName) == 0 {
+		cardPath := card.Syspath()
+		if len(cardName) == 0 || len(cardPath) == 0 {
 			pecho("warn", "Udev returned an empty sysname!")
+			continue
+		} else if strings.Contains(cardName, "card") == false || card.Devtype() == "drm_connector" {
+			pecho("debug", "Udev returned " + cardName + ", which is not a GPU")
 			continue
 		}
 		cardSums++
 		totalGpus = append(
 			totalGpus,
 			cardName,
+		)
+		cardPaths = append(
+			cardPaths,
+			card.Syspath(),
 		)
 	}
 	gpuArg = append(
@@ -2126,12 +2135,13 @@ func gpuBind(gpuChan chan []string) {
 						bindCard(cardName, argChan)
 				}
 			} else {
-				for _, cardName := range totalGpus {
+				for idx, cardName := range totalGpus {
 					wg.Add(1)
-					go func (card string) {
+					go func (idx int, card string) {
 						defer wg.Done()
-						detectCardStatus(cardList, card)
-					} (cardName)
+						cardPath := cardPaths[idx]
+						detectCardStatus(cardList, cardPath, card)
+					} (idx, cardName)
 				}
 				wg.Wait()
 				activeGpus = append(
