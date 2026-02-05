@@ -2134,9 +2134,9 @@ func gpuBind(gpuChan chan []string) {
 				} ()
 				for _, cardName := range totalGpus {
 					wg.Add(1)
-					go func (card string) {
-						bindCard(card, argChan)
-					} (cardName)
+					go func (card string, arg chan []string) {
+						bindCard(card, arg)
+					} (cardName, argChan)
 				}
 				argChan <- tryBindNv()
 			} else {
