@@ -2133,8 +2133,12 @@ func gpuBind(gpuChan chan []string) {
 					setOffloadEnvs()
 				} ()
 				for _, cardName := range totalGpus {
-						bindCard(cardName, argChan)
+					wg.Add(1)
+					go func (card string) {
+						bindCard(card, argChan)
+					} (cardName)
 				}
+				argChan <- tryBindNv()
 			} else {
 				for idx, cardName := range totalGpus {
 					wg.Add(1)
@@ -2159,11 +2163,14 @@ func gpuBind(gpuChan chan []string) {
 				}
 			}
 	}
-	gpuArg = append(
-		gpuArg,
-		<-argChan...
-	)
 	wg.Wait()
+	close(gpuChan)
+	for arg := range argChan {
+		gpuArg = append(
+			gpuArg,
+			arg...
+		)
+	}
 	gpuChan <- gpuArg
 	close(gpuChan)
 	var activeGPUList string = strings.Join(activeGpus, ", ")
@@ -2251,12 +2258,9 @@ func bindCard(cardName string, argChan chan []string) {
 		}
 		if strings.Contains(string(cardVendor), "0x10de") == true {
 			pecho("debug", "Found NVIDIA device")
-			nvChan := make(chan []string, 1)
-			go tryBindNv(nvChan)
-			nvArgs := <- nvChan
 			cardBindArgN = append(
 				cardBindArg,
-				nvArgs...,
+				tryBindNv()...,
 			)
 		} else if confOpts.gameMode == false {
 			cardBindArgN = append(
@@ -2351,7 +2355,7 @@ func tryBindCam(camChan chan []string) {
 	camChan <- camArg
 }
 
-func tryBindNv(nvChan chan []string) {
+func tryBindNv() []string {
 	nvDevsArg := []string{}
 	devEntries, err := os.ReadDir("/dev")
 	if err != nil {
@@ -2368,7 +2372,7 @@ func tryBindNv(nvChan chan []string) {
 			}
 		}
 	}
-	nvChan <- nvDevsArg
+	return nvDevsArg
 }
 
 func inputBind(inputBindChan chan []string) {
