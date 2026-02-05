@@ -2098,10 +2098,11 @@ func gpuBind(gpuChan chan []string) {
 	for _, card := range devs {
 		cardName := card.Sysname()
 		cardPath := card.Syspath()
+		devType := card.Devtype()
 		if len(cardName) == 0 || len(cardPath) == 0 {
 			pecho("warn", "Udev returned an empty sysname!")
 			continue
-		} else if strings.Contains(cardName, "card") == false || card.Devtype() == "drm_connector" {
+		} else if strings.Contains(cardName, "card") == false || devType == "drm_connector" {
 			pecho("debug", "Udev returned " + cardName + ", which is not a GPU")
 			continue
 		}
