@@ -2194,6 +2194,8 @@ func setOffloadEnvs() () {
 }
 
 func bindCard(cardName string, argChan chan []string) {
+	//var wg sync.WaitGroup
+	var nvArgChan = make(chan []string, 1)
 	u := udev.Udev{}
 	var cardID string
 	var cardRoot string
@@ -2234,6 +2236,54 @@ func bindCard(cardName string, argChan chan []string) {
 		devProc = true
 	}
 
+	// Detect NVIDIA now, because they do not expose ID_VENDOR properly
+	//wg.Add(1)
+	go func (arg chan []string) {
+		//defer wg.Done()
+		var cardBindArgN []string
+		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
+		if openErr != nil {
+			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
+		}
+		cardVendor, err := io.ReadAll(cardVendorFd)
+		if err != nil {
+			pecho("warn", "Failed to parse GPU vendor: " + err.Error())
+		}
+		if strings.Contains(string(cardVendor), "0x10de") == true {
+			pecho("debug", "Found NVIDIA device")
+			nvChan := make(chan []string, 1)
+			go tryBindNv(nvChan)
+			nvArgs := <- nvChan
+			cardBindArgN = append(
+				cardBindArg,
+				nvArgs...,
+			)
+		} else if confOpts.gameMode == false {
+			cardBindArgN = append(
+				cardBindArg,
+				maskDir("/sys/module/nvidia")...
+			)
+			cardBindArgN = append(
+				cardBindArg,
+				maskDir("/sys/module/nvidia_drm")...
+			)
+			cardBindArgN = append(
+				cardBindArg,
+				maskDir("/sys/module/nvidia_modeset")...
+			)
+			cardBindArgN = append(
+				cardBindArg,
+				maskDir("/sys/module/nvidia_uvm")...
+			)
+			cardBindArgN = append(
+				cardBindArg,
+				maskDir("/sys/module/nvidia_wmi_ec_backlight")...
+			)
+		}
+		arg <- cardBindArgN
+		close(arg)
+	} (nvArgChan)
+
 
 	// Map card* to renderD*
 	eR := u.NewEnumerate()
@@ -2270,46 +2320,12 @@ func bindCard(cardName string, argChan chan []string) {
 			"/sys/class/drm/" + renderNodeName,
 	)
 
-	cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
-	if openErr != nil {
-		pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
-	}
-	cardVendor, err := io.ReadAll(cardVendorFd)
-	if err != nil {
-		pecho("warn", "Failed to parse GPU vendor: " + err.Error())
-	}
+	//wg.Wait()
+	cardBindArg = append(
+		cardBindArg,
+		<-nvArgChan...
+	)
 
-	if strings.Contains(string(cardVendor), "0x10de") == true {
-		pecho("debug", "Found NVIDIA device")
-		nvChan := make(chan []string, 1)
-		go tryBindNv(nvChan)
-		nvArgs := <- nvChan
-		cardBindArg = append(
-			cardBindArg,
-			nvArgs...,
-		)
-	} else if confOpts.gameMode == false {
-		cardBindArg = append(
-					cardBindArg,
-					maskDir("/sys/module/nvidia")...
-				)
-				cardBindArg = append(
-					cardBindArg,
-					maskDir("/sys/module/nvidia_drm")...
-				)
-				cardBindArg = append(
-					cardBindArg,
-					maskDir("/sys/module/nvidia_modeset")...
-				)
-				cardBindArg = append(
-					cardBindArg,
-					maskDir("/sys/module/nvidia_uvm")...
-				)
-				cardBindArg = append(
-					cardBindArg,
-					maskDir("/sys/module/nvidia_wmi_ec_backlight")...
-				)
-	}
 	argChan <- cardBindArg
 }
 
