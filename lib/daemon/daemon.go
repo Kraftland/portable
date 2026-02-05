@@ -2195,75 +2195,83 @@ func setOffloadEnvs() () {
 
 func bindCard(cardName string, argChan chan []string) {
 	u := udev.Udev{}
+	var cardID string
+	var cardRoot string
 	e := u.NewEnumerate()
-	// For now we assume cards have an interface under /dev/dri and /sys/class/drm
-	//var devName string = "/dev/dri/" + cardName
-
-	/* Screw it, try sysname appr */
 	e.AddMatchSysname(cardName)
 	e.AddMatchIsInitialized()
 	e.AddMatchSubsystem("drm")
+	var cardBindArg []string
 
 	devs, errUdev := e.Devices()
 	if errUdev != nil {
-		pecho("warn", "Failed to query udev for GPU info")
+		pecho("warn", "Failed to query udev for GPU info" + errUdev.Error())
 	}
 
+	var devProc bool = false
 	for _, dev := range devs {
-		devPath := dev.Devnode()
+		if devProc == true {
+			pecho("warn", "bindCard found more than one candidates")
+			continue
+		}
+		devNode := dev.Devnode()
 		sysPath := dev.Syspath()
-		fmt.Println(cardName + " Dev path: " + devPath + " sys path: " + sysPath)
+		cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
+		//fmt.Println(cardName + " Dev path: " + devPath + " sys path: " + sysPath)
+	cardBindArg = append(
+		cardBindArg,
+			"--dev-bind",
+			"/sys/class/drm/" + cardName,
+			"/sys/class/drm/" + cardName,
+			"--dev-bind",
+			devNode,
+			devNode,
+			"--dev-bind",
+			cardRoot,
+			cardRoot,
+		)
+		cardID = dev.PropertyValue("ID_PATH")
+		devProc = true
 	}
 
-	var cardBindArg []string
-	resolveUdevArgs := []string{
-		"info",
-		"/sys/class/drm/" + cardName,
-		"--query=path",
+
+	// Map card* to renderD*
+
+	eR := u.NewEnumerate()
+	eR.AddMatchIsInitialized()
+	eR.AddMatchSubsystem("drm")
+	eR.AddMatchProperty("ID_PATH", cardID)
+	eR.AddMatchProperty("DEVTYPE", "drm_minor")
+	devs, errUdev = eR.Devices()
+	if errUdev != nil {
+		pecho("warn", "Could not query udev for render node" + errUdev.Error())
 	}
-	resolveUdevCmd := exec.Command("/usr/bin/udevadm", resolveUdevArgs...)
-	resolveUdevCmd.Stderr = os.Stderr
-	path, err := resolveUdevCmd.Output()
-	if err != nil {
-		pecho("warn", "Failed to resolve GPU " + cardName + ": " + err.Error())
-		return
+	devProc = false
+	var renderNodeName string
+	var renderDevPath string
+	for _, dev := range devs {
+		renderNodeName = dev.Sysname()
+		if strings.Contains(renderNodeName, "card") {
+			continue
+		} else if devProc == true {
+			pecho("warn", "Mapping card to renderer: surplus device")
+			continue
+		}
+
+		renderDevPath = dev.Devnode()
+		devProc = true
 	}
+
 	cardBindArg = append(
 		cardBindArg,
 		"--dev-bind",
-			"/sys/class/drm/" + cardName,
-			"/sys/class/drm/" + cardName,
+			renderDevPath,
+			renderDevPath,
 		"--dev-bind",
-			"/dev/dri/" + cardName,
-			"/dev/dri/" + cardName,
+			"/sys/class/drm/" + renderNodeName,
+			"/sys/class/drm/" + renderNodeName,
 	)
-	sysfsPath := "/sys" + strings.TrimSpace(string(path))
-	devDrmPath := strings.TrimSuffix(sysfsPath, "/" + cardName)
-	drmEntries, readErr := os.ReadDir(devDrmPath)
-	pecho("debug", "Got sysfs path from udev: " + devDrmPath)
-	if readErr != nil {
-		pecho("warn", "Failed to read "+ devDrmPath + ": " + readErr.Error())
-		return
-	} else {
-		for _, candidate := range drmEntries {
-			if strings.HasPrefix(candidate.Name(), "renderD") {
-				cardBindArg = append(
-					cardBindArg,
-					"--dev-bind",
-						"/dev/dri/" + candidate.Name(),
-						"/dev/dri/" + candidate.Name(),
-					"--dev-bind",
-						"/sys/class/drm/" + candidate.Name(),
-						"/sys/class/drm/" + candidate.Name(),
-				)
-			}
-		}
-	}
-	cardRoot := strings.TrimSuffix(devDrmPath, "/drm")
-	//cardSp := strings.Split(cardRoot, "/")
-	//cardSpCn := len(cardSp)
-	//cardBase := cardSp[cardSpCn - 1]
-	//cardRoot = strings.TrimSuffix(cardRoot, cardBase)
+
 	cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 	if openErr != nil {
 		pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
@@ -2304,11 +2312,6 @@ func bindCard(cardName string, argChan chan []string) {
 					maskDir("/sys/module/nvidia_wmi_ec_backlight")...
 				)
 	}
-	cardBindArg = append(
-		cardBindArg,
-		"--dev-bind",
-			cardRoot, cardRoot,
-	)
 	argChan <- cardBindArg
 }
 
