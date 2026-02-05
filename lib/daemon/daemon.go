@@ -2201,8 +2201,7 @@ func setOffloadEnvs() () {
 }
 
 func bindCard(cardName string, argChan chan []string) {
-	//var wg sync.WaitGroup
-	var nvArgChan = make(chan []string, 1)
+	var wg sync.WaitGroup
 	u := udev.Udev{}
 	var cardID string
 	var cardRoot string
@@ -2210,7 +2209,6 @@ func bindCard(cardName string, argChan chan []string) {
 	e.AddMatchSysname(cardName)
 	e.AddMatchIsInitialized()
 	e.AddMatchSubsystem("drm")
-	var cardBindArg []string
 
 	devs, errUdev := e.Devices()
 	if errUdev != nil {
@@ -2227,8 +2225,7 @@ func bindCard(cardName string, argChan chan []string) {
 		sysPath := dev.Syspath()
 		cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
 		//fmt.Println(cardName + " Dev path: " + devPath + " sys path: " + sysPath)
-	cardBindArg = append(
-		cardBindArg,
+	argChan <- []string{
 			"--dev-bind",
 			"/sys/class/drm/" + cardName,
 			"/sys/class/drm/" + cardName,
@@ -2238,15 +2235,15 @@ func bindCard(cardName string, argChan chan []string) {
 			"--dev-bind",
 			cardRoot,
 			cardRoot,
-		)
+		}
 		cardID = dev.PropertyValue("ID_PATH")
 		devProc = true
 	}
 
 	// Detect NVIDIA now, because they do not expose ID_VENDOR properly
-	//wg.Add(1)
+	wg.Add(1)
 	go func (arg chan []string) {
-		//defer wg.Done()
+		defer wg.Done()
 		var cardBindArgN []string
 		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 		if openErr != nil {
@@ -2258,35 +2255,16 @@ func bindCard(cardName string, argChan chan []string) {
 		}
 		if strings.Contains(string(cardVendor), "0x10de") == true {
 			pecho("debug", "Found NVIDIA device")
-			cardBindArgN = append(
-				cardBindArg,
-				tryBindNv()...,
-			)
+			arg <- tryBindNv()
 		} else if confOpts.gameMode == false {
-			cardBindArgN = append(
-				cardBindArg,
-				maskDir("/sys/module/nvidia")...
-			)
-			cardBindArgN = append(
-				cardBindArg,
-				maskDir("/sys/module/nvidia_drm")...
-			)
-			cardBindArgN = append(
-				cardBindArg,
-				maskDir("/sys/module/nvidia_modeset")...
-			)
-			cardBindArgN = append(
-				cardBindArg,
-				maskDir("/sys/module/nvidia_uvm")...
-			)
-			cardBindArgN = append(
-				cardBindArg,
-				maskDir("/sys/module/nvidia_wmi_ec_backlight")...
-			)
+			arg <- maskDir("/sys/module/nvidia")
+			arg <- maskDir("/sys/module/nvidia_drm")
+			arg <- maskDir("/sys/module/nvidia_modeset")
+			arg <- maskDir("/sys/module/nvidia_uvm")
+			arg <- maskDir("/sys/module/nvidia_wmi_ec_backlight")
 		}
 		arg <- cardBindArgN
-		close(arg)
-	} (nvArgChan)
+	} (argChan)
 
 
 	// Map card* to renderD*
@@ -2314,23 +2292,16 @@ func bindCard(cardName string, argChan chan []string) {
 		devProc = true
 	}
 
-	cardBindArg = append(
-		cardBindArg,
+	argChan <- []string{
 		"--dev-bind",
 			renderDevPath,
 			renderDevPath,
 		"--dev-bind",
 			"/sys/class/drm/" + renderNodeName,
 			"/sys/class/drm/" + renderNodeName,
-	)
+	}
 
-	//wg.Wait()
-	cardBindArg = append(
-		cardBindArg,
-		<-nvArgChan...
-	)
-
-	argChan <- cardBindArg
+	wg.Wait()
 }
 
 func tryBindCam(camChan chan []string) {
