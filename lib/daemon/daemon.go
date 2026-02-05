@@ -465,7 +465,7 @@ func tryProcessConf(input string, trimObj string) (output string) {
 	return
 }
 
-func readConf(readConfChan chan int8) {
+func readConf() {
 	determineConfPath()
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
 
@@ -545,8 +545,6 @@ func readConf(readConfChan chan int8) {
 				}
 		}
 	}
-
-	readConfChan <- 1
 }
 
 func mkdirPool(dirs []string) {
@@ -772,7 +770,7 @@ func stopApp() {
 	<- stopAppDone
 }
 
-func lookUpXDG(xdgChan chan int8) {
+func lookUpXDG() {
 	xdgDir.runtimeDir = os.Getenv("XDG_RUNTIME_DIR")
 	if len(xdgDir.runtimeDir) == 0 {
 		pecho("warn", "XDG_RUNTIME_DIR not set")
@@ -823,8 +821,6 @@ func lookUpXDG(xdgChan chan int8) {
 		xdgDir.dataDir = xdgDir.home + "/.local/share"
 		pecho("debug", "Using default data home: " + xdgDir.dataDir)
 	}
-
-	xdgChan <- 1
 }
 
 func pwSecContext(pwChan chan []string) {
@@ -1774,12 +1770,14 @@ func genBwArg(
 		miscArgs...
 	)
 
+	if confOpts.bindInputDevices == true {
+		inputArgs := <- inputChan
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			inputArgs...
+		)
+	}
 
-	inputArgs := <- inputChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		inputArgs...
-	)
 
 	camArgs := <- camChan
 	runtimeInfo.bwCmd = append(
@@ -2322,10 +2320,6 @@ func tryBindNv(nvChan chan []string) {
 
 func inputBind(inputBindChan chan []string) {
 	inputBindArg := []string{}
-	if confOpts.bindInputDevices == false {
-		inputBindChan <- inputBindArg
-		return
-	}
 	inputBindArg = append(
 		inputBindArg,
 		"--dev-bind-try",	"/sys/class/leds", "/sys/class/leds",
@@ -2544,26 +2538,33 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
+	runtime.SetBlockProfileRate(1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		readConf()
+	} ()
 	sdContext, sdCancelFunc := context.WithCancel(context.Background())
 	conn, err := dbus.NewUserConnectionContext(sdContext)
 	if err != nil {
 		pecho("crit", "Could not connect to user service manager: " + err.Error())
 		return
 	}
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		lookUpXDG()
+	} ()
 	go stopAppWorker(conn, sdCancelFunc, sdContext)
-	var wg sync.WaitGroup
-	runtime.SetBlockProfileRate(1)
-	//var startTime = time.Now()
+
+	inputChan := make(chan []string, 1)
+	go inputBind(inputChan)
 	fmt.Println("Portable daemon", version, "starting")
-	readConfChan := make(chan int8)
-	go readConf(readConfChan)
-	xdgChan := make(chan int8, 1)
-	go lookUpXDG(xdgChan)
 	cmdChan := make(chan int8, 1)
-	waitChan(xdgChan, "XDG lookup")
+	wg.Wait()
 	varChan := make(chan int8, 1)
 	go getVariables(varChan)
-	waitChan(readConfChan, "configurations")
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
 	wg.Add(1)
@@ -2582,8 +2583,6 @@ func main() {
 	} ()
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
-	inputChan := make(chan []string, 1)
-	go inputBind(inputChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	go flushEnvs()
