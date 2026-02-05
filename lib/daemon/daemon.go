@@ -2077,6 +2077,14 @@ func detectCardStatus(cardList chan []string, cardName string) {
 }
 
 func gpuBind(gpuChan chan []string) {
+	u := udev.Udev{}
+	e := u.NewEnumerate()
+	e.AddMatchIsInitialized()
+	e.AddMatchSubsystem("drm")
+	devs, errUdev := e.Devices()
+	if errUdev != nil {
+		pecho("warn", "Failed to query udev for GPU info")
+	}
 	var wg sync.WaitGroup
 	var gpuArg = []string{}
 	// SHOULD contain strings like card0, card1 etc
@@ -2085,23 +2093,18 @@ func gpuBind(gpuChan chan []string) {
 	var cardSums int = 0
 	var cardList = make(chan []string, 5)
 
-	gpuEntries, err := os.ReadDir("/sys/class/drm")
-	if err != nil {
-		pecho(
-			"warn",
-			"Unable to parse GPU information: failed reading /sys/class/drm: " + err.Error())
-		return
-	}
-	for _, cardName := range gpuEntries {
-		if strings.Contains(cardName.Name(), "-") {
+
+	for _, card := range devs {
+		cardName := card.Sysname()
+		if len(cardName) == 0 {
+			pecho("warn", "Udev returned an empty sysname!")
 			continue
-		} else if strings.HasPrefix(cardName.Name(), "card") {
-			cardSums++
-			totalGpus = append(
-				totalGpus,
-				cardName.Name(),
-			)
 		}
+		cardSums++
+		totalGpus = append(
+			totalGpus,
+			cardName,
+		)
 	}
 	gpuArg = append(
 		gpuArg,
@@ -2180,6 +2183,27 @@ func setOffloadEnvs() () {
 }
 
 func bindCard(cardName string, argChan chan []string) {
+	u := udev.Udev{}
+	e := u.NewEnumerate()
+	// For now we assume cards have an interface under /dev/dri and /sys/class/drm
+	//var devName string = "/dev/dri/" + cardName
+
+	/* Screw it, try sysname appr */
+	e.AddMatchSysname(cardName)
+	e.AddMatchIsInitialized()
+	e.AddMatchSubsystem("drm")
+
+	devs, errUdev := e.Devices()
+	if errUdev != nil {
+		pecho("warn", "Failed to query udev for GPU info")
+	}
+
+	for _, dev := range devs {
+		devPath := dev.Devnode()
+		sysPath := dev.Syspath()
+		fmt.Println(cardName + " Dev path: " + devPath + " sys path: " + sysPath)
+	}
+
 	var cardBindArg []string
 	resolveUdevArgs := []string{
 		"info",
