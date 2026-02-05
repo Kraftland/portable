@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	godbus "github.com/godbus/dbus/v5"
+	udev	"github.com/jochenvg/go-udev"
 )
 
 const (
@@ -2319,6 +2320,7 @@ func tryBindNv(nvChan chan []string) {
 }
 
 func inputBind(inputBindChan chan []string) {
+	var wg sync.WaitGroup
 	inputBindArg := []string{}
 	inputBindArg = append(
 		inputBindArg,
@@ -2329,87 +2331,65 @@ func inputBind(inputBindChan chan []string) {
 		"--dev-bind-try",	"/dev/uinput", "/dev/uinput",
 	)
 
-	devEntries, err := os.ReadDir("/dev")
-	if err != nil {
-		pecho("warn", "Could not parse /dev/ for hidraw devices: " + err.Error())
-	} else {
-		for _, entry := range devEntries {
-			if strings.HasPrefix(entry.Name(), "hidraw") {
-				pecho("debug", "Detected hidraw input device " + entry.Name())
-				inputBindArg = append(
-					inputBindArg,
-					"--dev-bind",
-						"/dev/" + entry.Name(),
-						"/dev/" + entry.Name(),
-				)
-				udevArgs := []string{
-					"info",
-					"/dev/" + entry.Name(),
-					"-qpath",
-				}
-				udevExec := exec.Command("udevadm", udevArgs...)
-				sysDevice, sysErrout := udevExec.Output()
-				if sysErrout != nil {
-					pecho(
-					"warn",
-					"Unable to resolve device path using udev: " + sysErrout.Error(),
-					)
-				} else {
-					devString := "/sys" + string(sysDevice)
-					devTrimmed := strings.TrimSpace(devString)
-					inputBindArg = append(
-						inputBindArg,
-						"--dev-bind",
-							devTrimmed,
-							devTrimmed,
-					)
-					upperDir := strings.TrimSuffix(devTrimmed, "/hidraw/" + entry.Name())
-					if stat, _ := os.Stat(upperDir); stat.IsDir() == true {
-						inputBindArg = append(
-							inputBindArg,
-							"--dev-bind",
-								upperDir,
-								upperDir,
-						)
-					}
-				}
+	u := udev.Udev{}
+	e := u.NewEnumerate()
+
+	var devArgChan = make(chan []string, 512)
+
+	e.AddMatchSubsystem("input") // Later hidraw
+	e.AddMatchIsInitialized()
+	devs, errUdev := e.Devices()
+	if errUdev != nil {
+		pecho("warn", "Could not query udev for device info: " + errUdev.Error())
+	}
+	for _, dev := range devs {
+		go func (device *udev.Device) {
+			path := device.Syspath()
+			devArgChan <- []string{
+			"--dev-bind",
+				path,
+				path,
 			}
-		}
+		} (dev)
 	}
 
-	devEntries, err = os.ReadDir("/dev/input")
-	if err != nil {
-		pecho("warn", "Could not parse /dev/input for devices: " + err.Error())
-	} else {
-		for _, entry := range devEntries {
-			if entry.IsDir() == true {
-				continue
-			}
-			if strings.HasPrefix(entry.Name(), "event") || strings.HasPrefix(entry.Name(), "js") {
-				pecho("debug", "Detected input device " + entry.Name())
-				udevArgs := []string{
-					"info",
-					"/dev/input/" + entry.Name(),
-					"-qpath",
-				}
-				udevExec := exec.Command("udevadm", udevArgs...)
-				sysDevice, sysErrout := udevExec.Output()
-				if sysErrout != nil {
-					pecho(
-					"warn",
-					"Unable to resolve device path using udev: " + sysErrout.Error(),
-					)
-				} else {
-					inputBindArg = append(
-						inputBindArg,
-						"--dev-bind",
-							"/sys" + strings.TrimSpace(string(sysDevice)),
-							"/sys" + strings.TrimSpace(string(sysDevice)),
-					)
-				}
-			}
-		}
+	hidrawE := u.NewEnumerate()
+	hidrawE.AddMatchSubsystem("hidraw")
+	rawDevs, errRawd := hidrawE.Devices()
+	if errRawd != nil {
+		pecho("warn", "Could not query udev for hidraw devices: " + errRawd.Error())
 	}
+
+	for _, dev := range rawDevs {
+		wg.Add(1)
+		go func (device *udev.Device) {
+			defer wg.Done()
+			path := device.Syspath()
+			devPath := strings.TrimSpace(dev.PropertyValue("DEVNAME"))
+			if len(devPath) > 0 {
+				devArgChan <- []string{
+					"--dev-bind",
+					devPath,
+					devPath,
+				}
+			}
+			devArgChan <- []string{
+				"--dev-bind",
+				path,
+				path,
+			}
+		} (dev)
+	}
+	wg.Wait()
+	close(devArgChan)
+
+	for content := range devArgChan {
+		inputBindArg = append(
+			inputBindArg,
+			content...
+		)
+	}
+
 	inputBindChan <- inputBindArg
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
