@@ -1770,12 +1770,14 @@ func genBwArg(
 		miscArgs...
 	)
 
+	if confOpts.bindInputDevices == true {
+		inputArgs := <- inputChan
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			inputArgs...
+		)
+	}
 
-	inputArgs := <- inputChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		inputArgs...
-	)
 
 	camArgs := <- camChan
 	runtimeInfo.bwCmd = append(
@@ -2318,10 +2320,6 @@ func tryBindNv(nvChan chan []string) {
 
 func inputBind(inputBindChan chan []string) {
 	inputBindArg := []string{}
-	if confOpts.bindInputDevices == false {
-		inputBindChan <- inputBindArg
-		return
-	}
 	inputBindArg = append(
 		inputBindArg,
 		"--dev-bind-try",	"/sys/class/leds", "/sys/class/leds",
@@ -2560,7 +2558,8 @@ func main() {
 	} ()
 	go stopAppWorker(conn, sdCancelFunc, sdContext)
 
-	//var startTime = time.Now()
+	inputChan := make(chan []string, 1)
+	go inputBind(inputChan)
 	fmt.Println("Portable daemon", version, "starting")
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
@@ -2584,8 +2583,6 @@ func main() {
 	} ()
 	xChan := make(chan []string, 1)
 	go bindXAuth(xChan)
-	inputChan := make(chan []string, 1)
-	go inputBind(inputChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 	go flushEnvs()
