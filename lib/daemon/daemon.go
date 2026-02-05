@@ -2236,7 +2236,6 @@ func bindCard(cardName string, argChan chan []string) {
 
 
 	// Map card* to renderD*
-
 	eR := u.NewEnumerate()
 	eR.AddMatchIsInitialized()
 	eR.AddMatchSubsystem("drm")
@@ -2257,7 +2256,6 @@ func bindCard(cardName string, argChan chan []string) {
 			pecho("warn", "Mapping card to renderer: surplus device")
 			continue
 		}
-
 		renderDevPath = dev.Devnode()
 		devProc = true
 	}
