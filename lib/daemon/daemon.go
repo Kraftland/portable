@@ -2165,7 +2165,7 @@ func gpuBind(gpuChan chan []string) {
 			}
 	}
 	wg.Wait()
-	close(gpuChan)
+	close(argChan)
 	for arg := range argChan {
 		gpuArg = append(
 			gpuArg,
