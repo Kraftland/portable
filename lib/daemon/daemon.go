@@ -2541,7 +2541,7 @@ func main() {
 	go stopAppWorker(conn, sdCancelFunc, sdContext)
 
 	inputChan := make(chan []string, 1)
-	go inputBind(inputChan)
+	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
 	fmt.Println("Portable daemon", version, "starting")
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
