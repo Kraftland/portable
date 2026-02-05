@@ -2343,7 +2343,9 @@ func inputBind(inputBindChan chan []string) {
 		pecho("warn", "Could not query udev for device info: " + errUdev.Error())
 	}
 	for _, dev := range devs {
+		wg.Add(1)
 		go func (device *udev.Device) {
+			defer wg.Done()
 			path := device.Syspath()
 			devArgChan <- []string{
 			"--dev-bind",
