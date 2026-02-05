@@ -480,6 +480,7 @@ func readConf(readConfChan chan int8) {
 	confOpts.terminateImmediately = true
 	confOpts.allowClassicNotifs = true
 	confOpts.qt5Compat = true
+	confOpts.mountInfo = true
 
 	if len(os.Getenv("launchTarget")) > 0 {
 		confOpts.launchTarget = os.Getenv("launchTarget")
