@@ -554,11 +554,11 @@ func readConf() {
 func mkdirPool(dirs []string) {
 	var wg sync.WaitGroup
 	for _, dir := range dirs {
-		wg.Add(1)
-		go func () {
-			defer wg.Done()
-			os.MkdirAll(dir, 0700)
-		} ()
+		wg.Go(
+			func() {
+				os.MkdirAll(dir, 0700)
+			},
+		)
 	}
 	wg.Wait()
 }
