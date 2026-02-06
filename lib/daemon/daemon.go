@@ -269,7 +269,6 @@ func showStats() {
 }
 
 func cmdlineDispatcher(cmdChan chan int8) {
-	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
@@ -343,9 +342,9 @@ func cmdlineDispatcher(cmdChan chan int8) {
 	}
 	addEnv("targetArgs=" + string(encodedArg))
 	cmdChan <- 1
+	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
 	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
-
 }
 
 func shareFile() {
