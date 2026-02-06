@@ -2413,6 +2413,17 @@ func inputBind(inputBindChan chan []string) {
 		go func (device *udev.Device) {
 			defer wg.Done()
 			path := device.Syspath()
+			if len(path) == 0 {
+				return
+			}
+			sysSl := strings.SplitN(path, "/", -1)
+			sliceLen := len(sysSl)
+			if strings.HasPrefix(sysSl[sliceLen - 1], "event") {
+				if strings.HasPrefix(sysSl[sliceLen - 2], "input") {
+					path = strings.Join(sysSl[0:sliceLen - 3], "/")
+					pecho("debug", "Discovered input device root: " + path)
+				}
+			}
 			devArgChan <- []string{
 			"--dev-bind",
 				path,
