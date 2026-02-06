@@ -2421,7 +2421,6 @@ func inputBind(inputBindChan chan []string) {
 			if strings.HasPrefix(sysSl[sliceLen - 1], "event") {
 				if strings.HasPrefix(sysSl[sliceLen - 2], "input") {
 					path = strings.Join(sysSl[0:sliceLen - 3], "/")
-					pecho("debug", "Discovered input device root: " + path)
 				}
 			}
 			devArgChan <- []string{
@@ -2457,7 +2456,6 @@ func inputBind(inputBindChan chan []string) {
 				sysPathSliceLen := len(sysPathSlice)
 				if strings.Contains(sysPathSlice[sysPathSliceLen - 2], "hidraw") {
 					path = strings.Join(sysPathSlice[0:sysPathSliceLen - 3], "/")
-					pecho("debug", "Resolved hidraw path: " + path)
 				}
 				devArgChan <- []string{
 					"--dev-bind",
