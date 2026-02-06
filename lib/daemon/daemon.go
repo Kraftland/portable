@@ -386,7 +386,7 @@ func shareFile() {
 	}
 }
 
-func getVariables(varChan chan int8) {
+func getVariables() {
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
 		case "debug":
@@ -400,7 +400,6 @@ func getVariables(varChan chan int8) {
 	}
 	runtimeOpt.userExpose = os.Getenv("bwBindPar")
 	runtimeOpt.userLang = os.Getenv("LANG")
-	varChan <- 1
 }
 
 func isPathSuitableForConf(path string) (result bool) {
@@ -2485,6 +2484,7 @@ func inputBind(inputBindChan chan []string) {
 }
 
 func multiInstance(miChan chan bool) {
+	pecho("debug", "Dialing daemon socket...")
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
 	_, err := net.Dial("unix", socketPath)
@@ -2492,13 +2492,14 @@ func multiInstance(miChan chan bool) {
 	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
 	if err != nil {
 		miChan <- false
+		pecho("debug", "Starting new instance...")
 		return
 	} else {
 		pecho("debug", "Another instance running")
 		startAct = "aux"
-		miChan <- true
 	}
 	if confOpts.dbusWake == true {
+		pecho("debug", "Trying to resolve tray ID")
 		queryTrayArg := []string{
 			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
 			"--dest=org.kde.StatusNotifierWatcher",
@@ -2519,6 +2520,7 @@ func multiInstance(miChan chan bool) {
 		trayID := match
 
 		if len(trayID) > 0 {
+			pecho("debug", "Got tray ID: " + trayID)
 			wakeArgs := []string{
 				"--print-reply",
 				"--session",
@@ -2552,6 +2554,7 @@ func multiInstance(miChan chan bool) {
 			pecho("debug", "Wrote signal: " + string(startJson))
 		}
 	}
+	miChan <- true
 }
 
 func atSpiProxy() {
@@ -2610,6 +2613,7 @@ func waitChan(tgChan chan int8, chanName string) {
 func main() {
 	//runtime.SetBlockProfileRate(1)
 	var wg sync.WaitGroup
+	go getVariables()
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
@@ -2633,8 +2637,7 @@ func main() {
 	fmt.Println("Portable daemon", version, "starting")
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
-	varChan := make(chan int8, 1)
-	go getVariables(varChan)
+
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
 	wg.Add(1)
@@ -2655,13 +2658,17 @@ func main() {
 	go bindXAuth(xChan)
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
-	go flushEnvs()
-	waitChan(varChan, "variables")
+
 	waitChan(cmdChan, "cmdlineDispatcher")
+
+
 	if startAct == "abort" {
-		stopApp()
+		pecho("warn", "Aborting start")
+		//stopApp()
 		return
 	}
+
+
 	miChan := make(chan bool, 1)
 
 	// MI
@@ -2682,6 +2689,7 @@ func main() {
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
 	} else {
+	go flushEnvs()
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
