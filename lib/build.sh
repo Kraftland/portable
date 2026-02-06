@@ -19,3 +19,4 @@ function buildGo() {
 }
 
 buildGo ./lib/daemon
+buildGo ./lib/helper
