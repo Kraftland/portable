@@ -141,7 +141,7 @@ var (
 	startAct		string
 	launchTarget		= make(chan string, 1)
 	signalWatcherReady	= make(chan int8, 1)
-	gpuChan 		= make(chan []string, 1)
+	gpuChan 		= make(chan []string, 512)
 	busArgChan		= make(chan []string, 1)
 	socketStop		= make(chan int8, 10)
 	stopAppChan		= make(chan int8, 512)
