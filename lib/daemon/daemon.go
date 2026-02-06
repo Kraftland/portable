@@ -34,9 +34,9 @@ type RUNTIME_OPT struct {
 	fullCmdline	string
 	argStop		bool
 	applicationArgs	[]string
-	quit		int8 // 1 for normal, 2 for external, 3 for forced?
 	userExpose	string
 	userLang	string
+	miTerminate	bool
 }
 
 type RUNTIME_PARAMS struct {
@@ -291,10 +291,8 @@ func cmdlineDispatcher(cmdChan chan int8) {
 			runtimeOpt.action = true
 			switch cmdlineArray[index + 1] {
 				case "quit":
-					runtimeOpt.quit = 2
-					stopApp()
+					runtimeOpt.miTerminate = true
 					pecho("debug", "Received quit request from user")
-					os.Exit(0)
 				case "debug-shell":
 					addEnv("_portableDebug=1")
 				case "share-file":
@@ -755,6 +753,7 @@ func cleanDirs() {
 
 func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
 	<- stopAppChan
+	getFlatpakInstanceID()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func () {
@@ -2490,12 +2489,31 @@ func multiInstance(miChan chan bool) {
 	_, err := net.Dial("unix", socketPath)
 	socketPath = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+
 	if err != nil {
+		if runtimeOpt.miTerminate == true {
+			pecho("warn", "Could not find running instance")
+			os.Exit(2)
+		}
 		miChan <- false
 		pecho("debug", "Starting new instance...")
 		return
 	} else {
 		pecho("debug", "Another instance running")
+		if runtimeOpt.miTerminate == true {
+			var daemonPath string = xdgDir.runtimeDir + "/portable/"
+			daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
+			const signal = "terminate-now" + "\n"
+			controlSock, dialErr := net.Dial("unix", daemonPath)
+			if dialErr != nil {
+				pecho("crit", "Could not dial control daemon: " + dialErr.Error())
+			}
+			_, errWrite := controlSock.Write([]byte(signal))
+			if errWrite != nil {
+				pecho("crit", "Could not send termination signal: " + errWrite.Error())
+			}
+			os.Exit(0)
+		}
 		startAct = "aux"
 	}
 	if confOpts.dbusWake == true {
@@ -2659,7 +2677,7 @@ func main() {
 	camChan := make(chan []string, 1)
 	go tryBindCam(camChan)
 
-	waitChan(cmdChan, "cmdlineDispatcher")
+	<- cmdChan
 
 
 	if startAct == "abort" {
