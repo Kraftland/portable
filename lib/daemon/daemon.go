@@ -31,7 +31,6 @@ const (
 
 type RUNTIME_OPT struct {
 	action		bool
-	fullCmdline	string
 	argStop		bool
 	applicationArgs	[]string
 	userExpose	string
@@ -287,6 +286,10 @@ func cmdlineDispatcher(cmdChan chan int8) {
 		switch value {
 			case "--actions" :
 			runtimeOpt.action = true
+			if len(cmdlineArray) <= index + 1 {
+				pecho("warn", "--actions require an argument")
+				break
+			}
 			switch cmdlineArray[index + 1] {
 				case "quit":
 					runtimeOpt.miTerminate = true
@@ -342,8 +345,8 @@ func cmdlineDispatcher(cmdChan chan int8) {
 	}
 	addEnv("targetArgs=" + string(encodedArg))
 	cmdChan <- 1
-	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
-	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
+	fullCmdline := strings.Join(cmdlineArray, ", ")
+	pecho("debug", "Full command line: " + fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 }
 
