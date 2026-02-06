@@ -2284,9 +2284,15 @@ func bindCard(cardName string, argChan chan []string) {
 			pecho("debug", "Found NVIDIA device")
 			arg <- tryBindNv()
 			for _, path := range nvKernelModulePath {
-				arg <- []string{
-					"--ro-bind",
-					path, path,
+				stat, err := os.Stat(path)
+				if err == nil && stat.IsDir() {
+					arg <- []string{
+						"--ro-bind",
+						path, path,
+					}
+				} else {
+					pecho("debug", "Skipping non-existent path: " + path)
+					continue
 				}
 			}
 		}
