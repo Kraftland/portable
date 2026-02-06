@@ -43,7 +43,6 @@ type RUNTIME_PARAMS struct {
 	instanceID		string
 	waylandDisplay		string
 	bwCmd			[]string
-	sdEnvParm		[]string
 }
 
 type XDG_DIRS struct {
@@ -1808,10 +1807,11 @@ func genBwArg(
 
 func flushEnvs() {
 	//os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
+	var envs = []string{}
 
 	for env := range envsChan {
-		runtimeInfo.sdEnvParm = append(
-			runtimeInfo.sdEnvParm,
+		envs = append(
+			envs,
 			env,
 		)
 	}
@@ -1829,14 +1829,15 @@ func flushEnvs() {
 	}
 	defer fd.Close()
 	writer := bufio.NewWriter(fd)
-	for _, env := range runtimeInfo.sdEnvParm {
-		_, err = fmt.Fprintln(writer, env)
+	for _, env := range envs {
+		writer.WriteString(env)
+		writer.WriteString("\n")
 	}
 	err = writer.Flush()
 	if err != nil {
 		pecho("crit", "Could not write environment variables: " + err.Error())
 	}
-	envsFlushReady <- 1
+	close(envsFlushReady)
 }
 
 func translatePath(input string) (output string) {
