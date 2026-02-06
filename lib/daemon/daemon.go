@@ -2441,15 +2441,22 @@ func inputBind(inputBindChan chan []string) {
 					devPath,
 				}
 			}
-			devArgChan <- []string{
-				"--dev-bind",
-				path,
-				path,
+			if len(path) > 0 {
+				devArgChan <- []string{
+					"--dev-bind",
+					path,
+					path,
+				}
 			}
+
 		} (dev)
 	}
-	wg.Wait()
-	close(devArgChan)
+
+	go func () {
+		wg.Wait()
+		close(devArgChan)
+	} ()
+
 
 	for content := range devArgChan {
 		inputBindArg = append(
