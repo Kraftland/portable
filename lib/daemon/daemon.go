@@ -2070,9 +2070,9 @@ func detectCardStatus(cardList chan []string, cardPath string, cardNamed string)
 			continue
 		} else {
 			var activeGpus = []string{cardNamed}
-			pecho("debug", "Found active GPU: " + cardNamed)
 			cardList <- activeGpus
-			break
+			pecho("debug", "Found active GPU: " + cardNamed)
+			return
 		}
 	}
 }
@@ -2154,10 +2154,10 @@ func gpuBind(gpuChan chan []string) {
 					wg.Wait()
 					close (cardList)
 				} ()
-				for _, card := range <-cardList {
+				for card := range cardList {
 					activeGpus = append(
 						activeGpus,
-						card,
+						card...,
 					)
 				}
 
