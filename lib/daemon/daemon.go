@@ -1777,11 +1777,12 @@ func genBwArg(
 	)
 
 	if confOpts.bindInputDevices == true {
-		inputArgs := <- inputChan
-		runtimeInfo.bwCmd = append(
-			runtimeInfo.bwCmd,
-			inputArgs...
-		)
+		for inputArg := range inputChan {
+			runtimeInfo.bwCmd = append(
+				runtimeInfo.bwCmd,
+				inputArg...
+			)
+		}
 	}
 
 
@@ -2479,6 +2480,7 @@ func inputBind(inputBindChan chan []string) {
 	}
 
 	inputBindChan <- inputBindArg
+	close(inputBindChan)
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
@@ -2650,7 +2652,7 @@ func main() {
 	} ()
 	go stopAppWorker(conn, sdCancelFunc, sdContext)
 
-	inputChan := make(chan []string, 1)
+	inputChan := make(chan []string, 512)
 	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
 	fmt.Println("Portable daemon", version, "starting")
 	cmdChan := make(chan int8, 1)
