@@ -2150,8 +2150,10 @@ func gpuBind(gpuChan chan []string) {
 						detectCardStatus(cardList, cardPath, card)
 					} (idx, cardName)
 				}
-				wg.Wait()
-				close (cardList)
+				go func (wginner sync.WaitGroup) {
+					wginner.Wait()
+					close (cardList)
+				} (wg)
 				for _, card := range <-cardList {
 					activeGpus = append(
 						activeGpus,
