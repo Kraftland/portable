@@ -1521,9 +1521,9 @@ func genBwArg(
 	xChan chan []string,
 	camChan chan []string,
 	inputChan chan []string,
+	wayDisplayChan chan []string,
 	) {
-	wayDisplayChan := make(chan[]string, 1)
-	go waylandDisplay(wayDisplayChan)
+
 	miscChan := make(chan []string, 1)
 	go miscBinds(miscChan, pwChan)
 
@@ -2660,6 +2660,9 @@ func main() {
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
 
+	wayDisplayChan := make(chan[]string, 1)
+	go waylandDisplay(wayDisplayChan)
+
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
 	wg.Add(1)
@@ -2716,7 +2719,7 @@ func main() {
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan, inputChan)
+		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan)
 	} ()
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan)
