@@ -2413,6 +2413,16 @@ func inputBind(inputBindChan chan []string) {
 		go func (device *udev.Device) {
 			defer wg.Done()
 			path := device.Syspath()
+			if len(path) == 0 {
+				return
+			}
+			sysSl := strings.SplitN(path, "/", -1)
+			sliceLen := len(sysSl)
+			if strings.HasPrefix(sysSl[sliceLen - 1], "event") {
+				if strings.HasPrefix(sysSl[sliceLen - 2], "input") {
+					path = strings.Join(sysSl[0:sliceLen - 3], "/")
+				}
+			}
 			devArgChan <- []string{
 			"--dev-bind",
 				path,
@@ -2441,15 +2451,27 @@ func inputBind(inputBindChan chan []string) {
 					devPath,
 				}
 			}
-			devArgChan <- []string{
-				"--dev-bind",
-				path,
-				path,
+			if len(path) > 0 {
+				sysPathSlice := strings.SplitN(path, "/", -1)
+				sysPathSliceLen := len(sysPathSlice)
+				if strings.Contains(sysPathSlice[sysPathSliceLen - 2], "hidraw") {
+					path = strings.Join(sysPathSlice[0:sysPathSliceLen - 3], "/")
+				}
+				devArgChan <- []string{
+					"--dev-bind",
+					path,
+					path,
+				}
 			}
+
 		} (dev)
 	}
-	wg.Wait()
-	close(devArgChan)
+
+	go func () {
+		wg.Wait()
+		close(devArgChan)
+	} ()
+
 
 	for content := range devArgChan {
 		inputBindArg = append(
