@@ -2442,6 +2442,12 @@ func inputBind(inputBindChan chan []string) {
 				}
 			}
 			if len(path) > 0 {
+				sysPathSlice := strings.SplitN(path, "/", -1)
+				sysPathSliceLen := len(sysPathSlice)
+				if strings.Contains(sysPathSlice[sysPathSliceLen - 2], "hidraw") {
+					path = strings.Join(sysPathSlice[0:sysPathSliceLen - 3], "/")
+					pecho("debug", "Resolved hidraw path: " + path)
+				}
 				devArgChan <- []string{
 					"--dev-bind",
 					path,
