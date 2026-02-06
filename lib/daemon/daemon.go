@@ -2092,7 +2092,7 @@ func gpuBind(gpuChan chan []string) {
 	var totalGpus = []string{}
 	var activeGpus = []string{}
 	var cardSums int = 0
-	var cardList = make(chan []string, 5)
+	var cardList = make(chan []string, 512)
 	var cardPaths []string
 
 
