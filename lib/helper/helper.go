@@ -19,9 +19,17 @@ var (
 )
 
 func updateSd(count int) {
-	fmt.Println("Updating tracking status: ", count)
 	status := "Tracking processes: " + strconv.Itoa(count)
-	daemon.SdNotify(false, status)
+	sent, err := daemon.SdNotify(false, status)
+	if sent == true {
+		fmt.Println("Updated tracking status: ", count)
+	} else {
+		if err == nil {
+			fmt.Println("Notification of daemon status not supported")
+		} else {
+			fmt.Println("Failed to update status: " + err.Error())
+		}
+	}
 }
 
 func startCounter () {
