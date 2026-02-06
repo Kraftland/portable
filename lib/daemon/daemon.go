@@ -2274,7 +2274,7 @@ func bindCard(cardName string, argChan chan []string) {
 	eR.AddMatchIsInitialized()
 	eR.AddMatchSubsystem("drm")
 	eR.AddMatchProperty("DEVTYPE", "drm_minor")
-	eR.AddMatchProperty("ID_PATH", cardID)
+	//eR.AddMatchProperty("ID_PATH", cardID)
 	devs, errUdev = eR.Devices()
 	if errUdev != nil {
 		pecho("warn", "Could not query udev for render node" + errUdev.Error())
