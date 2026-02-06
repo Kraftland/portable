@@ -2238,6 +2238,7 @@ func bindCard(cardName string, argChan chan []string) {
 			cardRoot,
 		}
 		cardID = dev.PropertyValue("ID_PATH")
+		pecho("debug", "Got ID_PATH: " + cardID)
 		devProc = true
 	}
 
@@ -2272,8 +2273,8 @@ func bindCard(cardName string, argChan chan []string) {
 	eR := u.NewEnumerate()
 	eR.AddMatchIsInitialized()
 	eR.AddMatchSubsystem("drm")
-	eR.AddMatchProperty("ID_PATH", cardID)
 	eR.AddMatchProperty("DEVTYPE", "drm_minor")
+	eR.AddMatchProperty("ID_PATH", cardID)
 	devs, errUdev = eR.Devices()
 	if errUdev != nil {
 		pecho("warn", "Could not query udev for render node" + errUdev.Error())
@@ -2282,13 +2283,20 @@ func bindCard(cardName string, argChan chan []string) {
 	var renderNodeName string
 	var renderDevPath string
 	for _, dev := range devs {
-		renderNodeName = dev.Sysname()
-		if strings.Contains(renderNodeName, "card") {
+		if strings.Contains(dev.Sysname(), "card") {
 			continue
 		} else if devProc == true {
-			pecho("warn", "Mapping card to renderer: surplus device")
+			pecho(
+				"warn",
+				"Mapping card to renderer: surplus device ID: " + dev.PropertyValue("ID_PATH") + ", sysname: " + dev.Sysname(),
+				)
+			continue
+		} else if dev.PropertyValue("ID_PATH") != cardID {
+			pecho("debug", "Udev returned unknown card to us! ID: " + dev.PropertyValue("ID_PATH"))
 			continue
 		}
+		renderNodeName = dev.Sysname()
+		pecho("debug", "Got sysname: " + renderNodeName + ", with ID: " + dev.PropertyValue("ID_PATH"))
 		renderDevPath = dev.Devnode()
 		devProc = true
 	}
