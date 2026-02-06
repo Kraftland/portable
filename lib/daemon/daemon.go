@@ -287,6 +287,10 @@ func cmdlineDispatcher(cmdChan chan int8) {
 		switch value {
 			case "--actions" :
 			runtimeOpt.action = true
+			if len(cmdlineArray) <= index + 1 {
+				pecho("warn", "--actions require an argument")
+				break
+			}
 			switch cmdlineArray[index + 1] {
 				case "quit":
 					runtimeOpt.miTerminate = true
