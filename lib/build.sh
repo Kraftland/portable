@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 function buildGo() {
+	currDir="$(pwd)"
 	cd "$1"
 	go mod download -modcacherw
 	export CGO_CPPFLAGS="${CPPFLAGS}"
@@ -16,7 +17,9 @@ function buildGo() {
 		-mod=readonly \
 		-ldflags "-linkmode external -extldflags \"${LDFLAGS}\"" \
 		.
+	cd "${currDir}"
 }
 
 buildGo ./lib/daemon
+
 buildGo ./lib/helper
