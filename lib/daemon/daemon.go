@@ -18,8 +18,8 @@ import (
 	"sync"
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
-	"runtime"
-	"runtime/pprof"
+	//"runtime"
+	//"runtime/pprof"
 	godbus "github.com/godbus/dbus/v5"
 	udev	"github.com/jochenvg/go-udev"
 )
@@ -1237,7 +1237,7 @@ func startApp() {
 	<- envsFlushReady
 	waitChan(signalWatcherReady, "Signal Watcher")
 	// Profiler
-	pprof.Lookup("block").WriteTo(os.Stdout, 1)
+	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	if startAct == "abort" {
 		stopApp()
 	} else {
@@ -2580,7 +2580,7 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
-	runtime.SetBlockProfileRate(1)
+	//runtime.SetBlockProfileRate(1)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func () {
