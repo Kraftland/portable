@@ -31,7 +31,6 @@ const (
 
 type RUNTIME_OPT struct {
 	action		bool
-	fullCmdline	string
 	argStop		bool
 	applicationArgs	[]string
 	userExpose	string
@@ -346,8 +345,8 @@ func cmdlineDispatcher(cmdChan chan int8) {
 	}
 	addEnv("targetArgs=" + string(encodedArg))
 	cmdChan <- 1
-	runtimeOpt.fullCmdline = strings.Join(os.Args, ", ")
-	pecho("debug", "Full command line: " + runtimeOpt.fullCmdline)
+	fullCmdline := strings.Join(cmdlineArray, ", ")
+	pecho("debug", "Full command line: " + fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 }
 
