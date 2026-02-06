@@ -146,6 +146,13 @@ var (
 	socketStop		= make(chan int8, 10)
 	stopAppChan		= make(chan int8, 512)
 	stopAppDone		= make(chan int8)
+	nvKernelModulePath 	= []string{
+					"/sys/module/nvidia",
+					"/sys/module/nvidia_drm",
+					"/sys/module/nvidia_modeset",
+					"/sys/module/nvidia_uvm",
+					"/sys/module/nvidia_wmi_ec_backlight",
+				}
 )
 
 func pecho(level string, message string) {
@@ -2095,6 +2102,22 @@ func gpuBind(gpuChan chan []string) {
 	var cardList = make(chan []string, 512)
 	var cardPaths []string
 
+	wg.Add(1)
+	go func () {
+		defer wg.Done()
+		gpuArg = append(
+			gpuArg,
+			"--tmpfs", "/dev/dri",
+			"--tmpfs", "/sys/class/drm",
+		)
+		for _, path := range nvKernelModulePath {
+			gpuArg = append(
+				gpuArg,
+				maskDir(path)...
+			)
+		}
+	} ()
+
 
 	for _, card := range devs {
 		cardName := card.Sysname()
@@ -2117,11 +2140,7 @@ func gpuBind(gpuChan chan []string) {
 			card.Syspath(),
 		)
 	}
-	gpuArg = append(
-		gpuArg,
-		"--tmpfs", "/dev/dri",
-		"--tmpfs", "/sys/class/drm",
-	)
+	wg.Wait()
 	var argChan = make(chan []string, 128)
 	switch cardSums {
 		case 0:
@@ -2233,8 +2252,7 @@ func bindCard(cardName string, argChan chan []string) {
 		devNode := dev.Devnode()
 		sysPath := dev.Syspath()
 		cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
-		//fmt.Println(cardName + " Dev path: " + devPath + " sys path: " + sysPath)
-	argChan <- []string{
+		argChan <- []string{
 			"--dev-bind",
 			"/sys/class/drm/" + cardName,
 			"/sys/class/drm/" + cardName,
@@ -2254,7 +2272,6 @@ func bindCard(cardName string, argChan chan []string) {
 	wg.Add(1)
 	go func (arg chan []string) {
 		defer wg.Done()
-		var cardBindArgN []string
 		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 		if openErr != nil {
 			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
@@ -2266,14 +2283,13 @@ func bindCard(cardName string, argChan chan []string) {
 		if strings.Contains(string(cardVendor), "0x10de") == true {
 			pecho("debug", "Found NVIDIA device")
 			arg <- tryBindNv()
-		} else if confOpts.gameMode == false {
-			arg <- maskDir("/sys/module/nvidia")
-			arg <- maskDir("/sys/module/nvidia_drm")
-			arg <- maskDir("/sys/module/nvidia_modeset")
-			arg <- maskDir("/sys/module/nvidia_uvm")
-			arg <- maskDir("/sys/module/nvidia_wmi_ec_backlight")
+			for _, path := range nvKernelModulePath {
+				arg <- []string{
+					"--ro-bind",
+					path, path,
+				}
+			}
 		}
-		arg <- cardBindArgN
 	} (argChan)
 
 
