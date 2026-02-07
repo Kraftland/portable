@@ -1478,45 +1478,65 @@ func prepareEnvs() {
 	wg.Go(func() {
 		miscEnvs()
 	})
-	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
-	if err != nil {
-		if os.IsNotExist(err) {
-			var template string = "# This file accepts simple KEY=VAL envs"
-			os.WriteFile(
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
-				[]byte(template),
-				0700,
-			)
-		} else {
-			pecho("warn", "Unable to open file for reading environment variables: " + err.Error())
-		}
-	} else {
-		defer userEnvs.Close()
-		scanner := bufio.NewScanner(userEnvs)
-		for scanner.Scan() {
-			if scanner.Err() != nil {
+	wg.Go(func() {
+		userEnvs, err := os.OpenFile(
+			xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+			os.O_RDONLY,
+			0700,
+		)
+		if err != nil {
+			if os.IsNotExist(err) {
+				const template = "# This file accepts simple KEY=VAL envs"
+				os.WriteFile(
+					xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+					[]byte(template),
+					0700,
+				)
+			} else {
 				pecho(
 				"warn",
-				"Could not read user environment variables" + scanner.Err().Error(),
+				"Unable to open file for reading environment variables: " + err.Error(),
 				)
 			}
-			line := scanner.Text()
-			addEnv(line)
+		} else {
+			defer userEnvs.Close()
+			scanner := bufio.NewScanner(userEnvs)
+			for scanner.Scan() {
+				if scanner.Err() != nil {
+					pecho(
+					"warn",
+					"Could not read user environment variables" + scanner.Err().Error(),
+					)
+					continue
+				}
+				line := scanner.Text()
+				addEnv(line)
+			}
 		}
-	}
-	packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
-	if errPkg != nil {
-		pecho("crit", "Could not open package config " + confOpts.confPath + ": " + errPkg.Error())
-	}
-	defer packageEnvs.Close()
-	pkgRead, errPkgR := io.ReadAll(packageEnvs)
-	if errPkgR != nil {
-		pecho("crit", "I/O error reading config: " + errPkgR.Error())
-	}
-	pkgEnv := strings.Split(strings.TrimRight(string(pkgRead), "\n"), "\n")
-	for _, line := range pkgEnv {
-		addEnv(line)
-	}
+	})
+
+	wg.Go(func() {
+		packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
+		if errPkg != nil {
+			pecho(
+				"crit",
+				"Could not open package config " + confOpts.confPath + ": " + errPkg.Error(),
+				)
+		} else {
+			defer packageEnvs.Close()
+			scanner := bufio.NewScanner(packageEnvs)
+			for scanner.Scan() {
+				if scanner.Err() != nil {
+					pecho(
+						"crit",
+						"Could not read package defined environment variables",
+						)
+				}
+				line := scanner.Text()
+				addEnv(line)
+			}
+		}
+	})
 
 	wg.Wait()
 }
