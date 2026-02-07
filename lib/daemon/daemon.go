@@ -136,7 +136,6 @@ var (
 	envsChan		= make(chan string, 512)
 	envsFlushReady		= make(chan int8, 1)
 	startAct		string
-	launchTarget		= make(chan string, 1)
 	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
