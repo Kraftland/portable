@@ -1132,14 +1132,16 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 		defer wg.Done()
 		dbusArgs = <- busArgChan
 	} ()
+	wg.Go(func() {
+		os.MkdirAll(
+			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+			0700,
+		)
+	})
 	go func () {
 		defer wg.Done()
 		os.MkdirAll(
 			xdgDir.runtimeDir + "/app/" + confOpts.appID,
-			0700,
-		)
-		os.MkdirAll(
-			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
 			0700,
 		)
 	} ()
