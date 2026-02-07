@@ -149,27 +149,54 @@ var (
 					"/sys/module/nvidia_uvm",
 					"/sys/module/nvidia_wmi_ec_backlight",
 				}
+	pechoChan		= make(chan []string, 128)
 )
 
-func pecho(level string, message string) {
-	switch level {
+func pechoWorker() {
+	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
+	switch externalLoggingLevel {
 		case "debug":
-			if internalLoggingLevel <= 1 {
-				fmt.Println("[Debug] ", message)
-			}
+			internalLoggingLevel = 1
 		case "info":
-			if internalLoggingLevel <= 2 {
-				fmt.Println("[Info] ", message)
-			}
+			internalLoggingLevel = 2
 		case "warn":
-			fmt.Println("[Warn] ", message)
-		case "crit":
-			fmt.Println("[Critical] ", message)
-			stopApp()
-			panic("A critical error has happened")
+			internalLoggingLevel = 3
 		default:
-			fmt.Println("[Undefined] ", message)
+			internalLoggingLevel = 3
 	}
+	pechoChan <- []string{
+		"debug",
+		"Initialized logging daemon",
+	}
+	for {
+		chanRes := <- pechoChan
+		switch chanRes[0] {
+			case "debug":
+				if internalLoggingLevel <= 1 {
+					fmt.Println("[Debug] ", chanRes[1])
+				}
+			case "info":
+				if internalLoggingLevel <= 2 {
+					fmt.Println("[Info] ", chanRes[1])
+				}
+			case "warn":
+				fmt.Println("[Warn] ", chanRes[1])
+			case "crit":
+				fmt.Println("[Critical] ", chanRes[1])
+				stopApp()
+				panic("A critical error has happened")
+			default:
+				fmt.Println("[Undefined] ", chanRes[1])
+		}
+	}
+}
+
+func pecho(level string, message string) {
+	var msgSlice = []string{
+		level,
+		message,
+	}
+	pechoChan <- msgSlice
 }
 
 
@@ -384,17 +411,6 @@ func shareFile() {
 }
 
 func getVariables() {
-	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
-	switch externalLoggingLevel {
-		case "debug":
-			internalLoggingLevel = 1
-		case "info":
-			internalLoggingLevel = 2
-		case "warn":
-			internalLoggingLevel = 3
-		default:
-			internalLoggingLevel = 3
-	}
 	runtimeOpt.userExpose = os.Getenv("bwBindPar")
 	runtimeOpt.userLang = os.Getenv("LANG")
 }
@@ -2667,7 +2683,8 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
-	//runtime.SetBlockProfileRate(1)
+	go pechoWorker()
+
 	var wg sync.WaitGroup
 	go getVariables()
 	wg.Add(1)
