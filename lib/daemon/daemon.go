@@ -629,26 +629,17 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 func writeControlFile() {
 	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
 	var controlContent = controlFile
-	controlContent = strings.ReplaceAll(controlContent, "inIdHold", runtimeInfo.instanceID)
-	controlContent = strings.ReplaceAll(controlContent, "idHold", confOpts.appID)
-	controlContent = strings.ReplaceAll(
-		controlContent,
-		"busHold",
-		xdgDir.runtimeDir + "/app/" + confOpts.appID,
+	replacer := strings.NewReplacer(
+		"inIdHold",	runtimeInfo.instanceID,
+		"idHold",	confOpts.appID,
+		"busHold",	xdgDir.runtimeDir + "/app/" + confOpts.appID,
+		"busAyHold",	xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+		"friendlyHold",	confOpts.friendlyName,
 	)
-	controlContent = strings.ReplaceAll(
-		controlContent,
-		"busAyHold",
-		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
-	)
-	controlContent = strings.ReplaceAll(
-		controlContent,
-		"friendlyHold",
-		confOpts.friendlyName,
-	)
+
 	os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control",
-		[]byte(controlContent),
+		[]byte(replacer.Replace(controlContent)),
 		0700,
 	)
 }
