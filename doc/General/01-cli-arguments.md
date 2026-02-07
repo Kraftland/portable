@@ -25,6 +25,7 @@ Command line arguments (optional):
 		share-files	-> Place files in sandbox's "Shared" directory
 		reset-documents	-> Revoke granted file access permissions
 		stats	-	-> Show basic status of the sandbox (if running)
+		quit	-	-> Terminate running sandbox
 	--	-	-	-> Any argument after this double dash will be passed to the application
 	--help	-	-	-> Print this help
 ```
