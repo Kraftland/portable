@@ -1508,6 +1508,7 @@ func prepareEnvs() {
 	if errPkg != nil {
 		pecho("crit", "Could not open package config " + confOpts.confPath + ": " + errPkg.Error())
 	}
+	defer packageEnvs.Close()
 	pkgRead, errPkgR := io.ReadAll(packageEnvs)
 	if errPkgR != nil {
 		pecho("crit", "I/O error reading config: " + errPkgR.Error())
