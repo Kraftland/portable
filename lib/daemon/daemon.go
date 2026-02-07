@@ -2530,9 +2530,14 @@ func inputBind(inputBindChan chan []string) {
 }
 
 func multiInstance(miChan chan bool) {
-	pecho("debug", "Dialing daemon socket...")
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
+	_, errStat := os.Stat(socketPath)
+	if errStat != nil && os.IsNotExist(errStat) {
+		miChan <- false
+		return
+	}
+	pecho("debug", "Dialing daemon socket...")
 	_, err := net.Dial("unix", socketPath)
 	socketPath = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
@@ -2543,7 +2548,6 @@ func multiInstance(miChan chan bool) {
 			os.Exit(2)
 		}
 		miChan <- false
-		pecho("debug", "Starting new instance...")
 		return
 	} else {
 		pecho("debug", "Another instance running")
