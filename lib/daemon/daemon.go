@@ -2,11 +2,10 @@ package main
 
 import (
 	"bufio"
-	"crypto/rand"
+	"math/rand"
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"os/exec"
 	"regexp"
@@ -569,13 +568,12 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 	var wg sync.WaitGroup
 	pecho("debug", "Generating instance ID")
 	for {
-		genId, _ := rand.Int(rand.Reader, big.NewInt(9999999999))
-		idCandidate := int(genId.Int64())
+		idCandidate := rand.Intn(2147483647)
 		pecho("debug", "Trying instance ID: " + strconv.Itoa(idCandidate))
 		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + strconv.Itoa(idCandidate))
 		if err == nil {
 			pecho("warn", "Unable to use instance ID " + strconv.Itoa(idCandidate))
-		} else if genId.Int64() < 1024 {
+		} else if idCandidate < 1024 {
 			pecho("debug", "Rejecting low ID")
 		} else {
 			runtimeInfo.instanceID = strconv.Itoa(idCandidate)
