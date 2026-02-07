@@ -1771,11 +1771,12 @@ func genBwArg(
 		wayArgs...
 	)
 
-	miscArgs := <- miscChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		miscArgs...
-	)
+	for arg := range miscChan {
+		runtimeInfo.bwCmd = append(
+			runtimeInfo.bwCmd,
+			arg...
+		)
+	}
 
 	if confOpts.bindInputDevices == true {
 		for inputArg := range inputChan {
@@ -1862,7 +1863,87 @@ func maskDir(path string) (maskArgs []string) {
 }
 
 func miscBinds(miscChan chan []string, pwChan chan []string) {
+	var wg sync.WaitGroup
 	var miscArgs = []string{}
+
+	wg.Go(func() {
+		miscChan <- maskDir("/proc/bus")
+	})
+
+	wg.Go(func() {
+		miscChan <- maskDir("/proc/driver")
+	})
+
+	wg.Go(func() {
+		_, err := os.Stat("/usr/lib/flatpak-xdg-utils/flatpak-spawn")
+		if err == nil {
+			miscChan <- []string{
+				"--ro-bind",
+				"/usr/lib/portable/overlay-usr/flatpak-spawn",
+				"/usr/lib/flatpak-xdg-utils/flatpak-spawn",
+			}
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- maskDir("/etc/kernel")
+	})
+
+	wg.Go(func() {
+		miscChan <- []string{
+			"--ro-bind-try",
+			xdgDir.confDir + "/fontconfig",
+			translatePath(xdgDir.confDir + "/fontconfig"),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string {
+			"--ro-bind-try",
+			xdgDir.confDir + "/gtk-3.0/gtk.css",
+			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css"),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string {
+			"--ro-bind-try",
+			xdgDir.confDir + "/gtk-3.0/colors.css",
+			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css"),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string {
+			"--ro-bind-try",
+			xdgDir.confDir + "/gtk-4.0/gtk.css",
+			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css"),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string{
+			"--ro-bind-try",
+			xdgDir.confDir + "/qt6ct",
+			translatePath(xdgDir.confDir + "/qt6ct"),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string{
+			"--ro-bind-try",
+			xdgDir.dataDir + "/fonts",
+			translatePath(xdgDir.dataDir + "/fonts"),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string{
+			"--ro-bind-try",
+			xdgDir.dataDir + "/icons",
+			translatePath(xdgDir.dataDir + "/icons"),
+		}
+	})
 
 	if len(runtimeOpt.userExpose) > 0 {
 		_, err := os.Stat(runtimeOpt.userExpose)
@@ -1910,15 +1991,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			}
 		}
 	}
-
-	miscArgs = append(
-		miscArgs,
-		maskDir("/proc/bus")...
-	)
-	miscArgs = append(
-		miscArgs,
-		maskDir("/proc/driver")...
-	)
 	pwArgs := <- pwChan
 	miscArgs = append(
 		miscArgs,
@@ -1955,50 +2027,12 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		)
 	}
 
-	_, err := os.Stat("/usr/lib/flatpak-xdg-utils/flatpak-spawn")
-	if err == nil {
-		miscArgs = append(
-			miscArgs,
-			"--ro-bind",
-			"/usr/lib/portable/overlay-usr/flatpak-spawn",
-			"/usr/lib/flatpak-xdg-utils/flatpak-spawn",
-		)
-	}
 
-	dirFd, errRead := os.Stat("/etc/kernel")
-	if errRead == nil && dirFd.IsDir() == true {
-		miscArgs = append(
-			miscArgs,
-			"--tmpfs",
-			"/etc/kernel",
-		)
-	}
-	miscArgs = append(
-		miscArgs,
-		"--ro-bind-try",
-			xdgDir.confDir + "/fontconfig",
-			translatePath(xdgDir.confDir + "/fontconfig"),
-		"--ro-bind-try",
-			xdgDir.confDir + "/gtk-3.0/gtk.css",
-			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css"),
-		"--ro-bind-try",
-			xdgDir.confDir + "/gtk-3.0/colors.css",
-			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css"),
-		"--ro-bind-try",
-			xdgDir.confDir + "/gtk-4.0/gtk.css",
-			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css"),
-		"--ro-bind-try",
-			xdgDir.confDir + "/qt6ct",
-			translatePath(xdgDir.confDir + "/qt6ct"),
-		"--ro-bind-try",
-			xdgDir.dataDir + "/fonts",
-			translatePath(xdgDir.dataDir + "/fonts"),
-		"--ro-bind-try",
-			xdgDir.dataDir + "/icons",
-			translatePath(xdgDir.dataDir + "/icons"),
-	)
+
 
 	miscChan <- miscArgs
+	wg.Wait()
+	close(miscChan)
 }
 
 func bindXAuth(xauthChan chan []string) {
