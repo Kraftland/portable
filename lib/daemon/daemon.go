@@ -1866,53 +1866,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
-	if len(runtimeOpt.userExpose) > 0 {
-		_, err := os.Stat(runtimeOpt.userExpose)
-		if err != nil {
-			pecho("warn", "Rejecting bwBindPar: " + err.Error())
-		} else {
-			zenityArgs := []string{
-				"--title",
-					confOpts.friendlyName,
-				"--icon=folder-open-symbolic",
-				"--question",
-				"--default-cancel",
-			}
-
-			switch runtimeOpt.userLang {
-				case "en_GB.UTF-8":
-					zenityArgs = append(
-						zenityArgs,
-						"--text=Expose" + runtimeOpt.userExpose + "?",
-					)
-				case "zh_CN.UTF-8":
-					zenityArgs = append(
-						zenityArgs,
-						"--text=暴露 " + runtimeOpt.userExpose + "?",
-					)
-				default:
-					zenityArgs = append(
-						zenityArgs,
-						"--text=Expose " + runtimeOpt.userExpose + "?",
-					)
-			}
-
-			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
-			zenityRun.Stderr = os.Stderr
-			errZenity := zenityRun.Run()
-			if errZenity != nil {
-				pecho("warn", "Rejecting bwBindPar: did not receive confirmation")
-			} else {
-				miscArgs = append(
-					miscArgs,
-					"--dev-bind",
-						runtimeOpt.userExpose,
-						runtimeOpt.userExpose,
-				)
-			}
-		}
-	}
-
 	wg.Go(func() {
 		miscChan <- maskDir("/proc/bus")
 	})
@@ -1920,42 +1873,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	wg.Go(func() {
 		miscChan <- maskDir("/proc/driver")
 	})
-	pwArgs := <- pwChan
-	miscArgs = append(
-		miscArgs,
-		pwArgs...
-	)
-	if confOpts.mountInfo == true {
-		miscArgs = append(
-			miscArgs,
-			"--ro-bind",
-				"/dev/null",
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "-private/run-environ",
-			"--ro-bind",
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
-			"--ro-bind",
-				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
-				xdgDir.runtimeDir + "/flatpak-runtime-directory",
-			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-				"/.flatpak-info",
-			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-				xdgDir.runtimeDir + "/.flatpak-info",
-			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.flatpak-info",
-			"--tmpfs",		xdgDir.home + "/.var",
-			"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var",
-			"--bind",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory,
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID,
-			"--tmpfs",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID + "/options",
-		)
-	}
-
 
 	wg.Go(func() {
 		_, err := os.Stat("/usr/lib/flatpak-xdg-utils/flatpak-spawn")
@@ -2027,6 +1944,91 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			translatePath(xdgDir.dataDir + "/icons"),
 		}
 	})
+
+	if len(runtimeOpt.userExpose) > 0 {
+		_, err := os.Stat(runtimeOpt.userExpose)
+		if err != nil {
+			pecho("warn", "Rejecting bwBindPar: " + err.Error())
+		} else {
+			zenityArgs := []string{
+				"--title",
+					confOpts.friendlyName,
+				"--icon=folder-open-symbolic",
+				"--question",
+				"--default-cancel",
+			}
+
+			switch runtimeOpt.userLang {
+				case "en_GB.UTF-8":
+					zenityArgs = append(
+						zenityArgs,
+						"--text=Expose" + runtimeOpt.userExpose + "?",
+					)
+				case "zh_CN.UTF-8":
+					zenityArgs = append(
+						zenityArgs,
+						"--text=暴露 " + runtimeOpt.userExpose + "?",
+					)
+				default:
+					zenityArgs = append(
+						zenityArgs,
+						"--text=Expose " + runtimeOpt.userExpose + "?",
+					)
+			}
+
+			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
+			zenityRun.Stderr = os.Stderr
+			errZenity := zenityRun.Run()
+			if errZenity != nil {
+				pecho("warn", "Rejecting bwBindPar: did not receive confirmation")
+			} else {
+				miscArgs = append(
+					miscArgs,
+					"--dev-bind",
+						runtimeOpt.userExpose,
+						runtimeOpt.userExpose,
+				)
+			}
+		}
+	}
+	pwArgs := <- pwChan
+	miscArgs = append(
+		miscArgs,
+		pwArgs...
+	)
+	if confOpts.mountInfo == true {
+		miscArgs = append(
+			miscArgs,
+			"--ro-bind",
+				"/dev/null",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "-private/run-environ",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+			"--ro-bind",
+				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+				xdgDir.runtimeDir + "/flatpak-runtime-directory",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				"/.flatpak-info",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.runtimeDir + "/.flatpak-info",
+			"--ro-bind",
+				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.flatpak-info",
+			"--tmpfs",		xdgDir.home + "/.var",
+			"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var",
+			"--bind",
+				xdgDir.dataDir + "/" + confOpts.stateDirectory,
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID,
+			"--tmpfs",
+				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID + "/options",
+		)
+	}
+
+
+
 
 	miscChan <- miscArgs
 	wg.Wait()
