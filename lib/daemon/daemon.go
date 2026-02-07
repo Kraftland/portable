@@ -1430,12 +1430,11 @@ func imEnvs (imReady chan int8) {
 	imReady <- 1
 }
 
-func setupSharedDir (shareDir chan int8) {
+func setupSharedDir () {
 	os.MkdirAll(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared", 0700)
 	os.Link(
 		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared",
 		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/共享文件")
-	shareDir <- 1
 }
 
 func miscEnvs (mEnvRd chan int8) {
@@ -1474,11 +1473,9 @@ func miscEnvs (mEnvRd chan int8) {
 func prepareEnvs() {
 	imChan := make(chan int8, 1)
 	xdgEnvChan := make(chan int8, 1)
-	shareDirChan := make(chan int8, 1)
 	miscEnvChan := make(chan int8, 1)
 	go imEnvs(imChan)
 	go setXDGEnvs(xdgEnvChan)
-	go setupSharedDir(shareDirChan)
 	go miscEnvs(miscEnvChan)
 	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
 	if err != nil {
@@ -1517,7 +1514,6 @@ func prepareEnvs() {
 		addEnv(line)
 	}
 
-	<- shareDirChan
 	<- miscEnvChan
 	<- xdgEnvChan
 	<- imChan
@@ -2718,6 +2714,9 @@ func main() {
 		defer wg.Done()
 		instDesktopFile()
 	} ()
+	wg.Go(func() {
+		setupSharedDir()
+	})
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
 		and we signal back when multi-instance is cleared
 		in another channel */
