@@ -1337,7 +1337,7 @@ func instDesktopFile() {
 	}
 }
 
-func setXDGEnvs (xdgEnvReady chan int8) {
+func setXDGEnvs() {
 	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir))
 	addEnv("XDG_DOCUMENTS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Documents")
 	addEnv("XDG_DATA_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/share")
@@ -1350,10 +1350,9 @@ func setXDGEnvs (xdgEnvReady chan int8) {
 	addEnv("XDG_MUSIC_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Music")
 	addEnv("XDG_PICTURES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Pictures")
 	addEnv("XDG_VIDEOS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Videos")
-	xdgEnvReady <- 1
 }
 
-func imEnvs (imReady chan int8) {
+func imEnvs () {
 	addEnv("IBUS_USE_PORTAL=1")
 	var imKind string
 	if confOpts.waylandOnly == true {
@@ -1427,7 +1426,6 @@ func imEnvs (imReady chan int8) {
 				}
 		}
 	}
-	imReady <- 1
 }
 
 func setupSharedDir () {
@@ -1437,7 +1435,7 @@ func setupSharedDir () {
 		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/共享文件")
 }
 
-func miscEnvs (mEnvRd chan int8) {
+func miscEnvs () {
 	if confOpts.useZink == true {
 		addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
 		addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
@@ -1467,16 +1465,19 @@ func miscEnvs (mEnvRd chan int8) {
 	addEnv("XDG_SESSION_TYPE=" + os.Getenv("XDG_SESSION_TYPE"))
 	addEnv("WAYLAND_DISPLAY=" + xdgDir.runtimeDir + "/wayland-0")
 	addEnv("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus")
-	mEnvRd <- 1
 }
 
 func prepareEnvs() {
-	imChan := make(chan int8, 1)
-	xdgEnvChan := make(chan int8, 1)
-	miscEnvChan := make(chan int8, 1)
-	go imEnvs(imChan)
-	go setXDGEnvs(xdgEnvChan)
-	go miscEnvs(miscEnvChan)
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		imEnvs()
+	})
+	wg.Go(func() {
+		setXDGEnvs()
+	})
+	wg.Go(func() {
+		miscEnvs()
+	})
 	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
 	if err != nil {
 		pecho("info", "Unable to read user defined environment variables: " + err.Error())
@@ -1514,9 +1515,7 @@ func prepareEnvs() {
 		addEnv(line)
 	}
 
-	<- miscEnvChan
-	<- xdgEnvChan
-	<- imChan
+	wg.Wait()
 }
 
 func genBwArg(
