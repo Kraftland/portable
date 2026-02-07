@@ -1492,14 +1492,17 @@ func prepareEnvs() {
 			pecho("warn", "Unable to open file for reading environment variables: " + err.Error())
 		}
 	} else {
-		userEnvRead, errRead := io.ReadAll(userEnvs)
-		if errRead != nil {
-			pecho("warn", "I/O error reading environment variables: " + errRead.Error())
-		} else {
-			lines := strings.Split(strings.TrimRight(string(userEnvRead), "\n"), "\n")
-			for _, line := range lines {
-				addEnv(line)
+		defer userEnvs.Close()
+		scanner := bufio.NewScanner(userEnvs)
+		for scanner.Scan() {
+			if scanner.Err() != nil {
+				pecho(
+				"warn",
+				"Could not read user environment variables" + scanner.Err().Error(),
+				)
 			}
+			line := scanner.Text()
+			addEnv(line)
 		}
 	}
 	packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
