@@ -1480,7 +1480,6 @@ func prepareEnvs() {
 	})
 	userEnvs, err := os.OpenFile(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env", os.O_RDONLY, 0700)
 	if err != nil {
-		pecho("info", "Unable to read user defined environment variables: " + err.Error())
 		if os.IsNotExist(err) {
 			var template string = "# This file accepts simple KEY=VAL envs"
 			os.WriteFile(
