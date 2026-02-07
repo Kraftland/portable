@@ -4,19 +4,21 @@
 
 Portable is designed to be simple to use, privacy first and efficient while operating. It has many unique features:
 
-- Background Portal support.
-- Exposes some theming and preference configurations by default for user-level and all configuration in system-level.
-- Wayland Security Context support. (although deprecated, you can use it)
-- PipeWire security context when absolutely needed.
-- Access Control: Limits what the application can see, write and modify. Sandboxed applications are self-contained.
-- Sharing files with the application, even if it doesn't support portals. portable creates a directory within the sandbox home to contain shared files.
-- D-Bus filtering & accessibility support: Cuts off unneeded D-Bus messages thus eliminates the possibility to locate, spawn a process outside of the sandbox, mess with the host system and other possible exploits.
-- Process Management: Monitors running processes and quit them with one click.
-- Packaging Friendly as portable only requires a config file to function.
-- Storage efficient compared to Flatpak: Using host system as the "runtime".
-- Hybrid GPU workarounds are automatically applied to prevent waking up discrete GPUs, often caused by Vulkan and Electron applications.
-- Input Method automatic detection.
-- Curated, safe list of Portals exposed. Unsafe Portals will be blocked.
+- Background Portal support
+- Better integration of your host system
+- PipeWire security context
+- File bridge: share files to legacy applications without exposing host filesystem
+- D-Bus filtering: mandatory filtering with built-in rules to prevent sandbox escape from bad packaging
+- Accessibility support: locked down but functional screen reader
+- Process Management: process tracking and configurable shutdown behaviour
+- Packaging friendly: simple KEY=VAL configuration, with backwards compatibility
+- Storage efficient: uses host libraries
+- multi-GPU awareness, blocks discrete GPU wakeups by design
+- Game Mode for automatic discrete GPU utilisation
+- Package defined input device expose, use controllers without exposing the whole `/sys` and `/dev` directory
+- Automatic input method workarounds
+- Curated, safe list of Portals exposed
+- Optional, user defined shared path via environment variable `bwBindPar=/path`
 
 You may want a comparison between Flatpak and Portable:
 
