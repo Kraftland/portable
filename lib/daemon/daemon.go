@@ -758,6 +758,7 @@ func cleanDirs() {
 
 func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
 	<- stopAppChan
+	pecho("debug", "Received a quit request from channel")
 	getFlatpakInstanceID()
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -1229,6 +1230,7 @@ func watchSignalSocket(readyChan chan int8) {
 
 func closeSocketOnDemand (socket net.Listener) {
 	<- socketStop
+	pecho("debug", "Closing socket on request")
 	socket.Close()
 }
 
