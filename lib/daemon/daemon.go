@@ -1901,6 +1901,12 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	})
 
 	wg.Go(func() {
+		miscChan <- maskDir("/sys/devices/virtual/dmi")
+		miscChan <- maskDir("/sys/devices/virtual/block")
+		miscChan <- maskDir("/sys/devices/virtual/sound")
+	})
+
+	wg.Go(func() {
 		_, err := os.Stat("/usr/lib/flatpak-xdg-utils/flatpak-spawn")
 		if err == nil {
 			miscChan <- []string{
