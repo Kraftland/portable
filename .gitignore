@@ -6,3 +6,4 @@ portable/
 lib/daemon/portable-daemon
 lib/helper/helper
 *.pprof
+lib/open-ng/top.kimiblock.sandboxopen
