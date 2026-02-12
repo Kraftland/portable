@@ -1214,6 +1214,7 @@ func watchSignalSocket(readyChan chan int8) {
 	socket, listenErr := net.Listen("unix", signalSocketPath)
 	if listenErr != nil {
 		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
+		return
 	}
 	readyChan <- 1
 	pecho("debug", "Accepting signals")
