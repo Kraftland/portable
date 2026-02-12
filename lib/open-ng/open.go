@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"github.com/KarpelesLab/reflink"
+	"github.com/godbus/dbus/v5"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 )
 
 func openPath(path string) {
-	modPath, mod := evalPath(path)
+	modPath, _ := evalPath(path)
 	if len(modPath) == 0 {
 		log.Fatalln("Failed to resolve path")
 		return
@@ -30,12 +31,25 @@ func openPath(path string) {
 
 	isDir := stat.IsDir()
 
-	if mod == false {
-		succ := openPathPortal(modPath, isDir)
-		if succ == true {
-			return
-		}
+	succ := openPathPortal(modPath, isDir)
+	if succ == true {
+		return
 	}
+	log.Println("Calling FileManager1 to handle path")
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		log.Fatalln("Could not connect to session bus: " + err.Error())
+		return
+	}
+	defer conn.Close()
+	pathSlice := []string{modPath}
+	fileManager1Obj := conn.Object("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1")
+	fileManager1Obj.Call(
+		"org.freedesktop.FileManager1.ShowItems",
+		0,
+		pathSlice,
+		os.Getenv("appID"),
+	)
 }
 
 func evalPath(path string) (finalPath string, modified bool) {
