@@ -19,12 +19,15 @@ var (
 
 func openPath(path string, showItem bool) {
 	modPath, _ := evalPath(path)
+
+	log.Println("evalPath returned path", modPath)
+
 	if len(modPath) == 0 {
 		log.Fatalln("Failed to resolve path")
 		return
 	}
 
-	stat, err := os.Stat(path)
+	stat, err := os.Stat(modPath)
 	if err != nil {
 		log.Fatalln("Could not stat path: " + err.Error())
 		return
@@ -39,13 +42,13 @@ func openPath(path string, showItem bool) {
 		}
 	}
 
-	log.Println("Calling FileManager1 to handle path")
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		log.Fatalln("Could not connect to session bus: " + err.Error())
 		return
 	}
 	defer conn.Close()
+	log.Println("Calling FileManager1 for path: " + modPath)
 	pathSlice := []string{modPath}
 	fileManager1Obj := conn.Object("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1")
 	fileManager1Obj.Call(
@@ -64,6 +67,8 @@ func evalPath(path string) (finalPath string, modified bool) {
 	}
 
 	inputAbs, _ = strings.CutPrefix(path, "file://")
+
+	log.Println("Resolved absolute path", inputAbs)
 
 
 	sandboxHome, err := filepath.Abs(os.Getenv("HOME"))
@@ -84,12 +89,15 @@ func evalPath(path string) (finalPath string, modified bool) {
 		finalPath = sandboxHome
 		return
 	} else if strings.HasPrefix(inputAbs, filepath.Join("/home", userName)) {
-		finalPath = sandboxHome
-		return
+		if strings.Contains(inputAbs, sandboxHome) == false {
+			finalPath = sandboxHome
+			return
+		}
 	} else if inputAbs == "/home" {
 		finalPath = sandboxHome
 		return
-	} else if strings.HasPrefix(inputAbs, sandboxHome) {
+	}
+	if strings.HasPrefix(inputAbs, sandboxHome) {
 		modified = false
 		finalPath = inputAbs
 		log.Println("Translated sandbox path " + path + " to " + finalPath)
