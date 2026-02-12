@@ -201,7 +201,7 @@ func main () {
 	if os.Args[1] == "--show-item" {
 		fmt.Println("Activating legacy dde-file-manager mode")
 		totalLength := len(os.Args)
-		var loopCounter uint = 1
+		var loopCounter uint = 2
 		for {
 			if loopCounter > uint(totalLength) {
 				fmt.Println("Could not resolve path")
