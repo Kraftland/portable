@@ -16,7 +16,7 @@ var (
 	linkRegexp	=	regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/$.?#].[^\s]*`);
 )
 
-func openPath(path string) {
+func openPath(path string, showItem bool) {
 	modPath, _ := evalPath(path)
 	if len(modPath) == 0 {
 		log.Fatalln("Failed to resolve path")
@@ -31,10 +31,13 @@ func openPath(path string) {
 
 	isDir := stat.IsDir()
 
-	succ := openPathPortal(modPath, isDir)
-	if succ == true {
-		return
+	if showItem == false {
+		succ := openPathPortal(modPath, isDir)
+		if succ == true {
+			return
+		}
 	}
+
 	log.Println("Calling FileManager1 to handle path")
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
@@ -181,7 +184,7 @@ func main () {
 			if err != nil {
 				fmt.Println("Invalid argument: " + os.Args[loopCounter])
 			} else {
-				openPath(os.Args[loopCounter])
+				openPath(os.Args[loopCounter], true)
 				break
 			}
 		}
@@ -189,6 +192,6 @@ func main () {
 		fmt.Println("Got a link")
 		openLink(os.Args[1])
 	} else {
-		openPath(os.Args[1])
+		openPath(os.Args[1], false)
 	}
 }
