@@ -63,6 +63,8 @@ func evalPath(path string) (finalPath string, modified bool) {
 		return
 	}
 
+	inputAbs, _ = strings.CutPrefix(path, "file://")
+
 
 	sandboxHome, err := filepath.Abs(os.Getenv("HOME"))
 	if err != nil {
@@ -212,6 +214,7 @@ func main () {
 				openPath(os.Args[loopCounter], true)
 				break
 			}
+			loopCounter++
 		}
 	} else if strings.Contains(os.Args[1], "file://") == false && linkRegexp.Match([]byte(os.Args[1])) {
 		fmt.Println("Got a link")
