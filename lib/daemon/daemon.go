@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"regexp"
 	"strconv"
 	"strings"
@@ -775,6 +777,14 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 	wg.Wait()
 	stopAppDone <- 1
 	os.Exit(0)
+}
+
+func signalRecvWorker(sigChan chan os.Signal) {
+	sig := <- sigChan
+	pecho("debug", "Got signal: " + sig.String())
+	pecho("info", "Calling stopApp")
+	stopApp()
+
 }
 
 func stopApp() {
@@ -2708,6 +2718,10 @@ func waitChan(tgChan chan int8, chanName string) {
 
 func main() {
 	runtime.SetBlockProfileRate(1)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	var wg sync.WaitGroup
 	go getVariables()
