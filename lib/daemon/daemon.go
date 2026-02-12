@@ -1449,13 +1449,6 @@ func setupSharedDir () {
 }
 
 func miscEnvs () {
-	if confOpts.useZink == true {
-		addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
-		addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
-		addEnv("GALLIUM_DRIVER=zink")
-		addEnv("LIBGL_KOPPER_DRI2=1")
-		addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
-	}
 	if confOpts.qt5Compat == true {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
@@ -2363,6 +2356,13 @@ func bindCard(cardName string, argChan chan []string) {
 		}
 		if strings.Contains(string(cardVendor), "0x10de") == true {
 			pecho("debug", "Found NVIDIA device")
+			if confOpts.useZink == true {
+				addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
+				addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
+				addEnv("GALLIUM_DRIVER=zink")
+				addEnv("LIBGL_KOPPER_DRI2=1")
+				addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+			}
 			arg <- tryBindNv()
 			for _, path := range nvKernelModulePath {
 				stat, err := os.Stat(path)
