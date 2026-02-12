@@ -72,7 +72,7 @@ func evalPath(path string) (finalPath string, modified bool) {
 	if strings.HasPrefix(inputAbs, sandboxHome) {
 		modified = false
 		finalPath = inputAbs
-		log.Println("Translated " + path + " to " + finalPath)
+		log.Println("Translated sandbox path " + path + " to " + finalPath)
 		return
 	}
 
