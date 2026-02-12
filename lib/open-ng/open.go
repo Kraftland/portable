@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 	"strings"
 	"github.com/rymdport/portal/openuri"
 	"path/filepath"
@@ -69,7 +70,24 @@ func evalPath(path string) (finalPath string, modified bool) {
 		return
 	}
 
-	if strings.HasPrefix(inputAbs, sandboxHome) {
+	var userName string
+	userInfo, err := user.Current()
+	if err != nil {
+		log.Println("Could not get current user name")
+	} else {
+		userName = userInfo.Username
+	}
+
+	if inputAbs == sandboxHome {
+		finalPath = sandboxHome
+		return
+	} else if strings.HasPrefix(inputAbs, filepath.Join("/home", userName)) {
+		finalPath = sandboxHome
+		return
+	} else if inputAbs == "/home" {
+		finalPath = sandboxHome
+		return
+	} else if strings.HasPrefix(inputAbs, sandboxHome) {
 		modified = false
 		finalPath = inputAbs
 		log.Println("Translated sandbox path " + path + " to " + finalPath)
