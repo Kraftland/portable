@@ -49,7 +49,7 @@ func openPath(path string, showItem bool) {
 	}
 	defer conn.Close()
 	log.Println("Calling FileManager1 for path: " + modPath)
-	pathSlice := []string{modPath}
+	pathSlice := []string{"file://" + modPath}
 	fileManager1Obj := conn.Object("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1")
 	fileManager1Obj.Call(
 		"org.freedesktop.FileManager1.ShowItems",
