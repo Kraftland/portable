@@ -188,7 +188,7 @@ func main () {
 				break
 			}
 		}
-	} else if strings.Contains(os.Args[1], "file://") == false || linkRegexp.Match([]byte(os.Args[1])) {
+	} else if strings.Contains(os.Args[1], "file://") == false && linkRegexp.Match([]byte(os.Args[1])) {
 		fmt.Println("Got a link")
 		openLink(os.Args[1])
 	} else {
