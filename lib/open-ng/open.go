@@ -80,7 +80,6 @@ func evalPath(path string) (finalPath string, modified bool) {
 		"/sandbox",
 		"/.flatpak-info",
 		"/run",
-		"/home",
 		"/media",
 		"/mnt",
 		"/proc",
@@ -89,6 +88,9 @@ func evalPath(path string) (finalPath string, modified bool) {
 		"/tmp",
 		"top.kimiblock.portable",
 		"/var",
+		filepath.Join(sandboxHome, "options"),
+		filepath.Join(sandboxHome, ".flatpak-info"),
+		filepath.Join(sandboxHome, ".var"),
 	}
 
 	sharedPath := filepath.Join(
@@ -101,6 +103,7 @@ func evalPath(path string) (finalPath string, modified bool) {
 		if strings.HasPrefix(inputAbs, val) {
 			modified = true
 			log.Println("Rewriting path")
+			os.RemoveAll(sharedPath)
 			err := reflink.Auto(inputAbs, sharedPath)
 			if err != nil {
 				log.Fatalln("Could not copy shared file: " + err.Error())
@@ -113,11 +116,12 @@ func evalPath(path string) (finalPath string, modified bool) {
 
 	if modified == false {
 		log.Println("Linking unknown path")
+		os.RemoveAll(sharedPath)
 		err := os.Symlink(inputAbs, sharedPath)
 		if err != nil {
 			log.Fatalln("Could not link path: " + err.Error())
 		}
-		finalPath = sharedPath
+		finalPath = filepath.Dir(sharedPath)
 	}
 
 	log.Println("Translated " + path + " to " + finalPath)
@@ -126,9 +130,10 @@ func evalPath(path string) (finalPath string, modified bool) {
 
 func openPathPortal(path string, dir bool) (success bool) {
 	opts := openuri.Options{
-		Writable:	true,
+		Writable:	false,
 		Ask:		true,
 	}
+	log.Println("Calling portal for path: " + path)
 	if dir {
 		dir, err := os.Open(path)
 		if err != nil {
@@ -137,6 +142,7 @@ func openPathPortal(path string, dir bool) (success bool) {
 		fd := dir.Fd()
 		err = openuri.OpenDirectory("", fd, &opts)
 		if err != nil {
+			log.Println("Portal denied request" + err.Error())
 			return false
 		} else {
 			success = true
@@ -149,6 +155,7 @@ func openPathPortal(path string, dir bool) (success bool) {
 		fd := file.Fd()
 		err = openuri.OpenFile("", fd, &opts)
 		if err != nil {
+			log.Println("Portal denied request" + err.Error())
 			return false
 		} else {
 			success = true
