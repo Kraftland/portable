@@ -19,7 +19,7 @@ var (
 )
 
 func updateSd(count int) {
-	status := "Tracking processes: " + strconv.Itoa(count)
+	status := "STATUS=" + "Tracking processes: " + strconv.Itoa(count)
 	sent, err := daemon.SdNotify(false, status)
 	if sent == true {
 		fmt.Println("Updated tracking status: ", count)
@@ -46,6 +46,7 @@ func startCounter () {
 		go updateSd(startedCount)
 
 		if startedCount < 1 {
+			daemon.SdNotify(false, daemon.SdNotifyStopping)
 			fmt.Println("All tracked processes have exited")
 			text := []string{"terminate-now"}
 			sendSignal(text)
