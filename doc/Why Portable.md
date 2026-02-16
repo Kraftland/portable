@@ -4,7 +4,7 @@
 
 Portable is designed to be simple to use, privacy first and efficient while operating. It has many unique features:
 
-- Network filtering
+- Network filtering (requires netsock running)
 - Background Portal support
 - Better integration of your host system
 - PipeWire security context
