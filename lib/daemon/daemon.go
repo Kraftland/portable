@@ -25,6 +25,7 @@ import (
 
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
+	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	udev "github.com/jochenvg/go-udev"
 )
@@ -210,6 +211,9 @@ func pecho(level string, message string) {
 
 
 func sanityChecks() {
+	if sdutil.IsRunningSystemd() == false {
+		pecho("crit", "Portable requires the systemd service manager")
+	}
 	var appIDValid bool = true
 	if strings.Contains(confOpts.appID, "org.freedesktop.impl") == true {
 		appIDValid = false
