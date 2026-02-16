@@ -17,16 +17,20 @@ launchTarget="gtk4-demo"
 # This is the target executable to launch when being activated by D-Bus
 #busLaunchTarget="gtk4-demo"
 
-# Enables Network access within the sandbox. Defaults to true.
-bindNetwork="true"
 
 # Takes a boolean value. Terminates the sandbox immediately after the main process exits. Defaults to true. Note that turning this on might affect applications that forks immediately and exits, like Firefox.
 terminateImmediately="false"
 
 ########## Section: Output ##########
 
+# A space separated list of denial address sent to netsock. Only effective if netsock is running and listening on /run/netsock/control.sock. IP literals are resolved directly, while strings are mapped to IP addresses by the system resolver. A special string of "private" means private IPs. Note that :53 is allowed regardless to avoid breaking DNS. Defaults to none, meaning sandbox can connect to whatever address.
+networkDeny=""
+
 # Allow apps to send notifications to the classic Notification endpoint, bypassing portals. Defaults to true.
 allowClassicNotifs="true"
+
+# Enables Network access within the sandbox. Defaults to true.
+bindNetwork="true"
 
 # Use zink for GL -> Vulkan translation
 useZink="false"

@@ -2,27 +2,26 @@ package main
 
 import (
 	"bufio"
-	"math/rand"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
-	"syscall"
 	"regexp"
 	"strconv"
 	"strings"
-	"context"
-	//"time"
+	"syscall"
+	"time"
 	"net"
+	"net/http"
 	"sync"
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
-	//"runtime"
-	//"runtime/pprof"
 	godbus "github.com/godbus/dbus/v5"
-	udev	"github.com/jochenvg/go-udev"
+	udev "github.com/jochenvg/go-udev"
 )
 
 const (
@@ -55,6 +54,7 @@ type XDG_DIRS struct {
 
 type portableConfigOpts struct {
 	confPath		string
+	networkDeny		string
 	friendlyName		string
 	appID			string
 	stateDirectory		string
@@ -92,6 +92,7 @@ var targets = map[string]confTarget{
 	"mprisName":		{str: &confOpts.mprisName},
 	"bindNetwork":		{b: &confOpts.bindNetwork},
 	"terminateImmediately":	{b: &confOpts.terminateImmediately},
+	"networkDeny":		{str: &confOpts.networkDeny},
 	"allowClassicNotifs":	{b: &confOpts.allowClassicNotifs},
 	"useZink":		{b: &confOpts.useZink},
 	"qt5Compat":		{b: &confOpts.qt5Compat},
@@ -114,6 +115,7 @@ var confInfo = map[string]string{
 	"busLaunchTarget":	"string",
 	"bindNetwork":		"bool",
 	"terminateImmediately":	"bool",
+	"networkDeny":		"string",
 	"allowClassicNotifs":	"bool",
 	"useZink":		"bool",
 	"qt5Compat":		"bool",
@@ -481,12 +483,6 @@ func tryUnquote(input string) (output string) {
 	return
 }
 
-func tryProcessConf(input string, trimObj string) (output string) {
-	var outputTrimmed string = strings.TrimPrefix(input, trimObj + "=")
-	output = tryUnquote(outputTrimmed)
-	return
-}
-
 func readConf() {
 	determineConfPath()
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
@@ -567,6 +563,107 @@ func readConf() {
 				}
 		}
 	}
+}
+
+func setFirewall() {
+	rawDenyList := strings.TrimSpace(confOpts.networkDeny)
+	denyList := strings.Split(rawDenyList, " ")
+
+	pecho("debug", "Decoded raw deny list: " + strings.Join(denyList, ", "))
+
+	var sig IncomingSig
+	sig.RawDenyList = denyList
+	sig.AppID = confOpts.appID
+	sig.SandboxEng = "top.kimiblock.portable"
+	sig.CgroupNested = "app.slice/app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service/portable-cgroup"
+
+	rules := make(chan string, 1)
+	ready := make(chan int, 1)
+
+	go dialNetsock(rules, ready)
+
+	if len(rawDenyList) == 0 {
+		pecho("debug", "Did not find any network restriction")
+		return
+	}
+
+	jsonObj, encodeErr := json.Marshal(sig)
+	if encodeErr != nil {
+		pecho("warn", "Could not decode network restriction list: " + encodeErr.Error())
+		return
+	}
+
+	rules <- string(jsonObj)
+	close(rules)
+
+
+}
+
+// Copied from netsock
+type ResponseSignal struct {
+	Success			bool
+	Log			string
+}
+
+type IncomingSig struct {
+	CgroupNested		string
+	RawDenyList		[]string
+	SandboxEng		string
+	AppID			string
+}
+
+func dialNetsock(rules chan string, ready chan int) {
+	// dialer, errorDial := net.Dial("unix", "/run/netsock/control.sock")
+	// if errorDial != nil {
+	// 	pecho("warn", "Could not dial netsock socket, firewall disabled")
+	// 	ready <- 1
+	// 	return
+	// }
+	transport := http.Transport {
+		Proxy:		nil,
+		Dial:		func(network, addr string) (net.Conn, error) {return net.Dial("unix", "/run/netsock/control.sock")},
+	}
+
+	client := http.Client{
+		Transport:	&transport,
+		Timeout:	10 * time.Second,
+	}
+
+	buf := strings.NewReader(<-rules)
+	var resp ResponseSignal
+
+	var httpResp = http.Response{}
+	var respPtr = &httpResp
+	respPtr, postErr := client.Post("http://127.0.0.114/add", "application/json", buf)
+	if postErr != nil {
+		pecho("warn", "Could not post data to netsock: " + postErr.Error())
+		return
+	}
+
+	rawResReader := bufio.NewReader(respPtr.Body)
+
+	var rawResp []byte
+
+	_, err := rawResReader.Read(rawResp)
+	if err != nil {
+		pecho("warn", "Could not read response from netsock: " + err.Error())
+		return
+	}
+
+	err = json.Unmarshal(rawResp, &resp)
+	if err != nil {
+		pecho("warn", "Could not decode response from netsock: " + err.Error())
+	}
+	if resp.Success == true {
+		pecho("debug", "Firewall active")
+	} else {
+		pecho("warn", "netsock respond with: " + resp.Log)
+	}
+
+	ready <- 1
+
+
+
 }
 
 func mkdirPool(dirs []string) {
@@ -2806,6 +2903,7 @@ func main() {
 		startAct = "aux"
 	} else {
 	go flushEnvs()
+	go setFirewall()
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
