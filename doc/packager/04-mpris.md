@@ -35,10 +35,10 @@ Run the application without sandboxing, then run `playerctl -l`. Which should di
 
 ### From D-Bus proxy
 
-Invoke portable with environment variable: `PORTABLE_LOGGING=debug`. Then inspect D-Bus session log via command:
+Invoke portable with environment variable: `PORTABLE_LOGGING=debug`. Then look for _Trying instance ID:_ for an ID reference. After which you can inspect D-Bus session log via command:
 
 ```bash
-journalctl --user -eu "${friendlyName}-dbus".service
+journalctl --user -eu "${friendlyName}-<instance ID>-dbus".service
 ```
 
 # Icon fix
