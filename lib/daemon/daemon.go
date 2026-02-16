@@ -484,12 +484,6 @@ func tryUnquote(input string) (output string) {
 	return
 }
 
-func tryProcessConf(input string, trimObj string) (output string) {
-	var outputTrimmed string = strings.TrimPrefix(input, trimObj + "=")
-	output = tryUnquote(outputTrimmed)
-	return
-}
-
 func readConf() {
 	determineConfPath()
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
