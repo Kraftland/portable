@@ -23,7 +23,7 @@ There are a number of ways to obtain D-Bus interface name. We will describe some
 
 ## From Flatpak
 
-Take Spotify as an example, you can invoke `flatpak install spotify` and see there are a number of D-Bus access holes opened up. One of them is fr example `org.mpris.MediaPlayer2.spotify`. What you should do is to strip `org.mpris.MediaPlayer2` to `spotify`, and fill it as `mprisName`.
+Take Spotify as an example, you can invoke `flatpak install spotify` and see there are a number of D-Bus access holes opened up. One of them is for example `org.mpris.MediaPlayer2.spotify`. What you should do is to strip it's prefix `org.mpris.MediaPlayer2` to `spotify`, and fill it as `mprisName`.
 
 ## From D-Bus
 
@@ -35,10 +35,10 @@ Run the application without sandboxing, then run `playerctl -l`. Which should di
 
 ### From D-Bus proxy
 
-Invoke portable with environment variable: `PORTABLE_LOGGING=debug`. Then inspect D-Bus session log via command:
+Invoke portable with environment variable: `PORTABLE_LOGGING=debug`. Then look for _Trying instance ID:_ for an ID reference. After which you can inspect D-Bus session log via command:
 
 ```bash
-journalctl --user -eu "${friendlyName}-dbus".service
+journalctl --user -eu "${friendlyName}-<instance ID>-dbus".service
 ```
 
 # Icon fix
