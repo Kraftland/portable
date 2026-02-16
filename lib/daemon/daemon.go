@@ -641,8 +641,6 @@ func dialNetsock(rules chan string, ready chan int) {
 	buf := strings.NewReader(<-rules)
 	var resp ResponseSignal
 
-	var httpResp = http.Response{}
-	var respPtr = &httpResp
 	respPtr, postErr := client.Post("http://127.0.0.114/add", "application/json", buf)
 	if postErr != nil {
 		pecho("warn", "Could not post data to netsock: " + postErr.Error())
@@ -650,17 +648,9 @@ func dialNetsock(rules chan string, ready chan int) {
 	}
 	defer respPtr.Body.Close()
 
-	rawResReader := bufio.NewReader(respPtr.Body)
+	decoder := json.NewDecoder(respPtr.Body)
 
-	var rawResp []byte
-
-	_, err := rawResReader.Read(rawResp)
-	if err != nil {
-		pecho("warn", "Could not read response from netsock: " + err.Error())
-		return
-	}
-
-	err = json.Unmarshal(rawResp, &resp)
+	err := decoder.Decode(&resp)
 	if err != nil {
 		pecho("warn", "Could not decode response from netsock: " + err.Error())
 	}
