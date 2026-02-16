@@ -648,6 +648,7 @@ func dialNetsock(rules chan string, ready chan int) {
 		pecho("warn", "Could not post data to netsock: " + postErr.Error())
 		return
 	}
+	defer respPtr.Body.Close()
 
 	rawResReader := bufio.NewReader(respPtr.Body)
 
