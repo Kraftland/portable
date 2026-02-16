@@ -19,7 +19,7 @@ launchTarget="gtk4-demo"
 
 
 # Takes a boolean value. Terminates the sandbox immediately after the main process exits. Defaults to true. Note that turning this on might affect applications that forks immediately and exits, like Firefox.
-terminateImmediately="false"
+terminateImmediately="true"
 
 ########## Section: Output ##########
 
