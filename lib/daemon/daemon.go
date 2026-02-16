@@ -55,6 +55,7 @@ type XDG_DIRS struct {
 
 type portableConfigOpts struct {
 	confPath		string
+	networkDeny		string
 	friendlyName		string
 	appID			string
 	stateDirectory		string
@@ -92,6 +93,7 @@ var targets = map[string]confTarget{
 	"mprisName":		{str: &confOpts.mprisName},
 	"bindNetwork":		{b: &confOpts.bindNetwork},
 	"terminateImmediately":	{b: &confOpts.terminateImmediately},
+	"networkDeny":		{str: &confOpts.networkDeny},
 	"allowClassicNotifs":	{b: &confOpts.allowClassicNotifs},
 	"useZink":		{b: &confOpts.useZink},
 	"qt5Compat":		{b: &confOpts.qt5Compat},
@@ -114,6 +116,7 @@ var confInfo = map[string]string{
 	"busLaunchTarget":	"string",
 	"bindNetwork":		"bool",
 	"terminateImmediately":	"bool",
+	"networkDeny":		"string",
 	"allowClassicNotifs":	"bool",
 	"useZink":		"bool",
 	"qt5Compat":		"bool",
