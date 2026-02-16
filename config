@@ -23,7 +23,7 @@ terminateImmediately="false"
 
 ########## Section: Output ##########
 
-# A list of denial address sent to netsock. Only effective if netsock is running and listening on /run/netsock/control.sock. IP literals are resolved directly, while strings are mapped to IP addresses by the system resolver. A special string of "private" means private IPs. Note that :53 is allowed regardless to avoid breaking DNS. Defaults to none, meaning sandbox can connect to whatever address.
+# A space separated list of denial address sent to netsock. Only effective if netsock is running and listening on /run/netsock/control.sock. IP literals are resolved directly, while strings are mapped to IP addresses by the system resolver. A special string of "private" means private IPs. Note that :53 is allowed regardless to avoid breaking DNS. Defaults to none, meaning sandbox can connect to whatever address.
 networkDeny=""
 
 # Allow apps to send notifications to the classic Notification endpoint, bypassing portals. Defaults to true.
