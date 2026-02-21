@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -24,21 +23,6 @@ var (
 	chDir				string
 	waitChan			= make(chan int, 1)
 )
-
-func fdWatcher(sigChan chan os.Signal) {
-
-	for {
-		time.Sleep(5 * time.Second)
-		_, err := fdFwd.Stat()
-		if err != nil {
-			log.Println("Exiting on fd read err: " + err.Error())
-			break
-		}
-	}
-
-	sigChan <- syscall.SIGTERM
-
-}
 
 func terminateWatcher(sigChan chan os.Signal) {
 	sig := <- sigChan
@@ -109,23 +93,17 @@ func main() {
 	allFlagCnt := len(cmdSlice) - 1
 	log.Println("Resolution of cmdline finished: " + strconv.Itoa(knownArgs) + " of " + strconv.Itoa(allFlagCnt) + " readable")
 
-	cmd := exec.Command(appTgt[0], appTgt[1:]...)
-	if len(envAdd) > 0 {
-		cmd.Env = append(os.Environ(), envAdd...)
-	}
-	if clearEnv {
-		cmd.Env = []string{}
-	}
-
-
 	fds := []uintptr{0, 1, 2}
 
 	fds[fdFwd.Fd() + 1] = fdFwd.Fd()
 
 	attrs := &syscall.ProcAttr{
 		Dir:		chDir,
-		Env:		cmd.Env,
+		Env:		append(os.Environ(), envAdd...),
 		Files:		fds,
+	}
+	if clearEnv {
+		attrs.Env = []string{}
 	}
 
 	pid, err := syscall.ForkExec(appTgt[0], appTgt[1:], attrs)
@@ -137,8 +115,5 @@ func main() {
 
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
-
-
-	cmd.Wait()
 	//<- waitChan
 }
