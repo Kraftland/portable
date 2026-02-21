@@ -30,9 +30,9 @@ func fdWatcher(sigChan chan os.Signal) {
 		return
 	}
 	defer syscall.Close(epoll)
-	err = syscall.EpollCtl(epoll, syscall.EPOLL_CTL_ADD, int(fdNum), &syscall.EpollEvent{
+	err = syscall.EpollCtl(epoll, syscall.EPOLL_CTL_ADD, int(fdFwd.Fd()), &syscall.EpollEvent{
 		Events:		syscall.EPOLLHUP | syscall.EPOLLERR,
-		Fd:		int32(fdNum),
+		Fd:		int(fdFwd.Fd()),
 	})
 	if err != nil {
 		log.Fatalln("Could not watch fd for closing: " + err.Error())
@@ -133,12 +133,12 @@ func main() {
 				break
 			}
 			cmd.ExtraFiles = append(cmd.ExtraFiles, os.Stdout)
+			currCycle++
 		}
 		go fdWatcher(sigChan)
 	}
-	proc = cmd.Process
-
 	cmd.Start()
+	proc = cmd.Process
 
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
