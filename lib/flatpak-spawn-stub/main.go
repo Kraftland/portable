@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
+	"os/exec"
 )
 
 const (
@@ -40,20 +40,18 @@ func terminateWatcher(sigChan chan os.Signal) {
 func main() {
 	var sigChan = make(chan os.Signal, 1)
 	chDir, _ = os.Getwd()
-	cmdSlice := os.Args
+	cmdSlice := os.Args[1:]
 	log.Println("Portable flatpak-spawn stub version: " + strconv.FormatFloat(version, 'g', -1, 64))
 	log.Println("Full cmdline: " + strings.Join(cmdSlice, ", "))
 
 	var knownArgs int
 	var appTgt []string
-	var selfArgEnd bool
 	if len(cmdSlice) > 1 {
-		for _, flag := range cmdSlice[1:] {
-			if strings.HasPrefix(flag, "--") == false || selfArgEnd {
-				selfArgEnd = true
-				log.Println("Appending " + flag + " to application arguments")
-				appTgt = append(appTgt, flag)
-				continue
+		for idx, flag := range cmdSlice {
+			if strings.HasPrefix(flag, "--") == false {
+				log.Println("Appending application arguments", cmdSlice[idx:])
+				appTgt = append(appTgt, cmdSlice[idx:]...)
+				break
 			}
 			switch flag {
 				case "--sandbox":
@@ -90,7 +88,7 @@ func main() {
 		}
 	}
 
-	allFlagCnt := len(cmdSlice) - 1
+	allFlagCnt := len(cmdSlice)
 	log.Println("Resolution of cmdline finished: " + strconv.Itoa(knownArgs) + " of " + strconv.Itoa(allFlagCnt) + " readable")
 
 	fds := []uintptr{0, 1, 2}
@@ -106,12 +104,17 @@ func main() {
 		attrs.Env = []string{}
 	}
 
-	pid, err := syscall.ForkExec(appTgt[0], appTgt[1:], attrs)
+	resolvBinPath, err := exec.LookPath(appTgt[0])
+	if err != nil {
+		log.Fatalln("Could not look up executable: " + err.Error())
+	}
+
+	pid, err := syscall.ForkExec(resolvBinPath, appTgt, attrs)
 	if err != nil {
 		log.Fatalln("Could not fork exec: " + err.Error())
 	}
 
-	log.Println("Started underlying process " + strconv.Itoa(pid) + " with: " + appTgt[0], strings.Join(appTgt[1:], ", "))
+	log.Println("Started underlying process " + strconv.Itoa(pid) + " :", appTgt)
 
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
