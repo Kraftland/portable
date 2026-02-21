@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
-	"os/signal"
 	"syscall"
 )
 
@@ -22,6 +22,33 @@ var (
 	proc				*os.Process
 	term				bool
 )
+
+func fdWatcher(sigChan chan os.Signal) {
+	epoll, err := syscall.EpollCreate1(0)
+	if err != nil {
+		log.Println("Failed to create epoll: " + err.Error())
+		return
+	}
+	defer syscall.Close(epoll)
+	err = syscall.EpollCtl(epoll, syscall.EPOLL_CTL_ADD, int(fdNum), &syscall.EpollEvent{
+		Events:		syscall.EPOLLHUP | syscall.EPOLLERR,
+		Fd:		int32(fdNum),
+	})
+	if err != nil {
+		log.Fatalln("Could not watch fd for closing: " + err.Error())
+		return
+	}
+
+	events := make([]syscall.EpollEvent, 1)
+	_, err = syscall.EpollWait(epoll, events, -1)
+	if err != nil {
+		log.Fatalln("Could not call EpollWait: " + err.Error())
+		return
+	}
+
+	sigChan <- syscall.SIGTERM
+
+}
 
 func terminateWatcher(sigChan chan os.Signal) {
 	sig := <- sigChan
@@ -107,7 +134,7 @@ func main() {
 			}
 			cmd.ExtraFiles = append(cmd.ExtraFiles, os.Stdout)
 		}
-
+		go fdWatcher(sigChan)
 	}
 	proc = cmd.Process
 
@@ -115,6 +142,7 @@ func main() {
 
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
+
 
 	cmd.Wait()
 }
