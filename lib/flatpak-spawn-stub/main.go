@@ -91,14 +91,17 @@ func main() {
 	allFlagCnt := len(cmdSlice)
 	log.Println("Resolution of cmdline finished: " + strconv.Itoa(knownArgs) + " of " + strconv.Itoa(allFlagCnt) + " readable")
 
-	fds := []uintptr{0, 1, 2}
-
-	fds[fdFwd.Fd() + 1] = fdFwd.Fd()
-
 	attrs := &syscall.ProcAttr{
 		Dir:		chDir,
 		Env:		append(os.Environ(), envAdd...),
-		Files:		fds,
+	}
+	if fdFwd != nil {
+		fdMax := int(fdFwd.Fd())
+		files := make([]uintptr, fdMax + 1)
+		for i := 0; i <= fdMax; i++ {
+			files[i] = uintptr(i)
+		}
+		attrs.Files = files
 	}
 	if clearEnv {
 		attrs.Env = []string{}
