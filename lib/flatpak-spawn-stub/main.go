@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -24,26 +25,16 @@ var (
 )
 
 func fdWatcher(sigChan chan os.Signal) {
-	epoll, err := syscall.EpollCreate1(0)
-	if err != nil {
-		log.Println("Failed to create epoll: " + err.Error())
-		return
-	}
-	defer syscall.Close(epoll)
-	err = syscall.EpollCtl(epoll, syscall.EPOLL_CTL_ADD, int(fdFwd.Fd()), &syscall.EpollEvent{
-		Events:		syscall.EPOLLHUP | syscall.EPOLLERR,
-		Fd:		int32(fdFwd.Fd()),
-	})
-	if err != nil {
-		log.Fatalln("Could not watch fd for closing: " + err.Error())
-		return
+	pfd := []unix.PollFd{
+		{
+			Fd:		int32(fdFwd.Fd()),
+			Events:		unix.POLLHUP | unix.POLLERR,
+		},
 	}
 
-	events := make([]syscall.EpollEvent, 1)
-	_, err = syscall.EpollWait(epoll, events, -1)
+	_, err := unix.Poll(pfd, -1)
 	if err != nil {
-		log.Fatalln("Could not call EpollWait: " + err.Error())
-		return
+		log.Fatalln("Could not poll fd: " + err.Error())
 	}
 
 	sigChan <- syscall.SIGTERM
