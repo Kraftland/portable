@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"golang.org/x/sys/unix"
+	"time"
 )
 
 const (
@@ -19,23 +19,21 @@ var (
 	clearEnv			bool
 	envAdd				[]string
 	fdFwd				*os.File
-	fdNum				uint
 	proc				*os.Process
 	term				bool
 	chDir				string
+	waitChan			= make(chan int, 1)
 )
 
 func fdWatcher(sigChan chan os.Signal) {
-	pfd := []unix.PollFd{
-		{
-			Fd:		int32(fdFwd.Fd()),
-			Events:		unix.POLLHUP | unix.POLLERR,
-		},
-	}
 
-	_, err := unix.Poll(pfd, -1)
-	if err != nil {
-		log.Fatalln("Could not poll fd: " + err.Error())
+	for {
+		time.Sleep(5 * time.Second)
+		_, err := fdFwd.Stat()
+		if err != nil {
+			log.Println("Exiting on fd read err: " + err.Error())
+			break
+		}
 	}
 
 	sigChan <- syscall.SIGTERM
@@ -52,7 +50,7 @@ func terminateWatcher(sigChan chan os.Signal) {
 		}
 
 	}
-	os.Exit(0)
+	close(waitChan)
 }
 
 func main() {
@@ -82,12 +80,13 @@ func main() {
 					log.Println("Launching with no inherited environment variables")
 				default:
 					if strings.HasPrefix(flag, "--forward-fd=") {
-						fdNums, err := strconv.Atoi(strings.TrimPrefix(flag, "--forward-fd="))
+						fdNums := strings.TrimPrefix(flag, "--forward-fd=")
+						openFd, err := os.Open("/proc/self/fd/" + fdNums)
 						if err != nil {
-							log.Fatalln("Failed to parse file descriptor: " + err.Error())
+							log.Fatalln("Could not open file descriptor: " + err.Error())
 						}
-						fdFwd = os.NewFile(uintptr(fdNums), "passedFd")
-						fdNum = uint(fdNums)
+						fdFwd = openFd
+						//fdFwd = os.NewFile(uintptr(fdNums), "passedFd")
 					} else if strings.HasPrefix(flag, "--env=") {
 						envLine := strings.TrimPrefix(flag, "--env=")
 						if strings.Contains(envLine, "=") == false {
@@ -117,8 +116,8 @@ func main() {
 		cmd.Env = []string{}
 	}
 	if fdFwd != nil {
-		cycleCount := fdNum - 3
-		currCycle := uint(0)
+		cycleCount := int(fdFwd.Fd()) - 3
+		currCycle := 0
 		for {
 			if currCycle == cycleCount {
 				cmd.ExtraFiles = append(cmd.ExtraFiles, fdFwd)
@@ -141,4 +140,5 @@ func main() {
 
 
 	cmd.Wait()
+	<- waitChan
 }
