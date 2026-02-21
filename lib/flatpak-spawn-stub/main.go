@@ -95,6 +95,9 @@ func main() {
 	attrs := &syscall.ProcAttr{
 		Dir:		chDir,
 		Env:		append(os.Environ(), envAdd...),
+		Sys:		&syscall.SysProcAttr{
+					Pdeathsig:		syscall.SIGTERM,
+		},
 	}
 	if fdFwd != nil {
 		fdMax := int(fdFwd.Fd())
