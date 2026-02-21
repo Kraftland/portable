@@ -22,6 +22,7 @@ var (
 	fdNum				uint
 	proc				*os.Process
 	term				bool
+	chDir				string
 )
 
 func fdWatcher(sigChan chan os.Signal) {
@@ -56,22 +57,19 @@ func terminateWatcher(sigChan chan os.Signal) {
 
 func main() {
 	var sigChan = make(chan os.Signal, 1)
+	chDir, _ = os.Getwd()
 	cmdSlice := os.Args
 	log.Println("Portable flatpak-spawn stub version: " + strconv.FormatFloat(version, 'g', -1, 64))
 	log.Println("Full cmdline: " + strings.Join(cmdSlice, ", "))
 
 	var knownArgs int
 	var appTgt []string
+	var selfArgEnd bool
 	if len(cmdSlice) > 1 {
-		var skipArg bool
 		for _, flag := range cmdSlice[1:] {
-			if skipArg == true {
-				skipArg = false
-				continue
-			}
-			if strings.HasPrefix(flag, "--") == false {
+			if strings.HasPrefix(flag, "--") == false || selfArgEnd {
+				selfArgEnd = true
 				appTgt = append(appTgt, flag)
-				knownArgs++
 				continue
 			}
 			switch flag {
@@ -96,6 +94,8 @@ func main() {
 							continue
 						}
 						envAdd = append(envAdd, envLine)
+					} else if strings.HasPrefix(flag, "--directory=") {
+						chDir = strings.TrimPrefix(flag, "--directory=")
 					} else {
 						log.Println("Unknown flag: " + flag)
 						continue
