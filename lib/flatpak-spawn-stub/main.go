@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
-	"os/exec"
+	"time"
 )
 
 const (
@@ -123,10 +124,24 @@ func main() {
 	if err != nil {
 		log.Fatalln("Could not fork exec: " + err.Error())
 	}
-
-	log.Println("Started underlying process " + strconv.Itoa(pid) + ":", appTgt)
-
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
+	var wstat syscall.WaitStatus
+	log.Println("Started underlying process " + strconv.Itoa(pid) + ":", appTgt)
+	for {
+		wpid, err := syscall.Wait4(pid, &wstat, 0, nil)
+		if err != nil {
+			switch err {
+				case syscall.EINTR:
+					time.Sleep(1 * time.Second)
+					continue
+				default:
+					log.Fatalln("Could not watch PID:", err.Error())
+			}
+		}
+		if pid == wpid {
+			break
+		}
+	}
 	//<- waitChan
 }
