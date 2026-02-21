@@ -32,7 +32,7 @@ func fdWatcher(sigChan chan os.Signal) {
 	defer syscall.Close(epoll)
 	err = syscall.EpollCtl(epoll, syscall.EPOLL_CTL_ADD, int(fdFwd.Fd()), &syscall.EpollEvent{
 		Events:		syscall.EPOLLHUP | syscall.EPOLLERR,
-		Fd:		int(fdFwd.Fd()),
+		Fd:		int32(fdFwd.Fd()),
 	})
 	if err != nil {
 		log.Fatalln("Could not watch fd for closing: " + err.Error())
