@@ -69,6 +69,7 @@ func main() {
 		for _, flag := range cmdSlice[1:] {
 			if strings.HasPrefix(flag, "--") == false || selfArgEnd {
 				selfArgEnd = true
+				log.Println("Appending " + flag + " to application arguments")
 				appTgt = append(appTgt, flag)
 				continue
 			}
