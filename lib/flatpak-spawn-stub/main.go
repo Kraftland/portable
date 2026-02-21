@@ -106,10 +106,17 @@ func main() {
 	if clearEnv {
 		attrs.Env = []string{}
 	}
-
-	resolvBinPath, err := exec.LookPath(appTgt[0])
+	var resolvBinPath string
+	var err error
+	resolvBinPath, err = exec.LookPath(appTgt[0])
 	if err != nil {
-		log.Fatalln("Could not look up executable: " + err.Error())
+		log.Println("Could not look up executable: " + err.Error())
+		_, err = os.Stat(appTgt[0])
+		if err != nil {
+			resolvBinPath = "/usr/bin/" + appTgt[0]
+		} else {
+			resolvBinPath = appTgt[0]
+		}
 	}
 
 	pid, err := syscall.ForkExec(resolvBinPath, appTgt, attrs)
@@ -117,7 +124,7 @@ func main() {
 		log.Fatalln("Could not fork exec: " + err.Error())
 	}
 
-	log.Println("Started underlying process " + strconv.Itoa(pid) + " :", appTgt)
+	log.Println("Started underlying process " + strconv.Itoa(pid) + ":", appTgt)
 
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
