@@ -128,6 +128,10 @@ func main() {
 		}
 		go fdWatcher(sigChan)
 	}
+
+	log.Println("Started underlying process with: " + strings.Join(cmd.Args, " "))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	cmd.Start()
 	proc = cmd.Process
 
