@@ -83,7 +83,8 @@ func main() {
 						fdNums := strings.TrimPrefix(flag, "--forward-fd=")
 						openFd, err := os.Open("/proc/self/fd/" + fdNums)
 						if err != nil {
-							log.Fatalln("Could not open file descriptor: " + err.Error())
+							log.Println("Could not open file descriptor: " + err.Error())
+							//os.Exit(2)
 						}
 						fdFwd = openFd
 						//fdFwd = os.NewFile(uintptr(fdNums), "passedFd")
@@ -115,30 +116,29 @@ func main() {
 	if clearEnv {
 		cmd.Env = []string{}
 	}
-	if fdFwd != nil {
-		cycleCount := int(fdFwd.Fd()) - 3
-		currCycle := 0
-		for {
-			if currCycle == cycleCount {
-				cmd.ExtraFiles = append(cmd.ExtraFiles, fdFwd)
-				break
-			}
-			cmd.ExtraFiles = append(cmd.ExtraFiles, os.Stdout)
-			currCycle++
-		}
-		go fdWatcher(sigChan)
+
+
+	fds := []uintptr{0, 1, 2}
+
+	fds[fdFwd.Fd() + 1] = fdFwd.Fd()
+
+	attrs := &syscall.ProcAttr{
+		Dir:		chDir,
+		Env:		cmd.Env,
+		Files:		fds,
 	}
 
-	log.Println("Started underlying process with: " + strings.Join(cmd.Args, " "))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Start()
-	proc = cmd.Process
+	pid, err := syscall.ForkExec(appTgt[0], appTgt[1:], attrs)
+	if err != nil {
+		log.Fatalln("Could not fork exec: " + err.Error())
+	}
+
+	log.Println("Started underlying process " + strconv.Itoa(pid) + " with: " + appTgt[0], strings.Join(appTgt[1:], ", "))
 
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGILL, syscall.SIGILL, syscall.SIGINT)
 	go terminateWatcher(sigChan)
 
 
 	cmd.Wait()
-	<- waitChan
+	//<- waitChan
 }
