@@ -32,7 +32,7 @@ import (
 
 const (
 	version		float32	=	13
-	controlFile	string	=	"instanceId=inIdHold\nappID=idHold\nbusDir=busHold\nbusDirAy=busAyHold\nfriendlyName=friendlyHold"
+	controlFile	string	=	"instanceId=inIdHold\nappID=idHold\nbusDir=busHold\nfriendlyName=friendlyHold"
 )
 
 type RUNTIME_OPT struct {
@@ -732,7 +732,6 @@ func writeControlFile() {
 		"inIdHold",	runtimeInfo.instanceID,
 		"idHold",	confOpts.appID,
 		"busHold",	xdgDir.runtimeDir + "/app/" + confOpts.appID,
-		"busAyHold",	xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
 		"friendlyHold",	confOpts.friendlyName,
 	)
 
@@ -839,7 +838,6 @@ func cleanDirs() {
 	var paths = []string{
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID,
 		xdgDir.runtimeDir + "/app/" + confOpts.appID,
-		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
 		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
 	}
 	getFlatpakInstanceID()
@@ -1179,7 +1177,6 @@ func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context
 	var units = []string{
 		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container.service",
 		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
-		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-a11y.service",
 	}
 	for _, unit := range units {
 		wg.Add(1)
@@ -1851,7 +1848,7 @@ func genBwArg(
 			xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
 			"/run/sessionBus",
 		"--ro-bind-try",
-			xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
 			xdgDir.runtimeDir + "/at-spi",
 		"--dir",		"/run/host",
 		"--bind",
@@ -2762,24 +2759,25 @@ func multiInstance(miChan chan bool) {
 
 func atSpiProxy() {
 	_, err := os.Stat(xdgDir.runtimeDir + "/at-spi/bus")
-	os.MkdirAll(xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y", 0700)
 	if err != nil {
 		pecho("warn", "Could not detect accessibility bus: " + err.Error())
 		return
 	}
-	sdRunArgs := []string{
-		"--user",
-		"--quiet",
-		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-a11y",
-		"--",
-		"/usr/bin/bwrap",
+	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y", 0700)
+	if err != nil {
+		pecho("warn", "Could not create directory for accessibility bus: " + err.Error())
+		return
+	}
+	atspiArgs := []string{
 		"--symlink", "/usr/lib64", "/lib64",
 		"--ro-bind", "/usr/lib", "/usr/lib",
 		"--ro-bind", "/usr/lib64", "/usr/lib64",
 		"--ro-bind", "/usr/bin", "/usr/bin",
 		"--ro-bind", "/usr/share", "/usr/share",
-		"--bind", xdgDir.runtimeDir + "/at-spi/bus", xdgDir.runtimeDir + "/at-spi/bus",
+		"--bind", xdgDir.runtimeDir + "/at-spi", xdgDir.runtimeDir + "/at-spi",
+		"--bind",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
+			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
 		"--ro-bind",
 			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
 			xdgDir.runtimeDir + "/.flatpak-info",
@@ -2789,7 +2787,7 @@ func atSpiProxy() {
 		"--",
 		"/usr/bin/xdg-dbus-proxy",
 		"unix:path=" + xdgDir.runtimeDir + "/at-spi/bus",
-		xdgDir.runtimeDir + "/app/" + confOpts.appID + "-a11y",
+		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y/bus",
 		"--filter",
 		"--sloppy-names",
 		"--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root",
@@ -2801,12 +2799,18 @@ func atSpiProxy() {
 		"--call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersAsync@/org/a11y/atspi/registry/deviceeventcontroller",
 	}
 
-	sdRunCmd := exec.Command("/usr/bin/systemd-run", sdRunArgs...)
-	sdRunCmd.Stderr = os.Stderr
+	atSpiProxyCmd := exec.Command("bwrap", atspiArgs...)
+	atSpiProxyCmd.Stderr = os.Stderr
 	if internalLoggingLevel <= 1 {
-		sdRunCmd.Stdout = os.Stdout
+		atSpiProxyCmd.Stdout = os.Stdout
 	}
-	sdRunCmd.Start()
+
+	sysattr := syscall.SysProcAttr{
+		Pdeathsig:		syscall.SIGKILL,
+	}
+	atSpiProxyCmd.SysProcAttr = &sysattr
+
+	atSpiProxyCmd.Start()
 }
 
 func waitChan(tgChan chan int8, chanName string) {
