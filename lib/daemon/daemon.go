@@ -1778,6 +1778,8 @@ func genBwArg(
 		"--ro-bind-try",	"/sys/module", "/sys/module",
 		"--ro-bind-try",	"/sys/dev/char", "/sys/dev/char",
 		"--tmpfs",		"/sys/devices",
+		"--tmpfs",		"/sys/block",
+		"--tmpfs",		"/sys/bus",
 		"--ro-bind-try",	"/sys/fs/cgroup", "/sys/fs/cgroup",
 		"--dev-bind",		"/sys/class/drm", "/sys/class/drm",
 		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
