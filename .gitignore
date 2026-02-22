@@ -8,3 +8,4 @@ lib/helper/helper
 *.pprof
 lib/open-ng/top.kimiblock.sandboxopen
 lib/flatpak-spawn-stub/top.kimiblock.flatpak-spawn
+lib/prlimit-stub/top.kimiblock.prlimit
