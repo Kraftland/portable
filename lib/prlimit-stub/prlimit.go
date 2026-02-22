@@ -17,7 +17,7 @@ func main () {
 
 	var knownArgs int
 	var appTgt []string
-	if len(cmdSlice) > 1 {
+	if len(cmdSlice) > 0 {
 		for idx, flag := range cmdSlice {
 			if strings.HasPrefix(flag, "-") == false {
 				log.Println("Appending application arguments", cmdSlice[idx:])
