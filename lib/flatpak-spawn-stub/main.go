@@ -18,7 +18,6 @@ const (
 var (
 	clearEnv			bool
 	envAdd				[]string
-	fdFwd				*os.File
 	proc				*os.Process
 	term				bool
 	chDir				string
@@ -89,14 +88,6 @@ func main() {
 		Sys:		&syscall.SysProcAttr{
 					Pdeathsig:		syscall.SIGTERM,
 		},
-	}
-	if fdFwd != nil {
-		fdMax := int(fdFwd.Fd())
-		files := make([]uintptr, fdMax + 1)
-		for i := 0; i <= fdMax; i++ {
-			files[i] = uintptr(i)
-		}
-		//attrs.Files = files
 	}
 	if clearEnv {
 		attrs.Env = []string{}
