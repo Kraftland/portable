@@ -24,3 +24,4 @@ buildGo ./lib/daemon
 
 buildGo ./lib/helper
 buildGo ./lib/open-ng
+buildGo ./lib/flatpak-spawn-stub
