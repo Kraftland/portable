@@ -47,7 +47,7 @@ func main() {
 
 	var knownArgs int
 	var appTgt []string
-	if len(cmdSlice) > 1 {
+	if len(cmdSlice) > 0 {
 		for idx, flag := range cmdSlice {
 			if strings.HasPrefix(flag, "--") == false {
 				log.Println("Appending application arguments", cmdSlice[idx:])
@@ -94,7 +94,7 @@ func main() {
 	}
 
 	allFlagCnt := len(cmdSlice)
-	log.Println("Resolution of cmdline finished: " + strconv.Itoa(knownArgs) + " of " + strconv.Itoa(allFlagCnt) + " readable")
+	log.Println("Resolution of cmdline finished: " + strconv.Itoa(knownArgs) + " of " + strconv.Itoa(allFlagCnt) + " readable,", "target app:", appTgt)
 
 	attrs := &syscall.ProcAttr{
 		Dir:		chDir,
