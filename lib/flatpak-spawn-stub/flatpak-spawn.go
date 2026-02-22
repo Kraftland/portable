@@ -102,13 +102,6 @@ func main() {
 		Sys:		&syscall.SysProcAttr{
 					Pdeathsig:		syscall.SIGTERM,
 		},
-		Files:		[]uintptr{
-					uintptr(syscall.Stdout),
-					uintptr(syscall.Stderr),
-		},
-	}
-	for _, fd := range fdsToPass {
-		attrs.Files = append(attrs.Files, uintptr(fd))
 	}
 	if clearEnv {
 		attrs.Env = []string{}
