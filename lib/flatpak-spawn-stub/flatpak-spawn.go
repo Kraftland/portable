@@ -102,6 +102,10 @@ func main() {
 		Sys:		&syscall.SysProcAttr{
 					Pdeathsig:		syscall.SIGTERM,
 		},
+		Files:		[]uintptr{
+					uintptr(syscall.Stdout),
+					uintptr(syscall.Stderr),
+		},
 	}
 	if clearEnv {
 		attrs.Env = []string{}
