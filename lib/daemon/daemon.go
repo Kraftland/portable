@@ -2092,7 +2092,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 				case "en_GB.UTF-8":
 					zenityArgs = append(
 						zenityArgs,
-						"--text=Expose" + runtimeOpt.userExpose + "?",
+						"--text=Expose " + runtimeOpt.userExpose + "?",
 					)
 				case "zh_CN.UTF-8":
 					zenityArgs = append(
