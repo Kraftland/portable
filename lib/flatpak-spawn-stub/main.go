@@ -62,16 +62,7 @@ func main() {
 				case "--clear-env":
 					log.Println("Launching with no inherited environment variables")
 				default:
-					if strings.HasPrefix(flag, "--forward-fd=") {
-						fdNums := strings.TrimPrefix(flag, "--forward-fd=")
-						openFd, err := os.Open("/proc/self/fd/" + fdNums)
-						if err != nil {
-							log.Println("Could not open file descriptor: " + err.Error())
-							//os.Exit(2)
-						}
-						fdFwd = openFd
-						//fdFwd = os.NewFile(uintptr(fdNums), "passedFd")
-					} else if strings.HasPrefix(flag, "--env=") {
+					if strings.HasPrefix(flag, "--env=") {
 						envLine := strings.TrimPrefix(flag, "--env=")
 						if strings.Contains(envLine, "=") == false {
 							log.Println("Invalid env: " + envLine)
@@ -105,7 +96,7 @@ func main() {
 		for i := 0; i <= fdMax; i++ {
 			files[i] = uintptr(i)
 		}
-		attrs.Files = files
+		//attrs.Files = files
 	}
 	if clearEnv {
 		attrs.Env = []string{}
