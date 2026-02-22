@@ -38,6 +38,7 @@ func terminateWatcher(sigChan chan os.Signal) {
 }
 
 func main() {
+	var fdsToPass []int
 	var sigChan = make(chan os.Signal, 1)
 	chDir, _ = os.Getwd()
 	cmdSlice := os.Args[1:]
@@ -70,6 +71,19 @@ func main() {
 						envAdd = append(envAdd, envLine)
 					} else if strings.HasPrefix(flag, "--directory=") {
 						chDir = strings.TrimPrefix(flag, "--directory=")
+					} else if strings.HasPrefix(flag, "--forward-fd=") {
+						rawNum, err := strconv.Atoi(
+							strings.TrimPrefix(flag, "--forward-fd="),
+						)
+						if err != nil {
+							log.Println("Could not read fd: " + err.Error())
+							continue
+						}
+
+						fdsToPass = append(
+							fdsToPass,
+							rawNum,
+						)
 					} else {
 						log.Println("Unknown flag: " + flag)
 						continue
@@ -88,6 +102,13 @@ func main() {
 		Sys:		&syscall.SysProcAttr{
 					Pdeathsig:		syscall.SIGTERM,
 		},
+		Files:		[]uintptr{
+					uintptr(syscall.Stdout),
+					uintptr(syscall.Stderr),
+		},
+	}
+	for _, fd := range fdsToPass {
+		attrs.Files = append(attrs.Files, uintptr(fd))
 	}
 	if clearEnv {
 		attrs.Env = []string{}
