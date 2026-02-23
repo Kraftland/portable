@@ -644,6 +644,7 @@ func dialNetsock(rules chan string, ready chan int) {
 	respPtr, postErr := client.Post("http://127.0.0.114/add", "application/json", buf)
 	if postErr != nil {
 		pecho("warn", "Could not post data to netsock: " + postErr.Error())
+		addEnv("netsockFail=1")
 		return
 	}
 	defer respPtr.Body.Close()
@@ -653,17 +654,15 @@ func dialNetsock(rules chan string, ready chan int) {
 	err := decoder.Decode(&resp)
 	if err != nil {
 		pecho("warn", "Could not decode response from netsock: " + err.Error())
+		addEnv("netsockFail=1")
 	}
 	if resp.Success == true {
 		pecho("debug", "Firewall active")
 	} else {
 		pecho("warn", "netsock respond with: " + resp.Log)
+		addEnv("netsockFail=1")
 	}
-
 	ready <- 1
-
-
-
 }
 
 func mkdirPool(dirs []string) {
