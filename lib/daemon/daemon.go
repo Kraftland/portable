@@ -639,7 +639,7 @@ func dialNetsock(rules chan string, ready chan int) {
 	respPtr, postErr := client.Post("http://127.0.0.114/add", "application/json", buf)
 	if postErr != nil {
 		pecho("warn", "Could not post data to netsock: " + postErr.Error())
-		addEnv("netsockFail=" + "Could not post data to netsock: " + postErr.Error())
+		addEnv("netsockFail=" + "Could not post data to netsock, check netsock.socket enabled and running")
 		return
 	}
 	defer respPtr.Body.Close()
