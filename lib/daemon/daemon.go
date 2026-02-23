@@ -598,7 +598,7 @@ func setFirewall() {
 
 	jsonObj, encodeErr := json.Marshal(sig)
 	if encodeErr != nil {
-		pecho("warn", "Could not decode network restriction list: " + encodeErr.Error())
+		pecho("crit", "Could not decode network restriction list: " + encodeErr.Error())
 		return
 	}
 
