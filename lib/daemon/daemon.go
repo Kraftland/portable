@@ -593,7 +593,7 @@ func setFirewall() {
 
 	jsonObj, encodeErr := json.Marshal(sig)
 	if encodeErr != nil {
-		pecho("warn", "Could not decode network restriction list: " + encodeErr.Error())
+		pecho("crit", "Could not decode network restriction list: " + encodeErr.Error())
 		return
 	}
 
@@ -639,6 +639,7 @@ func dialNetsock(rules chan string, ready chan int) {
 	respPtr, postErr := client.Post("http://127.0.0.114/add", "application/json", buf)
 	if postErr != nil {
 		pecho("warn", "Could not post data to netsock: " + postErr.Error())
+		addEnv("netsockFail=" + "Could not post data to netsock: " + postErr.Error())
 		return
 	}
 	defer respPtr.Body.Close()
@@ -648,17 +649,15 @@ func dialNetsock(rules chan string, ready chan int) {
 	err := decoder.Decode(&resp)
 	if err != nil {
 		pecho("warn", "Could not decode response from netsock: " + err.Error())
+		addEnv("netsockFail=" + "Could not decode response from netsock: " + err.Error())
 	}
 	if resp.Success == true {
 		pecho("debug", "Firewall active")
 	} else {
 		pecho("warn", "netsock respond with: " + resp.Log)
+		addEnv("netsockFail=1" + "netsock respond with: " + resp.Log)
 	}
-
 	ready <- 1
-
-
-
 }
 
 func mkdirPool(dirs []string) {

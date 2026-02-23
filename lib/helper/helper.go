@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
-	"net"
-	"github.com/coreos/go-systemd/v22/daemon"
 
+	"github.com/coreos/go-systemd/v22/daemon"
+	"github.com/rymdport/portal/notification"
 )
 
 var (
@@ -32,7 +33,23 @@ func updateSd(count int) {
 	}
 }
 
+func netsockFailNotification() {
+	failmsg := os.Getenv("netsockFail")
+	if len(failmsg) > 0 {
+		var content = notification.Content {
+			Title:		"Failed to apply firewall",
+			Body:		failmsg,
+			Priority:	"urgent",
+		}
+		err := notification.Add(2147483647, content)
+		if err != nil {
+			fmt.Println("Failed to send notification: " + err.Error())
+		}
+	}
+}
+
 func startCounter () {
+	go netsockFailNotification()
 	var startedCount int = 0
 	fmt.Println("Start counter init done")
 	for {
