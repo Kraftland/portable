@@ -1080,6 +1080,7 @@ func calcDbusArg(argChan chan []string) {
 		"org.freedesktop.FileManager1",
 		"org.freedesktop.portal.Fcitx",
 		"org.freedesktop.portal.IBus",
+		"org.kde.plasma.browser.integration",
 	}
 
 	for _, talkDest := range allowedTalks {
