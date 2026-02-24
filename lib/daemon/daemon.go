@@ -428,11 +428,12 @@ func getVariables() {
 		pecho("warn",
 		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
 		)
+		bwBindParMap := map[string]string{
+			os.Getenv("bwBindPar"):		os.Getenv("bwBindPar"),
+		}
+		runtimeOpt.userExpose <- bwBindParMap
 	}
-	bwBindParMap := map[string]string{
-		os.Getenv("bwBindPar"):		os.Getenv("bwBindPar"),
-	}
-	runtimeOpt.userExpose <- bwBindParMap
+
 	runtimeOpt.userLang = os.Getenv("LANG")
 }
 
