@@ -26,4 +26,5 @@ Command line arguments (optional):
 		stats	-	-> Show basic status of the sandbox (if running)
 		quit	-	-> Terminate running sandbox
 	--	-	-	-> Any argument after this double dash will be passed to the application
+	--expose <origin> <dest>-> Bind host origin path to sandbox destination. Prefix <dest> with ro: to bind read-only, or dev: to bind device
 ```
