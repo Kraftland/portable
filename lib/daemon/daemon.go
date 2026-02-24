@@ -32,7 +32,6 @@ const (
 )
 
 type RUNTIME_OPT struct {
-	action		bool
 	argStop		bool
 	applicationArgs	[]string
 	userExpose	chan map[string]string
@@ -303,13 +302,14 @@ func showStats() {
 }
 
 func cmdlineDispatcher(cmdChan chan int8) {
+	var skipCount int
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
 			continue
 		}
-		if runtimeOpt.action == true {
-			runtimeOpt.action = false
+		if skipCount > 0 {
+			skipCount--
 			continue
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
@@ -319,8 +319,17 @@ func cmdlineDispatcher(cmdChan chan int8) {
 			continue
 		}
 		switch value {
+			case "--expose":
+				if len(cmdlineArray) <= index + 2 {
+					pecho("warn", "--expose requires 2 arguments")
+					break
+				}
+				skipCount += 2
+				runtimeOpt.userExpose <- map[string]string{
+					cmdlineArray[index + 1]:	cmdlineArray[index + 2],
+				}
 			case "--actions" :
-			runtimeOpt.action = true
+			skipCount++
 			if len(cmdlineArray) <= index + 1 {
 				pecho("warn", "--actions require an argument")
 				break
@@ -2134,13 +2143,13 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 					validBwBindArgs <- []string{
 						"--ro-bind",
 						ori,
-						strings.TrimSuffix(dest, "ro:"),
+						strings.TrimPrefix(dest, "ro:"),
 					}
 				} else if strings.HasPrefix(dest, "dev:") {
 					validBwBindArgs <- []string{
 						"--dev-bind",
 						ori,
-						strings.TrimSuffix(dest, "dev:"),
+						strings.TrimPrefix(dest, "dev:"),
 					}
 				} else {
 					validBwBindArgs <- []string{
@@ -2205,9 +2214,9 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		var zenityText string
 		switch runtimeOpt.userLang {
 			case "zh_CN.UTF-8":
-				zenityText = "--text=暴露以下路径\n "
+				zenityText = "--text=暴露以下路径: \n "
 			default:
-				zenityText = "--text=Exposing the following path\n "
+				zenityText = "--text=Exposing the following path: \n "
 		}
 		var invokeZenity bool
 		for path := range exposedPaths {
