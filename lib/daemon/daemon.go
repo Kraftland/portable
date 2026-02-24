@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -42,6 +43,7 @@ type RUNTIME_OPT struct {
 	userExpose	chan map[string]string
 	userLang	string
 	miTerminate	bool
+	writtenDesktop	bool
 }
 
 type RUNTIME_PARAMS struct {
@@ -846,7 +848,12 @@ func cleanDirs() {
 	var paths = []string{
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID,
 		xdgDir.runtimeDir + "/app/" + confOpts.appID,
-		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+	}
+	if runtimeOpt.writtenDesktop {
+		paths = append(
+			paths,
+			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+		)
 	}
 	getFlatpakInstanceID()
 	if len(runtimeInfo.instanceID) > 0 {
@@ -1433,23 +1440,50 @@ func waylandDisplay(wdChan chan []string) () {
 }
 
 func instDesktopFile() {
-	_, err := os.Stat("/usr/share/applications/" + confOpts.appID + ".desktop")
-	if err == nil {
-		pecho("debug", ".desktop file detected")
-	} else {
-		const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
-		var desktopFile string
-		desktopFile = templateDesktopFile
-		strings.ReplaceAll(desktopFile, "placeholderName", confOpts.appID)
-		strings.ReplaceAll(desktopFile, "placeholderConfig", confOpts.confPath)
-		os.WriteFile(
-			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
-			[]byte(desktopFile),
-			0700,
+	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
+	for val := range xdgDataDirs {
+		if strings.Contains(val, "/var/lib/flatpak") {
+			continue
+		}
+		statPath := filepath.Join(
+			val,
+			"applications",
+			confOpts.appID + ".desktop",
 		)
-		pecho("debug", "Done installing stub file")
-		pecho("warn", "You should supply your own .desktop file")
+		_, err := os.Stat(statPath)
+		if err == nil {
+			pecho("debug", "Found desktop file: " + statPath)
+			return
+		}
 	}
+
+	var hardcodedDesktopPath = []string{filepath.Join(xdgDir.dataDir, "applications")}
+
+	for _, path := range hardcodedDesktopPath {
+		statPath := filepath.Join(
+			path,
+			confOpts.appID + ".desktop",
+		)
+		_, err := os.Stat(statPath)
+		if err == nil {
+			pecho("debug", "Found desktop file: " + statPath)
+			return
+		}
+	}
+
+	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
+	var desktopFile string
+	desktopFile = templateDesktopFile
+	strings.ReplaceAll(desktopFile, "placeholderName", confOpts.appID)
+	strings.ReplaceAll(desktopFile, "placeholderConfig", confOpts.confPath)
+	os.WriteFile(
+		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+		[]byte(desktopFile),
+		0700,
+	)
+	runtimeOpt.writtenDesktop = true
+	pecho("debug", "Done installing stub file")
+	pecho("warn", "You should supply your own .desktop file")
 }
 
 func setXDGEnvs() {
