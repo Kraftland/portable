@@ -39,7 +39,7 @@ type RUNTIME_OPT struct {
 	action		bool
 	argStop		bool
 	applicationArgs	[]string
-	userExpose	string
+	userExpose	chan map[string]string
 	userLang	string
 	miTerminate	bool
 }
@@ -424,7 +424,15 @@ func shareFile() {
 }
 
 func getVariables() {
-	runtimeOpt.userExpose = os.Getenv("bwBindPar")
+	if len(os.Getenv("bwBindPar")) > 0 {
+		pecho("warn",
+		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
+		)
+	}
+	bwBindParMap := map[string]string{
+		os.Getenv("bwBindPar"):		os.Getenv("bwBindPar"),
+	}
+	runtimeOpt.userExpose <- bwBindParMap
 	runtimeOpt.userLang = os.Getenv("LANG")
 }
 
@@ -2074,50 +2082,45 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		}
 	})
 
-	if len(runtimeOpt.userExpose) > 0 {
-		_, err := os.Stat(runtimeOpt.userExpose)
-		if err != nil {
-			pecho("warn", "Rejecting bwBindPar: " + err.Error())
-		} else {
-			zenityArgs := []string{
-				"--title",
-					confOpts.friendlyName,
-				"--icon=folder-open-symbolic",
-				"--question",
-				"--default-cancel",
-			}
+	var validBwBindArgs = make(chan []string, 64)
+	var exposedPaths = make(chan string, 16)
 
-			switch runtimeOpt.userLang {
-				case "en_GB.UTF-8":
-					zenityArgs = append(
-						zenityArgs,
-						"--text=Expose " + runtimeOpt.userExpose + "?",
-					)
-				case "zh_CN.UTF-8":
-					zenityArgs = append(
-						zenityArgs,
-						"--text=暴露 " + runtimeOpt.userExpose + "?",
-					)
-				default:
-					zenityArgs = append(
-						zenityArgs,
-						"--text=Expose " + runtimeOpt.userExpose + "?",
-					)
-			}
+	close(runtimeOpt.userExpose)
 
-			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
-			zenityRun.Stderr = os.Stderr
-			errZenity := zenityRun.Run()
-			if errZenity != nil {
-				pecho("warn", "Rejecting bwBindPar: did not receive confirmation")
-			} else {
-				miscArgs = append(
-					miscArgs,
-					"--dev-bind",
-						runtimeOpt.userExpose,
-						runtimeOpt.userExpose,
-				)
-			}
+	var hasValidExpose bool
+
+	for pathMap := range runtimeOpt.userExpose {
+		for ori, dest := range pathMap {
+			pecho("debug", "Checking " + ori + ", " + dest)
+			wg.Go(func() {
+				_, err := os.Stat(ori)
+				if err != nil {
+					pecho("warn", "Could not select origin " + ori + ": " + err.Error())
+					return
+				}
+				hasValidExpose = true
+				exposedPaths <- ori
+				if strings.HasPrefix(dest, "ro:") {
+					validBwBindArgs <- []string{
+						"--ro-bind",
+						ori,
+						strings.TrimSuffix(dest, "ro:"),
+					}
+				} else if strings.HasPrefix(dest, "dev:") {
+					validBwBindArgs <- []string{
+						"--dev-bind",
+						ori,
+						strings.TrimSuffix(dest, "dev:"),
+					}
+				} else {
+					validBwBindArgs <- []string{
+						"--bind",
+						ori,
+						dest,
+					}
+				}
+
+			})
 		}
 	}
 	pwArgs := <- pwChan
@@ -2156,12 +2159,52 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		)
 	}
 
-
-
-
 	miscChan <- miscArgs
+
 	wg.Wait()
+	if hasValidExpose {
+		close(validBwBindArgs)
+		close(exposedPaths)
+		wg.Go(func() {
+		zenityArgs := []string{
+			"--title",
+				confOpts.friendlyName,
+			"--icon=folder-open-symbolic",
+			"--question",
+			"--default-cancel",
+		}
+		var zenityText string
+		switch runtimeOpt.userLang {
+			case "zh_CN.UTF-8":
+				zenityText = "--text=暴露以下路径\n "
+			default:
+				zenityText = "--text=Exposing the following path\n "
+		}
+		var invokeZenity bool
+		for path := range exposedPaths {
+			invokeZenity = true
+			zenityText = zenityText + path + " \n"
+		}
+		if invokeZenity {
+			zenityArgs = append(zenityArgs, zenityText)
+			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
+			zenityRun.Stderr = os.Stderr
+			errZenity := zenityRun.Run()
+			if errZenity != nil {
+				pecho("warn", "User denied exposing")
+				//stopApp()
+				return
+			}
+		}
+		// It's fine to not have wg.Wait on this func, validBwBindArgs will block anyways
+		for arg := range validBwBindArgs {
+			miscChan <- arg
+		}
+		})
+	}
+
 	close(miscChan)
+
 }
 
 func bindXAuth(xauthChan chan []string) {
@@ -2819,6 +2862,7 @@ func waitChan(tgChan chan int8, chanName string) {
 func main() {
 	runtime.SetBlockProfileRate(1)
 
+	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	go signalRecvWorker(sigChan)
