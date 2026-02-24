@@ -37,7 +37,6 @@ const (
 )
 
 type RUNTIME_OPT struct {
-	action		bool
 	argStop		bool
 	applicationArgs	[]string
 	userExpose	chan map[string]string
@@ -308,13 +307,14 @@ func showStats() {
 }
 
 func cmdlineDispatcher(cmdChan chan int8) {
+	var skipCount int
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
 			continue
 		}
-		if runtimeOpt.action == true {
-			runtimeOpt.action = false
+		if skipCount > 0 {
+			skipCount--
 			continue
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
@@ -324,8 +324,17 @@ func cmdlineDispatcher(cmdChan chan int8) {
 			continue
 		}
 		switch value {
+			case "--expose":
+				if len(cmdlineArray) <= index + 2 {
+					pecho("warn", "--expose requires 2 arguments")
+					break
+				}
+				skipCount += 2
+				runtimeOpt.userExpose <- map[string]string{
+					cmdlineArray[index + 1]:	cmdlineArray[index + 2],
+				}
 			case "--actions" :
-			runtimeOpt.action = true
+			skipCount++
 			if len(cmdlineArray) <= index + 1 {
 				pecho("warn", "--actions require an argument")
 				break
