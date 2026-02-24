@@ -2165,7 +2165,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	if hasValidExpose {
 		close(validBwBindArgs)
 		close(exposedPaths)
-		wg.Go(func() {
 		zenityArgs := []string{
 			"--title",
 				confOpts.friendlyName,
@@ -2193,14 +2192,12 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			if errZenity != nil {
 				pecho("warn", "User denied exposing")
 				//stopApp()
-				return
+			} else {
+				for arg := range validBwBindArgs {
+					miscChan <- arg
+				}
 			}
 		}
-		// It's fine to not have wg.Wait on this func, validBwBindArgs will block anyways
-		for arg := range validBwBindArgs {
-			miscChan <- arg
-		}
-		})
 	}
 
 	close(miscChan)
