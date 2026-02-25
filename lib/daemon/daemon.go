@@ -2038,6 +2038,15 @@ func maskDir(path string) (maskArgs []string) {
 }
 
 func miscBinds(miscChan chan []string, pwChan chan []string) {
+	connBus, err := godbus.ConnectSessionBus()
+	if err != nil {
+		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
+	}
+	busDocObj := connBus.Object(
+		"org.freedesktop.portal.Documents",
+		"/org/freedesktop/portal/documents",
+	)
+	defer connBus.Close()
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2209,6 +2218,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	if hasValidExpose {
 		close(validBwBindArgs)
 		close(exposedPaths)
+		var pathList []string
 		zenityArgs := []string{
 			"--title",
 				confOpts.friendlyName,
@@ -2226,6 +2236,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		var invokeZenity bool
 		for path := range exposedPaths {
 			invokeZenity = true
+			pathList = append(pathList, path)
 			zenityText = zenityText + path + " \n"
 		}
 		if invokeZenity {
@@ -2242,10 +2253,65 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 				}
 			}
 		}
+
+		var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
+		var busName = connBus.Names()[0]
+		pathResponse := "/org/freedesktop/portal/desktop/request/" + busName + "/" + requestID
+		var responseObjPath = godbus.ObjectPath(pathResponse)
+
+
+		connBus.AddMatchSignal(
+			godbus.WithMatchObjectPath(
+				responseObjPath,
+			),
+			godbus.WithMatchInterface(
+				"org.freedesktop.portal.Request",
+			),
+			godbus.WithMatchMember(
+				"Response",
+			),
+		)
+		busSigChan := make(chan *godbus.Signal, 20)
+		connBus.Signal(busSigChan)
+		var respRes = make(chan bool, 1)
+		go watchResult(busSigChan, respRes)
+		var resChan = make(chan bool, 1)
+		go addFilesToPortal(connBus, pathList, requestID, resChan)
+
+
+		result := <- resChan
+
+
+
 	}
 
 	close(miscChan)
 
+}
+
+func watchResult(sigChan chan *godbus.Signal, result chan bool) {
+	for signal := range sigChan {
+		pecho("debug", "Processing D-Bus signal from " + signal.Sender + ": ")
+	}
+}
+
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, requestID string, result chan bool) {
+		var busFdList []uintptr
+		if connBus.SupportsUnixFDs() == false {
+			pecho("warn", "Could not pass files using file descriptor: unsupported")
+			result <- false
+			return
+		} else {
+			for _, path := range pathList {
+				fileObj, err := os.Open(path)
+				if err != nil {
+					pecho("warn", "Could not open file: " + err.Error())
+					continue
+				}
+				fd := fileObj.Fd()
+				busFdList = append(busFdList, fd)
+			}
+		}
 }
 
 func bindXAuth(xauthChan chan []string) {
