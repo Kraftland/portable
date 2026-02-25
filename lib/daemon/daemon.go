@@ -2274,8 +2274,8 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		// 		"Response",
 		// 	),
 		// )
-		busSigChan := make(chan *godbus.Signal, 20)
-		connBus.Signal(busSigChan)
+		//busSigChan := make(chan *godbus.Signal, 20)
+		//connBus.Signal(busSigChan)
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
 		go addFilesToPortal(connBus, pathList, filesInfo)
@@ -2362,6 +2362,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	}
 	jsonObj, _ := json.Marshal(filesInfoTmp)
 	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
+	pecho("debug", "Passed files info: " + string(jsonObj))
 	filesInfo <- filesInfoTmp
 }
 
