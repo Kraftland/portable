@@ -2284,7 +2284,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		//go watchResult(busSigChan, respRes)
 		go addFilesToPortal(connBus, pathList, filesInfo)
 		close(filesInfo)
-		addEnv("_portableHelperExtraFiles=1")
 
 
 
@@ -2364,6 +2363,8 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	for idx, docid := range resp.DocIDs {
 		filesInfoTmp.FileMap[pathList[idx]] = docid
 	}
+	jsonObj, _ := json.Marshal(filesInfoTmp)
+	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
 	filesInfo <- filesInfoTmp
 }
 
