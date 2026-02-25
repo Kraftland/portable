@@ -2280,8 +2280,8 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		)
 		busSigChan := make(chan *godbus.Signal, 20)
 		connBus.Signal(busSigChan)
-		var respRes = make(chan bool, 1)
-		go watchResult(busSigChan, respRes)
+		//var respRes = make(chan bool, 1)
+		//go watchResult(busSigChan, respRes)
 		var resChan = make(chan bool, 1)
 		go addFilesToPortal(connBus, pathList, requestID, resChan)
 
