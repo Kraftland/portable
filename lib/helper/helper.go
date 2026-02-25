@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"syscall"
+	//"syscall"
 	"time"
 
 	"github.com/coreos/go-systemd/v22/daemon"
@@ -108,7 +108,7 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	}
 
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
-	cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
+	//cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	fmt.Println("Executing command:", cmdline)
