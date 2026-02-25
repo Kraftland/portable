@@ -2366,6 +2366,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	for idx, docid := range resp.DocIDs {
 		filesInfoTmp.FileMap[pathList[idx]] = docid
 	}
+	filesInfo <- filesInfoTmp
 }
 
 func bindXAuth(xauthChan chan []string) {
