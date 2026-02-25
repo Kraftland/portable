@@ -157,6 +157,18 @@ func auxStart (launchTarget string, launchArgs []string) {
 }
 
 func startMaster(targetExec string, targetArgs []string) {
+	rawEnv := os.Getenv("_portableHelperExtraFiles=")
+	if len(rawEnv) > 0 {
+		var decoded PassFiles
+		err := json.Unmarshal([]byte(rawEnv), &decoded)
+		if err != nil {
+			panic("Could not decode JSON from environment variable: " + err.Error())
+		}
+		fmt.Println("Replacing cmdline using file map:", decoded)
+		var execSlice = []string{targetExec}
+		targetExec = cmdlineReplacer(execSlice, decoded.FileMap)[0]
+		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
+	}
 	startCmd := exec.Command(targetExec, targetArgs...)
 	startCmd.Stdin = os.Stdin
 	startCmd.Stdout = os.Stdout
