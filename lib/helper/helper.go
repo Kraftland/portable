@@ -80,44 +80,6 @@ func startCounter () {
 		}
 	}
 }
-
-func executeAndWait (launchTarget string, args []string) {
-	cmd := exec.Command(launchTarget, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	fmt.Println("Executing auxiliary target: ", launchTarget + " with " + strings.Join(args, " "))
-	fmt.Println("Argument count: ", len(args))
-	cmd.Start()
-	startNotifier <- true
-	cmd.Wait()
-	startNotifier <- false
-}
-
-func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []string) {
-	ioRead, err := io.ReadAll(conn)
-	if err != nil {
-		fmt.Println("Could not read connection: " + err.Error())
-		return
-	}
-	rawCmdline := strings.TrimRight(string(ioRead), "\n")
-	targetArgs := []string{}
-	targetArgs = append(
-		targetArgs,
-		launchArgs...
-	)
-	decodedArgs := []string{}
-	err = json.Unmarshal([]byte(rawCmdline), &decodedArgs)
-	if err != nil {
-		fmt.Println("Could not unmarshal cmdline: " + err.Error())
-		return
-	}
-	targetArgs = append(
-		targetArgs,
-		decodedArgs...
-	)
-	go executeAndWait(launchTarget, targetArgs)
-}
-
 type StartRequest struct {
 	Exec		[]string
 	CustomTarget	bool
@@ -150,6 +112,7 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	fmt.Println("Executing command:", cmdline)
 	startNotifier <- true
 	cmd.Run()
 	startNotifier <- false
