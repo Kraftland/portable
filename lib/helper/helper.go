@@ -198,8 +198,15 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	err = cmd.Start()
 	if err != nil {
 		fmt.Println("Could not start command: ", err)
+		jsonObj, _ := json.Marshal(resp)
+		writer.Write(jsonObj)
+		writer.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
+	resp.Success = true
+	jsonObj, _ := json.Marshal(resp)
+	writer.Write(jsonObj)
+
 	startNotifier <- true
 
 	err = cmd.Wait()
