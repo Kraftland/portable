@@ -161,6 +161,7 @@ var (
 					"/sys/module/nvidia_wmi_ec_backlight",
 				}
 	pechoChan		= make(chan []string, 128)
+	filesInfo		= make(chan PassFiles, 1)
 )
 
 func pechoWorker() {
@@ -2037,7 +2038,13 @@ func maskDir(path string) (maskArgs []string) {
 	return
 }
 
+type PassFiles struct {
+	// FileMap is a map that contains [docid string](host path string)
+	FileMap		map[string]string
+}
+
 func miscBinds(miscChan chan []string, pwChan chan []string) {
+
 	connBus, err := godbus.ConnectSessionBus()
 	if err != nil {
 		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
@@ -2280,38 +2287,74 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 
 
 		result := <- resChan
+		close(filesInfo)
 
 
 
+	} else {
+		close(filesInfo)
 	}
 
 	close(miscChan)
 
 }
 
+type PortalResponse struct {
+	DocIDs		[]string
+	ExtraInfo	map[string]godbus.Variant
+}
+
 func watchResult(sigChan chan *godbus.Signal, result chan bool) {
 	for signal := range sigChan {
-		pecho("debug", "Processing D-Bus signal from " + signal.Sender + ": ")
+		var response PortalResponse
+		pecho("debug", "Processing D-Bus signal from " + signal.Sender)
+		err := godbus.Store(signal.Body, &response)
+		if err != nil {
+			pecho("warn", "Could not process signal: " + err.Error())
+		}
+
+		pecho("debug", "Got document ID slice: " + strings.Join(response.DocIDs, ", "))
 	}
 }
 
+type AddDocumentFullData struct {
+	PathFDs		[]godbus.UnixFD
+	Flags		uint32
+	AppID		string
+	Permissions	[]string
+}
+
 func addFilesToPortal(connBus *godbus.Conn, pathList []string, requestID string, result chan bool) {
-		var busFdList []uintptr
-		if connBus.SupportsUnixFDs() == false {
-			pecho("warn", "Could not pass files using file descriptor: unsupported")
-			result <- false
-			return
-		} else {
-			for _, path := range pathList {
-				fileObj, err := os.Open(path)
-				if err != nil {
-					pecho("warn", "Could not open file: " + err.Error())
-					continue
-				}
-				fd := fileObj.Fd()
-				busFdList = append(busFdList, fd)
+	var busFdList []godbus.UnixFD
+	if connBus.SupportsUnixFDs() == false {
+		pecho("warn", "Could not pass files using file descriptor: unsupported")
+		result <- false
+		return
+	} else {
+		for _, path := range pathList {
+			fileObj, err := os.Open(path)
+			if err != nil {
+				pecho("warn", "Could not open file: " + err.Error())
+				continue
 			}
+			fd := fileObj.Fd()
+			busFdList = append(busFdList, godbus.UnixFD(fd))
 		}
+	}
+	var busData	AddDocumentFullData
+	busData.AppID = confOpts.appID
+	busData.Flags = 1
+	busData.PathFDs = busFdList
+
+	path := "/org/freedesktop/portal/documents"
+	pathBus := godbus.ObjectPath(path)
+
+	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
+
+	call := obj.Call("AddFull", godbus.FlagAllowInteractiveAuthorization, busData)
+	if call.Err != nil {
+		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
+	}
 }
 
 func bindXAuth(xauthChan chan []string) {
