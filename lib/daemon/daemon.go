@@ -2324,6 +2324,7 @@ type AddDocumentFullData struct {
 	Permissions	[]string
 }
 
+// This portal does not need Request?
 func addFilesToPortal(connBus *godbus.Conn, pathList []string, requestID string, result chan bool) {
 	var busFdList []godbus.UnixFD
 	if connBus.SupportsUnixFDs() == false {
@@ -2352,6 +2353,8 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, requestID string,
 	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
 
 	call := obj.Call("AddFull", godbus.FlagAllowInteractiveAuthorization, busData)
+	<- call.Done
+	pecho("debug", "AddFull call done")
 	if call.Err != nil {
 		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
 	}
