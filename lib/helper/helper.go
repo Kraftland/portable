@@ -13,6 +13,7 @@ import (
 	"strings"
 	//"syscall"
 	"time"
+	"math/rand"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
@@ -23,9 +24,32 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
+type pipeInfo struct {
+	cmdline			[]string
+	id			int
+	stdin			io.WriteCloser
+	stdout			io.ReadCloser
+	stderr			io.ReadCloser
+}
+
+type ResponseField struct {
+	Success			bool
+	ID			int
+}
+
 var (
-	startNotifier		= make(chan bool, 32767)
+	startNotifier		= make(chan bool, 32)
+	// Should check for collision first!
+	addPipePair		= make(chan pipeInfo, 2)
+	pipeMap			= make(map[int]pipeInfo)
 )
+
+
+func trackerMapWriter() {
+	for sig := range addPipePair {
+		pipeMap[sig.id] = sig
+	}
+}
 
 func updateSd(count int) {
 	status := "STATUS=" + "Tracking processes: " + strconv.Itoa(count)
@@ -107,6 +131,7 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 		fmt.Println("Could not read request: " + err.Error())
 		return
 	}
+	defer req.Body.Close()
 	err = json.Unmarshal(bodyRaw, &reqDecode)
 	if err != nil {
 		fmt.Println("Could not decode request: " + err.Error())
@@ -124,12 +149,63 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	cmdlineNew := cmdlineReplacer(cmdline, filesMap)
 	cmd := exec.Command(cmdlineNew[0], cmdlineNew[1:]...)
 	//cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
-	cmd.Stdout = os.Stdout
+	var id int
+	for {
+		id = rand.Int()
+		_, ok := pipeMap[id]
+		if ok == false {
+			fmt.Println("Selected ID", id)
+			break
+		}
+	}
+	var resp ResponseField
+	resp.ID = id
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Println("Could not pipe standard output", err)
+		jsonObj, _ := json.Marshal(resp)
+		writer.Write(jsonObj)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		fmt.Println("Could not pipe standard error", err)
+		jsonObj, _ := json.Marshal(resp)
+		writer.Write(jsonObj)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil {
+		fmt.Println("Could not pipe standard input", err)
+		jsonObj, _ := json.Marshal(resp)
+		writer.Write(jsonObj)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	var pipeInf pipeInfo
+	pipeInf.cmdline = cmdlineNew
+	pipeInf.id = id
+	pipeInf.stderr = stderrPipe
+	pipeInf.stdin = stdinPipe
+	pipeInf.stdout = stdoutPipe
+	addPipePair <- pipeInf
+
+
 	cmd.Stderr = os.Stderr
 	fmt.Println("Executing command:", cmdline)
+	err = cmd.Start()
+	if err != nil {
+		fmt.Println("Could not start command: ", err)
+		return
+	}
 	startNotifier <- true
-	req.Body.Close()
-	cmd.Run()
+
+	err = cmd.Wait()
+	if err != nil {
+		fmt.Println("Command returned error: ", err)
+	}
 	startNotifier <- false
 }
 
@@ -253,7 +329,8 @@ func main () {
 		}
 	}
 	startMaster(targetSlice[0], args)
+	go trackerMapWriter()
 	for {
-		time.Sleep(360000 * time.Second)
+		time.Sleep(360000 * time.Hour)
 	}
 }
