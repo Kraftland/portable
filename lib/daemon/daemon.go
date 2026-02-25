@@ -156,6 +156,7 @@ var (
 					"/sys/module/nvidia_wmi_ec_backlight",
 				}
 	pechoChan		= make(chan []string, 128)
+	filesInfo		= make(chan PassFiles, 1)
 )
 
 func pechoWorker() {
@@ -963,7 +964,7 @@ func pwSecContext(pwChan chan []string) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
 	if confOpts.bindPipewire == false {
-		pwChan <- pwSecArg
+		close(pwChan)
 		return
 	}
 	pwSecCmd := []string{
@@ -992,6 +993,8 @@ func pwSecContext(pwChan chan []string) {
 	err := pwSecRun.Start()
 	if err != nil {
 		pecho("warn", "Failed to start up PipeWire proxy: " + err.Error() + pipeErr.Error())
+		close(pwChan)
+		return
 	}
 	for scanner.Scan() {
 		stringObj := scanner.Text()
@@ -1006,6 +1009,7 @@ func pwSecContext(pwChan chan []string) {
 		"--bind", pwProxySocket, pwProxySocket,
 	)
 	pwChan <- pwSecArg
+	close(pwChan)
 	pecho("debug", "pw-container available at " + pwProxySocket)
 }
 
@@ -1693,11 +1697,8 @@ func genBwArg(
 	camChan chan []string,
 	inputChan chan []string,
 	wayDisplayChan chan []string,
+	miscChan	chan []string,
 	) {
-
-	miscChan := make(chan []string, 1)
-	go miscBinds(miscChan, pwChan)
-
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -2032,7 +2033,17 @@ func maskDir(path string) (maskArgs []string) {
 	return
 }
 
+type PassFiles struct {
+	// FileMap is a map that contains [host path string](docid string)
+	FileMap		map[string]string
+}
+
 func miscBinds(miscChan chan []string, pwChan chan []string) {
+	connBus, err := godbus.ConnectSessionBus()
+	if err != nil {
+		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
+	}
+	defer connBus.Close()
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2162,11 +2173,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			})
 		}
 	}
-	pwArgs := <- pwChan
-	miscArgs = append(
-		miscArgs,
-		pwArgs...
-	)
 	if confOpts.mountInfo == true {
 		miscArgs = append(
 			miscArgs,
@@ -2204,6 +2210,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	if hasValidExpose {
 		close(validBwBindArgs)
 		close(exposedPaths)
+		var pathList []string
 		zenityArgs := []string{
 			"--title",
 				confOpts.friendlyName,
@@ -2221,6 +2228,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		var invokeZenity bool
 		for path := range exposedPaths {
 			invokeZenity = true
+			pathList = append(pathList, path)
 			zenityText = zenityText + path + " \n"
 		}
 		if invokeZenity {
@@ -2237,10 +2245,124 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 				}
 			}
 		}
+
+		// var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
+		// var busName = connBus.Names()[0]
+		// pathResponse := "/org/freedesktop/portal/desktop/request/" + busName + "/" + requestID
+		// var responseObjPath = godbus.ObjectPath(pathResponse)
+
+
+		// connBus.AddMatchSignal(
+		// 	godbus.WithMatchObjectPath(
+		// 		responseObjPath,
+		// 	),
+		// 	godbus.WithMatchInterface(
+		// 		"org.freedesktop.portal.Request",
+		// 	),
+		// 	godbus.WithMatchMember(
+		// 		"Response",
+		// 	),
+		// )
+		//busSigChan := make(chan *godbus.Signal, 20)
+		//connBus.Signal(busSigChan)
+		//var respRes = make(chan bool, 1)
+		//go watchResult(busSigChan, respRes)
+		addFilesToPortal(connBus, pathList, filesInfo)
 	}
-
+	pecho("debug", "Send files info")
+	close(filesInfo)
+	for pw := range pwChan {
+		miscChan <- pw
+	}
 	close(miscChan)
+}
 
+type PortalResponse struct {
+	DocIDs		[]string
+	ExtraInfo	map[string]godbus.Variant
+}
+
+func watchResult(sigChan chan *godbus.Signal, result chan bool) {
+	for signal := range sigChan {
+		var response PortalResponse
+		pecho("debug", "Processing D-Bus signal from " + signal.Sender)
+		err := godbus.Store(signal.Body, &response)
+		if err != nil {
+			pecho("warn", "Could not process signal: " + err.Error())
+		}
+
+		pecho("debug", "Got document ID slice: " + strings.Join(response.DocIDs, ", "))
+	}
+}
+
+type AddDocumentFullData struct {
+	PathFDs		[]godbus.UnixFD
+	Flags		uint32
+	AppID		string
+	Permissions	[]string
+}
+
+// This portal does not need Request?
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles) {
+	var filesInfoTmp PassFiles
+	filesInfoTmp.FileMap = map[string]string{}
+	var busFdList []godbus.UnixFD
+	if connBus.SupportsUnixFDs() == false {
+		pecho("warn", "Could not pass files using file descriptor: unsupported")
+		return
+	} else {
+		pecho("debug", "D-Bus has UnixFD support")
+		for _, path := range pathList {
+			fileObj, err := os.Open(path)
+			if err != nil {
+				pecho("warn", "Could not open file: " + err.Error())
+				continue
+			}
+			filesInfoTmp.FileMap[path] = "unknown"
+			fd := fileObj.Fd()
+			busFdList = append(busFdList, godbus.UnixFD(fd))
+		}
+	}
+	var busData	AddDocumentFullData
+	busData.AppID = confOpts.appID
+	busData.Flags = 1
+	busData.PathFDs = busFdList
+	busData.Permissions = []string{"read", "write", "grant-permissions"}
+
+	path := "/org/freedesktop/portal/documents"
+	pathBus := godbus.ObjectPath(path)
+
+	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
+	pecho("debug", "Requesting Documents portal for IDs...")
+	call := obj.Call("org.freedesktop.portal.Documents.AddFull", 0,
+		busData.PathFDs,
+		busData.Flags,
+		busData.AppID,
+		busData.Permissions,
+	)
+	//<- call.Done
+	pecho("debug", "AddFull call done")
+	if call.Err != nil {
+		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
+		fmt.Println(call)
+	}
+	var resp PortalResponse
+	err := godbus.Store(call.Body, &resp.DocIDs, &resp.ExtraInfo)
+	if err != nil {
+		pecho("warn", "Could not decode portal response: " + err.Error())
+	}
+	for idx, docid := range resp.DocIDs {
+		filesInfoTmp.FileMap[pathList[idx]] = filepath.Join(
+			xdgDir.runtimeDir,
+			"/doc/",
+			docid,
+			filepath.Base(pathList[idx]),
+		)
+	}
+	jsonObj, _ := json.Marshal(filesInfoTmp)
+	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
+	pecho("debug", "Passed files info: " + string(jsonObj))
+	filesInfo <- filesInfoTmp
 }
 
 func bindXAuth(xauthChan chan []string) {
@@ -2738,6 +2860,51 @@ func inputBind(inputBindChan chan []string) {
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
+type StartRequest struct {
+	Exec		[]string
+	CustomTarget	bool
+	Files		PassFiles
+}
+func auxStartNg() bool {
+	socketPath := filepath.Join(
+		xdgDir.runtimeDir,
+		"/portable/",
+		confOpts.appID,
+		"/portable-control/helper",
+	)
+	_, err := net.Dial("unix", socketPath)
+	if err != nil {
+		pecho("warn", "Could not do auxiliary start using HTTP IPC")
+		return false
+	}
+	var reqbody StartRequest
+	reqbody.Exec = runtimeOpt.applicationArgs
+	reqbody.CustomTarget = false
+	reqbody.Files = <- filesInfo
+	jsonObj, err := json.Marshal(reqbody)
+	if err != nil {
+		panic(err)
+	}
+
+	roundTripper := http.Transport{
+		Dial:		func(network, addr string) (net.Conn, error) {
+					return net.Dial("unix", socketPath)
+		},
+	}
+	pecho("debug", "Requesting start")
+	ipcClient := http.Client{
+		Transport:	&roundTripper,
+	}
+	// TODO: use multi reader to pipe stdin
+	reader := strings.NewReader(string(jsonObj))
+
+	ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+	pecho("info", "Started auxiliary application")
+
+
+	return true
+
+}
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
@@ -2816,6 +2983,11 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
+		res := auxStartNg()
+		if res {
+			miChan <- true
+			return
+		}
 		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
@@ -2898,7 +3070,6 @@ func waitChan(tgChan chan int8, chanName string) {
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 
@@ -2933,6 +3104,9 @@ func main() {
 
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
+	miscChan := make(chan []string, 10240)
+	pwSecContextChan := make(chan []string, 1)
+	go miscBinds(miscChan, pwSecContextChan)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -2969,12 +3143,7 @@ func main() {
 
 	// MI
 	go multiInstance(miChan)
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
-		sanityChecks()
-	} ()
-	pwSecContextChan := make(chan []string, 1)
+
 
 	wg.Add(2)
 	go func() {
@@ -2984,14 +3153,20 @@ func main() {
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
+		//time.Sleep(1 * time.Hour)
+		//os.Exit(0)
 	} else {
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+	wg.Go(func() {
+		sanityChecks()
+	})
 	go flushEnvs()
 	go setFirewall()
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan)
+		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan, miscChan)
 	} ()
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan)

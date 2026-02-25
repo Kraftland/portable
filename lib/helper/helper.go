@@ -1,19 +1,27 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	//"syscall"
 	"time"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
 )
+
+type PassFiles struct {
+	// FileMap is a map that contains [host path string](docid string)
+	FileMap		map[string]string
+}
 
 var (
 	startNotifier		= make(chan bool, 32767)
@@ -72,70 +80,101 @@ func startCounter () {
 		}
 	}
 }
+type StartRequest struct {
+	Exec		[]string
+	CustomTarget	bool
+	Files		PassFiles
+}
 
-func executeAndWait (launchTarget string, args []string) {
-	cmd := exec.Command(launchTarget, args...)
+func cmdlineReplacer(origin []string, files map[string]string) []string {
+	replacerPairs := make([]string, 0 , len(files) * 2)
+	for key, val := range files {
+		replacerPairs = append(replacerPairs, key, val)
+	}
+	replacer := strings.NewReplacer(replacerPairs...)
+	var result []string
+	for _, val := range origin {
+		result = append(result, replacer.Replace(val))
+	}
+	return result
+}
+
+func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
+	fmt.Println("Handling aux start request")
+	var reqDecode StartRequest
+	bodyRaw, err := io.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println("Could not read request: " + err.Error())
+		return
+	}
+	err = json.Unmarshal(bodyRaw, &reqDecode)
+	if err != nil {
+		fmt.Println("Could not decode request: " + err.Error())
+		return
+	}
+	cmdPfx := req.Context().Value("cmdPrefix").([]string)
+	var cmdline []string
+	if reqDecode.CustomTarget {
+		cmdline = reqDecode.Exec
+	} else {
+		cmdline = append(cmdPfx, reqDecode.Exec...)
+	}
+	filesMap := reqDecode.Files.FileMap
+	fmt.Println("Got file map from request:", filesMap)
+	cmdlineNew := cmdlineReplacer(cmdline, filesMap)
+	cmd := exec.Command(cmdlineNew[0], cmdlineNew[1:]...)
+	//cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	fmt.Println("Executing auxiliary target: ", launchTarget + " with " + strings.Join(args, " "))
-	fmt.Println("Argument count: ", len(args))
-	cmd.Start()
+	fmt.Println("Executing command:", cmdline)
 	startNotifier <- true
-	cmd.Wait()
+	req.Body.Close()
+	cmd.Run()
 	startNotifier <- false
 }
 
-func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []string) {
-	ioRead, err := io.ReadAll(conn)
-	if err != nil {
-		fmt.Println("Could not read connection: " + err.Error())
-		return
-	}
-	rawCmdline := strings.TrimRight(string(ioRead), "\n")
-	targetArgs := []string{}
-	targetArgs = append(
-		targetArgs,
-		launchArgs...
-	)
-	decodedArgs := []string{}
-	err = json.Unmarshal([]byte(rawCmdline), &decodedArgs)
-	if err != nil {
-		fmt.Println("Could not unmarshal cmdline: " + err.Error())
-		return
-	}
-	targetArgs = append(
-		targetArgs,
-		decodedArgs...
-	)
-	go executeAndWait(launchTarget, targetArgs)
-}
-
 func auxStart (launchTarget string, launchArgs []string) {
-	var signalSocket string = "/run/portable-control/auxStart"
-	socket, err := net.Listen("unix", signalSocket)
+	var httpSockPath string = "/run/portable-control/helper"
+	socketHttp, err := net.Listen("unix", httpSockPath)
 	if err != nil {
-		fmt.Println("Could not listen for aux start: " + err.Error())
+		fmt.Println("Could not listen on helper socket: " + err.Error())
 		return
 	}
-	var connCount int
-	for {
-		conn, connErr := socket.Accept()
-		connCount++
-		fmt.Println("Handling aux signal, total count: ", connCount)
-		if connErr != nil {
-			fmt.Println("Could not listen for aux start: " + connErr.Error())
-		}
-		go handleIncomingAuxConn(conn, launchTarget, launchArgs)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/start", auxStartHandler)
+	server := &http.Server {
+		Handler:	mux,
+		ConnContext:	func(ctx context.Context, c net.Conn) context.Context {
+			cmdPrefix := []string{launchTarget}
+			cmdPrefix = append(cmdPrefix, launchArgs...)
+			return context.WithValue(ctx, "cmdPrefix", cmdPrefix)
+		},
+	}
+	err = server.Serve(socketHttp)
+	if err != nil {
+		panic(err)
 	}
 }
 
 func startMaster(targetExec string, targetArgs []string) {
+	rawEnv := os.Getenv("_portableHelperExtraFiles")
+	if len(rawEnv) > 0 {
+		var decoded PassFiles
+		err := json.Unmarshal([]byte(rawEnv), &decoded)
+		if err != nil {
+			panic("Could not decode JSON from environment variable: " + err.Error())
+		}
+		fmt.Println("Replacing cmdline using file map:", decoded)
+		var execSlice = []string{targetExec}
+		targetExec = cmdlineReplacer(execSlice, decoded.FileMap)[0]
+		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
+	}
 	startCmd := exec.Command(targetExec, targetArgs...)
 	startCmd.Stdin = os.Stdin
 	startCmd.Stdout = os.Stdout
 	startCmd.Stderr = os.Stderr
 	startNotifier <- true
-	fmt.Println("Starting main application " + targetExec + " with cmdline: " + strings.Join(targetArgs, " "))
+	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
 	startCmd.Start()
 	daemon.SdNotify(false, daemon.SdNotifyReady)
 	startCmd.Wait()
@@ -174,6 +213,7 @@ func main () {
 		targetArgs,
 		rawArgs...
 	)
+	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	go auxStart(targetSlice[0], targetSlice[1:])
 	if os.Getenv("_portableDebug") == "1" {
 		targetSlice[0] = "/usr/bin/bash"
@@ -199,6 +239,9 @@ func main () {
 		} else {
 			fmt.Println("Undefined busLaunchTarget!")
 		}
+	} else if len(exposedEnvs) > 0 {
+		var exposeList PassFiles
+		json.Unmarshal([]byte(exposedEnvs), &exposeList)
 	}
 	args := []string{}
 	for _, arg := range targetArgs {
