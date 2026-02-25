@@ -231,7 +231,6 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	pipeInf.stdout = stdoutPipe
 	addPipePair <- pipeInf
 
-
 	cmd.Stderr = os.Stderr
 	fmt.Println("Executing command:", cmdline)
 	err = cmd.Start()
@@ -258,6 +257,7 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	maps.stderr.Close()
 	maps.stdin.Close()
 	maps.stdout.Close()
+	pipeMap[id] = maps
 
 }
 
