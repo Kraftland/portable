@@ -2869,6 +2869,46 @@ func inputBind(inputBindChan chan []string) {
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
+type StartRequest struct {
+	Exec		[]string
+	CustomTarget	bool
+	Files		PassFiles
+}
+func auxStartNg() {
+	socketPath := filepath.Join(
+		xdgDir.runtimeDir,
+		"/portable/",
+		confOpts.appID,
+		"/portable-control/helper",
+	)
+	conn, err := net.Dial("unix", socketPath)
+	if err != nil {
+		pecho("warn", "Could not do auxiliary start using HTTP IPC")
+		return
+	}
+	var reqbody StartRequest
+	reqbody.Exec = runtimeOpt.applicationArgs
+	reqbody.CustomTarget = false
+	reqbody.Files = <- filesInfo
+	jsonObj, err := json.Marshal(reqbody)
+	if err != nil {
+		panic(err)
+	}
+
+	roundTripper := http.Transport{
+		Dial:		func(network, addr string) (net.Conn, error) {
+					return conn, nil
+		},
+	}
+
+	ipcClient := http.Client{
+		Transport:	&roundTripper,
+	}
+	// TODO: use multi reader to pipe stdin
+	reader := strings.NewReader(string(jsonObj))
+	ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+
+}
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
