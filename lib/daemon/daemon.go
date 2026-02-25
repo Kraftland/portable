@@ -2904,6 +2904,7 @@ func auxStartNg() bool {
 	reader := strings.NewReader(string(jsonObj))
 
 	ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+	pecho("info", "Started auxiliary application")
 
 
 	return true
