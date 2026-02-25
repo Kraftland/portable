@@ -86,6 +86,19 @@ type StartRequest struct {
 	Files		PassFiles
 }
 
+func cmdlineReplacer(origin []string, files map[string]string) []string {
+	replacerPairs := make([]string, 0 , len(files) * 2)
+	for key, val := range files {
+		replacerPairs = append(replacerPairs, key, val)
+	}
+	replacer := strings.NewReplacer(replacerPairs...)
+	var result []string
+	for _, val := range origin {
+		result = append(result, replacer.Replace(val))
+	}
+	return result
+}
+
 func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	fmt.Println("Handling aux start request")
 	var reqDecode StartRequest
@@ -106,8 +119,10 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	} else {
 		cmdline = append(cmdPfx, reqDecode.Exec...)
 	}
-
-	cmd := exec.Command(cmdline[0], cmdline[1:]...)
+	filesMap := reqDecode.Files.FileMap
+	fmt.Println("Got file map from request:", filesMap)
+	cmdlineNew := cmdlineReplacer(cmdline, filesMap)
+	cmd := exec.Command(cmdlineNew[0], cmdlineNew[1:]...)
 	//cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
