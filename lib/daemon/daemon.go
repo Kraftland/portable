@@ -2357,7 +2357,12 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		pecho("warn", "Could not decode portal response: " + err.Error())
 	}
 	for idx, docid := range resp.DocIDs {
-		filesInfoTmp.FileMap[pathList[idx]] = docid
+		filesInfoTmp.FileMap[pathList[idx]] = filepath.Join(
+			xdgDir.runtimeDir,
+			"/doc/",
+			docid,
+			filepath.Base(pathList[idx]),
+		)
 	}
 	jsonObj, _ := json.Marshal(filesInfoTmp)
 	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
