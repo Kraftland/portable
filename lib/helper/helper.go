@@ -254,10 +254,11 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	startNotifier <- false
 	maps := pipeMap[id]
 	maps.id = 0
+	pipeMap[id] = maps
 	maps.stderr.Close()
 	maps.stdin.Close()
 	maps.stdout.Close()
-	pipeMap[id] = maps
+
 
 }
 
