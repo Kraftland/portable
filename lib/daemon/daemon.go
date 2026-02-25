@@ -3159,7 +3159,7 @@ func main() {
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
 		//time.Sleep(1 * time.Hour)
-		os.Exit(0)
+		//os.Exit(0)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
