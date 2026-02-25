@@ -2341,13 +2341,19 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	busData.AppID = confOpts.appID
 	busData.Flags = 1
 	busData.PathFDs = busFdList
+	busData.Permissions = []string{"read", "write", "grant-permissions"}
 
 	path := "/org/freedesktop/portal/documents"
 	pathBus := godbus.ObjectPath(path)
 
 	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
 	pecho("debug", "Requesting Documents portal for IDs...")
-	call := obj.Call("org.freedesktop.portal.Documents.AddFull", 0, busData)
+	call := obj.Call("org.freedesktop.portal.Documents.AddFull", 0,
+		busData.PathFDs,
+		busData.Flags,
+		busData.AppID,
+		busData.Permissions,
+	)
 	//<- call.Done
 	pecho("debug", "AddFull call done")
 	if call.Err != nil {
@@ -2355,7 +2361,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		fmt.Println(call)
 	}
 	var resp PortalResponse
-	err := godbus.Store(call.Body, &resp)
+	err := godbus.Store(call.Body, &resp.DocIDs, &resp.ExtraInfo)
 	if err != nil {
 		pecho("warn", "Could not decode portal response: " + err.Error())
 	}
