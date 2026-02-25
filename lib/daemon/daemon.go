@@ -2284,6 +2284,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		//go watchResult(busSigChan, respRes)
 		go addFilesToPortal(connBus, pathList, filesInfo)
 		close(filesInfo)
+		addEnv("_portableHelperExtraFiles=1")
 
 
 
