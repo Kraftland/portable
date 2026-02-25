@@ -88,7 +88,6 @@ type StartRequest struct {
 
 func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	fmt.Println("Handling aux start request")
-	defer req.Body.Close()
 	var reqDecode StartRequest
 	bodyRaw, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -114,6 +113,7 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	cmd.Stderr = os.Stderr
 	fmt.Println("Executing command:", cmdline)
 	startNotifier <- true
+	req.Body.Close()
 	cmd.Run()
 	startNotifier <- false
 }
