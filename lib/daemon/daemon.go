@@ -2283,9 +2283,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
 		go addFilesToPortal(connBus, pathList, filesInfo)
-
-
-		<- resChan
 		close(filesInfo)
 
 
