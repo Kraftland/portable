@@ -255,9 +255,9 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	maps := pipeMap[id]
 	maps.id = 0
 	pipeMap[id] = maps
-	maps.stderr.Close()
-	maps.stdin.Close()
-	maps.stdout.Close()
+	//maps.stderr.Close()
+	//maps.stdin.Close()
+	//maps.stdout.Close()
 
 
 }
