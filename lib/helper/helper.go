@@ -157,7 +157,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 }
 
 func startMaster(targetExec string, targetArgs []string) {
-	rawEnv := os.Getenv("_portableHelperExtraFiles=")
+	rawEnv := os.Getenv("_portableHelperExtraFiles")
 	if len(rawEnv) > 0 {
 		var decoded PassFiles
 		err := json.Unmarshal([]byte(rawEnv), &decoded)
@@ -174,7 +174,7 @@ func startMaster(targetExec string, targetArgs []string) {
 	startCmd.Stdout = os.Stdout
 	startCmd.Stderr = os.Stderr
 	startNotifier <- true
-	fmt.Println("Starting main application " + targetExec + " with cmdline: " + strings.Join(targetArgs, " "))
+	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
 	startCmd.Start()
 	daemon.SdNotify(false, daemon.SdNotifyReady)
 	startCmd.Wait()
