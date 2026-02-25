@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	//"syscall"
+	"bufio"
 	"time"
 	"math/rand"
 
@@ -48,6 +48,11 @@ var (
 func trackerMapWriter() {
 	for sig := range addPipePair {
 		pipeMap[sig.id] = sig
+		for key, val := range pipeMap {
+			if val.id == 0 {
+				delete(pipeMap, key)
+			}
+		}
 	}
 }
 
@@ -121,6 +126,40 @@ func cmdlineReplacer(origin []string, files map[string]string) []string {
 		result = append(result, replacer.Replace(val))
 	}
 	return result
+}
+
+func getIdFromReq(req *http.Request) (id int, res bool)  {
+	path := req.URL.Path
+	pathSp := strings.Split(path, "/")
+	length := len(pathSp)
+	id, err := strconv.Atoi(pathSp[length - 1])
+	if err != nil {
+		fmt.Println("Could not get request ID: " + err.Error())
+		return
+	}
+	res = true
+	return
+}
+
+func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
+	flusher, _ := writer.(http.Flusher)
+	defer req.Body.Close()
+	id, res := getIdFromReq(req)
+	if res == false {
+		fmt.Println("Could not handle stdin pipe request")
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	info := pipeMap[id]
+	fmt.Println("Handling request ID: " + strconv.Itoa(id))
+
+	scanner := bufio.NewScanner(req.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		fmt.Fprintln(info.stdin, line)
+		flusher.Flush()
+	}
 }
 
 func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
@@ -214,6 +253,12 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 		fmt.Println("Command returned error: ", err)
 	}
 	startNotifier <- false
+	maps := pipeMap[id]
+	maps.id = 0
+	maps.stderr.Close()
+	maps.stdin.Close()
+	maps.stdout.Close()
+
 }
 
 func auxStart (launchTarget string, launchArgs []string) {
@@ -225,6 +270,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/start", auxStartHandler)
+	mux.HandleFunc("/pipe/stdin", stdinPipeHandler)
 	server := &http.Server {
 		Handler:	mux,
 		ConnContext:	func(ctx context.Context, c net.Conn) context.Context {
