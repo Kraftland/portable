@@ -3076,7 +3076,6 @@ func main() {
 
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	var wg sync.WaitGroup
@@ -3162,6 +3161,7 @@ func main() {
 		//time.Sleep(1 * time.Hour)
 		os.Exit(0)
 	} else {
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
 		sanityChecks()
 	})
