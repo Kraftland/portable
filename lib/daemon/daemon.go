@@ -2261,29 +2261,29 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			}
 		}
 
-		var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
-		var busName = connBus.Names()[0]
-		pathResponse := "/org/freedesktop/portal/desktop/request/" + busName + "/" + requestID
-		var responseObjPath = godbus.ObjectPath(pathResponse)
+		// var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
+		// var busName = connBus.Names()[0]
+		// pathResponse := "/org/freedesktop/portal/desktop/request/" + busName + "/" + requestID
+		// var responseObjPath = godbus.ObjectPath(pathResponse)
 
 
-		connBus.AddMatchSignal(
-			godbus.WithMatchObjectPath(
-				responseObjPath,
-			),
-			godbus.WithMatchInterface(
-				"org.freedesktop.portal.Request",
-			),
-			godbus.WithMatchMember(
-				"Response",
-			),
-		)
+		// connBus.AddMatchSignal(
+		// 	godbus.WithMatchObjectPath(
+		// 		responseObjPath,
+		// 	),
+		// 	godbus.WithMatchInterface(
+		// 		"org.freedesktop.portal.Request",
+		// 	),
+		// 	godbus.WithMatchMember(
+		// 		"Response",
+		// 	),
+		// )
 		busSigChan := make(chan *godbus.Signal, 20)
 		connBus.Signal(busSigChan)
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
 		var resChan = make(chan bool, 1)
-		go addFilesToPortal(connBus, pathList, requestID, resChan)
+		go addFilesToPortal(connBus, pathList, resChan)
 
 
 		result := <- resChan
@@ -2325,7 +2325,7 @@ type AddDocumentFullData struct {
 }
 
 // This portal does not need Request?
-func addFilesToPortal(connBus *godbus.Conn, pathList []string, requestID string, result chan bool) {
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, result chan bool) {
 	var busFdList []godbus.UnixFD
 	if connBus.SupportsUnixFDs() == false {
 		pecho("warn", "Could not pass files using file descriptor: unsupported")
