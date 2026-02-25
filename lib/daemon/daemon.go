@@ -2874,18 +2874,19 @@ type StartRequest struct {
 	CustomTarget	bool
 	Files		PassFiles
 }
-func auxStartNg() {
+func auxStartNg() bool {
 	socketPath := filepath.Join(
 		xdgDir.runtimeDir,
 		"/portable/",
 		confOpts.appID,
 		"/portable-control/helper",
 	)
-	conn, err := net.Dial("unix", socketPath)
+	_, err := net.Dial("unix", socketPath)
 	if err != nil {
 		pecho("warn", "Could not do auxiliary start using HTTP IPC")
-		return
+		return false
 	}
+	pecho("debug", "Requesting start")
 	var reqbody StartRequest
 	reqbody.Exec = runtimeOpt.applicationArgs
 	reqbody.CustomTarget = false
@@ -2897,7 +2898,7 @@ func auxStartNg() {
 
 	roundTripper := http.Transport{
 		Dial:		func(network, addr string) (net.Conn, error) {
-					return conn, nil
+					return net.Dial("unix", socketPath)
 		},
 	}
 
@@ -2907,6 +2908,9 @@ func auxStartNg() {
 	// TODO: use multi reader to pipe stdin
 	reader := strings.NewReader(string(jsonObj))
 	ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+
+
+	return true
 
 }
 func multiInstance(miChan chan bool) {
@@ -2987,6 +2991,11 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
+		res := auxStartNg()
+		if res {
+			miChan <- true
+			return
+		}
 		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
@@ -3141,11 +3150,6 @@ func main() {
 
 	// MI
 	go multiInstance(miChan)
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
-		sanityChecks()
-	} ()
 	pwSecContextChan := make(chan []string, 1)
 
 	wg.Add(2)
@@ -3156,7 +3160,12 @@ func main() {
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
+		//time.Sleep(1 * time.Hour)
+		os.Exit(0)
 	} else {
+	wg.Go(func() {
+		sanityChecks()
+	})
 	go flushEnvs()
 	go setFirewall()
 	go watchSignalSocket(signalWatcherReady)
