@@ -2325,6 +2325,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		pecho("warn", "Could not pass files using file descriptor: unsupported")
 		return
 	} else {
+		pecho("debug", "D-Bus has UnixFD support")
 		for _, path := range pathList {
 			fileObj, err := os.Open(path)
 			if err != nil {
@@ -2345,12 +2346,13 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	pathBus := godbus.ObjectPath(path)
 
 	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
-
-	call := obj.Call("AddFull", godbus.FlagAllowInteractiveAuthorization, busData)
-	<- call.Done
+	pecho("debug", "Requesting Documents portal for IDs...")
+	call := obj.Call("org.freedesktop.portal.Documents.AddFull", 0, busData)
+	//<- call.Done
 	pecho("debug", "AddFull call done")
 	if call.Err != nil {
 		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
+		fmt.Println(call)
 	}
 	var resp PortalResponse
 	err := godbus.Store(call.Body, &resp)
