@@ -1,19 +1,27 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
 )
+
+type PassFiles struct {
+	// FileMap is a map that contains [host path string](docid string)
+	FileMap		map[string]string
+}
 
 var (
 	startNotifier		= make(chan bool, 32767)
@@ -110,23 +118,61 @@ func handleIncomingAuxConn(conn net.Conn, launchTarget string, launchArgs []stri
 	go executeAndWait(launchTarget, targetArgs)
 }
 
-func auxStart (launchTarget string, launchArgs []string) {
-	var signalSocket string = "/run/portable-control/auxStart"
-	socket, err := net.Listen("unix", signalSocket)
+type StartRequest struct {
+	Exec		[]string
+	CustomTarget	bool
+	Files		PassFiles
+}
+
+func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
+	fmt.Println("Handling aux start request")
+	defer req.Body.Close()
+	var reqDecode StartRequest
+	bodyRaw, err := io.ReadAll(req.Body)
 	if err != nil {
-		fmt.Println("Could not listen for aux start: " + err.Error())
+		fmt.Println("Could not read request: " + err.Error())
 		return
 	}
-	var connCount int
-	for {
-		conn, connErr := socket.Accept()
-		connCount++
-		fmt.Println("Handling aux signal, total count: ", connCount)
-		if connErr != nil {
-			fmt.Println("Could not listen for aux start: " + connErr.Error())
-		}
-		go handleIncomingAuxConn(conn, launchTarget, launchArgs)
+	err = json.Unmarshal(bodyRaw, &reqDecode)
+	if err != nil {
+		fmt.Println("Could not decode request: " + err.Error())
+		return
 	}
+	cmdPfx := req.Context().Value("cmdPrefix").([]string)
+	var cmdline []string
+	if reqDecode.CustomTarget {
+		cmdline = reqDecode.Exec
+	} else {
+		cmdline = append(cmdPfx, reqDecode.Exec...)
+	}
+
+	cmd := exec.Command(cmdline[0], cmdline[1:]...)
+	cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	startNotifier <- true
+	cmd.Run()
+	startNotifier <- false
+}
+
+func auxStart (launchTarget string, launchArgs []string) {
+	var httpSockPath string = "/run/portable-control/helper"
+	socketHttp, err := net.Listen("unix", httpSockPath)
+	if err != nil {
+		fmt.Println("Could not listen on helper socket: " + err.Error())
+		return
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/start", auxStartHandler)
+	server := &http.Server {
+		Handler:	mux,
+		ConnContext:	func(ctx context.Context, c net.Conn) context.Context {
+			cmdPrefix := []string{launchTarget}
+			cmdPrefix = append(cmdPrefix, launchArgs...)
+			return context.WithValue(ctx, "cmdPrefix", cmdPrefix)
+		},
+	}
+	server.Serve(socketHttp)
 }
 
 func startMaster(targetExec string, targetArgs []string) {
@@ -174,6 +220,7 @@ func main () {
 		targetArgs,
 		rawArgs...
 	)
+	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	go auxStart(targetSlice[0], targetSlice[1:])
 	if os.Getenv("_portableDebug") == "1" {
 		targetSlice[0] = "/usr/bin/bash"
@@ -199,6 +246,9 @@ func main () {
 		} else {
 			fmt.Println("Undefined busLaunchTarget!")
 		}
+	} else if len(exposedEnvs) > 0 {
+		var exposeList PassFiles
+		json.Unmarshal([]byte(exposedEnvs), &exposeList)
 	}
 	args := []string{}
 	for _, arg := range targetArgs {
