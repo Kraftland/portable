@@ -2049,10 +2049,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 	if err != nil {
 		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
 	}
-	busDocObj := connBus.Object(
-		"org.freedesktop.portal.Documents",
-		"/org/freedesktop/portal/documents",
-	)
 	defer connBus.Close()
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
@@ -2323,6 +2319,7 @@ type AddDocumentFullData struct {
 // This portal does not need Request?
 func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles) {
 	var filesInfoTmp PassFiles
+	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
 	if connBus.SupportsUnixFDs() == false {
 		pecho("warn", "Could not pass files using file descriptor: unsupported")
