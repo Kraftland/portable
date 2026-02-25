@@ -969,7 +969,7 @@ func pwSecContext(pwChan chan []string) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
 	if confOpts.bindPipewire == false {
-		pwChan <- pwSecArg
+		close(pwChan)
 		return
 	}
 	pwSecCmd := []string{
@@ -998,6 +998,8 @@ func pwSecContext(pwChan chan []string) {
 	err := pwSecRun.Start()
 	if err != nil {
 		pecho("warn", "Failed to start up PipeWire proxy: " + err.Error() + pipeErr.Error())
+		close(pwChan)
+		return
 	}
 	for scanner.Scan() {
 		stringObj := scanner.Text()
@@ -1012,6 +1014,7 @@ func pwSecContext(pwChan chan []string) {
 		"--bind", pwProxySocket, pwProxySocket,
 	)
 	pwChan <- pwSecArg
+	close(pwChan)
 	pecho("debug", "pw-container available at " + pwProxySocket)
 }
 
@@ -1699,11 +1702,8 @@ func genBwArg(
 	camChan chan []string,
 	inputChan chan []string,
 	wayDisplayChan chan []string,
+	miscChan	chan []string,
 	) {
-
-	miscChan := make(chan []string, 1)
-	go miscBinds(miscChan, pwChan)
-
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -2044,7 +2044,6 @@ type PassFiles struct {
 }
 
 func miscBinds(miscChan chan []string, pwChan chan []string) {
-
 	connBus, err := godbus.ConnectSessionBus()
 	if err != nil {
 		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
@@ -2179,11 +2178,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 			})
 		}
 	}
-	pwArgs := <- pwChan
-	miscArgs = append(
-		miscArgs,
-		pwArgs...
-	)
 	if confOpts.mountInfo == true {
 		miscArgs = append(
 			miscArgs,
@@ -2279,16 +2273,13 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
 		addFilesToPortal(connBus, pathList, filesInfo)
-		close(filesInfo)
-
-
-
-	} else {
-		close(filesInfo)
 	}
-
+	pecho("debug", "Send files info")
+	close(filesInfo)
+	for pw := range pwChan {
+		miscChan <- pw
+	}
 	close(miscChan)
-
 }
 
 type PortalResponse struct {
@@ -2886,7 +2877,6 @@ func auxStartNg() bool {
 		pecho("warn", "Could not do auxiliary start using HTTP IPC")
 		return false
 	}
-	pecho("debug", "Requesting start")
 	var reqbody StartRequest
 	reqbody.Exec = runtimeOpt.applicationArgs
 	reqbody.CustomTarget = false
@@ -2901,12 +2891,13 @@ func auxStartNg() bool {
 					return net.Dial("unix", socketPath)
 		},
 	}
-
+	pecho("debug", "Requesting start")
 	ipcClient := http.Client{
 		Transport:	&roundTripper,
 	}
 	// TODO: use multi reader to pipe stdin
 	reader := strings.NewReader(string(jsonObj))
+
 	ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
 
 
@@ -3114,6 +3105,9 @@ func main() {
 
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
+	miscChan := make(chan []string, 10240)
+	pwSecContextChan := make(chan []string, 1)
+	go miscBinds(miscChan, pwSecContextChan)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -3150,7 +3144,7 @@ func main() {
 
 	// MI
 	go multiInstance(miChan)
-	pwSecContextChan := make(chan []string, 1)
+
 
 	wg.Add(2)
 	go func() {
@@ -3172,7 +3166,7 @@ func main() {
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan)
+		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan, miscChan)
 	} ()
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan)
