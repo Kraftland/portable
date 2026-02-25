@@ -2039,7 +2039,7 @@ func maskDir(path string) (maskArgs []string) {
 }
 
 type PassFiles struct {
-	// FileMap is a map that contains [docid string](host path string)
+	// FileMap is a map that contains [host path string](docid string)
 	FileMap		map[string]string
 }
 
@@ -2282,11 +2282,10 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		connBus.Signal(busSigChan)
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
-		var resChan = make(chan bool, 1)
-		go addFilesToPortal(connBus, pathList, resChan)
+		go addFilesToPortal(connBus, pathList, filesInfo)
 
 
-		result := <- resChan
+		<- resChan
 		close(filesInfo)
 
 
@@ -2325,11 +2324,11 @@ type AddDocumentFullData struct {
 }
 
 // This portal does not need Request?
-func addFilesToPortal(connBus *godbus.Conn, pathList []string, result chan bool) {
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles) {
+	var filesInfoTmp PassFiles
 	var busFdList []godbus.UnixFD
 	if connBus.SupportsUnixFDs() == false {
 		pecho("warn", "Could not pass files using file descriptor: unsupported")
-		result <- false
 		return
 	} else {
 		for _, path := range pathList {
@@ -2338,6 +2337,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, result chan bool)
 				pecho("warn", "Could not open file: " + err.Error())
 				continue
 			}
+			filesInfoTmp.FileMap[path] = "unknown"
 			fd := fileObj.Fd()
 			busFdList = append(busFdList, godbus.UnixFD(fd))
 		}
@@ -2357,6 +2357,14 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, result chan bool)
 	pecho("debug", "AddFull call done")
 	if call.Err != nil {
 		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
+	}
+	var resp PortalResponse
+	err := godbus.Store(call.Body, &resp)
+	if err != nil {
+		pecho("warn", "Could not decode portal response: " + err.Error())
+	}
+	for idx, docid := range resp.DocIDs {
+		filesInfoTmp.FileMap[pathList[idx]] = docid
 	}
 }
 
