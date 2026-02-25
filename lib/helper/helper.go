@@ -135,7 +135,10 @@ func auxStart (launchTarget string, launchArgs []string) {
 			return context.WithValue(ctx, "cmdPrefix", cmdPrefix)
 		},
 	}
-	server.Serve(socketHttp)
+	err = server.Serve(socketHttp)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func startMaster(targetExec string, targetArgs []string) {
