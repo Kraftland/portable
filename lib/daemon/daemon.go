@@ -16,6 +16,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"golang.org/x/net/http2"
+	"crypto/tls"
 	"net"
 	"net/http"
 	"sync"
@@ -2886,10 +2888,11 @@ func auxStartNg() bool {
 		panic(err)
 	}
 
-	roundTripper := http.Transport{
-		Dial:		func(network, addr string) (net.Conn, error) {
+	roundTripper := http2.Transport{
+		DialTLS:	func(network, addr string, cfg *tls.Config) (net.Conn, error) {
 					return net.Dial("unix", socketPath)
 		},
+		AllowHTTP:	true,
 	}
 	pecho("debug", "Requesting start")
 	ipcClient := http.Client{
@@ -2898,8 +2901,11 @@ func auxStartNg() bool {
 	// TODO: use multi reader to pipe stdin
 	reader := strings.NewReader(string(jsonObj))
 
-	ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
-	pecho("info", "Started auxiliary application")
+	resp, err := ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+	if err != nil {
+		panic("Could not post data via IPC" + err.Error())
+	}
+	pecho("info", "Started auxiliary application, connection protocol: " + resp.Proto)
 
 
 	return true
