@@ -130,10 +130,9 @@ func cmdlineReplacer(origin []string, files map[string]string) []string {
 }
 
 func getIdFromReq(req *http.Request) (id int, res bool)  {
-	path := req.URL.Path
-	pathSp := strings.Split(path, "/")
-	length := len(pathSp)
-	id, err := strconv.Atoi(pathSp[length - 1])
+	header := req.Header
+	idRaw := header["Portable"]
+	id, err := strconv.Atoi(idRaw[0])
 	if err != nil {
 		fmt.Println("Could not get request ID: " + err.Error())
 		return
