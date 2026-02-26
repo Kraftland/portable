@@ -2942,7 +2942,7 @@ func processStream(resp *http.Response, socketPath string) {
 	}
 	reqIn, err := http.NewRequest(
 		http.MethodPost,
-		"http://127.0.0.1/stream/stdin/" + strconv.Itoa(id),
+		"http://127.0.0.1/stream/stdin",
 		pipeR,
 	)
 	reqIn.Header.Set("Content-Type", "application/octet-stream")
@@ -2952,7 +2952,7 @@ func processStream(resp *http.Response, socketPath string) {
 	}
 	reqOut, err := http.NewRequest(
 		http.MethodPost,
-		"http://127.0.0.1/stream/stdout/" + strconv.Itoa(id),
+		"http://127.0.0.1/stream/stdout",
 		nil,
 	)
 	if err != nil {
@@ -2961,7 +2961,7 @@ func processStream(resp *http.Response, socketPath string) {
 	}
 	reqErr, err := http.NewRequest(
 		http.MethodPost,
-		"http://127.0.0.1/stream/stderr/" + strconv.Itoa(id),
+		"http://127.0.0.1/stream/stderr",
 		nil,
 	)
 	if err != nil {
@@ -2970,6 +2970,7 @@ func processStream(resp *http.Response, socketPath string) {
 	}
 
 	go func () {
+		reqOut.Header.Set("Portable", strconv.Itoa(id))
 		respOut, err := ipcClient.Do(reqOut)
 		if err != nil {
 			pecho("warn", "Could not pipe terminal: " + err.Error())
@@ -2980,6 +2981,7 @@ func processStream(resp *http.Response, socketPath string) {
 
 
 	go func () {
+		reqIn.Header.Set("Portable", strconv.Itoa(id))
 		_, err := ipcClient.Do(reqIn)
 		if err != nil {
 			pecho("warn", "Could not pipe terminal: " + err.Error())
@@ -2989,6 +2991,7 @@ func processStream(resp *http.Response, socketPath string) {
 	} ()
 
 	//go func () {
+		reqErr.Header.Set("Portable", strconv.Itoa(id))
 		respOut, err := ipcClient.Do(reqErr)
 		if err != nil {
 			pecho("warn", "Could not pipe terminal: " + err.Error())
