@@ -158,6 +158,7 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		fmt.Println("Could not stream stdin: " + err.Error())
 	}
+	// Optional: accept a JSON first using bufio
 	flusher.Flush()
 }
 
