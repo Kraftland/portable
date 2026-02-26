@@ -2906,16 +2906,86 @@ func auxStartNg() bool {
 	// TODO: use multi reader to pipe stdin
 	reader := strings.NewReader(string(jsonObj))
 
-	resp, err := ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+	var resp *http.Response
+	go processStream(resp, socketPath)
+	resp, err = ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
 	if err != nil {
 		panic("Could not post data via IPC" + err.Error())
 	}
 	pecho("info", "Started auxiliary application, connection protocol: " + resp.Proto)
-
-
 	return true
+}
+
+type HelperResponseField struct {
+	Success			bool
+	ID			int
+}
+
+func processStream(resp *http.Response, socketPath string) {
+	for {
+		if resp == nil {
+			time.Sleep(1 * time.Second)
+		} else {
+			break
+		}
+	}
+
+	pipeR, pipeW := io.Pipe()
+	scanner := bufio.NewScanner(resp.Body)
+	var helperResp HelperResponseField
+	for scanner.Scan() {
+		line := scanner.Text()
+		err := json.Unmarshal([]byte(line), &helperResp)
+		if err != nil {
+			pecho("warn", "Unable to read garbled stream: " + err.Error())
+		} else {
+			break
+		}
+	}
+	id := helperResp.ID
+	roundTripper := http2.Transport{
+		DialTLS:	func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return net.Dial("unix", socketPath)
+		},
+		AllowHTTP:	true,
+	}
+	ipcClient := http.Client{
+		Transport:	&roundTripper,
+	}
+	reqIn, err := http.NewRequest(
+		http.MethodPost,
+		"http://127.0.0.1/stream/stdin/" + strconv.Itoa(id),
+		pipeR,
+	)
+	reqIn.Header.Set("Content-Type", "application/octet-stream")
+	if err != nil {
+		pecho("crit", "Could not create request: " + err.Error())
+		return
+	}
+	reqOut, err := http.NewRequest(
+		http.MethodPost,
+		"http://127.0.0.1/stream/stdout/" + strconv.Itoa(id),
+		nil,
+	)
+	if err != nil {
+		pecho("crit", "Could not create request: " + err.Error())
+		return
+	}
+
+	go func () {
+		io.Copy(os.Stdout, reqOut.Body)
+	} ()
+
+	go func () {
+		io.Copy(pipeW, os.Stdin)
+	} ()
+
+	go func (req *http.Request, ipcClient http.Client) {
+		ipcClient.Do(req)
+	} (reqIn, ipcClient)
 
 }
+
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
