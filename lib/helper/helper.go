@@ -1,21 +1,23 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-	"math/rand"
+
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"sync"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
@@ -143,8 +145,8 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	info := pipeMapGlob[id]
 	pipeLock.RUnlock()
 	fmt.Println("Handling request ID: " + strconv.Itoa(id), "with proto", req.Proto)
-	//writer.WriteHeader(http.StatusOK)
-	//flusher.Flush()
+	writer.WriteHeader(http.StatusOK)
+	flusher.Flush()
 	if info.stdin == nil {
 		fmt.Println("Could not pipe terminal: I/O nil")
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -154,13 +156,15 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	flusher.Flush()
 	_, err := io.Copy(info.stdin, req.Body)
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
+		writer.WriteHeader(http.StatusGone)
 		fmt.Println("Could not stream stdin: " + err.Error())
+		flusher.Flush()
 	}
 	// Optional: accept a JSON first using bufio
 }
 
 func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
+	pipeR, pipeW := io.Pipe()
 	flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
@@ -183,16 +187,27 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type","application/octet-stream")
 	writer.WriteHeader(http.StatusOK)
 	flusher.Flush()
-	mw := io.MultiWriter(os.Stdout, writer)
-	_, err := io.Copy(mw, info.stdout)
+	//mw := io.MultiWriter(os.Stdout, pipeW)
+	const newLine = "\n"
+	go func() {
+		scanner := bufio.NewScanner(pipeR)
+		for scanner.Scan() {
+			writer.Write(scanner.Bytes())
+			writer.Write([]byte(newLine))
+			flusher.Flush()
+		}
+	} ()
+	_, err := io.Copy(pipeW, info.stdout)
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
+		writer.WriteHeader(http.StatusGone)
 		fmt.Println("Could not stream stdout: " + err.Error())
+		flusher.Flush()
 	}
 	// Optional: accept a JSON first using bufio
 }
 
 func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
+	pipeR, pipeW := io.Pipe()
 	flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
@@ -227,11 +242,21 @@ func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type","application/octet-stream")
 	writer.WriteHeader(http.StatusOK)
 	flusher.Flush()
-	mw := io.MultiWriter(os.Stderr, writer)
-	_, err := io.Copy(mw, info.stderr)
+	//mw := io.MultiWriter(os.Stderr, writer)
+	const newLine = "\n"
+	go func() {
+		scanner := bufio.NewScanner(pipeR)
+		for scanner.Scan() {
+			writer.Write(scanner.Bytes())
+			writer.Write([]byte(newLine))
+			flusher.Flush()
+		}
+	} ()
+	_, err := io.Copy(pipeW, info.stderr)
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
+		writer.WriteHeader(http.StatusGone)
 		fmt.Println("Could not stream stderr: " + err.Error())
+		flusher.Flush()
 	}
 	// Optional: accept a JSON first using bufio
 }
