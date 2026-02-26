@@ -147,13 +147,18 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	id, res := getIdFromReq(req)
 	if res == false {
 		fmt.Println("Could not handle stdin pipe request")
-		writer.WriteHeader(http.StatusBadRequest)
+		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 	info := pipeMap[id]
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
+	if info.stdin == nil {
+		fmt.Println("Could not pipe terminal: I/O nil")
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	_, err := io.Copy(info.stdin, req.Body)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -168,13 +173,18 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	id, res := getIdFromReq(req)
 	if res == false {
 		fmt.Println("Could not handle stdout pipe request")
-		writer.WriteHeader(http.StatusBadRequest)
+		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 	info := pipeMap[id]
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
+	if info.stdout == nil {
+		fmt.Println("Could not pipe terminal: I/O nil")
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	mw := io.MultiWriter(os.Stdout, writer)
 	_, err := io.Copy(mw, info.stdout)
 	if err != nil {
@@ -190,13 +200,30 @@ func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	id, res := getIdFromReq(req)
 	if res == false {
 		fmt.Println("Could not handle stderr pipe request")
-		writer.WriteHeader(http.StatusBadRequest)
+		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 	info := pipeMap[id]
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
+	if info.stderr == nil {
+		var cycleCounter int
+		var fail bool
+		for {
+			if cycleCounter > 5 {
+				fail = true
+				break
+			}
+			cycleCounter++
+			time.Sleep(1 * time.Second)
+		}
+		if fail {
+			fmt.Println("Could not pipe terminal: I/O nil")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
 	mw := io.MultiWriter(os.Stderr, writer)
 	_, err := io.Copy(mw, info.stderr)
 	if err != nil {
@@ -275,7 +302,6 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	pipeInf.stdout = stdoutPipe
 	addPipePair <- pipeInf
 
-	cmd.Stderr = os.Stderr
 	fmt.Println("Executing command:", cmdline)
 	err = cmd.Start()
 	if err != nil {
