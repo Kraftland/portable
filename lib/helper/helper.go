@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"bufio"
 	"time"
 	"math/rand"
 	"golang.org/x/net/http2"
@@ -154,14 +153,12 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	}
 	info := pipeMap[id]
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
-
-	scanner := bufio.NewScanner(req.Body)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		fmt.Fprintln(info.stdin, line)
-		flusher.Flush()
+	_, err := io.Copy(info.stdin, req.Body)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Could not stream stdin: " + err.Error())
 	}
+	flusher.Flush()
 }
 
 func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
@@ -273,7 +270,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/start", auxStartHandler)
-	mux.HandleFunc("/pipe/stdin", stdinPipeHandler)
+	mux.HandleFunc("/stream/stdin", stdinPipeHandler)
 	h2s := &http2.Server{}
 	h2cMux := h2c.NewHandler(mux, h2s)
 	server := &http.Server {
