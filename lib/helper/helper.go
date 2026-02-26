@@ -284,6 +284,10 @@ func auxStart (launchTarget string, launchArgs []string) {
 			return context.WithValue(ctx, "cmdPrefix", cmdPrefix)
 		},
 	}
+	err = http2.ConfigureServer(server, h2s)
+	if err != nil {
+		panic(err)
+	}
 	err = server.Serve(socketHttp)
 	if err != nil {
 		panic(err)
