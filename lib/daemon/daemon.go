@@ -2902,11 +2902,11 @@ func auxStartNg() bool {
 	reader := strings.NewReader(string(jsonObj))
 
 	var resp *http.Response
-	go processStream(resp, socketPath)
 	resp, err = ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
 	if err != nil {
 		panic("Could not post data via IPC" + err.Error())
 	}
+	processStream(resp, socketPath)
 	pecho("info", "Started auxiliary application, connection protocol: " + resp.Proto)
 	return true
 }
@@ -2917,14 +2917,7 @@ type HelperResponseField struct {
 }
 
 func processStream(resp *http.Response, socketPath string) {
-	for {
-		if resp == nil {
-			time.Sleep(1 * time.Second)
-		} else {
-			break
-		}
-	}
-
+	fmt.Println("Piping stdout/stdin...")
 	pipeR, pipeW := io.Pipe()
 	scanner := bufio.NewScanner(resp.Body)
 	var helperResp HelperResponseField
@@ -2966,9 +2959,21 @@ func processStream(resp *http.Response, socketPath string) {
 		pecho("crit", "Could not create request: " + err.Error())
 		return
 	}
+	reqErr, err := http.NewRequest(
+		http.MethodPost,
+		"http://127.0.0.1/stream/stderr/" + strconv.Itoa(id),
+		nil,
+	)
+	if err != nil {
+		pecho("crit", "Could not create request: " + err.Error())
+		return
+	}
 
 	go func () {
 		io.Copy(os.Stdout, reqOut.Body)
+	} ()
+	go func () {
+		io.Copy(os.Stderr, reqErr.Body)
 	} ()
 
 	go func () {
@@ -2978,7 +2983,13 @@ func processStream(resp *http.Response, socketPath string) {
 	go func (req *http.Request, ipcClient http.Client) {
 		ipcClient.Do(req)
 	} (reqIn, ipcClient)
-
+	go func () {
+		ipcClient.Do(reqOut)
+	} ()
+	// go func () {
+	// 	ipcClient.Do(reqErr)
+	// } ()
+	ipcClient.Do(reqErr)
 }
 
 func multiInstance(miChan chan bool) {
