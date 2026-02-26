@@ -143,7 +143,7 @@ func getIdFromReq(req *http.Request) (id int, res bool)  {
 }
 
 func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
-	flusher, _ := writer.(http.Flusher)
+	//flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
 	if res == false {
@@ -162,7 +162,7 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 }
 
 func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
-	flusher, _ := writer.(http.Flusher)
+	//flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
 	if res == false {
