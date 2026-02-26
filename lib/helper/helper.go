@@ -14,6 +14,8 @@ import (
 	"bufio"
 	"time"
 	"math/rand"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
@@ -272,8 +274,10 @@ func auxStart (launchTarget string, launchArgs []string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/start", auxStartHandler)
 	mux.HandleFunc("/pipe/stdin", stdinPipeHandler)
+	h2s := &http2.Server{}
+	h2cMux := h2c.NewHandler(mux, h2s)
 	server := &http.Server {
-		Handler:	mux,
+		Handler:	h2cMux,
 		ConnContext:	func(ctx context.Context, c net.Conn) context.Context {
 			cmdPrefix := []string{launchTarget}
 			cmdPrefix = append(cmdPrefix, launchArgs...)
