@@ -2935,7 +2935,8 @@ func processStream(resp *http.Response, socketPath string) {
 		DialTLS:	func(network, addr string, cfg *tls.Config) (net.Conn, error) {
 					return net.Dial("unix", socketPath)
 		},
-		AllowHTTP:	true,
+		AllowHTTP:		true,
+		DisableCompression:	true,
 	}
 	ipcClient := http.Client{
 		Transport:	&roundTripper,
@@ -2975,6 +2976,7 @@ func processStream(resp *http.Response, socketPath string) {
 		if err != nil {
 			pecho("warn", "Could not pipe terminal: " + err.Error())
 		} else {
+			fmt.Println("Started piping stdout")
 			io.Copy(os.Stdout, respOut.Body)
 		}
 	} ()
@@ -2986,6 +2988,7 @@ func processStream(resp *http.Response, socketPath string) {
 		if err != nil {
 			pecho("warn", "Could not pipe terminal: " + err.Error())
 		} else {
+			fmt.Println("Started piping stdin")
 			io.Copy(pipeW, os.Stdin)
 		}
 	} ()
@@ -2996,6 +2999,7 @@ func processStream(resp *http.Response, socketPath string) {
 		if err != nil {
 			pecho("warn", "Could not pipe terminal: " + err.Error())
 		} else {
+			fmt.Println("Started piping stderr")
 			io.Copy(os.Stderr, respOut.Body)
 		}
 	//} ()
