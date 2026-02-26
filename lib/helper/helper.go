@@ -176,7 +176,27 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	_, err := io.Copy(mw, info.stdout)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("Could not stream stdin: " + err.Error())
+		fmt.Println("Could not stream stdout: " + err.Error())
+	}
+	// Optional: accept a JSON first using bufio
+}
+
+func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
+	//flusher, _ := writer.(http.Flusher)
+	defer req.Body.Close()
+	id, res := getIdFromReq(req)
+	if res == false {
+		fmt.Println("Could not handle stderr pipe request")
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	info := pipeMap[id]
+	fmt.Println("Handling request ID: " + strconv.Itoa(id))
+	mw := io.MultiWriter(os.Stderr, writer)
+	_, err := io.Copy(mw, info.stderr)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Could not stream stderr: " + err.Error())
 	}
 	// Optional: accept a JSON first using bufio
 }
@@ -292,6 +312,7 @@ func auxStart (launchTarget string, launchArgs []string) {
 	mux.HandleFunc("/start", auxStartHandler)
 	mux.HandleFunc("/stream/stdin", stdinPipeHandler)
 	mux.HandleFunc("/stream/stdout", stdoutPipeHandler)
+	mux.HandleFunc("/stream/stderr", stderrPipeHandler)
 	h2s := &http2.Server{}
 	h2cMux := h2c.NewHandler(mux, h2s)
 	server := &http.Server {
