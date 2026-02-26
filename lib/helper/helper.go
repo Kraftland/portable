@@ -142,7 +142,7 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	pipeLock.RLock()
 	info := pipeMapGlob[id]
 	pipeLock.RUnlock()
-	fmt.Println("Handling request ID: " + strconv.Itoa(id))
+	fmt.Println("Handling request ID: " + strconv.Itoa(id), "with proto", req.Proto)
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
 	if info.stdin == nil {
@@ -170,7 +170,7 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	pipeLock.RLock()
 	info := pipeMapGlob[id]
 	pipeLock.RUnlock()
-	fmt.Println("Handling request ID: " + strconv.Itoa(id))
+	fmt.Println("Handling request ID: " + strconv.Itoa(id), "with proto", req.Proto)
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
 	if info.stdout == nil {
@@ -199,7 +199,7 @@ func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
 	pipeLock.RLock()
 	info := pipeMapGlob[id]
 	pipeLock.RUnlock()
-	fmt.Println("Handling request ID: " + strconv.Itoa(id))
+	fmt.Println("Handling request ID: " + strconv.Itoa(id), "with proto", req.Proto)
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
 	if info.stderr == nil {
