@@ -15,6 +15,7 @@ import (
 	"math/rand"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"sync"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
@@ -41,21 +42,9 @@ type ResponseField struct {
 var (
 	startNotifier		= make(chan bool, 32)
 	// Should check for collision first!
-	addPipePair		= make(chan pipeInfo, 2)
-	pipeMap			= make(map[int]pipeInfo)
+	pipeMapGlob		= make(map[int]pipeInfo)
+	pipeLock		sync.RWMutex
 )
-
-
-func trackerMapWriter() {
-	for sig := range addPipePair {
-		pipeMap[sig.id] = sig
-		for key, val := range pipeMap {
-			if val.id == 0 {
-				delete(pipeMap, key)
-			}
-		}
-	}
-}
 
 func updateSd(count int) {
 	status := "STATUS=" + "Tracking processes: " + strconv.Itoa(count)
@@ -150,7 +139,9 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	info := pipeMap[id]
+	pipeLock.RLock()
+	info := pipeMapGlob[id]
+	pipeLock.RUnlock()
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
@@ -176,7 +167,9 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	info := pipeMap[id]
+	pipeLock.RLock()
+	info := pipeMapGlob[id]
+	pipeLock.RUnlock()
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
@@ -203,7 +196,9 @@ func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	info := pipeMap[id]
+	pipeLock.RLock()
+	info := pipeMapGlob[id]
+	pipeLock.RUnlock()
 	fmt.Println("Handling request ID: " + strconv.Itoa(id))
 	//writer.WriteHeader(http.StatusOK)
 	//flusher.Flush()
@@ -262,7 +257,9 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	var id int
 	for {
 		id = rand.Int()
-		_, ok := pipeMap[id]
+		pipeLock.RLock()
+		_, ok := pipeMapGlob[id]
+		pipeLock.RUnlock()
 		if ok == false {
 			fmt.Println("Selected ID", id)
 			break
@@ -300,7 +297,6 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	pipeInf.stderr = stderrPipe
 	pipeInf.stdin = stdinPipe
 	pipeInf.stdout = stdoutPipe
-	addPipePair <- pipeInf
 
 	fmt.Println("Executing command:", cmdline)
 	err = cmd.Start()
@@ -317,6 +313,9 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 
 	startNotifier <- true
 	go procWatcher(cmd, id)
+	pipeLock.Lock()
+	pipeMapGlob[id] = pipeInf
+	pipeLock.Unlock()
 
 	//maps.stderr.Close()
 	//maps.stdin.Close()
@@ -329,9 +328,11 @@ func procWatcher (cmd *exec.Cmd, id int) {
 		fmt.Println("Command returned error: ", err)
 	}
 	startNotifier <- false
-	maps := pipeMap[id]
+	pipeLock.Lock()
+	maps := pipeMapGlob[id]
 	maps.id = 0
-	pipeMap[id] = maps
+	pipeMapGlob[id] = maps
+	pipeLock.Unlock()
 }
 
 func auxStart (launchTarget string, launchArgs []string) {
@@ -463,7 +464,6 @@ func main () {
 		}
 	}
 	startMaster(targetSlice[0], args)
-	go trackerMapWriter()
 	for {
 		time.Sleep(360000 * time.Hour)
 	}
