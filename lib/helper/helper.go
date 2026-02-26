@@ -131,7 +131,7 @@ func getIdFromReq(req *http.Request) (id int, res bool)  {
 }
 
 func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
-	//flusher, _ := writer.(http.Flusher)
+	flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
 	if res == false {
@@ -150,6 +150,8 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	writer.Header().Set("Content-Type","application/octet-stream")
+	flusher.Flush()
 	_, err := io.Copy(info.stdin, req.Body)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -159,7 +161,7 @@ func stdinPipeHandler (writer http.ResponseWriter, req *http.Request) {
 }
 
 func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
-	//flusher, _ := writer.(http.Flusher)
+	flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
 	if res == false {
@@ -178,6 +180,9 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	writer.Header().Set("Content-Type","application/octet-stream")
+	writer.WriteHeader(http.StatusOK)
+	flusher.Flush()
 	mw := io.MultiWriter(os.Stdout, writer)
 	_, err := io.Copy(mw, info.stdout)
 	if err != nil {
@@ -188,7 +193,7 @@ func stdoutPipeHandler (writer http.ResponseWriter, req *http.Request) {
 }
 
 func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
-	//flusher, _ := writer.(http.Flusher)
+	flusher, _ := writer.(http.Flusher)
 	defer req.Body.Close()
 	id, res := getIdFromReq(req)
 	if res == false {
@@ -219,6 +224,9 @@ func stderrPipeHandler (writer http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+	writer.Header().Set("Content-Type","application/octet-stream")
+	writer.WriteHeader(http.StatusOK)
+	flusher.Flush()
 	mw := io.MultiWriter(os.Stderr, writer)
 	_, err := io.Copy(mw, info.stderr)
 	if err != nil {
