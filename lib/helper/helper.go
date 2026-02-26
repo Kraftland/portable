@@ -285,8 +285,15 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	writer.Write(jsonObj)
 
 	startNotifier <- true
+	go procWatcher(cmd, id)
 
-	err = cmd.Wait()
+	//maps.stderr.Close()
+	//maps.stdin.Close()
+	//maps.stdout.Close()
+}
+
+func procWatcher (cmd *exec.Cmd, id int) {
+	err := cmd.Wait()
 	if err != nil {
 		fmt.Println("Command returned error: ", err)
 	}
@@ -294,11 +301,6 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	maps := pipeMap[id]
 	maps.id = 0
 	pipeMap[id] = maps
-	//maps.stderr.Close()
-	//maps.stdin.Close()
-	//maps.stdout.Close()
-
-
 }
 
 func auxStart (launchTarget string, launchArgs []string) {
