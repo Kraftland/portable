@@ -2970,26 +2970,32 @@ func processStream(resp *http.Response, socketPath string) {
 	}
 
 	go func () {
-		io.Copy(os.Stdout, reqOut.Body)
-	} ()
-	go func () {
-		io.Copy(os.Stderr, reqErr.Body)
-	} ()
-
-	go func () {
-		io.Copy(pipeW, os.Stdin)
+		respOut, err := ipcClient.Do(reqOut)
+		if err != nil {
+			pecho("warn", "Could not pipe terminal: " + err.Error())
+		} else {
+			io.Copy(os.Stdout, respOut.Body)
+		}
 	} ()
 
-	go func (req *http.Request, ipcClient http.Client) {
-		ipcClient.Do(req)
-	} (reqIn, ipcClient)
+
 	go func () {
-		ipcClient.Do(reqOut)
+		_, err := ipcClient.Do(reqIn)
+		if err != nil {
+			pecho("warn", "Could not pipe terminal: " + err.Error())
+		} else {
+			io.Copy(pipeW, os.Stdin)
+		}
 	} ()
-	// go func () {
-	// 	ipcClient.Do(reqErr)
-	// } ()
-	ipcClient.Do(reqErr)
+
+	//go func () {
+		respOut, err := ipcClient.Do(reqErr)
+		if err != nil {
+			pecho("warn", "Could not pipe terminal: " + err.Error())
+		} else {
+			io.Copy(os.Stderr, respOut.Body)
+		}
+	//} ()
 }
 
 func multiInstance(miChan chan bool) {
