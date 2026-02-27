@@ -1375,7 +1375,7 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
-	waitChan(signalWatcherReady, "Signal Watcher")
+	<- signalWatcherReady
 	// Profiler
 	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	if startAct == "abort" {
@@ -3180,11 +3180,6 @@ func atSpiProxy() {
 
 	atSpiProxyCmd.Start()
 }
-
-func waitChan(tgChan chan int8, chanName string) {
-	<- tgChan
-}
-
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
