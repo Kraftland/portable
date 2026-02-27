@@ -3171,6 +3171,7 @@ func waitChan(tgChan chan int8, chanName string) {
 }
 
 func main() {
+	lookUpXDG()
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
 	go signalRecvWorker(sigChan)
