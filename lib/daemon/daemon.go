@@ -482,7 +482,9 @@ func determineConfPath() {
 		confOpts.confPath = portableConfigRaw
 		return
 	}
-	if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
+	if isPathSuitableForConf(filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")) {
+	confOpts.confPath = filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")
+	} else if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
 		confOpts.confPath = "/usr/lib/portable/info/" + portableConfigRaw + "/config"
 		return
 	} else if wdErr == nil {
