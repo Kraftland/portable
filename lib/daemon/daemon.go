@@ -1490,15 +1490,30 @@ func instDesktopFile() {
 	}
 
 	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
-	var desktopFile string
-	desktopFile = templateDesktopFile
-	strings.ReplaceAll(desktopFile, "placeholderName", confOpts.appID)
-	strings.ReplaceAll(desktopFile, "placeholderConfig", confOpts.confPath)
-	os.WriteFile(
-		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
-		[]byte(desktopFile),
+	replacer := strings.NewReplacer(
+		"placeholderName",		"Portable sandbox for " + confOpts.appID,
+		"placeholderConfig",		confOpts.confPath,
+	)
+	file, err := os.OpenFile(
+		filepath.Join(
+			xdgDir.dataDir,
+			"applications",
+			confOpts.appID + ".desktop",
+		),
+		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 		0700,
 	)
+	if err != nil {
+		pecho("warn", "Could not open .desktop file for writing: " + err.Error())
+		pecho("warn", "Non-existent .desktop file may result in Portals crashing")
+		return
+	}
+	_, err = replacer.WriteString(file, templateDesktopFile)
+	if err != nil {
+		pecho("warn", "Could not write .desktop file: " + err.Error())
+		pecho("warn", "Non-existent .desktop file may result in Portals crashing")
+		return
+	}
 	runtimeOpt.writtenDesktop = true
 	pecho("debug", "Done installing stub file")
 	pecho("warn", "You should supply your own .desktop file")
