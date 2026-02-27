@@ -487,7 +487,9 @@ func determineConfPath() {
 		confOpts.confPath = portableConfigRaw
 		return
 	}
-	if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
+	if isPathSuitableForConf(filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")) {
+	confOpts.confPath = filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")
+	} else if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
 		confOpts.confPath = "/usr/lib/portable/info/" + portableConfigRaw + "/config"
 		return
 	} else if wdErr == nil {
@@ -516,6 +518,7 @@ func tryUnquote(input string) (output string) {
 }
 
 func readConf() {
+	lookUpXDG()
 	determineConfPath()
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
 
@@ -3192,11 +3195,6 @@ func main() {
 		pecho("crit", "Could not connect to user service manager: " + err.Error())
 		return
 	}
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
-		lookUpXDG()
-	} ()
 	go stopAppWorker(conn, sdCancelFunc, sdContext)
 
 	inputChan := make(chan []string, 512)
