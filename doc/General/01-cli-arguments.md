@@ -11,7 +11,8 @@ Environment variables:
 
 - _portableConfig	-> Required
 	- Possible values:
-		- Application ID of installed sandbox under /usr/lib/portable/info (recommended)
+		- Application ID of installed sandbox under /usr/lib/portable/info (recommended), or XDG_CONFIG_DIR/portable/info
+			- The configuration will be read from info/ID/config
 		- Relative or absolute path to a configuration file
 
 
