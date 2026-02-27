@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -290,18 +291,62 @@ func resetDocs () {
 	os.Exit(0)
 }
 
+func bytesToMb(bytes int) float64 {
+	var div float64 = 1024 * 1024
+	return float64(bytes) / div
+}
+
 func showStats() {
-	getFlatpakInstanceID()
-	cmdArgs := []string{
-		"--user",
-		"status",
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+	localID := getFlatpakInstanceID()
+	if len(localID) > 0 {
+		cmdArgs := []string{
+			"--user",
+			"status",
+			"app-portable-" + confOpts.appID + "-" + localID,
+		}
+		openCmd := exec.Command("systemctl", cmdArgs...)
+		openCmd.Stdout = os.Stdout
+		openCmd.Run()
 	}
-	openCmd := exec.Command("systemctl", cmdArgs...)
-	openCmd.Stderr = os.Stderr
-	openCmd.Stdout = os.Stdout
-	openCmd.Run()
+
+	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
+	var builder strings.Builder
+	builder.WriteString("Application Statistics: \n")
+	builder.WriteString("	Total storage: " + strconv.FormatFloat(size,'g', -1, 64))
+	builder.WriteString("M\n")
+
+
+	fmt.Println(builder.String())
 	os.Exit(0)
+}
+
+func getDirSize(path string) float64 {
+	sizeChan := make(chan int, 512)
+	var wg sync.WaitGroup
+	var totalBytes int
+	var totalFiles int
+	wg.Go(func() {
+		for size := range sizeChan {
+			totalBytes = totalBytes + size
+			totalFiles++
+		}
+	})
+	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		stat, errStat := os.Stat(path)
+		if errStat != nil {
+			pecho("debug", "Could not stat " + path + ": " + errStat.Error())
+			return nil
+		}
+		sizeChan <- int(stat.Size())
+	return nil
+	})
+	close(sizeChan)
+	if err != nil {
+		return 0
+	}
+	wg.Wait()
+	pecho("debug", "Calculated " + strconv.Itoa(totalFiles) + " files")
+	return bytesToMb(totalBytes)
 }
 
 func cmdlineDispatcher(cmdChan chan int8) {
@@ -818,20 +863,16 @@ func writeInfoFile(ready chan int8) {
 	pecho("debug", "Wrote info file")
 }
 
-func getFlatpakInstanceID() {
-	if len(runtimeInfo.instanceID) > 0 {
-		pecho("debug", "Flatpak instance ID already known")
-		return
-	}
+func getFlatpakInstanceID() string {
 	controlFile, readErr := os.ReadFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control")
 	instanceID := regexp.MustCompile("instanceId=.*")
 	if readErr == nil {
 		var rawInstanceID string = string(instanceID.Find(controlFile))
-		runtimeInfo.instanceID = tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
+		return tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
 	} else {
-		pecho("warn", "Unable to read control file: " + readErr.Error())
+		pecho("debug", "Unable to read control file: " + readErr.Error())
+		return ""
 	}
-	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.instanceID)
 }
 
 func removeWrapCon(paths []string) {
@@ -865,12 +906,15 @@ func cleanDirs() {
 			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
 		)
 	}
-	getFlatpakInstanceID()
-	if len(runtimeInfo.instanceID) > 0 {
+	localID := getFlatpakInstanceID()
+	if len(localID) == 0 {
+		localID = runtimeInfo.instanceID
+	}
+	if len(localID) > 0 {
 		paths = append(
 			paths,
 			xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID,
-			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+			xdgDir.runtimeDir + "/.flatpak/" + localID,
 		)
 	} else {
 		pecho("warn", "Skipped cleaning Flatpak entries")
@@ -881,7 +925,6 @@ func cleanDirs() {
 func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
-	getFlatpakInstanceID()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func () {
@@ -3206,7 +3249,7 @@ func main() {
 
 	inputChan := make(chan []string, 512)
 	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
-	fmt.Println("Portable daemon", version, "starting")
+	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
 	go stopAppWorker(conn, sdCancelFunc, sdContext)
