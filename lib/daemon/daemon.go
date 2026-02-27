@@ -3193,24 +3193,31 @@ func main() {
 
 	var wg sync.WaitGroup
 	go getVariables()
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
+	wg.Go(func() {
 		readConf()
-	} ()
-	sdContext, sdCancelFunc := context.WithCancel(context.Background())
-	conn, err := dbus.NewUserConnectionContext(sdContext)
-	if err != nil {
-		pecho("crit", "Could not connect to user service manager: " + err.Error())
-		return
-	}
-	go stopAppWorker(conn, sdCancelFunc, sdContext)
+	})
+	var sdContext context.Context
+	var sdCancelFunc context.CancelFunc
+	var conn *dbus.Conn
+	wg.Go(func() {
+		var err error
+		sdContext, sdCancelFunc = context.WithCancel(context.Background())
+		conn, err = dbus.NewUserConnectionContext(sdContext)
+		if err != nil {
+			pecho("crit", "Could not connect to user service manager: " + err.Error())
+			return
+		}
+	})
+
+
+
 
 	inputChan := make(chan []string, 512)
 	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
 	fmt.Println("Portable daemon", version, "starting")
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
+	go stopAppWorker(conn, sdCancelFunc, sdContext)
 
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
