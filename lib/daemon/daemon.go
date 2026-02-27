@@ -3220,11 +3220,9 @@ func main() {
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
 	go miscBinds(miscChan, pwSecContextChan)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		instDesktopFile()
-	} ()
+	})
 	wg.Go(func() {
 		setupSharedDir()
 	})
