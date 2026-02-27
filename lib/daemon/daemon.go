@@ -297,7 +297,7 @@ func bytesToMb(bytes int) float64 {
 }
 
 func showStats() {
-	localID := getFlatpakInstanceID()
+	localID := getInstanceID()
 	if len(localID) > 0 {
 		cmdArgs := []string{
 			"--user",
@@ -312,7 +312,7 @@ func showStats() {
 	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
 	var builder strings.Builder
 	builder.WriteString("Application Statistics: \n")
-	builder.WriteString("	Total storage: " + strconv.FormatFloat(size,'g', -1, 64))
+	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64))
 	builder.WriteString("M\n")
 
 
@@ -863,7 +863,8 @@ func writeInfoFile(ready chan int8) {
 	pecho("debug", "Wrote info file")
 }
 
-func getFlatpakInstanceID() string {
+// Note that this instance ID is read from control file and independent of generated ID
+func getInstanceID() string {
 	controlFile, readErr := os.ReadFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control")
 	instanceID := regexp.MustCompile("instanceId=.*")
 	if readErr == nil {
@@ -906,7 +907,7 @@ func cleanDirs() {
 			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
 		)
 	}
-	localID := getFlatpakInstanceID()
+	localID := getInstanceID()
 	if len(localID) == 0 {
 		localID = runtimeInfo.instanceID
 	}
