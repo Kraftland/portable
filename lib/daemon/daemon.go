@@ -298,6 +298,7 @@ func bytesToMb(bytes int) float64 {
 
 func showStats() {
 	localID := getInstanceID()
+	var active bool
 	if len(localID) > 0 {
 		cmdArgs := []string{
 			"--user",
@@ -307,6 +308,7 @@ func showStats() {
 		openCmd := exec.Command("systemctl", cmdArgs...)
 		openCmd.Stdout = os.Stdout
 		openCmd.Run()
+		active=true
 	}
 
 	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
@@ -314,6 +316,7 @@ func showStats() {
 	builder.WriteString("Application Statistics: \n")
 	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64))
 	builder.WriteString("M\n")
+	builder.WriteString("	Active: " + strconv.FormatBool(active))
 
 
 	fmt.Println(builder.String())
