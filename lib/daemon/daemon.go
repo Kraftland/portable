@@ -973,25 +973,18 @@ func pwSecContext(pwChan chan []string) {
 		return
 	}
 	pwSecCmd := []string{
-		"--user",
-		"--quiet",
-		"--pipe",
-		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container",
-		"-p", "KillMode=control-group",
-		"-p", "After=pipewire.service",
-		"-p", "Requires=pipewire.service",
-		"-p", "Wants=wireplumber.service",
-		"-p", "SuccessExitStatus=SIGKILL",
-		"--",
 		"stdbuf",
 		"-oL",
 		"/usr/bin/pw-container",
 		"-P",
 		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
 	}
-	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
+	pwSecRun := exec.Command(pwSecCmd[0], pwSecCmd[1:]...)
 	pwSecRun.Stderr = os.Stderr
+	procAttrs := &syscall.SysProcAttr{
+		Pdeathsig:		syscall.SIGKILL,
+	}
+	pwSecRun.SysProcAttr = procAttrs
 	stdout, pipeErr := pwSecRun.StdoutPipe()
 
 	scanner := bufio.NewScanner(stdout)
@@ -1016,6 +1009,10 @@ func pwSecContext(pwChan chan []string) {
 	pwChan <- pwSecArg
 	close(pwChan)
 	pecho("debug", "pw-container available at " + pwProxySocket)
+	err = pwSecRun.Wait()
+	if err != nil {
+		pecho("warn", "Could not wait pw-container: " + err.Error())
+	}
 }
 
 func calcDbusArg(argChan chan []string) {
