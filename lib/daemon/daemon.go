@@ -481,17 +481,20 @@ func shareFile() {
 }
 
 func getVariables() {
-	if len(os.Getenv("bwBindPar")) > 0 {
+	runtimeOpt.userLang = os.Getenv("LANG")
+	bindVar := os.Getenv("bwBindPar")
+	if len(bindVar) > 0 {
 		pecho("warn",
 		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
 		)
-		bwBindParMap := map[string]string{
-			os.Getenv("bwBindPar"):		os.Getenv("bwBindPar"),
+		res := questionExpose([]string{bindVar})
+		if res {
+			bwBindParMap := map[string]string{
+				bindVar:		bindVar,
+			}
+			runtimeOpt.userExpose <- bwBindParMap
 		}
-		runtimeOpt.userExpose <- bwBindParMap
 	}
-
-	runtimeOpt.userLang = os.Getenv("LANG")
 }
 
 func isPathSuitableForConf(path string) (result bool) {
@@ -3271,7 +3274,10 @@ func main() {
 	go pechoWorker()
 
 	var wg sync.WaitGroup
-	go getVariables()
+	// This is fine to do concurrent, since miscBind runs later and we have wg.Wait in middle
+	wg.Go(func() {
+		getVariables()
+	})
 	wg.Go(func() {
 		readConf()
 	})
