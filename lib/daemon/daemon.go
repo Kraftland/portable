@@ -6,23 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-
-	//"time"
+	"golang.org/x/net/http2"
+	"crypto/tls"
 	"net"
 	"net/http"
-	"runtime"
-	"runtime/pprof"
 	"sync"
-
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
@@ -36,12 +35,12 @@ const (
 )
 
 type RUNTIME_OPT struct {
-	action		bool
 	argStop		bool
 	applicationArgs	[]string
-	userExpose	string
+	userExpose	chan map[string]string
 	userLang	string
 	miTerminate	bool
+	writtenDesktop	bool
 }
 
 type RUNTIME_PARAMS struct {
@@ -160,6 +159,7 @@ var (
 					"/sys/module/nvidia_wmi_ec_backlight",
 				}
 	pechoChan		= make(chan []string, 128)
+	filesInfo		= make(chan PassFiles, 1)
 )
 
 func pechoWorker() {
@@ -291,28 +291,78 @@ func resetDocs () {
 	os.Exit(0)
 }
 
+func bytesToMb(bytes int) float64 {
+	var div float64 = 1024 * 1024
+	return float64(bytes) / div
+}
+
 func showStats() {
-	getFlatpakInstanceID()
-	cmdArgs := []string{
-		"--user",
-		"status",
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+	localID := getInstanceID()
+	var active bool
+	if len(localID) > 0 {
+		cmdArgs := []string{
+			"--user",
+			"status",
+			"app-portable-" + confOpts.appID + "-" + localID,
+		}
+		openCmd := exec.Command("systemctl", cmdArgs...)
+		openCmd.Stdout = os.Stdout
+		openCmd.Run()
+		active=true
 	}
-	openCmd := exec.Command("systemctl", cmdArgs...)
-	openCmd.Stderr = os.Stderr
-	openCmd.Stdout = os.Stdout
-	openCmd.Run()
+
+	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
+	var builder strings.Builder
+	builder.WriteString("Application Statistics: \n")
+	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64))
+	builder.WriteString("M\n")
+	builder.WriteString("	Active: " + strconv.FormatBool(active))
+
+
+	fmt.Println(builder.String())
 	os.Exit(0)
 }
 
+func getDirSize(path string) float64 {
+	sizeChan := make(chan int, 512)
+	var wg sync.WaitGroup
+	var totalBytes int
+	var totalFiles int
+	wg.Go(func() {
+		for size := range sizeChan {
+			totalBytes = totalBytes + size
+			totalFiles++
+		}
+	})
+	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		stat, errStat := os.Stat(path)
+		if errStat != nil {
+			pecho("debug", "Could not stat " + path + ": " + errStat.Error())
+			return nil
+		}
+		sizeChan <- int(stat.Size())
+	return nil
+	})
+	close(sizeChan)
+	if err != nil {
+		return 0
+	}
+	wg.Wait()
+	pecho("debug", "Calculated " + strconv.Itoa(totalFiles) + " files")
+	return bytesToMb(totalBytes)
+}
+
 func cmdlineDispatcher(cmdChan chan int8) {
+	var skipCount int
+	var hasExpose bool
+	var exposeMap = map[string]string{}
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
 			continue
 		}
-		if runtimeOpt.action == true {
-			runtimeOpt.action = false
+		if skipCount > 0 {
+			skipCount--
 			continue
 		} else if runtimeOpt.argStop == true {
 			runtimeOpt.applicationArgs = append(
@@ -322,8 +372,22 @@ func cmdlineDispatcher(cmdChan chan int8) {
 			continue
 		}
 		switch value {
+			case "--expose":
+				if len(cmdlineArray) <= index + 2 {
+					pecho("warn", "--expose requires 2 arguments")
+					break
+				}
+				if filepath.IsAbs(cmdlineArray[index + 1]) && filepath.IsAbs(cmdlineArray[index + 2]) {
+					pecho("debug", "Validated absolute path")
+				} else {
+					pecho("warn", "Rejecting non absolute path")
+					continue
+				}
+				hasExpose = true
+				skipCount += 2
+				exposeMap[cmdlineArray[index + 1]] = cmdlineArray[index + 2]
 			case "--actions" :
-			runtimeOpt.action = true
+			skipCount++
 			if len(cmdlineArray) <= index + 1 {
 				pecho("warn", "--actions require an argument")
 				break
@@ -370,6 +434,16 @@ func cmdlineDispatcher(cmdChan chan int8) {
 				runtimeOpt.argStop = true
 			default:
 				pecho("warn", "Unrecognised option: " + value)
+		}
+	}
+	if hasExpose {
+		exposeList := []string{}
+		for key, _ := range exposeMap {
+			exposeList = append(exposeList, key)
+		}
+		res := questionExpose(exposeList)
+		if res {
+			runtimeOpt.userExpose <- exposeMap
 		}
 	}
 	for index, _ := range runtimeOpt.applicationArgs {
@@ -424,8 +498,25 @@ func shareFile() {
 }
 
 func getVariables() {
-	runtimeOpt.userExpose = os.Getenv("bwBindPar")
 	runtimeOpt.userLang = os.Getenv("LANG")
+	bindVar := os.Getenv("bwBindPar")
+	if len(bindVar) > 0 {
+		bindVar, err := filepath.Abs(bindVar)
+		if err != nil {
+			pecho("warn", "Could not resolve absolute path: " + err.Error())
+			return
+		}
+		pecho("warn",
+		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
+		)
+		res := questionExpose([]string{bindVar})
+		if res {
+			bwBindParMap := map[string]string{
+				bindVar:		bindVar,
+			}
+			runtimeOpt.userExpose <- bwBindParMap
+		}
+	}
 }
 
 func isPathSuitableForConf(path string) (result bool) {
@@ -464,7 +555,9 @@ func determineConfPath() {
 		confOpts.confPath = portableConfigRaw
 		return
 	}
-	if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
+	if isPathSuitableForConf(filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")) {
+	confOpts.confPath = filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")
+	} else if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
 		confOpts.confPath = "/usr/lib/portable/info/" + portableConfigRaw + "/config"
 		return
 	} else if wdErr == nil {
@@ -493,6 +586,7 @@ func tryUnquote(input string) (output string) {
 }
 
 func readConf() {
+	lookUpXDG()
 	determineConfPath()
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
 
@@ -797,75 +891,89 @@ func writeInfoFile(ready chan int8) {
 	pecho("debug", "Wrote info file")
 }
 
-func getFlatpakInstanceID() {
-	if len(runtimeInfo.instanceID) > 0 {
-		pecho("debug", "Flatpak instance ID already known")
-		return
-	}
+// Note that this instance ID is read from control file and independent of generated ID
+func getInstanceID() string {
 	controlFile, readErr := os.ReadFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control")
 	instanceID := regexp.MustCompile("instanceId=.*")
 	if readErr == nil {
 		var rawInstanceID string = string(instanceID.Find(controlFile))
-		runtimeInfo.instanceID = tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
+		return tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
 	} else {
-		pecho("warn", "Unable to read control file: " + readErr.Error())
+		pecho("debug", "Unable to read control file: " + readErr.Error())
+		return ""
 	}
-	pecho("debug", "Got Flatpak instance ID: " + runtimeInfo.instanceID)
 }
 
-func removeWrapCon(paths []string) {
+func removeWrapChan(pathChan chan string) {
 	var wg sync.WaitGroup
-	wg.Add(len(paths))
-	for _, path := range paths {
-		p := path
-		go func () {
-			err := os.RemoveAll(p)
-			wg.Done()
+	for path := range pathChan {
+		wg.Go(func() {
+			err := os.RemoveAll(path)
 			if err != nil {
 				pecho(
 					"warn",
 					"Unable to remove " + path + ": " + err.Error(),
 				)
 			}
-		} ()
+		})
 	}
 	wg.Wait()
 }
 
 func cleanDirs() {
+	var wg sync.WaitGroup
+	pathChan := make(chan string, 8)
+	wg.Go(func() {removeWrapChan(pathChan)})
 	pecho("info", "Cleaning leftovers")
-	var paths = []string{
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID,
-		xdgDir.runtimeDir + "/app/" + confOpts.appID,
-		xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+	pathChan <- filepath.Join(
+		xdgDir.runtimeDir,
+		"/portable/",
+		confOpts.appID,
+	)
+	pathChan <- filepath.Join(
+		xdgDir.runtimeDir,
+		"app",
+		confOpts.appID,
+	)
+	if runtimeOpt.writtenDesktop {
+		pathChan <- filepath.Join(
+			xdgDir.dataDir,
+			"applications",
+			confOpts.appID + ".desktop",
+		)
 	}
-	getFlatpakInstanceID()
-	if len(runtimeInfo.instanceID) > 0 {
-		paths = append(
-			paths,
-			xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID,
-			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
+	localID := getInstanceID()
+	if len(localID) == 0 {
+		localID = runtimeInfo.instanceID
+	}
+	if len(localID) > 0 {
+		pathChan <- filepath.Join(
+			xdgDir.runtimeDir,
+			".flatpak",
+			confOpts.appID,
+		)
+		pathChan <- filepath.Join(
+			xdgDir.runtimeDir,
+			".flatpak",
+			localID,
 		)
 	} else {
 		pecho("warn", "Skipped cleaning Flatpak entries")
 	}
-	removeWrapCon(paths)
+	close(pathChan)
+	wg.Wait()
 }
 
 func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
-	getFlatpakInstanceID()
 	var wg sync.WaitGroup
-	wg.Add(2)
-	go func () {
-		defer wg.Done()
+	wg.Go(func() {
 		doCleanUnit(conn, sdCancelFunc, sdContext)
-	} ()
-	go func () {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		cleanDirs()
-	} ()
+	})
 	close(socketStop)
 	//socketStop <- 1
 	wg.Wait()
@@ -943,35 +1051,30 @@ func pwSecContext(pwChan chan []string) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
 	if confOpts.bindPipewire == false {
-		pwChan <- pwSecArg
+		close(pwChan)
 		return
 	}
 	pwSecCmd := []string{
-		"--user",
-		"--quiet",
-		"--pipe",
-		"-p", "Slice=portable-" + confOpts.friendlyName + ".slice",
-		"-u", "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container",
-		"-p", "KillMode=control-group",
-		"-p", "After=pipewire.service",
-		"-p", "Requires=pipewire.service",
-		"-p", "Wants=wireplumber.service",
-		"-p", "SuccessExitStatus=SIGKILL",
-		"--",
 		"stdbuf",
 		"-oL",
 		"/usr/bin/pw-container",
 		"-P",
 		`{ "pipewire.sec.engine": "top.kimiblock.portable", "pipewire.access": "restricted" }`,
 	}
-	pwSecRun := exec.Command("/usr/bin/systemd-run", pwSecCmd...)
+	pwSecRun := exec.Command(pwSecCmd[0], pwSecCmd[1:]...)
 	pwSecRun.Stderr = os.Stderr
+	procAttrs := &syscall.SysProcAttr{
+		Pdeathsig:		syscall.SIGKILL,
+	}
+	pwSecRun.SysProcAttr = procAttrs
 	stdout, pipeErr := pwSecRun.StdoutPipe()
 
 	scanner := bufio.NewScanner(stdout)
 	err := pwSecRun.Start()
 	if err != nil {
 		pecho("warn", "Failed to start up PipeWire proxy: " + err.Error() + pipeErr.Error())
+		close(pwChan)
+		return
 	}
 	for scanner.Scan() {
 		stringObj := scanner.Text()
@@ -986,7 +1089,12 @@ func pwSecContext(pwChan chan []string) {
 		"--bind", pwProxySocket, pwProxySocket,
 	)
 	pwChan <- pwSecArg
+	close(pwChan)
 	pecho("debug", "pw-container available at " + pwProxySocket)
+	err = pwSecRun.Wait()
+	if err != nil {
+		pecho("warn", "Could not wait pw-container: " + err.Error())
+	}
 }
 
 func calcDbusArg(argChan chan []string) {
@@ -1175,7 +1283,6 @@ func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context
 	defer sdCancelFunc()
 	var wg sync.WaitGroup
 	var units = []string{
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container.service",
 		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 	}
 	for _, unit := range units {
@@ -1347,9 +1454,9 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
-	waitChan(signalWatcherReady, "Signal Watcher")
+	<- signalWatcherReady
 	// Profiler
-	pprof.Lookup("block").WriteTo(os.Stdout, 1)
+	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	if startAct == "abort" {
 		stopApp()
 	} else {
@@ -1425,23 +1532,65 @@ func waylandDisplay(wdChan chan []string) () {
 }
 
 func instDesktopFile() {
-	_, err := os.Stat("/usr/share/applications/" + confOpts.appID + ".desktop")
-	if err == nil {
-		pecho("debug", ".desktop file detected")
-	} else {
-		const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
-		var desktopFile string
-		desktopFile = templateDesktopFile
-		strings.ReplaceAll(desktopFile, "placeholderName", confOpts.appID)
-		strings.ReplaceAll(desktopFile, "placeholderConfig", confOpts.confPath)
-		os.WriteFile(
-			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
-			[]byte(desktopFile),
-			0700,
+	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
+	for val := range xdgDataDirs {
+		if strings.Contains(val, "/var/lib/flatpak") {
+			continue
+		}
+		statPath := filepath.Join(
+			val,
+			"applications",
+			confOpts.appID + ".desktop",
 		)
-		pecho("debug", "Done installing stub file")
-		pecho("warn", "You should supply your own .desktop file")
+		_, err := os.Stat(statPath)
+		if err == nil {
+			pecho("debug", "Found desktop file: " + statPath)
+			return
+		}
 	}
+
+	var hardcodedDesktopPath = []string{filepath.Join(xdgDir.dataDir, "applications")}
+
+	for _, path := range hardcodedDesktopPath {
+		statPath := filepath.Join(
+			path,
+			confOpts.appID + ".desktop",
+		)
+		_, err := os.Stat(statPath)
+		if err == nil {
+			pecho("debug", "Found desktop file: " + statPath)
+			return
+		}
+	}
+
+	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
+	replacer := strings.NewReplacer(
+		"placeholderName",		"Portable sandbox for " + confOpts.appID,
+		"placeholderConfig",		confOpts.confPath,
+	)
+	file, err := os.OpenFile(
+		filepath.Join(
+			xdgDir.dataDir,
+			"applications",
+			confOpts.appID + ".desktop",
+		),
+		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
+		0700,
+	)
+	if err != nil {
+		pecho("warn", "Could not open .desktop file for writing: " + err.Error())
+		pecho("warn", "Non-existent .desktop file may result in Portals crashing")
+		return
+	}
+	_, err = replacer.WriteString(file, templateDesktopFile)
+	if err != nil {
+		pecho("warn", "Could not write .desktop file: " + err.Error())
+		pecho("warn", "Non-existent .desktop file may result in Portals crashing")
+		return
+	}
+	runtimeOpt.writtenDesktop = true
+	pecho("debug", "Done installing stub file")
+	pecho("warn", "You should supply your own .desktop file")
 }
 
 func setXDGEnvs() {
@@ -1647,11 +1796,8 @@ func genBwArg(
 	camChan chan []string,
 	inputChan chan []string,
 	wayDisplayChan chan []string,
+	miscChan	chan []string,
 	) {
-
-	miscChan := make(chan []string, 1)
-	go miscBinds(miscChan, pwChan)
-
 
 	if internalLoggingLevel > 1 {
 		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
@@ -1933,14 +2079,11 @@ func genBwArg(
 }
 
 func flushEnvs() {
-	//os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	var envs = []string{}
+	var builder strings.Builder
 
 	for env := range envsChan {
-		envs = append(
-			envs,
-			env,
-		)
+		builder.WriteString(env)
+		builder.WriteString("\n")
 	}
 
 	fd, err := os.OpenFile(
@@ -1956,10 +2099,7 @@ func flushEnvs() {
 	}
 	defer fd.Close()
 	writer := bufio.NewWriter(fd)
-	for _, env := range envs {
-		writer.WriteString(env)
-		writer.WriteString("\n")
-	}
+	writer.WriteString(builder.String())
 	err = writer.Flush()
 	if err != nil {
 		pecho("crit", "Could not write environment variables: " + err.Error())
@@ -1970,6 +2110,45 @@ func flushEnvs() {
 func translatePath(input string) (output string) {
 	output = strings.ReplaceAll(input, xdgDir.home, xdgDir.dataDir + "/" + confOpts.stateDirectory)
 	return
+}
+
+// Does not take empty input
+func questionExpose(paths []string) bool {
+	zenityArgs := []string{
+		"--title",
+			confOpts.friendlyName,
+		"--icon=folder-open-symbolic",
+		"--question",
+		"--default-cancel",
+	}
+	var zenityText strings.Builder
+	switch runtimeOpt.userLang {
+		case "zh_CN.UTF-8":
+			zenityText.WriteString("--text=授权以下路径: \n ")
+		default:
+			zenityText.WriteString("--text=Exposing the following path: \n ")
+	}
+	for _, val := range paths {
+		zenityText.WriteString(val)
+		zenityText.WriteString("\n")
+	}
+	zenityArgs = append(zenityArgs, zenityText.String())
+
+	attrs := syscall.SysProcAttr{
+		Pdeathsig:		syscall.SIGKILL,
+	}
+	zenityCmd := exec.Command("zenity", zenityArgs...)
+	zenityCmd.SysProcAttr = &attrs
+	zenityCmd.Stderr = os.Stderr
+	if internalLoggingLevel <= 1 {
+		zenityCmd.Stdout = os.Stdout
+	}
+	err := zenityCmd.Run()
+	if err != nil {
+		pecho("warn", "Could not ask for permission: " + err.Error())
+		return false
+	}
+	return true
 }
 
 func maskDir(path string) (maskArgs []string) {
@@ -1986,7 +2165,17 @@ func maskDir(path string) (maskArgs []string) {
 	return
 }
 
+type PassFiles struct {
+	// FileMap is a map that contains [host path string](docid string)
+	FileMap		map[string]string
+}
+
 func miscBinds(miscChan chan []string, pwChan chan []string) {
+	connBus, err := godbus.ConnectSessionBus()
+	if err != nil {
+		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
+	}
+	defer connBus.Close()
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2075,57 +2264,47 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		}
 	})
 
-	if len(runtimeOpt.userExpose) > 0 {
-		_, err := os.Stat(runtimeOpt.userExpose)
-		if err != nil {
-			pecho("warn", "Rejecting bwBindPar: " + err.Error())
-		} else {
-			zenityArgs := []string{
-				"--title",
-					confOpts.friendlyName,
-				"--icon=folder-open-symbolic",
-				"--question",
-				"--default-cancel",
-			}
+	var validBwBindArgs = make(chan []string, 64)
+	var exposedPaths = make(chan string, 16)
 
-			switch runtimeOpt.userLang {
-				case "en_GB.UTF-8":
-					zenityArgs = append(
-						zenityArgs,
-						"--text=Expose " + runtimeOpt.userExpose + "?",
-					)
-				case "zh_CN.UTF-8":
-					zenityArgs = append(
-						zenityArgs,
-						"--text=暴露 " + runtimeOpt.userExpose + "?",
-					)
-				default:
-					zenityArgs = append(
-						zenityArgs,
-						"--text=Expose " + runtimeOpt.userExpose + "?",
-					)
-			}
+	close(runtimeOpt.userExpose)
 
-			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
-			zenityRun.Stderr = os.Stderr
-			errZenity := zenityRun.Run()
-			if errZenity != nil {
-				pecho("warn", "Rejecting bwBindPar: did not receive confirmation")
-			} else {
-				miscArgs = append(
-					miscArgs,
-					"--dev-bind",
-						runtimeOpt.userExpose,
-						runtimeOpt.userExpose,
-				)
-			}
+	var hasValidExpose bool
+
+	for pathMap := range runtimeOpt.userExpose {
+		for ori, dest := range pathMap {
+			pecho("debug", "Checking " + ori + ", " + dest)
+			wg.Go(func() {
+				_, err := os.Stat(ori)
+				if err != nil {
+					pecho("warn", "Could not select origin " + ori + ": " + err.Error())
+					return
+				}
+				hasValidExpose = true
+				exposedPaths <- ori
+				if strings.HasPrefix(dest, "ro:") {
+					validBwBindArgs <- []string{
+						"--ro-bind",
+						ori,
+						strings.TrimPrefix(dest, "ro:"),
+					}
+				} else if strings.HasPrefix(dest, "dev:") {
+					validBwBindArgs <- []string{
+						"--dev-bind",
+						ori,
+						strings.TrimPrefix(dest, "dev:"),
+					}
+				} else {
+					validBwBindArgs <- []string{
+						"--bind",
+						ori,
+						dest,
+					}
+				}
+
+			})
 		}
 	}
-	pwArgs := <- pwChan
-	miscArgs = append(
-		miscArgs,
-		pwArgs...
-	)
 	if confOpts.mountInfo == true {
 		miscArgs = append(
 			miscArgs,
@@ -2157,12 +2336,140 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		)
 	}
 
-
-
-
 	miscChan <- miscArgs
+
 	wg.Wait()
+	if hasValidExpose {
+		close(validBwBindArgs)
+		close(exposedPaths)
+		var pathList []string
+
+		for path := range exposedPaths {
+			pathList = append(pathList, path)
+		}
+
+		for arg := range validBwBindArgs {
+			miscChan <- arg
+		}
+
+
+		// var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
+		// var busName = connBus.Names()[0]
+		// pathResponse := "/org/freedesktop/portal/desktop/request/" + busName + "/" + requestID
+		// var responseObjPath = godbus.ObjectPath(pathResponse)
+
+
+		// connBus.AddMatchSignal(
+		// 	godbus.WithMatchObjectPath(
+		// 		responseObjPath,
+		// 	),
+		// 	godbus.WithMatchInterface(
+		// 		"org.freedesktop.portal.Request",
+		// 	),
+		// 	godbus.WithMatchMember(
+		// 		"Response",
+		// 	),
+		// )
+		//busSigChan := make(chan *godbus.Signal, 20)
+		//connBus.Signal(busSigChan)
+		//var respRes = make(chan bool, 1)
+		//go watchResult(busSigChan, respRes)
+		addFilesToPortal(connBus, pathList, filesInfo)
+	}
+	pecho("debug", "Send files info")
+	close(filesInfo)
+	for pw := range pwChan {
+		miscChan <- pw
+	}
 	close(miscChan)
+}
+
+type PortalResponse struct {
+	DocIDs		[]string
+	ExtraInfo	map[string]godbus.Variant
+}
+
+func watchResult(sigChan chan *godbus.Signal, result chan bool) {
+	for signal := range sigChan {
+		var response PortalResponse
+		pecho("debug", "Processing D-Bus signal from " + signal.Sender)
+		err := godbus.Store(signal.Body, &response)
+		if err != nil {
+			pecho("warn", "Could not process signal: " + err.Error())
+		}
+
+		pecho("debug", "Got document ID slice: " + strings.Join(response.DocIDs, ", "))
+	}
+}
+
+type AddDocumentFullData struct {
+	PathFDs		[]godbus.UnixFD
+	Flags		uint32
+	AppID		string
+	Permissions	[]string
+}
+
+// This portal does not need Request?
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles) {
+	var filesInfoTmp PassFiles
+	filesInfoTmp.FileMap = map[string]string{}
+	var busFdList []godbus.UnixFD
+	if connBus.SupportsUnixFDs() == false {
+		pecho("warn", "Could not pass files using file descriptor: unsupported")
+		return
+	} else {
+		pecho("debug", "D-Bus has UnixFD support")
+		for _, path := range pathList {
+			fileObj, err := os.Open(path)
+			if err != nil {
+				pecho("warn", "Could not open file: " + err.Error())
+				continue
+			}
+			filesInfoTmp.FileMap[path] = "unknown"
+			fd := fileObj.Fd()
+			busFdList = append(busFdList, godbus.UnixFD(fd))
+		}
+	}
+	var busData	AddDocumentFullData
+	busData.AppID = confOpts.appID
+	busData.Flags = 1
+	busData.PathFDs = busFdList
+	busData.Permissions = []string{"read", "write", "grant-permissions"}
+
+	path := "/org/freedesktop/portal/documents"
+	pathBus := godbus.ObjectPath(path)
+
+	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
+	pecho("debug", "Requesting Documents portal for IDs...")
+	call := obj.Call("org.freedesktop.portal.Documents.AddFull", 0,
+		busData.PathFDs,
+		busData.Flags,
+		busData.AppID,
+		busData.Permissions,
+	)
+	//<- call.Done
+	pecho("debug", "AddFull call done")
+	if call.Err != nil {
+		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
+		fmt.Println(call)
+	}
+	var resp PortalResponse
+	err := godbus.Store(call.Body, &resp.DocIDs, &resp.ExtraInfo)
+	if err != nil {
+		pecho("warn", "Could not decode portal response: " + err.Error())
+	}
+	for idx, docid := range resp.DocIDs {
+		filesInfoTmp.FileMap[pathList[idx]] = filepath.Join(
+			xdgDir.runtimeDir,
+			"/doc/",
+			docid,
+			filepath.Base(pathList[idx]),
+		)
+	}
+	jsonObj, _ := json.Marshal(filesInfoTmp)
+	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
+	pecho("debug", "Passed files info: " + string(jsonObj))
+	filesInfo <- filesInfoTmp
 }
 
 func bindXAuth(xauthChan chan []string) {
@@ -2660,6 +2967,149 @@ func inputBind(inputBindChan chan []string) {
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
+type StartRequest struct {
+	Exec		[]string
+	CustomTarget	bool
+	Files		PassFiles
+}
+func auxStartNg() bool {
+	socketPath := filepath.Join(
+		xdgDir.runtimeDir,
+		"/portable/",
+		confOpts.appID,
+		"/portable-control/helper",
+	)
+	_, err := net.Dial("unix", socketPath)
+	if err != nil {
+		pecho("warn", "Could not do auxiliary start using HTTP IPC")
+		return false
+	}
+	var reqbody StartRequest
+	reqbody.Exec = runtimeOpt.applicationArgs
+	reqbody.CustomTarget = false
+	reqbody.Files = <- filesInfo
+	jsonObj, err := json.Marshal(reqbody)
+	if err != nil {
+		panic(err)
+	}
+
+	roundTripper := http2.Transport{
+		DialTLS:	func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return net.Dial("unix", socketPath)
+		},
+		AllowHTTP:	true,
+	}
+	pecho("debug", "Requesting start")
+	ipcClient := http.Client{
+		Transport:	&roundTripper,
+	}
+	// TODO: use multi reader to pipe stdin
+	reader := strings.NewReader(string(jsonObj))
+
+	var resp *http.Response
+	resp, err = ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
+	if err != nil {
+		panic("Could not post data via IPC" + err.Error())
+	}
+	processStream(resp, socketPath)
+	pecho("info", "Started auxiliary application, connection protocol: " + resp.Proto)
+	return true
+}
+
+type HelperResponseField struct {
+	Success			bool
+	ID			int
+}
+
+func processStream(resp *http.Response, socketPath string) {
+	fmt.Println("Piping stdout/stdin...")
+	pipeR, pipeW := io.Pipe()
+	scanner := bufio.NewScanner(resp.Body)
+	var helperResp HelperResponseField
+	for scanner.Scan() {
+		line := scanner.Text()
+		err := json.Unmarshal([]byte(line), &helperResp)
+		if err != nil {
+			pecho("warn", "Unable to read garbled stream: " + err.Error())
+		} else {
+			break
+		}
+	}
+	id := helperResp.ID
+	roundTripper := http2.Transport{
+		DialTLS:	func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return net.Dial("unix", socketPath)
+		},
+		AllowHTTP:		true,
+		DisableCompression:	true,
+	}
+	ipcClient := http.Client{
+		Transport:	&roundTripper,
+	}
+	reqIn, err := http.NewRequest(
+		http.MethodPost,
+		"http://127.0.0.1/stream/stdin",
+		pipeR,
+	)
+	reqIn.Header.Set("Content-Type", "application/octet-stream")
+	if err != nil {
+		pecho("crit", "Could not create request: " + err.Error())
+		return
+	}
+	reqOut, err := http.NewRequest(
+		http.MethodPost,
+		"http://127.0.0.1/stream/stdout",
+		nil,
+	)
+	if err != nil {
+		pecho("crit", "Could not create request: " + err.Error())
+		return
+	}
+	reqErr, err := http.NewRequest(
+		http.MethodPost,
+		"http://127.0.0.1/stream/stderr",
+		nil,
+	)
+	if err != nil {
+		pecho("crit", "Could not create request: " + err.Error())
+		return
+	}
+
+	go func () {
+		reqOut.Header.Set("Portable", strconv.Itoa(id))
+		respOut, err := ipcClient.Do(reqOut)
+		if err != nil {
+			pecho("warn", "Could not pipe terminal: " + err.Error())
+		} else {
+			fmt.Println("Started piping stdout")
+			io.Copy(os.Stdout, respOut.Body)
+		}
+	} ()
+
+
+	go func () {
+		reqIn.Header.Set("Portable", strconv.Itoa(id))
+		_, err := ipcClient.Do(reqIn)
+		if err != nil {
+			pecho("warn", "Could not pipe terminal: " + err.Error())
+		} else {
+			fmt.Println("Started piping stdin")
+			io.Copy(pipeW, os.Stdin)
+		}
+	} ()
+
+	//go func () {
+		reqErr.Header.Set("Portable", strconv.Itoa(id))
+		respOut, err := ipcClient.Do(reqErr)
+		if err != nil {
+			pecho("warn", "Could not pipe terminal: " + err.Error())
+		} else {
+			fmt.Println("Started piping stderr")
+			io.Copy(os.Stderr, respOut.Body)
+		}
+	//} ()
+}
+
 func multiInstance(miChan chan bool) {
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
@@ -2738,6 +3188,11 @@ func multiInstance(miChan chan bool) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
+		res := auxStartNg()
+		if res {
+			miChan <- true
+			return
+		}
 		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
 		if jsonErr != nil {
 			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
@@ -2812,54 +3267,54 @@ func atSpiProxy() {
 
 	atSpiProxyCmd.Start()
 }
-
-func waitChan(tgChan chan int8, chanName string) {
-	<- tgChan
-}
-
 func main() {
-	runtime.SetBlockProfileRate(1)
-
+	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
+
 	var wg sync.WaitGroup
-	go getVariables()
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
+	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
+	wg.Go(func() {
+		getVariables()
+	})
+	wg.Go(func() {
 		readConf()
-	} ()
-	sdContext, sdCancelFunc := context.WithCancel(context.Background())
-	conn, err := dbus.NewUserConnectionContext(sdContext)
-	if err != nil {
-		pecho("crit", "Could not connect to user service manager: " + err.Error())
-		return
-	}
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
-		lookUpXDG()
-	} ()
-	go stopAppWorker(conn, sdCancelFunc, sdContext)
+	})
+	var sdContext context.Context
+	var sdCancelFunc context.CancelFunc
+	var conn *dbus.Conn
+	wg.Go(func() {
+		var err error
+		sdContext, sdCancelFunc = context.WithCancel(context.Background())
+		conn, err = dbus.NewUserConnectionContext(sdContext)
+		if err != nil {
+			pecho("crit", "Could not connect to user service manager: " + err.Error())
+			return
+		}
+	})
+
+
+
 
 	inputChan := make(chan []string, 512)
 	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
-	fmt.Println("Portable daemon", version, "starting")
+	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
+	go stopAppWorker(conn, sdCancelFunc, sdContext)
 
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
 
 	go cmdlineDispatcher(cmdChan)
 	go gpuBind(gpuChan)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	miscChan := make(chan []string, 10240)
+	pwSecContextChan := make(chan []string, 1)
+
+	wg.Go(func() {
 		instDesktopFile()
-	} ()
+	})
 	wg.Go(func() {
 		setupSharedDir()
 	})
@@ -2878,6 +3333,7 @@ func main() {
 	go tryBindCam(camChan)
 
 	<- cmdChan
+	go miscBinds(miscChan, pwSecContextChan)
 
 
 	if startAct == "abort" {
@@ -2891,12 +3347,7 @@ func main() {
 
 	// MI
 	go multiInstance(miChan)
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
-		sanityChecks()
-	} ()
-	pwSecContextChan := make(chan []string, 1)
+
 
 	wg.Add(2)
 	go func() {
@@ -2906,14 +3357,20 @@ func main() {
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
+		//time.Sleep(1 * time.Hour)
+		//os.Exit(0)
 	} else {
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+	wg.Go(func() {
+		sanityChecks()
+	})
 	go flushEnvs()
 	go setFirewall()
 	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan)
+		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan, miscChan)
 	} ()
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan)
