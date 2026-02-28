@@ -921,16 +921,42 @@ func removeWrapCon(paths []string) {
 	wg.Wait()
 }
 
-func cleanDirs() {
-	pecho("info", "Cleaning leftovers")
-	var paths = []string{
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID,
-		xdgDir.runtimeDir + "/app/" + confOpts.appID,
+func removeWrapChan(pathChan chan string) {
+	var wg sync.WaitGroup
+	for path := range pathChan {
+		wg.Go(func() {
+			err := os.RemoveAll(path)
+			if err != nil {
+				pecho(
+					"warn",
+					"Unable to remove " + path + ": " + err.Error(),
+				)
+			}
+		})
 	}
+	wg.Wait()
+}
+
+func cleanDirs() {
+	var wg sync.WaitGroup
+	pathChan := make(chan string, 8)
+	wg.Go(func() {removeWrapChan(pathChan)})
+	pecho("info", "Cleaning leftovers")
+	pathChan <- filepath.Join(
+		xdgDir.runtimeDir,
+		"/portable/",
+		confOpts.appID,
+	)
+	pathChan <- filepath.Join(
+		xdgDir.runtimeDir,
+		"app",
+		confOpts.appID,
+	)
 	if runtimeOpt.writtenDesktop {
-		paths = append(
-			paths,
-			xdgDir.dataDir + "/applications/" + confOpts.appID + ".desktop",
+		pathChan <- filepath.Join(
+			xdgDir.dataDir,
+			"applications",
+			confOpts.appID + ".desktop",
 		)
 	}
 	localID := getInstanceID()
@@ -938,15 +964,21 @@ func cleanDirs() {
 		localID = runtimeInfo.instanceID
 	}
 	if len(localID) > 0 {
-		paths = append(
-			paths,
-			xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID,
-			xdgDir.runtimeDir + "/.flatpak/" + localID,
+		pathChan <- filepath.Join(
+			xdgDir.runtimeDir,
+			".flatpak",
+			confOpts.appID,
+		)
+		pathChan <- filepath.Join(
+			xdgDir.runtimeDir,
+			".flatpak",
+			localID,
 		)
 	} else {
 		pecho("warn", "Skipped cleaning Flatpak entries")
 	}
-	removeWrapCon(paths)
+	close(pathChan)
+	wg.Wait()
 }
 
 func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
