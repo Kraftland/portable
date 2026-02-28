@@ -968,15 +968,12 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
 	var wg sync.WaitGroup
-	wg.Add(2)
-	go func () {
-		defer wg.Done()
+	wg.Go(func() {
 		doCleanUnit(conn, sdCancelFunc, sdContext)
-	} ()
-	go func () {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		cleanDirs()
-	} ()
+	})
 	close(socketStop)
 	//socketStop <- 1
 	wg.Wait()
@@ -1285,7 +1282,6 @@ func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context
 	defer sdCancelFunc()
 	var wg sync.WaitGroup
 	var units = []string{
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + "-pipewire-container.service",
 		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 	}
 	for _, unit := range units {
