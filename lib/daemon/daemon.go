@@ -2083,6 +2083,46 @@ func translatePath(input string) (output string) {
 	return
 }
 
+// Does not take empty input
+func questionExpose(paths []string) bool {
+	zenityArgs := []string{
+		"--title",
+			"confOpts.friendlyName",
+		"--icon=folder-open-symbolic",
+		"--question",
+		"--default-cancel",
+	}
+	var zenityText strings.Builder
+	switch runtimeOpt.userLang {
+		case "zh_CN.UTF-8":
+			zenityText.WriteString("--text=授权以下路径: \n ")
+		default:
+			zenityText.WriteString("--text=Exposing the following path: \n ")
+	}
+	zenityArgs = append(zenityArgs, zenityText.String())
+
+	for _, val := range paths {
+		zenityText.WriteString(val)
+		zenityText.WriteString("\n")
+	}
+
+	attrs := syscall.SysProcAttr{
+		Pdeathsig:		syscall.SIGKILL,
+	}
+	zenityCmd := exec.Command("zenity", zenityArgs...)
+	zenityCmd.SysProcAttr = &attrs
+	zenityCmd.Stderr = os.Stderr
+	if internalLoggingLevel <= 1 {
+		zenityCmd.Stdout = os.Stdout
+	}
+	err := zenityCmd.Run()
+	if err != nil {
+		pecho("warn", "Could not ask for permission: " + err.Error())
+		return false
+	}
+	return true
+}
+
 func maskDir(path string) (maskArgs []string) {
 	maskT, err := os.Stat(path)
 	if err == nil && maskT.IsDir() == true {
