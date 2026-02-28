@@ -906,19 +906,17 @@ func getInstanceID() string {
 
 func removeWrapCon(paths []string) {
 	var wg sync.WaitGroup
-	wg.Add(len(paths))
 	for _, path := range paths {
 		p := path
-		go func () {
+		wg.Go(func() {
 			err := os.RemoveAll(p)
-			wg.Done()
 			if err != nil {
 				pecho(
 					"warn",
 					"Unable to remove " + path + ": " + err.Error(),
 				)
 			}
-		} ()
+		})
 	}
 	wg.Wait()
 }
