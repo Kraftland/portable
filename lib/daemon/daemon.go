@@ -1198,7 +1198,7 @@ func calcDbusArg(argChan chan []string) {
 		)
 	}
 
-	if internalLoggingLevel < 1 {
+	if internalLoggingLevel <= 1 {
 		argList = append(argList, "--log")
 	}
 	if os.Getenv("XDG_CURRENT_DESKTOP") == "gnome" {
