@@ -354,6 +354,8 @@ func getDirSize(path string) float64 {
 
 func cmdlineDispatcher(cmdChan chan int8) {
 	var skipCount int
+	var hasExpose bool
+	var exposeMap = map[string]string{}
 	cmdlineArray := os.Args
 	for index, value := range cmdlineArray {
 		if index == 0 {
@@ -375,10 +377,15 @@ func cmdlineDispatcher(cmdChan chan int8) {
 					pecho("warn", "--expose requires 2 arguments")
 					break
 				}
-				skipCount += 2
-				runtimeOpt.userExpose <- map[string]string{
-					cmdlineArray[index + 1]:	cmdlineArray[index + 2],
+				if filepath.IsAbs(cmdlineArray[index + 1]) && filepath.IsAbs(cmdlineArray[index + 2]) {
+					pecho("debug", "Validated absolute path")
+				} else {
+					pecho("warn", "Rejecting non absolute path")
+					continue
 				}
+				hasExpose = true
+				skipCount += 2
+				exposeMap[cmdlineArray[index + 1]] = cmdlineArray[index + 2]
 			case "--actions" :
 			skipCount++
 			if len(cmdlineArray) <= index + 1 {
@@ -427,6 +434,16 @@ func cmdlineDispatcher(cmdChan chan int8) {
 				runtimeOpt.argStop = true
 			default:
 				pecho("warn", "Unrecognised option: " + value)
+		}
+	}
+	if hasExpose {
+		exposeList := []string{}
+		for key, _ := range exposeMap {
+			exposeList = append(exposeList, key)
+		}
+		res := questionExpose(exposeList)
+		if res {
+			runtimeOpt.userExpose <- exposeMap
 		}
 	}
 	for index, _ := range runtimeOpt.applicationArgs {
@@ -481,17 +498,25 @@ func shareFile() {
 }
 
 func getVariables() {
-	if len(os.Getenv("bwBindPar")) > 0 {
+	runtimeOpt.userLang = os.Getenv("LANG")
+	bindVar := os.Getenv("bwBindPar")
+	if len(bindVar) > 0 {
+		bindVar, err := filepath.Abs(bindVar)
+		if err != nil {
+			pecho("warn", "Could not resolve absolute path: " + err.Error())
+			return
+		}
 		pecho("warn",
 		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
 		)
-		bwBindParMap := map[string]string{
-			os.Getenv("bwBindPar"):		os.Getenv("bwBindPar"),
+		res := questionExpose([]string{bindVar})
+		if res {
+			bwBindParMap := map[string]string{
+				bindVar:		bindVar,
+			}
+			runtimeOpt.userExpose <- bwBindParMap
 		}
-		runtimeOpt.userExpose <- bwBindParMap
 	}
-
-	runtimeOpt.userLang = os.Getenv("LANG")
 }
 
 func isPathSuitableForConf(path string) (result bool) {
@@ -2087,7 +2112,7 @@ func translatePath(input string) (output string) {
 func questionExpose(paths []string) bool {
 	zenityArgs := []string{
 		"--title",
-			"confOpts.friendlyName",
+			confOpts.friendlyName,
 		"--icon=folder-open-symbolic",
 		"--question",
 		"--default-cancel",
@@ -2099,12 +2124,11 @@ func questionExpose(paths []string) bool {
 		default:
 			zenityText.WriteString("--text=Exposing the following path: \n ")
 	}
-	zenityArgs = append(zenityArgs, zenityText.String())
-
 	for _, val := range paths {
 		zenityText.WriteString(val)
 		zenityText.WriteString("\n")
 	}
+	zenityArgs = append(zenityArgs, zenityText.String())
 
 	attrs := syscall.SysProcAttr{
 		Pdeathsig:		syscall.SIGKILL,
@@ -2315,40 +2339,15 @@ func miscBinds(miscChan chan []string, pwChan chan []string) {
 		close(validBwBindArgs)
 		close(exposedPaths)
 		var pathList []string
-		zenityArgs := []string{
-			"--title",
-				confOpts.friendlyName,
-			"--icon=folder-open-symbolic",
-			"--question",
-			"--default-cancel",
-		}
-		var zenityText string
-		switch runtimeOpt.userLang {
-			case "zh_CN.UTF-8":
-				zenityText = "--text=暴露以下路径: \n "
-			default:
-				zenityText = "--text=Exposing the following path: \n "
-		}
-		var invokeZenity bool
+
 		for path := range exposedPaths {
-			invokeZenity = true
 			pathList = append(pathList, path)
-			zenityText = zenityText + path + " \n"
 		}
-		if invokeZenity {
-			zenityArgs = append(zenityArgs, zenityText)
-			zenityRun := exec.Command("/usr/bin/zenity", zenityArgs...)
-			zenityRun.Stderr = os.Stderr
-			errZenity := zenityRun.Run()
-			if errZenity != nil {
-				pecho("warn", "User denied exposing")
-				//stopApp()
-			} else {
-				for arg := range validBwBindArgs {
-					miscChan <- arg
-				}
-			}
+
+		for arg := range validBwBindArgs {
+			miscChan <- arg
 		}
+
 
 		// var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
 		// var busName = connBus.Names()[0]
@@ -3271,7 +3270,10 @@ func main() {
 	go pechoWorker()
 
 	var wg sync.WaitGroup
-	go getVariables()
+	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
+	wg.Go(func() {
+		getVariables()
+	})
 	wg.Go(func() {
 		readConf()
 	})
@@ -3305,7 +3307,7 @@ func main() {
 	go gpuBind(gpuChan)
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
-	go miscBinds(miscChan, pwSecContextChan)
+
 	wg.Go(func() {
 		instDesktopFile()
 	})
@@ -3327,6 +3329,7 @@ func main() {
 	go tryBindCam(camChan)
 
 	<- cmdChan
+	go miscBinds(miscChan, pwSecContextChan)
 
 
 	if startAct == "abort" {
