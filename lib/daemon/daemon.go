@@ -2069,14 +2069,11 @@ func genBwArg(
 }
 
 func flushEnvs() {
-	//os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	var envs = []string{}
+	var builder strings.Builder
 
 	for env := range envsChan {
-		envs = append(
-			envs,
-			env,
-		)
+		builder.WriteString(env)
+		builder.WriteString("\n")
 	}
 
 	fd, err := os.OpenFile(
@@ -2092,10 +2089,7 @@ func flushEnvs() {
 	}
 	defer fd.Close()
 	writer := bufio.NewWriter(fd)
-	for _, env := range envs {
-		writer.WriteString(env)
-		writer.WriteString("\n")
-	}
+	writer.WriteString(builder.String())
 	err = writer.Flush()
 	if err != nil {
 		pecho("crit", "Could not write environment variables: " + err.Error())
