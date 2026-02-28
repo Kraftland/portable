@@ -108,12 +108,15 @@ type StartRequest struct {
 }
 
 func cmdlineReplacer(origin []string, files map[string]string) []string {
+	if len(files) == 0 {
+		return origin
+	}
 	replacerPairs := make([]string, 0 , len(files) * 2)
 	for key, val := range files {
 		replacerPairs = append(replacerPairs, key, val)
 	}
 	replacer := strings.NewReplacer(replacerPairs...)
-	var result []string
+	var result = make([]string, 0, len(origin))
 	for _, val := range origin {
 		result = append(result, replacer.Replace(val))
 	}
