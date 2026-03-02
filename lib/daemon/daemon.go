@@ -2113,6 +2113,7 @@ func flushEnvs() {
 			"crit",
 			"Could not open environment variables: " + err.Error(),
 		)
+		return
 	}
 	defer fd.Close()
 	writer := bufio.NewWriter(fd)
