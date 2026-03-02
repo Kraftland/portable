@@ -3295,6 +3295,7 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
+	timeNow := time.Now()
 
 	var wg sync.WaitGroup
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
@@ -3411,6 +3412,7 @@ func main() {
 	go pwSecContext(pwSecContextChan)
 	wg.Wait()
 	close(envsChan)
+	pecho("debug", "Started Portable in " + time.Since(timeNow).String())
 	startApp()
 	}
 }
