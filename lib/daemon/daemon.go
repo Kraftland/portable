@@ -2556,21 +2556,23 @@ func detectCardStatus(cardList chan []string, cardPath string, cardNamed string)
 				"warn",
 				"Failed to open GPU status: " + err.Error(),
 			)
-		}
-		conStat, ioErr := io.ReadAll(conStatFd)
-		if ioErr != nil {
-			pecho(
-				"warn",
-				"Failed to read GPU status: " + ioErr.Error(),
-			)
-		}
-		if strings.Contains(string(conStat), "disconnected") {
-			continue
 		} else {
-			var activeGpus = []string{cardNamed}
-			cardList <- activeGpus
-			pecho("debug", "Found active GPU: " + cardNamed)
-			return
+			defer conStatFd.Close()
+		}
+		scanner := bufio.NewScanner(conStatFd)
+		for scanner.Scan() {
+			line := scanner.Text()
+			switch line {
+				case "disconnected":
+					continue
+				case "connected":
+					var activeGpus = []string{cardNamed}
+					cardList <- activeGpus
+					pecho("debug", "Found active GPU: " + cardNamed)
+					return
+				default:
+					pecho("warn", "Could not determine status of GPU: " + cardNamed)
+			}
 		}
 	}
 }
@@ -2768,6 +2770,9 @@ func bindCard(cardName string, argChan chan []string) {
 		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 		if openErr != nil {
 			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
+			return
+		} else {
+			defer cardVendorFd.Close()
 		}
 		cardVendor, err := io.ReadAll(cardVendorFd)
 		if err != nil {
