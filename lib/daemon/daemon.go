@@ -2893,14 +2893,13 @@ func tryBindNv() []string {
 func inputBind(inputBindChan chan []string) {
 	var wg sync.WaitGroup
 	inputBindArg := []string{}
-	inputBindArg = append(
-		inputBindArg,
+	inputBindChan <- []string{
 		"--dev-bind-try",	"/sys/class/leds", "/sys/class/leds",
 		"--dev-bind-try",	"/sys/class/input", "/sys/class/input",
 		"--dev-bind-try",	"/sys/class/hidraw", "/sys/class/hidraw",
 		"--dev-bind-try",	"/dev/input", "/dev/input",
 		"--dev-bind-try",	"/dev/uinput", "/dev/uinput",
-	)
+	}
 
 	u := udev.Udev{}
 	e := u.NewEnumerate()
@@ -3321,7 +3320,7 @@ func main() {
 
 
 
-	inputChan := make(chan []string, 512)
+	inputChan := make(chan []string, 4)
 	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
 	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
