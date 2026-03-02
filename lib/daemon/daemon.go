@@ -2770,6 +2770,9 @@ func bindCard(cardName string, argChan chan []string) {
 		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 		if openErr != nil {
 			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
+			return
+		} else {
+			defer cardVendorFd.Close()
 		}
 		cardVendor, err := io.ReadAll(cardVendorFd)
 		if err != nil {
