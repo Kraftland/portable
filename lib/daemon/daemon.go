@@ -1597,6 +1597,7 @@ func instDesktopFile() {
 		pecho("warn", "Non-existent .desktop file may result in Portals crashing")
 		return
 	}
+	defer file.Close()
 	_, err = replacer.WriteString(file, templateDesktopFile)
 	if err != nil {
 		pecho("warn", "Could not write .desktop file: " + err.Error())
@@ -1677,21 +1678,22 @@ func imEnvs () {
 							0644,
 						)
 						if fdErr == nil {
-							commContent, rdErr := io.ReadAll(commFd)
-							if rdErr == nil {
-								stringObj := string(commContent)
-								if strings.Contains(stringObj, "fcitx") {
+							scanner := bufio.NewScanner(commFd)
+							for scanner.Scan() {
+								line := scanner.Text()
+								if strings.Contains(line, "fcitx") {
 									pecho("debug", "Guessing IM: Fcitx")
 									addEnv("GTK_IM_MODULE=fcitx")
 									addEnv("QT_IM_MODULE=fcitx")
 									break
-								} else if strings.Contains(stringObj, "ibus") {
+								} else if strings.Contains(line, "ibus") {
 									pecho("debug", "Guessing IM: iBus")
 									addEnv("QT_IM_MODULE=ibus")
 									addEnv("GTK_IM_MODULE=ibus")
 									break
 								}
 							}
+							commFd.Close()
 						}
 					}
 				}
