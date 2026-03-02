@@ -617,6 +617,7 @@ func readConf() {
 	if fdErr != nil {
 		pecho("crit", "Could not open configuration for reading: " + fdErr.Error())
 	}
+	defer confFd.Close()
 	scanner := bufio.NewScanner(confFd)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
