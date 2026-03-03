@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"syscall"
+	"golang.org/x/sys/unix"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -441,6 +443,16 @@ func sendSignal(signal []string) {
 	_, errWrite := socket.Write([]byte(finalSignal))
 	if errWrite != nil {
 		panic("Could not write signal " + finalSignal + ": " + errWrite.Error())
+	}
+}
+
+func sendPidFd() {
+	pid := os.Getpid()
+
+	pidfd, err := unix.PidfdOpen(pid, 0)
+	if err != nil {
+		fmt.Println("Could not obtain PIDFD: " + err.Error())
+		return
 	}
 }
 
