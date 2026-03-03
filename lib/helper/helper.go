@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"syscall"
 	"golang.org/x/sys/unix"
 
 	"golang.org/x/net/http2"
