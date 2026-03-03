@@ -447,16 +447,29 @@ func sendSignal(signal []string) {
 
 func sendPidFd() {
 	pid := os.Getpid()
+	var st unix.Stat_t
 
 	pidfd, err := unix.PidfdOpen(pid, 0)
 	if err != nil {
 		fmt.Println("Could not obtain PIDFD: " + err.Error())
 		return
 	}
+	err = unix.Fstat(pidfd, &st)
+	if err != nil {
+		fmt.Println("Could not obtain PIDFD inode: " + err.Error())
+		return
+	}
+	res, err := daemon.SdNotify(false, "MAINPIDFDID=" + strconv.Itoa(int(st.Ino)))
+	if err != nil {
+		fmt.Println("Could not set Main PID: " + err.Error())
+	} else if res == false {
+		fmt.Println("Could not set Main PID: " + "unknown error")
+	}
 }
 
 func main () {
 	go startCounter()
+	go sendPidFd()
 	fmt.Println("Starting helper...")
 
 	// This is horrible, but launchTarget may have spaces
