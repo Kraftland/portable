@@ -451,15 +451,12 @@ func main () {
 	// This is horrible, but launchTarget may have spaces
 	var rawTarget = os.Getenv("launchTarget")
 	targetSlice := strings.Split(rawTarget, " ")
-	//var rawArgs string = os.Getenv("targetArgs")
-	var rawArgs = []string{}
-	json.Unmarshal([]byte(os.Getenv("targetArgs")), &rawArgs)
-	fmt.Println("Got raw command line arguments: " + strings.Join(rawArgs, " "))
 	targetArgs := targetSlice[1:]
 	targetArgs = append(
 		targetArgs,
-		rawArgs...
+		os.Args[1:]...
 	)
+	fmt.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	go auxStart(targetSlice[0], targetSlice[1:])
 	if os.Getenv("_portableDebug") == "1" {

@@ -1463,8 +1463,12 @@ func closeSocketOnDemand (socket net.Listener) {
 
 func startApp() {
 	go forceBackgroundPerm()
-	pecho("debug", "Calculated arguments for systemd-run: " + strings.Join(runtimeInfo.bwCmd, ", "))
-	sdExec := exec.Command("systemd-run", runtimeInfo.bwCmd...)
+	sdArgs := append(
+		runtimeInfo.bwCmd,
+		runtimeOpt.applicationArgs...,
+	)
+	pecho("debug", "Calculated arguments for systemd-run: " + strings.Join(sdArgs, ", "))
+	sdExec := exec.Command("systemd-run", sdArgs...)
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
