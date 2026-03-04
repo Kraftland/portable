@@ -380,7 +380,7 @@ func cmdlineDispatcher(cmdChan chan int8) {
 					pecho("warn", "--expose requires 2 arguments")
 					break
 				}
-				if filepath.IsAbs(cmdlineArray[index + 1]) && filepath.IsAbs(cmdlineArray[index + 2]) {
+				if filepath.IsAbs(cmdlineArray[index + 1]) {
 					pecho("debug", "Validated absolute path")
 				} else {
 					pecho("warn", "Rejecting non absolute path")
