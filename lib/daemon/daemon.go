@@ -2434,7 +2434,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	} else {
 		pecho("debug", "D-Bus has UnixFD support")
 		for _, path := range pathList {
-			fileObj, err := os.Open(path)
+			fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
 			if err != nil {
 				pecho("warn", "Could not open file: " + err.Error())
 				continue
