@@ -1431,6 +1431,13 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
+func listenIOSocket() {
+	err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO"), 0700)
+	if err != nil {
+		pecho("warn", "Failed to create IO directory: " + err.Error())
+	}
+}
+
 func watchSignalSocket(readyChan chan int8) {
 	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
 	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
