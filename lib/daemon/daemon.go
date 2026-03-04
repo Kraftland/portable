@@ -1432,10 +1432,27 @@ func handleSignal (conn net.Conn) {
 }
 
 func listenIOSocket() {
-	err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO"), 0700)
+	ioPath := filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO")
+	err := os.MkdirAll(ioPath, 0700)
 	if err != nil {
 		pecho("warn", "Failed to create IO directory: " + err.Error())
 	}
+	stdinListener, err := net.Listen("unix", filepath.Join(ioPath, "stdin"))
+	if err != nil {
+		pecho("warn", "Could not listen for standard input: " + err.Error())
+	} else {
+		go stdinHandler(stdinListener)
+	}
+}
+
+func stdinHandler(listener net.Listener) {
+	defer listener.Close()
+	conn, err := listener.Accept()
+	if err != nil {
+		pecho("warn", "Could not listen for standard input: " + err.Error())
+		return
+	}
+	io.Copy(os.Stdin, conn)
 }
 
 func watchSignalSocket(readyChan chan int8) {
