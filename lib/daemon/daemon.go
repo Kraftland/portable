@@ -1437,33 +1437,32 @@ func listenIOSocket() {
 	if err != nil {
 		pecho("warn", "Failed to create IO directory: " + err.Error())
 	}
-	stdinListener, err := net.Listen("unix", filepath.Join(ioPath, "stdin"))
-	if err != nil {
-		pecho("warn", "Could not listen on I/O socket: " + err.Error())
-		return
-	}
-	stdoutListener, err := net.Listen("unix", filepath.Join(ioPath, "stdout"))
-	if err != nil {
-		pecho("warn", "Could not listen on I/O socket: " + err.Error())
-		return
-	}
-	stderrListener, err := net.Listen("unix", filepath.Join(ioPath, "stderr"))
-	if err != nil {
-		pecho("warn", "Could not listen on I/O socket: " + err.Error())
-		return
-	}
-	go stdHandler(stdinListener, stdoutListener, stderrListener)
+	stdHandler(ioPath)
 }
 
-func stdHandler(stdin net.Listener, stdout net.Listener, stderr net.Listener) {
+func stdHandler(ioPath string) {
+	stdin, err := net.Listen("unix", filepath.Join(ioPath, "stdin"))
+	if err != nil {
+		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		return
+	} else {
+		pecho("debug", "Listening")
+	}
+	stdout, err := net.Listen("unix", filepath.Join(ioPath, "stdout"))
+	if err != nil {
+		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		return
+	}
+	stderr, err := net.Listen("unix", filepath.Join(ioPath, "stderr"))
+	if err != nil {
+		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		return
+	}
 	var wg sync.WaitGroup
-	defer stdin.Close()
-	defer stdout.Close()
-	defer stderr.Close()
 	wg.Add(3)
 	go func () {
-		conn, err := stderr.Accept()
 		wg.Done()
+		conn, err := stderr.Accept()
 		if err != nil {
 			pecho("warn", "Could not listen for standard error: " + err.Error())
 			return
@@ -1476,8 +1475,8 @@ func stdHandler(stdin net.Listener, stdout net.Listener, stderr net.Listener) {
 		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)))
 	} ()
 	go func () {
-		conn, err := stdout.Accept()
 		wg.Done()
+		conn, err := stdout.Accept()
 		if err != nil {
 			pecho("warn", "Could not listen for standard output: " + err.Error())
 			return
@@ -1490,8 +1489,8 @@ func stdHandler(stdin net.Listener, stdout net.Listener, stderr net.Listener) {
 		pecho("debug", "Streamed stdout: " + strconv.Itoa(int(n)))
 	} ()
 	go func () {
-		conn, err := stdin.Accept()
 		wg.Done()
+		conn, err := stdin.Accept()
 		if err != nil {
 			pecho("warn", "Could not listen for standard input: " + err.Error())
 			return
@@ -1503,6 +1502,8 @@ func stdHandler(stdin net.Listener, stdout net.Listener, stderr net.Listener) {
 		}
 		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)))
 	} ()
+	wg.Wait()
+	return
 
 
 
@@ -1906,7 +1907,6 @@ func genBwArg(
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		"--user",
-		"--pty",
 		"--service-type=notify",
 		"--wait",
 		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
@@ -1919,6 +1919,8 @@ func genBwArg(
 		"-p", "ExitType=cgroup",
 		// TODO: when transitioning to D-Bus startup, see Bus proxy impl
 		"-p", "StandardInput=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stdin"),
+		"-p", "StandardOutput=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stdout"),
+		"-p", "StandardError=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stderr"),
 		"-p", "SuccessExitStatus=SIGKILL",
 		"-p", "NotifyAccess=all",
 		"-p", "TimeoutStartSec=infinity",
