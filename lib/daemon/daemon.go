@@ -1441,7 +1441,7 @@ func listenIOSocket() {
 	}
 	socketPath := filepath.Join(ioPath, "IO")
 	readyChan := make(chan int, 1)
-	stdHandler(socketPath, readyChan)
+	go stdHandler(socketPath, readyChan)
 
 	<- readyChan
 }
@@ -1450,6 +1450,7 @@ func stdHandler(path string, ready chan int) {
 	listener, err := net.Listen("unix", path)
 	if err != nil {
 		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		ready <- 1
 		return
 	}
 	mux := http.NewServeMux()
@@ -1463,12 +1464,15 @@ func stdHandler(path string, ready chan int) {
 	err = http2.ConfigureServer(h1Serv, server)
 	if err != nil {
 		pecho("warn", "Could not stream I/O: " + err.Error())
+		ready <- 1
 		return
 	}
 	ready <- 1
+	pecho("debug", "I/O stream ready")
 	err = h1Serv.Serve(listener)
 	if err != nil {
 		pecho("warn", "Could not stream I/O: " + err.Error())
+		ready <- 1
 		return
 	}
 }
