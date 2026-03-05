@@ -1439,26 +1439,74 @@ func listenIOSocket() {
 	}
 	stdinListener, err := net.Listen("unix", filepath.Join(ioPath, "stdin"))
 	if err != nil {
-		pecho("warn", "Could not listen for standard input: " + err.Error())
-	} else {
-		go stdinHandler(stdinListener)
+		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		return
 	}
+	stdoutListener, err := net.Listen("unix", filepath.Join(ioPath, "stdout"))
+	if err != nil {
+		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		return
+	}
+	stderrListener, err := net.Listen("unix", filepath.Join(ioPath, "stderr"))
+	if err != nil {
+		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		return
+	}
+	go stdHandler(stdinListener, stdoutListener, stderrListener)
 }
 
-func stdinHandler(listener net.Listener) {
-	defer listener.Close()
-	conn, err := listener.Accept()
-	if err != nil {
-		pecho("warn", "Could not listen for standard input: " + err.Error())
-		return
-	}
-	n, err := io.Copy(os.Stdin, conn)
-	if err != nil {
-		pecho("warn", "Could not stream standard input: " + err.Error())
-		return
-	} else {
+func stdHandler(stdin net.Listener, stdout net.Listener, stderr net.Listener) {
+	var wg sync.WaitGroup
+	defer stdin.Close()
+	defer stdout.Close()
+	defer stderr.Close()
+	wg.Add(3)
+	go func () {
+		conn, err := stderr.Accept()
+		wg.Done()
+		if err != nil {
+			pecho("warn", "Could not listen for standard error: " + err.Error())
+			return
+		}
+		n, err := io.Copy(conn, os.Stderr)
+		if err != nil {
+			pecho("warn", "Could not stream standard error: " + err.Error())
+			return
+		}
+		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)))
+	} ()
+	go func () {
+		conn, err := stdout.Accept()
+		wg.Done()
+		if err != nil {
+			pecho("warn", "Could not listen for standard output: " + err.Error())
+			return
+		}
+		n, err := io.Copy(conn, os.Stdout)
+		if err != nil {
+			pecho("warn", "Could not stream standard output: " + err.Error())
+			return
+		}
+		pecho("debug", "Streamed stdout: " + strconv.Itoa(int(n)))
+	} ()
+	go func () {
+		conn, err := stdin.Accept()
+		wg.Done()
+		if err != nil {
+			pecho("warn", "Could not listen for standard input: " + err.Error())
+			return
+		}
+		n, err := io.Copy(os.Stdin, conn)
+		if err != nil {
+			pecho("warn", "Could not stream standard input: " + err.Error())
+			return
+		}
 		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)))
-	}
+	} ()
+
+
+
+
 }
 
 func watchSignalSocket(readyChan chan int8) {
