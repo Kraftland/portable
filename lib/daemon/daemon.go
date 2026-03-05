@@ -1869,6 +1869,8 @@ func genBwArg(
 		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
+		// TODO: when transitioning to D-Bus startup, see Bus proxy impl
+		"-p", "StandardInput=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stdin"),
 		"-p", "SuccessExitStatus=SIGKILL",
 		"-p", "NotifyAccess=all",
 		"-p", "TimeoutStartSec=infinity",
