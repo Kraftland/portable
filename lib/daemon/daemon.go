@@ -1452,7 +1452,13 @@ func stdinHandler(listener net.Listener) {
 		pecho("warn", "Could not listen for standard input: " + err.Error())
 		return
 	}
-	io.Copy(os.Stdin, conn)
+	n, err := io.Copy(os.Stdin, conn)
+	if err != nil {
+		pecho("warn", "Could not stream standard input: " + err.Error())
+		return
+	} else {
+		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)))
+	}
 }
 
 func watchSignalSocket(readyChan chan int8) {
@@ -3415,6 +3421,9 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
 		sanityChecks()
+	})
+	wg.Go(func() {
+		listenIOSocket()
 	})
 	go flushEnvs()
 	go setFirewall()
