@@ -1473,6 +1473,18 @@ func stdHandler(path string, ready chan int) {
 	}
 }
 
+func stdoutStreamer(writer http.ResponseWriter, req *http.Request) {
+	pecho("debug", "Handling standard output...")
+	//flusher, _ := writer.(http.Flusher)
+	//writer.Header().Set("Content-Type","application/octet-stream")
+	n, err := io.Copy(os.Stdout, req.Body)
+	if err != nil {
+		pecho("warn", "Could not stream standard output: " + err.Error())
+		return
+	}
+	pecho("debug", "Streamed " + strconv.FormatInt(n, 10) + " bytes//")
+}
+
 func stdinStreamer(writer http.ResponseWriter, req *http.Request) {
 	pecho("debug", "Handling standard input...")
 	flusher, _ := writer.(http.Flusher)
