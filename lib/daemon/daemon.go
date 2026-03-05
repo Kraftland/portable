@@ -27,6 +27,7 @@ import (
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	udev "github.com/jochenvg/go-udev"
+	"golang.org/x/net/http2/h2c"
 )
 
 const (
@@ -1432,82 +1433,56 @@ func handleSignal (conn net.Conn) {
 }
 
 func listenIOSocket() {
-	ioPath := filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO")
+	ioPath := filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control")
 	err := os.MkdirAll(ioPath, 0700)
 	if err != nil {
 		pecho("warn", "Failed to create IO directory: " + err.Error())
+		return
 	}
-	stdHandler(ioPath)
+	socketPath := filepath.Join(ioPath, "IO")
+	readyChan := make(chan int, 1)
+	stdHandler(socketPath, readyChan)
+
+	<- readyChan
 }
 
-func stdHandler(ioPath string) {
-	stdin, err := net.Listen("unix", filepath.Join(ioPath, "stdin"))
-	if err != nil {
-		pecho("warn", "Could not listen on I/O socket: " + err.Error())
-		return
-	} else {
-		pecho("debug", "Listening")
-	}
-	stdout, err := net.Listen("unix", filepath.Join(ioPath, "stdout"))
+func stdHandler(path string, ready chan int) {
+	listener, err := net.Listen("unix", path)
 	if err != nil {
 		pecho("warn", "Could not listen on I/O socket: " + err.Error())
 		return
 	}
-	stderr, err := net.Listen("unix", filepath.Join(ioPath, "stderr"))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/stdin", stdinStreamer)
+	server := &http2.Server{}
+	h2Mux := h2c.NewHandler(mux, server)
+	h1Serv := &http.Server{
+		Handler:	h2Mux,
+	}
+
+	err = http2.ConfigureServer(h1Serv, server)
 	if err != nil {
-		pecho("warn", "Could not listen on I/O socket: " + err.Error())
+		pecho("warn", "Could not stream I/O: " + err.Error())
 		return
 	}
-	var wg sync.WaitGroup
-	wg.Add(3)
-	go func () {
-		wg.Done()
-		conn, err := stderr.Accept()
-		if err != nil {
-			pecho("warn", "Could not listen for standard error: " + err.Error())
-			return
-		}
-		n, err := io.Copy(conn, os.Stderr)
-		if err != nil {
-			pecho("warn", "Could not stream standard error: " + err.Error())
-			return
-		}
-		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)))
-	} ()
-	go func () {
-		wg.Done()
-		conn, err := stdout.Accept()
-		if err != nil {
-			pecho("warn", "Could not listen for standard output: " + err.Error())
-			return
-		}
-		n, err := io.Copy(conn, os.Stdout)
-		if err != nil {
-			pecho("warn", "Could not stream standard output: " + err.Error())
-			return
-		}
-		pecho("debug", "Streamed stdout: " + strconv.Itoa(int(n)))
-	} ()
-	go func () {
-		wg.Done()
-		conn, err := stdin.Accept()
-		if err != nil {
-			pecho("warn", "Could not listen for standard input: " + err.Error())
-			return
-		}
-		n, err := io.Copy(os.Stdin, conn)
-		if err != nil {
-			pecho("warn", "Could not stream standard input: " + err.Error())
-			return
-		}
-		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)))
-	} ()
-	wg.Wait()
-	return
+	ready <- 1
+	err = h1Serv.Serve(listener)
+	if err != nil {
+		pecho("warn", "Could not stream I/O: " + err.Error())
+		return
+	}
+}
 
-
-
-
+func stdinStreamer(writer http.ResponseWriter, req *http.Request) {
+	pecho("debug", "Handling standard input...")
+	flusher, _ := writer.(http.Flusher)
+	//writer.Header().Set("Content-Type","application/octet-stream")
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		writer.Write(scanner.Bytes())
+		writer.Write([]byte("\n"))
+		flusher.Flush()
+	}
 }
 
 func watchSignalSocket(readyChan chan int8) {
@@ -1909,6 +1884,7 @@ func genBwArg(
 		"--user",
 		"--service-type=notify",
 		"--wait",
+		"--pty",
 		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
@@ -1917,10 +1893,6 @@ func genBwArg(
 		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
-		// TODO: when transitioning to D-Bus startup, see Bus proxy impl
-		"-p", "StandardInput=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stdin"),
-		"-p", "StandardOutput=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stdout"),
-		"-p", "StandardError=file:" + filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "IO", "stderr"),
 		"-p", "SuccessExitStatus=SIGKILL",
 		"-p", "NotifyAccess=all",
 		"-p", "TimeoutStartSec=infinity",
