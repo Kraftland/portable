@@ -1432,11 +1432,7 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
-func listenIOSocket() {
-	conn, err := godbus.ConnectSessionBus()
-	if err != nil {
-		pecho("warn", "Could not connect to session bus: " + err.Error())
-	}
+func listenIOSocket(conn *godbus.Conn) {
 	ioPath := filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control")
 	err := os.MkdirAll(ioPath, 0700)
 	if err != nil {
@@ -3471,7 +3467,7 @@ func main() {
 		sanityChecks()
 	})
 	wg.Go(func() {
-		listenIOSocket()
+		listenIOSocket(busConn)
 	})
 	go flushEnvs()
 	go setFirewall()
