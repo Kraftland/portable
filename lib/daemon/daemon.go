@@ -27,7 +27,6 @@ import (
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	udev "github.com/jochenvg/go-udev"
-	"golang.org/x/net/http2/h2c"
 )
 
 const (
@@ -1433,72 +1432,17 @@ func handleSignal (conn net.Conn) {
 }
 
 func listenIOSocket(conn *godbus.Conn) {
-	ioPath := filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control")
-	err := os.MkdirAll(ioPath, 0700)
+	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, 0)
 	if err != nil {
-		pecho("warn", "Failed to create IO directory: " + err.Error())
-		return
+		panic("Could not acquire bus name: " + err.Error())
 	}
-	socketPath := filepath.Join(ioPath, "IO")
-	readyChan := make(chan int, 1)
-	go stdHandler(socketPath, readyChan)
-
-	<- readyChan
-}
-
-func stdHandler(path string, ready chan int) {
-	listener, err := net.Listen("unix", path)
-	if err != nil {
-		pecho("warn", "Could not listen on I/O socket: " + err.Error())
-		ready <- 1
-		return
-	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/stdin", stdinStreamer)
-	server := &http2.Server{}
-	h2Mux := h2c.NewHandler(mux, server)
-	h1Serv := &http.Server{
-		Handler:	h2Mux,
+	switch reply {
+		case godbus.RequestNameReplyAlreadyOwner:
+			pecho("crit", "Could not obtain D-Bus name: already owned")
+		default:
+			pecho("debug", "Bus reply: " + reply.String())
 	}
 
-	err = http2.ConfigureServer(h1Serv, server)
-	if err != nil {
-		pecho("warn", "Could not stream I/O: " + err.Error())
-		ready <- 1
-		return
-	}
-	ready <- 1
-	pecho("debug", "I/O stream ready")
-	err = h1Serv.Serve(listener)
-	if err != nil {
-		pecho("warn", "Could not stream I/O: " + err.Error())
-		ready <- 1
-		return
-	}
-}
-
-func stdoutStreamer(writer http.ResponseWriter, req *http.Request) {
-	pecho("debug", "Handling standard output...")
-	//flusher, _ := writer.(http.Flusher)
-	//writer.Header().Set("Content-Type","application/octet-stream")
-	n, err := io.Copy(os.Stdout, req.Body)
-	if err != nil {
-		pecho("warn", "Could not stream standard output: " + err.Error())
-		return
-	}
-	pecho("debug", "Streamed " + strconv.FormatInt(n, 10) + " bytes//")
-}
-
-func stdinStreamer(writer http.ResponseWriter, req *http.Request) {
-	pecho("debug", "Handling standard input...")
-	flusher, _ := writer.(http.Flusher)
-	//writer.Header().Set("Content-Type","application/octet-stream")
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		writer.Write(scanner.Bytes())
-		writer.Write([]byte("\n"))
-		flusher.Flush()
-	}
 }
 
 func watchSignalSocket(readyChan chan int8) {
