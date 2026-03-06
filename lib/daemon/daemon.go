@@ -1433,6 +1433,10 @@ func handleSignal (conn net.Conn) {
 }
 
 func listenIOSocket() {
+	conn, err := godbus.ConnectSessionBus()
+	if err != nil {
+		pecho("warn", "Could not connect to session bus: " + err.Error())
+	}
 	ioPath := filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control")
 	err := os.MkdirAll(ioPath, 0700)
 	if err != nil {
@@ -2262,12 +2266,7 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string) {
-	connBus, err := godbus.ConnectSessionBus()
-	if err != nil {
-		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
-	}
-	defer connBus.Close()
+func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -3367,11 +3366,20 @@ func atSpiProxy() {
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
+	var busConn *godbus.Conn
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	timeNow := time.Now()
 
 	var wg sync.WaitGroup
+	wg.Go(func() {
+		var err error
+		busConn, err = godbus.ConnectSessionBus()
+		if err != nil {
+			panic("Could not connect to session bus: " + err.Error())
+		}
+	})
+	defer busConn.Close()
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
 		getVariables()
@@ -3431,7 +3439,7 @@ func main() {
 	go tryBindCam(camChan)
 
 	<- cmdChan
-	go miscBinds(miscChan, pwSecContextChan)
+	go miscBinds(miscChan, pwSecContextChan, busConn)
 
 
 	if startAct == "abort" {
