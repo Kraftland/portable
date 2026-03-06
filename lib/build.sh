@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+set -e
+
 function buildGo() {
 	currDir="$(pwd)"
 	cd "$1"
