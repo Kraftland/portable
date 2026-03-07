@@ -2482,21 +2482,15 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	var filesInfoTmp PassFiles
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
-	if connBus.SupportsUnixFDs() == false {
-		pecho("warn", "Could not pass files using file descriptor: unsupported")
-		return
-	} else {
-		pecho("debug", "D-Bus has UnixFD support")
-		for _, path := range pathList {
-			fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
-			if err != nil {
-				pecho("warn", "Could not open file: " + err.Error())
-				continue
-			}
-			filesInfoTmp.FileMap[path] = "unknown"
-			fd := fileObj.Fd()
-			busFdList = append(busFdList, godbus.UnixFD(fd))
+	for _, path := range pathList {
+		fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
+		if err != nil {
+			pecho("warn", "Could not open file: " + err.Error())
+			continue
 		}
+		filesInfoTmp.FileMap[path] = "unknown"
+		fd := fileObj.Fd()
+		busFdList = append(busFdList, godbus.UnixFD(fd))
 	}
 	var busData	AddDocumentFullData
 	busData.AppID = confOpts.appID
@@ -3354,6 +3348,9 @@ func main() {
 		busConn, err = godbus.ConnectSessionBus()
 		if err != nil {
 			panic("Could not connect to session bus: " + err.Error())
+		}
+		if busConn.SupportsUnixFDs() == false {
+			panic("D-Bus has no support for passing File Descriptors")
 		}
 	})
 	defer busConn.Close()
