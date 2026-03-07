@@ -26,6 +26,7 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
+	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 )
 
@@ -1431,6 +1432,56 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
+type StreamRequest struct {}
+
+func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
+	return "", nil
+}
+
+func listenIOSocket(conn *godbus.Conn) {
+
+	iface := introspect.Interface{
+		Name:		"top.kimiblock.portable." + confOpts.appID,
+		Methods: []introspect.Method{
+					{
+						Name:	"ExampleRequest",
+						Args:	[]introspect.Arg{
+							{
+								Name:	"Argument",
+								Type:	"string",
+							},
+						},
+					},
+		},
+	}
+	node := &introspect.Node{
+		Name:		"top.kimiblock.portable." + confOpts.appID,
+		Interfaces:	[]introspect.Interface{
+			iface,
+		},
+	}
+	introspectable := introspect.NewIntrospectable(node)
+	introspectable.Introspect()
+
+	req := StreamRequest{}
+	err := conn.Export(req, "/top/kimiblock/portable/stream", "top.kimiblock.portable." + confOpts.appID)
+	if err != nil {
+		panic(err)
+	}
+	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
+	if err != nil {
+		panic("Could not acquire bus name: " + err.Error())
+	}
+	switch reply {
+		case godbus.RequestNameReplyAlreadyOwner:
+			pecho("crit", "Could not obtain D-Bus name: already owned")
+		default:
+			pecho("debug", "Bus reply: " + reply.String())
+	}
+
+
+}
+
 func watchSignalSocket(readyChan chan int8) {
 	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
 	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
@@ -1828,9 +1879,9 @@ func genBwArg(
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		"--user",
-		"--pty",
 		"--service-type=notify",
 		"--wait",
+		"--pty",
 		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
@@ -2192,12 +2243,7 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string) {
-	connBus, err := godbus.ConnectSessionBus()
-	if err != nil {
-		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
-	}
-	defer connBus.Close()
+func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2436,21 +2482,15 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	var filesInfoTmp PassFiles
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
-	if connBus.SupportsUnixFDs() == false {
-		pecho("warn", "Could not pass files using file descriptor: unsupported")
-		return
-	} else {
-		pecho("debug", "D-Bus has UnixFD support")
-		for _, path := range pathList {
-			fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
-			if err != nil {
-				pecho("warn", "Could not open file: " + err.Error())
-				continue
-			}
-			filesInfoTmp.FileMap[path] = "unknown"
-			fd := fileObj.Fd()
-			busFdList = append(busFdList, godbus.UnixFD(fd))
+	for _, path := range pathList {
+		fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
+		if err != nil {
+			pecho("warn", "Could not open file: " + err.Error())
+			continue
 		}
+		filesInfoTmp.FileMap[path] = "unknown"
+		fd := fileObj.Fd()
+		busFdList = append(busFdList, godbus.UnixFD(fd))
 	}
 	var busData	AddDocumentFullData
 	busData.AppID = confOpts.appID
@@ -3297,11 +3337,23 @@ func atSpiProxy() {
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
+	var busConn *godbus.Conn
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	timeNow := time.Now()
 
 	var wg sync.WaitGroup
+	wg.Go(func() {
+		var err error
+		busConn, err = godbus.SessionBus()
+		if err != nil {
+			panic("Could not connect to session bus: " + err.Error())
+		}
+		if busConn.SupportsUnixFDs() == false {
+			panic("D-Bus has no support for passing File Descriptors")
+		}
+	})
+	defer busConn.Close()
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
 		getVariables()
@@ -3361,7 +3413,7 @@ func main() {
 	go tryBindCam(camChan)
 
 	<- cmdChan
-	go miscBinds(miscChan, pwSecContextChan)
+	go miscBinds(miscChan, pwSecContextChan, busConn)
 
 
 	if startAct == "abort" {
@@ -3391,6 +3443,9 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
 		sanityChecks()
+	})
+	wg.Go(func() {
+		listenIOSocket(busConn)
 	})
 	go flushEnvs()
 	go setFirewall()
