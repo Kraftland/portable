@@ -26,6 +26,7 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
+	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 )
 
@@ -1431,8 +1432,43 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
+type StreamRequest struct {}
+
+func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
+	return "", nil
+}
+
 func listenIOSocket(conn *godbus.Conn) {
-	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, 0)
+
+	iface := introspect.Interface{
+		Name:		"top.kimiblock.portable." + confOpts.appID,
+		Methods: []introspect.Method{
+					{
+						Name:	"ExampleRequest",
+						Args:	[]introspect.Arg{
+							{
+								Name:	"Argument",
+								Type:	"string",
+							},
+						},
+					},
+		},
+	}
+	node := &introspect.Node{
+		Name:		"top.kimiblock.portable." + confOpts.appID,
+		Interfaces:	[]introspect.Interface{
+			iface,
+		},
+	}
+	introspectable := introspect.NewIntrospectable(node)
+	introspectable.Introspect()
+
+	req := StreamRequest{}
+	err := conn.Export(req, "/top/kimiblock/portable/stream", "top.kimiblock.portable." + confOpts.appID)
+	if err != nil {
+		panic(err)
+	}
+	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
 	if err != nil {
 		panic("Could not acquire bus name: " + err.Error())
 	}
@@ -1442,6 +1478,7 @@ func listenIOSocket(conn *godbus.Conn) {
 		default:
 			pecho("debug", "Bus reply: " + reply.String())
 	}
+
 
 }
 
