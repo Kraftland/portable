@@ -3345,7 +3345,7 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		var err error
-		busConn, err = godbus.ConnectSessionBus()
+		busConn, err = godbus.SessionBus()
 		if err != nil {
 			panic("Could not connect to session bus: " + err.Error())
 		}
