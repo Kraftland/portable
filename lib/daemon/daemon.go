@@ -805,6 +805,13 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
 	}
 
+	wg.Go(func() {
+		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control"), 0700)
+		if err != nil {
+			pecho("crit", "Could not create control directory: " + err.Error())
+		}
+	})
+
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
@@ -3222,18 +3229,14 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
-	_, errStat := os.Stat(socketPath)
-	if errStat != nil && os.IsNotExist(errStat) {
-		miChan <- false
-		return
-	}
-	pecho("debug", "Dialing daemon socket...")
+
 	var dialWg sync.WaitGroup
 	var dialChan = make(chan bool, 2)
 	dialWg.Go(func() {
 		var ipcObj = conn.Object(busName, "/top/kimiblock/portable/daemon")
 		call := ipcObj.Call(busName + ".Ping", godbus.FlagNoAutoStart)
 		if call.Err == nil {
+			pecho("debug", "Detected a D-Bus instance")
 			usingDBus = true
 			dialChan <- true
 		} else {
@@ -3243,6 +3246,11 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 
 	})
 	dialWg.Go(func() {
+		_, errStat := os.Stat(socketPath)
+		if errStat != nil && os.IsNotExist(errStat) {
+			dialChan <- false
+		}
+		pecho("debug", "Dialing daemon socket...")
 		_, err := net.Dial("unix", socketPath)
 		if err != nil {
 			dialChan <- false
