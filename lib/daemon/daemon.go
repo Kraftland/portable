@@ -1445,10 +1445,6 @@ func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
 func listenIOSocket(conn *godbus.Conn) {
 	req := StreamRequest{}
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/stream")
-	err := conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
-	if err != nil {
-		panic(err)
-	}
 	node := &introspect.Node{
 		Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
@@ -1475,14 +1471,19 @@ func listenIOSocket(conn *godbus.Conn) {
 		},
 	}
 	introspectableData := introspect.NewIntrospectable(node)
-	err = conn.Export(introspectableData, objPath, "top.kimiblock.portable." + confOpts.appID)
-	if err != nil {
-		panic("Could not export introspect data: " + err.Error())
-	}
 	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
 	if err != nil {
 		panic("Could not acquire bus name: " + err.Error())
 	}
+	err = conn.Export(introspectableData, objPath, "top.kimiblock.portable." + confOpts.appID)
+	if err != nil {
+		panic("Could not export introspect data: " + err.Error())
+	}
+	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
+	if err != nil {
+		panic(err)
+	}
+
 	switch reply {
 		case godbus.RequestNameReplyPrimaryOwner:
 			pecho("debug", "Successfully requested ownership of bus name")
