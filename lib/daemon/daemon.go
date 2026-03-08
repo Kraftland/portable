@@ -3242,7 +3242,10 @@ func processStream(resp *http.Response, socketPath string) {
 	//} ()
 }
 
-func multiInstance(miChan chan bool) {
+func multiInstance(miChan chan bool, conn *godbus.Conn) {
+	var hasRunningInstance bool
+	var usingDBus bool
+
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
 	_, errStat := os.Stat(socketPath)
@@ -3251,11 +3254,44 @@ func multiInstance(miChan chan bool) {
 		return
 	}
 	pecho("debug", "Dialing daemon socket...")
-	_, err := net.Dial("unix", socketPath)
+	var dialWg sync.WaitGroup
+	var dialChan = make(chan bool, 2)
+	dialWg.Go(func() {
+		busName := "top.kimiblock.portable." + confOpts.appID
+		var ipcObj = conn.Object(busName, "/top/kimiblock/portable/daemon")
+		call := ipcObj.Call(busName + ".Ping", godbus.FlagNoAutoStart)
+		if call.Err == nil {
+			usingDBus = true
+			dialChan <- true
+		} else {
+			dialChan <- false
+		}
+
+
+	})
+	dialWg.Go(func() {
+		_, err := net.Dial("unix", socketPath)
+		if err != nil {
+			dialChan <- false
+		} else {
+			dialChan <- true
+		}
+	})
+
+
+	go func () {
+		dialWg.Wait()
+		close(dialChan)
+	} ()
+	for res := range dialChan {
+		if res {
+			hasRunningInstance = true
+		}
+	}
 	socketPath = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
 
-	if err != nil {
+	if hasRunningInstance == false {
 		if runtimeOpt.miTerminate == true {
 			pecho("warn", "Could not find running instance")
 			os.Exit(2)
@@ -3263,7 +3299,7 @@ func multiInstance(miChan chan bool) {
 		miChan <- false
 		return
 	} else {
-		pecho("debug", "Another instance running")
+		pecho("debug", "Another instance running, using D-Bus: " + strconv.FormatBool(usingDBus))
 		if runtimeOpt.miTerminate == true {
 			var daemonPath string = xdgDir.runtimeDir + "/portable/"
 			daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
@@ -3491,7 +3527,7 @@ func main() {
 	miChan := make(chan bool, 1)
 
 	// MI
-	go multiInstance(miChan)
+	go multiInstance(miChan, busConn)
 
 
 	wg.Add(2)
