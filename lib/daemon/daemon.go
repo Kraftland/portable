@@ -1441,8 +1441,14 @@ func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
 	return "success", nil
 }
 
+func listenBusStub(conn *godbus.Conn) {
+	ready := make(chan int8, 1)
+	go listenIOSocket(conn, ready)
+	<- ready
 
-func listenIOSocket(conn *godbus.Conn) {
+}
+
+func listenIOSocket(conn *godbus.Conn, ready chan int8) {
 	req := StreamRequest{}
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/stream")
 	node := &introspect.Node{
@@ -1491,7 +1497,8 @@ func listenIOSocket(conn *godbus.Conn) {
 			pecho("crit", "Could not obtain D-Bus name: " + reply.String())
 	}
 
-
+	ready <- 1
+	select {}
 }
 
 func watchSignalSocket(readyChan chan int8) {
@@ -3457,7 +3464,7 @@ func main() {
 		sanityChecks()
 	})
 	wg.Go(func() {
-		listenIOSocket(busConn)
+		listenBusStub(busConn)
 	})
 	go flushEnvs()
 	go setFirewall()
