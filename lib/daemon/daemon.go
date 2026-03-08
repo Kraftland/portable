@@ -805,6 +805,13 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
 	}
 
+	wg.Go(func() {
+		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control"), 0700)
+		if err != nil {
+			pecho("crit", "Could not create control directory: " + err.Error())
+		}
+	})
+
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
