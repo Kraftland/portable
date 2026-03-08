@@ -151,7 +151,6 @@ var (
 	envsChan		= make(chan string, 512)
 	envsFlushReady		= make(chan int8, 1)
 	startAct		string
-	signalWatcherReady	= make(chan int8, 1)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
 	socketStop		= make(chan int8, 10)
@@ -1437,23 +1436,6 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 	}
 }
 
-func handleSignal (conn net.Conn) {
-	defer conn.Close()
-	scanner := bufio.NewScanner(conn)
-	for scanner.Scan() {
-		line := scanner.Text()
-		pecho("debug", "Handling signal: " + line)
-		switch line {
-			case "terminate-now":
-				pecho("debug", "Got termination request from socket")
-				stopApp()
-				return
-			default:
-				pecho("warn", "Unrecognised signal from socket: " + line)
-		}
-	}
-}
-
 type DBusPingRequest struct {}
 type DBusControlRequest struct {}
 
@@ -1547,36 +1529,6 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 	select {}
 }
 
-func watchSignalSocket(readyChan chan int8) {
-	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
-	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
-	if err != nil {
-		pecho("crit", "Could not create control directory: " + err.Error())
-	}
-	socket, listenErr := net.Listen("unix", signalSocketPath)
-	if listenErr != nil {
-		pecho("crit", "Unable to listen for signal: " + listenErr.Error())
-		return
-	}
-	readyChan <- 1
-	pecho("debug", "Accepting signals")
-	go closeSocketOnDemand(socket)
-	for {
-		conn, errListen := socket.Accept()
-		if errListen != nil {
-			pecho("warn", "Could not accept connection: " + errListen.Error())
-			break
-		}
-		go handleSignal(conn)
-	}
-}
-
-func closeSocketOnDemand (socket net.Listener) {
-	<- socketStop
-	pecho("debug", "Closing socket on request")
-	socket.Close()
-}
-
 func startApp() {
 	go forceBackgroundPerm()
 	sdArgs := append(
@@ -1589,7 +1541,6 @@ func startApp() {
 	sdExec.Stdout = os.Stdout
 	sdExec.Stdin = os.Stdin
 	<- envsFlushReady
-	<- signalWatcherReady
 	// Profiler
 	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
 	if startAct == "abort" {
@@ -1928,7 +1879,6 @@ func prepareEnvs() {
 }
 
 func genBwArg(
-	pwChan chan []string,
 	xChan chan []string,
 	camChan chan []string,
 	inputChan chan []string,
@@ -3246,6 +3196,8 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	var hasRunningInstance bool
 	var usingDBus bool
 
+	busName := "top.kimiblock.portable." + confOpts.appID
+
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
 	_, errStat := os.Stat(socketPath)
@@ -3257,7 +3209,6 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	var dialWg sync.WaitGroup
 	var dialChan = make(chan bool, 2)
 	dialWg.Go(func() {
-		busName := "top.kimiblock.portable." + confOpts.appID
 		var ipcObj = conn.Object(busName, "/top/kimiblock/portable/daemon")
 		call := ipcObj.Call(busName + ".Ping", godbus.FlagNoAutoStart)
 		if call.Err == nil {
@@ -3302,16 +3253,26 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	} else {
 		pecho("debug", "Another instance running, using D-Bus: " + strconv.FormatBool(usingDBus))
 		if runtimeOpt.miTerminate == true {
-			var daemonPath string = xdgDir.runtimeDir + "/portable/"
-			daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
-			const signal = "terminate-now" + "\n"
-			controlSock, dialErr := net.Dial("unix", daemonPath)
-			if dialErr != nil {
-				pecho("crit", "Could not dial control daemon: " + dialErr.Error())
-			}
-			_, errWrite := controlSock.Write([]byte(signal))
-			if errWrite != nil {
-				pecho("crit", "Could not send termination signal: " + errWrite.Error())
+			if usingDBus {
+				busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
+				call := busObj.Call("top.kimiblock.Portable.Controller.Stop", godbus.FlagNoReplyExpected)
+				if call.Err != nil {
+					pecho("warn", "Could not terminate instance: " + call.Err.Error())
+				} else {
+					pecho("debug", "Requested termination via D-Bus")
+				}
+			} else {
+				var daemonPath string = xdgDir.runtimeDir + "/portable/"
+				daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
+				const signal = "terminate-now" + "\n"
+				controlSock, dialErr := net.Dial("unix", daemonPath)
+				if dialErr != nil {
+					pecho("crit", "Could not dial control daemon: " + dialErr.Error())
+				}
+				_, errWrite := controlSock.Write([]byte(signal))
+				if errWrite != nil {
+					pecho("crit", "Could not send termination signal: " + errWrite.Error())
+				}
 			}
 			os.Exit(0)
 		}
@@ -3550,11 +3511,10 @@ func main() {
 	})
 	go flushEnvs()
 	go setFirewall()
-	go watchSignalSocket(signalWatcherReady)
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
-		genBwArg(pwSecContextChan, xChan, camChan, inputChan, wayDisplayChan, miscChan)
+		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan)
 	} ()
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan)
