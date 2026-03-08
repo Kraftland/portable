@@ -1113,7 +1113,7 @@ func pwSecContext(pwChan chan []string) {
 	}
 	pwSecArg = append(
 		pwSecArg,
-		"--bind", pwProxySocket, pwProxySocket,
+		"--bind", pwProxySocket, filepath.Join(xdgDir.runtimeDir, "pipewire-0"),
 	)
 	pwChan <- pwSecArg
 	close(pwChan)
