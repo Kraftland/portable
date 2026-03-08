@@ -219,6 +219,10 @@ func sanityChecks() {
 		pecho("crit", "Portable requires the systemd service manager")
 	}
 	var appIDValid bool = true
+	if len("top.kimiblock.portable." + confOpts.appID) > 255 {
+		appIDValid = false
+		pecho("warn", "Application ID too long")
+	}
 	if strings.Contains(confOpts.appID, "org.freedesktop.impl") == true {
 		appIDValid = false
 	} else if strings.Contains(confOpts.appID, "org.gtk.vfs") == true {
