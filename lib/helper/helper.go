@@ -22,6 +22,7 @@ import (
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
+	"github.com/godbus/dbus/v5"
 )
 
 type PassFiles struct {
@@ -47,6 +48,7 @@ var (
 	// Should check for collision first!
 	pipeMapGlob		= make(map[int]pipeInfo)
 	pipeLock		sync.RWMutex
+	terminateNotify		= make(chan int, 1)
 )
 
 func updateSd(count int) {
@@ -95,9 +97,7 @@ func startCounter () {
 		if startedCount < 1 {
 			daemon.SdNotify(false, daemon.SdNotifyStopping)
 			fmt.Println("All tracked processes have exited")
-			text := []string{"terminate-now"}
-			sendSignal(text)
-			fmt.Println("Sent termination signal")
+			terminateNotify <- 1
 			break
 		}
 	}
@@ -430,21 +430,6 @@ func startMaster(targetExec string, targetArgs []string) {
 	fmt.Println("Main process exited")
 }
 
-func sendSignal(signal []string) {
-	socket, err := net.Dial("unix", "/run/portable-control/daemon")
-	if err != nil {
-		panic("Could not dial signal socket" + err.Error())
-	}
-	var finalSignal string
-	for _, value := range signal {
-		finalSignal = value + "\n"
-	}
-	_, errWrite := socket.Write([]byte(finalSignal))
-	if errWrite != nil {
-		panic("Could not write signal " + finalSignal + ": " + errWrite.Error())
-	}
-}
-
 func sendPidFd() {
 	pid := os.Getpid()
 	var st unix.Stat_t
@@ -467,7 +452,28 @@ func sendPidFd() {
 	}
 }
 
+func terminateWatcher(blocker chan int, conn *dbus.Conn) {
+	busName := "top.kimiblock.portable." + os.Getenv("appID")
+	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
+	<- blocker
+	fmt.Println("Requesting termination...")
+	call := busObj.Call("top.kimiblock.Portable.Controller.Stop", dbus.FlagNoReplyExpected)
+	if call.Err != nil {
+		panic(call.Err)
+	}
+	os.Exit(0)
+}
+
 func main () {
+	var busWg sync.WaitGroup
+	var bus *dbus.Conn
+	busWg.Go(func() {
+		var err error
+		bus, err = dbus.ConnectSessionBus()
+		if err != nil {
+			panic("Could not connect to session bus: " + err.Error())
+		}
+	})
 	go startCounter()
 	go sendPidFd()
 	fmt.Println("Starting helper...")
@@ -521,7 +527,7 @@ func main () {
 		}
 	}
 	startMaster(targetSlice[0], args)
-	for {
-		time.Sleep(360000 * time.Hour)
-	}
+	busWg.Wait()
+	go terminateWatcher(terminateNotify, bus)
+	select {}
 }
