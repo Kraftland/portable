@@ -1432,9 +1432,9 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
-type StreamRequest struct {}
+type DBusPingRequest struct {}
 
-func (m *StreamRequest) Ping() (string, *godbus.Error) {
+func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 	return "Pong", nil
 }
 
@@ -1446,7 +1446,7 @@ func listenBusStub(conn *godbus.Conn) {
 }
 
 func listenIOSocket(conn *godbus.Conn, ready chan int8) {
-	req := new(StreamRequest)
+	req := new(DBusPingRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
