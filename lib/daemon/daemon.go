@@ -974,10 +974,26 @@ func cleanDirs() {
 	wg.Wait()
 }
 
-func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
+func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn) {
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
 	var wg sync.WaitGroup
+	wg.Go(func() {
+		if busconn == nil {
+			pecho("warn", "Race detected: bus already terminated")
+			return
+		}
+		reply, err := busconn.ReleaseName("top.kimiblock.portable." + confOpts.appID)
+		if err != nil {
+			pecho("warn", "Could not request bus to release name: " + err.Error())
+			switch reply {
+				case godbus.ReleaseNameReplyReleased:
+					pecho("debug", "Successfully released bus name")
+				default:
+					pecho("warn", "Could not release D-Bus name: " + reply.String())
+			}
+		}
+	})
 	wg.Go(func() {
 		doCleanUnit(conn, sdCancelFunc, sdContext)
 	})
@@ -3396,7 +3412,7 @@ func main() {
 	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
-	go stopAppWorker(conn, sdCancelFunc, sdContext)
+	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn)
 
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
