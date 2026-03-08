@@ -3,11 +3,15 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math/rand"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -15,19 +19,17 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
-	"golang.org/x/net/http2"
-	"crypto/tls"
-	"net"
-	"net/http"
-	"sync"
+
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
-	udev "github.com/jochenvg/go-udev"
 	"github.com/godbus/dbus/v5/introspect"
+	udev "github.com/jochenvg/go-udev"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -1453,6 +1455,21 @@ func handleSignal (conn net.Conn) {
 }
 
 type DBusPingRequest struct {}
+type DBusControlRequest struct {}
+
+func (m *DBusControlRequest) Stop() (*godbus.Error) {
+	if len(runtimeInfo.instanceID) > 0 {
+		pecho("debug", "Stopping on Bus request")
+		stopApp()
+		return nil
+	} else {
+		pecho("warn", "Could not obtain runtime ID")
+		err := errors.New("Could not obtain runtime ID")
+		busErr := godbus.MakeFailedError(err)
+		return busErr
+	}
+
+}
 
 func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 	return "Pong", nil
@@ -1467,6 +1484,7 @@ func listenBusStub(conn *godbus.Conn) {
 
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
+	controller := new(DBusControlRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
@@ -1486,19 +1504,35 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 					},
 				},
 			},
+			{
+				Name:		"top.kimiblock.Portable.Controller",
+				Methods:	[]introspect.Method{
+					{
+						Name:	"Stop",
+					},
+				},
+			},
 		},
 	}
 	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
 	if err != nil {
-		panic("Could not export introspect data: " + err.Error())
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
 	}
 	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
 	if err != nil {
-		panic(err)
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	err = conn.Export(controller, objPath, "top.kimiblock.Portable.Controller")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
 	}
 	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
 	if err != nil {
-		panic("Could not request bus name: " + err.Error())
+		pecho("crit", "Could not request bus name: " + err.Error())
+		return
 	}
 
 	switch reply {
@@ -1506,6 +1540,7 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 			pecho("debug", "Successfully requested ownership of bus name")
 		default:
 			pecho("crit", "Could not obtain D-Bus name: " + reply.String())
+			return
 	}
 
 	ready <- 1
