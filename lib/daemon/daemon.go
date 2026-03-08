@@ -1434,8 +1434,8 @@ func handleSignal (conn net.Conn) {
 
 type StreamRequest struct {}
 
-func (m *StreamRequest) ExampleRequest() (string, *godbus.Error) {
-	return "success", nil
+func (m *StreamRequest) Ping() (string, *godbus.Error) {
+	return "Pong", nil
 }
 
 func listenBusStub(conn *godbus.Conn) {
@@ -1447,7 +1447,7 @@ func listenBusStub(conn *godbus.Conn) {
 
 func listenIOSocket(conn *godbus.Conn, ready chan int8) {
 	req := new(StreamRequest)
-	objPath := godbus.ObjectPath("/top/kimiblock/portable/stream")
+	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
@@ -1455,7 +1455,7 @@ func listenIOSocket(conn *godbus.Conn, ready chan int8) {
 				Name:		"top.kimiblock.portable." + confOpts.appID,
 				Methods:	[]introspect.Method{
 					{
-						Name:	"ExampleRequest",
+						Name:	"Ping",
 						Args:	[]introspect.Arg{
 							{
 								Name:	"Return",
