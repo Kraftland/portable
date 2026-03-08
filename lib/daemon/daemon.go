@@ -1172,7 +1172,7 @@ func calcDbusArg(argChan chan []string) {
 		"--call=org.freedesktop.portal.Request=*",
 		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
 
-		// TODO: control the KDE job system with a knob!
+		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
 
 	)
 
