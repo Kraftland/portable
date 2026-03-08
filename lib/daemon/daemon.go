@@ -306,20 +306,21 @@ func bytesToMb(bytes int) float64 {
 }
 
 func showStats() {
-	localID := getInstanceID()
 	var active bool
-	if len(localID) > 0 {
-		cmdArgs := []string{
-			"--user",
-			"status",
-			"app-portable-" + confOpts.appID + "-" + localID,
-		}
-		openCmd := exec.Command("systemctl", cmdArgs...)
-		openCmd.Stdout = os.Stdout
-		openCmd.Run()
-		active=true
+	conn, err := godbus.ConnectSessionBus()
+	busName := "top.kimiblock.portable." + confOpts.appID
+	if err != nil {
+		panic(err)
 	}
-
+	defer conn.Close()
+	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
+	call := busObj.Call(busName + ".Ping", 0)
+	if call.Err != nil {
+		pecho("debug", "Could not call running instance")
+	} else {
+		active = true
+		pecho("debug", "Remote instance responded with Pong")
+	}
 	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
 	var builder strings.Builder
 	builder.WriteString("Application Statistics: \n")
