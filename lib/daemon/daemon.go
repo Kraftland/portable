@@ -1473,17 +1473,17 @@ func listenIOSocket(conn *godbus.Conn, ready chan int8) {
 			},
 		},
 	}
-	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
-	if err != nil {
-		panic("Could not acquire bus name: " + err.Error())
-	}
-	err = conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
+	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
 	if err != nil {
 		panic("Could not export introspect data: " + err.Error())
 	}
 	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
 	if err != nil {
 		panic(err)
+	}
+	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
+	if err != nil {
+		panic("Could not request bus name: " + err.Error())
 	}
 
 	switch reply {
