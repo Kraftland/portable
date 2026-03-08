@@ -1432,7 +1432,10 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
-type StreamRequest struct {}
+type StreamRequest struct {
+	RawMsg		godbus.Message
+	Sender		godbus.Sender
+}
 
 func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
 	return "success", nil
