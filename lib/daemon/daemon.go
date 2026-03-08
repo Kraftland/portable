@@ -33,8 +33,7 @@ import (
 )
 
 const (
-	version		float32	=	14.0
-	controlFile	string	=	"instanceId=inIdHold\nappID=idHold\nbusDir=busHold\nfriendlyName=friendlyHold"
+	version		float32	=	14.99
 )
 
 type RUNTIME_OPT struct {
@@ -821,11 +820,7 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 
 	<- proceed
 
-	wg.Add(3)
-	go func () {
-		defer wg.Done()
-		writeControlFile()
-	} ()
+	wg.Add(2)
 	go func () {
 		defer wg.Done()
 		writeInfoFile(genInfo)
@@ -835,23 +830,6 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 		writeFlatpakRef()
 	} ()
 	wg.Wait()
-}
-
-func writeControlFile() {
-	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	var controlContent = controlFile
-	replacer := strings.NewReplacer(
-		"inIdHold",	runtimeInfo.instanceID,
-		"idHold",	confOpts.appID,
-		"busHold",	xdgDir.runtimeDir + "/app/" + confOpts.appID,
-		"friendlyHold",	confOpts.friendlyName,
-	)
-
-	os.WriteFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control",
-		[]byte(replacer.Replace(controlContent)),
-		0700,
-	)
 }
 
 func writeFlatpakRef() {
@@ -910,19 +888,6 @@ func writeInfoFile(ready chan int8) {
 	pecho("debug", "Wrote info file")
 }
 
-// Note that this instance ID is read from control file and independent of generated ID
-func getInstanceID() string {
-	controlFile, readErr := os.ReadFile(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/control")
-	instanceID := regexp.MustCompile("instanceId=.*")
-	if readErr == nil {
-		var rawInstanceID string = string(instanceID.Find(controlFile))
-		return tryUnquote(strings.TrimPrefix(rawInstanceID, "instanceId="))
-	} else {
-		pecho("debug", "Unable to read control file: " + readErr.Error())
-		return ""
-	}
-}
-
 func removeWrapChan(pathChan chan string) {
 	var wg sync.WaitGroup
 	for path := range pathChan {
@@ -961,7 +926,7 @@ func cleanDirs() {
 			confOpts.appID + ".desktop",
 		)
 	}
-	localID := getInstanceID()
+	localID := runtimeInfo.instanceID
 	if len(localID) == 0 {
 		localID = runtimeInfo.instanceID
 	}
