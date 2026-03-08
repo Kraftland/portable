@@ -3286,6 +3286,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	for res := range dialChan {
 		if res {
 			hasRunningInstance = true
+			break
 		}
 	}
 	socketPath = xdgDir.runtimeDir + "/portable/"
@@ -3454,7 +3455,6 @@ func main() {
 			panic("D-Bus has no support for passing File Descriptors")
 		}
 	})
-	defer busConn.Close()
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
 		getVariables()
@@ -3574,5 +3574,8 @@ func main() {
 	close(envsChan)
 	pecho("debug", "Started Portable in " + time.Since(timeNow).String())
 	startApp()
+	if busConn != nil {
+		busConn.Close()
+	}
 	}
 }
