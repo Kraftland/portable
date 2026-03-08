@@ -373,6 +373,7 @@ func procWatcher (cmd *exec.Cmd, id int) {
 }
 
 func auxStart (launchTarget string, launchArgs []string) {
+	os.MkdirAll("/run/portable-control", 0700)
 	var httpSockPath string = "/run/portable-control/helper"
 	socketHttp, err := net.Listen("unix", httpSockPath)
 	if err != nil {
