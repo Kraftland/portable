@@ -3,11 +3,15 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math/rand"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -15,18 +19,17 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
-	"golang.org/x/net/http2"
-	"crypto/tls"
-	"net"
-	"net/http"
-	"sync"
+
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
+	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -218,6 +221,10 @@ func sanityChecks() {
 		pecho("crit", "Portable requires the systemd service manager")
 	}
 	var appIDValid bool = true
+	if len("top.kimiblock.portable." + confOpts.appID) > 255 {
+		appIDValid = false
+		pecho("warn", "Application ID too long")
+	}
 	if strings.Contains(confOpts.appID, "org.freedesktop.impl") == true {
 		appIDValid = false
 	} else if strings.Contains(confOpts.appID, "org.gtk.vfs") == true {
@@ -969,10 +976,26 @@ func cleanDirs() {
 	wg.Wait()
 }
 
-func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
+func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn) {
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
 	var wg sync.WaitGroup
+	wg.Go(func() {
+		if busconn == nil {
+			pecho("warn", "Race detected: bus already terminated")
+			return
+		}
+		reply, err := busconn.ReleaseName("top.kimiblock.portable." + confOpts.appID)
+		if err != nil {
+			pecho("warn", "Could not request bus to release name: " + err.Error())
+			switch reply {
+				case godbus.ReleaseNameReplyReleased:
+					pecho("debug", "Successfully released bus name")
+				default:
+					pecho("warn", "Could not release D-Bus name: " + reply.String())
+			}
+		}
+	})
 	wg.Go(func() {
 		doCleanUnit(conn, sdCancelFunc, sdContext)
 	})
@@ -1431,6 +1454,99 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
+type DBusPingRequest struct {}
+type DBusControlRequest struct {}
+
+func (m *DBusControlRequest) Stop() (*godbus.Error) {
+	if len(runtimeInfo.instanceID) > 0 {
+		pecho("debug", "Stopping on Bus request")
+		stopApp()
+		return nil
+	} else {
+		pecho("warn", "Could not obtain runtime ID")
+		err := errors.New("Could not obtain runtime ID")
+		busErr := godbus.MakeFailedError(err)
+		return busErr
+	}
+
+}
+
+func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
+	return "Pong", nil
+}
+
+func listenBusStub(conn *godbus.Conn) {
+	ready := make(chan int8, 1)
+	go busListener(conn, ready)
+	<- ready
+
+}
+
+func busListener(conn *godbus.Conn, ready chan int8) {
+	req := new(DBusPingRequest)
+	controller := new(DBusControlRequest)
+	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
+	node := &introspect.Node{
+		//Name:		"top.kimiblock.portable." + confOpts.appID,
+		Interfaces:	[]introspect.Interface{
+			{
+				Name:		"top.kimiblock.portable." + confOpts.appID,
+				Methods:	[]introspect.Method{
+					{
+						Name:	"Ping",
+						Args:	[]introspect.Arg{
+							{
+								Name:	"Return",
+								Type:	"s",
+								Direction:	"out",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:		"top.kimiblock.Portable.Controller",
+				Methods:	[]introspect.Method{
+					{
+						Name:	"Stop",
+					},
+				},
+			},
+		},
+	}
+	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	err = conn.Export(controller, objPath, "top.kimiblock.Portable.Controller")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
+	if err != nil {
+		pecho("crit", "Could not request bus name: " + err.Error())
+		return
+	}
+
+	switch reply {
+		case godbus.RequestNameReplyPrimaryOwner:
+			pecho("debug", "Successfully requested ownership of bus name")
+		default:
+			pecho("crit", "Could not obtain D-Bus name: " + reply.String())
+			return
+	}
+
+	ready <- 1
+	select {}
+}
+
 func watchSignalSocket(readyChan chan int8) {
 	var signalSocketPath = xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control/daemon"
 	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-control", 0700)
@@ -1828,9 +1944,9 @@ func genBwArg(
 	runtimeInfo.bwCmd = append(
 		runtimeInfo.bwCmd,
 		"--user",
-		"--pty",
 		"--service-type=notify",
 		"--wait",
+		"--pty",
 		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
@@ -2192,12 +2308,7 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string) {
-	connBus, err := godbus.ConnectSessionBus()
-	if err != nil {
-		pecho("crit", "Could not connect to session D-Bus: " + err.Error())
-	}
-	defer connBus.Close()
+func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2436,21 +2547,15 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	var filesInfoTmp PassFiles
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
-	if connBus.SupportsUnixFDs() == false {
-		pecho("warn", "Could not pass files using file descriptor: unsupported")
-		return
-	} else {
-		pecho("debug", "D-Bus has UnixFD support")
-		for _, path := range pathList {
-			fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
-			if err != nil {
-				pecho("warn", "Could not open file: " + err.Error())
-				continue
-			}
-			filesInfoTmp.FileMap[path] = "unknown"
-			fd := fileObj.Fd()
-			busFdList = append(busFdList, godbus.UnixFD(fd))
+	for _, path := range pathList {
+		fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
+		if err != nil {
+			pecho("warn", "Could not open file: " + err.Error())
+			continue
 		}
+		filesInfoTmp.FileMap[path] = "unknown"
+		fd := fileObj.Fd()
+		busFdList = append(busFdList, godbus.UnixFD(fd))
 	}
 	var busData	AddDocumentFullData
 	busData.AppID = confOpts.appID
@@ -3137,7 +3242,10 @@ func processStream(resp *http.Response, socketPath string) {
 	//} ()
 }
 
-func multiInstance(miChan chan bool) {
+func multiInstance(miChan chan bool, conn *godbus.Conn) {
+	var hasRunningInstance bool
+	var usingDBus bool
+
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
 	_, errStat := os.Stat(socketPath)
@@ -3146,11 +3254,45 @@ func multiInstance(miChan chan bool) {
 		return
 	}
 	pecho("debug", "Dialing daemon socket...")
-	_, err := net.Dial("unix", socketPath)
+	var dialWg sync.WaitGroup
+	var dialChan = make(chan bool, 2)
+	dialWg.Go(func() {
+		busName := "top.kimiblock.portable." + confOpts.appID
+		var ipcObj = conn.Object(busName, "/top/kimiblock/portable/daemon")
+		call := ipcObj.Call(busName + ".Ping", godbus.FlagNoAutoStart)
+		if call.Err == nil {
+			usingDBus = true
+			dialChan <- true
+		} else {
+			dialChan <- false
+		}
+
+
+	})
+	dialWg.Go(func() {
+		_, err := net.Dial("unix", socketPath)
+		if err != nil {
+			dialChan <- false
+		} else {
+			dialChan <- true
+		}
+	})
+
+
+	go func () {
+		dialWg.Wait()
+		close(dialChan)
+	} ()
+	for res := range dialChan {
+		if res {
+			hasRunningInstance = true
+			break
+		}
+	}
 	socketPath = xdgDir.runtimeDir + "/portable/"
 	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
 
-	if err != nil {
+	if hasRunningInstance == false {
 		if runtimeOpt.miTerminate == true {
 			pecho("warn", "Could not find running instance")
 			os.Exit(2)
@@ -3158,7 +3300,7 @@ func multiInstance(miChan chan bool) {
 		miChan <- false
 		return
 	} else {
-		pecho("debug", "Another instance running")
+		pecho("debug", "Another instance running, using D-Bus: " + strconv.FormatBool(usingDBus))
 		if runtimeOpt.miTerminate == true {
 			var daemonPath string = xdgDir.runtimeDir + "/portable/"
 			daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
@@ -3297,11 +3439,22 @@ func atSpiProxy() {
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
 	sigChan := make(chan os.Signal, 1)
+	var busConn *godbus.Conn
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	timeNow := time.Now()
 
 	var wg sync.WaitGroup
+	wg.Go(func() {
+		var err error
+		busConn, err = godbus.SessionBus()
+		if err != nil {
+			panic("Could not connect to session bus: " + err.Error())
+		}
+		if busConn.SupportsUnixFDs() == false {
+			panic("D-Bus has no support for passing File Descriptors")
+		}
+	})
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
 		getVariables()
@@ -3330,7 +3483,7 @@ func main() {
 	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
-	go stopAppWorker(conn, sdCancelFunc, sdContext)
+	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn)
 
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
@@ -3361,7 +3514,7 @@ func main() {
 	go tryBindCam(camChan)
 
 	<- cmdChan
-	go miscBinds(miscChan, pwSecContextChan)
+	go miscBinds(miscChan, pwSecContextChan, busConn)
 
 
 	if startAct == "abort" {
@@ -3374,7 +3527,7 @@ func main() {
 	miChan := make(chan bool, 1)
 
 	// MI
-	go multiInstance(miChan)
+	go multiInstance(miChan, busConn)
 
 
 	wg.Add(2)
@@ -3391,6 +3544,9 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
 		sanityChecks()
+	})
+	wg.Go(func() {
+		listenBusStub(busConn)
 	})
 	go flushEnvs()
 	go setFirewall()
@@ -3418,5 +3574,8 @@ func main() {
 	close(envsChan)
 	pecho("debug", "Started Portable in " + time.Since(timeNow).String())
 	startApp()
+	if busConn != nil {
+		busConn.Close()
+	}
 	}
 }
