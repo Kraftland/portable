@@ -1454,7 +1454,7 @@ func listenIOSocket(conn *godbus.Conn, ready chan int8) {
 	req := new(StreamRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/stream")
 	node := &introspect.Node{
-		Name:		"top.kimiblock.portable." + confOpts.appID,
+		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
 			{
 				Name:		"top.kimiblock.portable." + confOpts.appID,
