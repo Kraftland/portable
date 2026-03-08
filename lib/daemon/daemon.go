@@ -1440,12 +1440,12 @@ func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 
 func listenBusStub(conn *godbus.Conn) {
 	ready := make(chan int8, 1)
-	go listenIOSocket(conn, ready)
+	go busListener(conn, ready)
 	<- ready
 
 }
 
-func listenIOSocket(conn *godbus.Conn, ready chan int8) {
+func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
