@@ -26,8 +26,8 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
-	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
+	"github.com/godbus/dbus/v5/introspect"
 )
 
 const (
@@ -1435,48 +1435,56 @@ func handleSignal (conn net.Conn) {
 type StreamRequest struct {}
 
 func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
-	return "", nil
+	return "success", nil
 }
 
-func listenIOSocket(conn *godbus.Conn) {
 
-	iface := introspect.Interface{
-		Name:		"top.kimiblock.portable." + confOpts.appID,
-		Methods: []introspect.Method{
-					{
-						Name:	"ExampleRequest",
-						Args:	[]introspect.Arg{
-							{
-								Name:	"Argument",
-								Type:	"string",
-							},
-						},
-					},
-		},
+func listenIOSocket(conn *godbus.Conn) {
+	req := StreamRequest{}
+	objPath := godbus.ObjectPath("/top/kimiblock/portable/stream")
+	err := conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
+	if err != nil {
+		panic(err)
 	}
 	node := &introspect.Node{
 		Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
-			iface,
+			{
+				Name:		"top.kimiblock.portable." + confOpts.appID,
+				Methods:	[]introspect.Method{
+					{
+						Name:	"ExampleRequest",
+						Args:	[]introspect.Arg{
+							{
+								Name:	"Request",
+								Type:	"s",
+								Direction:"in",
+							},
+							{
+								Name:	"Return",
+								Type:	"s",
+								Direction:	"out",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
-	introspectable := introspect.NewIntrospectable(node)
-	introspectable.Introspect()
-
-	req := StreamRequest{}
-	err := conn.Export(req, "/top/kimiblock/portable/stream", "top.kimiblock.portable." + confOpts.appID)
+	introspectableData := introspect.NewIntrospectable(node)
+	err = conn.Export(introspectableData, objPath, "top.kimiblock.portable." + confOpts.appID)
 	if err != nil {
-		panic(err)
+		panic("Could not export introspect data: " + err.Error())
 	}
 	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
 	if err != nil {
 		panic("Could not acquire bus name: " + err.Error())
 	}
 	switch reply {
-		case godbus.RequestNameReplyAlreadyOwner:
-			pecho("crit", "Could not obtain D-Bus name: already owned")
+		case godbus.RequestNameReplyPrimaryOwner:
+			pecho("debug", "Successfully requested ownership of bus name")
 		default:
-			pecho("debug", "Bus reply: " + reply.String())
+			pecho("crit", "Could not obtain D-Bus name: " + reply.String())
 	}
 
 
