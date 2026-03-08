@@ -1493,6 +1493,28 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 						Name:	"Stop",
 					},
 				},
+				Signals:	[]introspect.Signal{
+					{
+						Name:	"AuxStart",
+						Args:	[]introspect.Arg{
+							{
+								Name:		"CustomTarget",
+								Type:		"b",
+								Direction:	"out",
+							},
+							{
+								Name:		"TargetExec",
+								Type:		"as",
+								Direction:	"out",
+							},
+							{
+								Name:		"Args",
+								Type:		"as",
+								Direction:	"out",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -3318,6 +3340,10 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 			pecho("crit", "Unable to get tray ID")
 		}
 	} else {
+		// TODO: remove legacy start, and do concurrent req
+		if usingDBus {
+			busAuxStartReq(conn)
+		}
 		res := auxStartNg()
 		if res {
 			miChan <- true
@@ -3340,6 +3366,20 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 		}
 	}
 	miChan <- true
+}
+
+func busAuxStartReq(conn *godbus.Conn) {
+	err := conn.Emit(
+		"/top/kimiblock/portable/daemon",
+		"top.kimiblock.Portable.Controller.AuxStart",
+		false, // We don't do custom targets now
+		"", // We don't do custom targets now
+		runtimeOpt.applicationArgs,
+	)
+	if err != nil {
+		pecho("crit", "Could not emit start signal: " + err.Error())
+		select {}
+	}
 }
 
 func atSpiProxy() {
