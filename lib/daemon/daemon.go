@@ -1432,12 +1432,14 @@ func handleSignal (conn net.Conn) {
 	}
 }
 
-type StreamRequest struct {
-	RawMsg		godbus.Message
-	Sender		godbus.Sender
-}
+// type StreamRequest struct {
+// 	RawMsg		godbus.Message
+// 	Sender		godbus.Sender
+// }
 
-func (m *StreamRequest) ExampleRequest(param string) (string, *godbus.Error) {
+type StreamRequest string
+
+func (m *StreamRequest) ExampleRequest() (string, *godbus.Error) {
 	return "success", nil
 }
 
@@ -1449,7 +1451,7 @@ func listenBusStub(conn *godbus.Conn) {
 }
 
 func listenIOSocket(conn *godbus.Conn, ready chan int8) {
-	req := StreamRequest{}
+	req := new(StreamRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/stream")
 	node := &introspect.Node{
 		Name:		"top.kimiblock.portable." + confOpts.appID,
@@ -1460,11 +1462,6 @@ func listenIOSocket(conn *godbus.Conn, ready chan int8) {
 					{
 						Name:	"ExampleRequest",
 						Args:	[]introspect.Arg{
-							{
-								Name:	"Request",
-								Type:	"s",
-								Direction:"in",
-							},
 							{
 								Name:	"Return",
 								Type:	"s",
