@@ -1576,7 +1576,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
 	}
-	err = conn.Export()
+	err = conn.Export(fdStore, ipcPath, "top.kimiblock.Portable.IPC")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
 	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
