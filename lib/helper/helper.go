@@ -24,6 +24,7 @@ import (
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
 	"github.com/godbus/dbus/v5"
+	"github.com/godbus/dbus/v5/introspect"
 )
 
 type PassFiles struct {
@@ -470,6 +471,61 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 }
 
 func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
+	var objPath = "/top/kimiblock/portable/init"
+	var busName = os.Getenv("appID") + ".Portable.Helper"
+
+	reply, err := conn.RequestName(busName, dbus.NameFlagDoNotQueue)
+	if err != nil {
+		panic(err)
+	}
+	node := &introspect.Node{
+		Interfaces:	[]introspect.Interface{
+			{
+				Name:		"top.kimiblock.Portable.Init",
+				Methods:	[]introspect.Method{
+					{
+						Name:		"AuxStart",
+						Args:		[]introspect.Arg{
+							{
+								Name:		"CustomTarget",
+								Type:		"b",
+								Direction:	"in",
+							},
+							{
+								Name:		"TargetExec",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"Args",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"HasFileDescriptors",
+								Type:		"b",
+								Direction:	"out",
+							},
+							{
+								Name:		"stdin",
+								Type:		"h",
+								Direction:	"out",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	conn.Export(introspect.NewIntrospectable(node), dbus.ObjectPath(objPath), "org.freedesktop.DBus.Introspectable")
+	switch reply {
+		case dbus.RequestNameReplyPrimaryOwner:
+			fmt.Println("Successfully owned bus name")
+		default:
+			fmt.Println("Could not own bus name: " + reply.String())
+			os.Exit(1)
+	}
+
 	ipcPath := "/top/kimiblock/portable/IPC"
 	ipcObj := conn.Object("top.kimiblock.portable." + os.Getenv("appID"), dbus.ObjectPath(ipcPath))
 	ipcObj.AddMatchSignal("top.kimiblock.Portable.Controller", "AuxStart")
@@ -526,10 +582,10 @@ func main () {
 		if err != nil {
 			panic("Could not connect to session bus: " + err.Error())
 		}
+		fmt.Println("Connected to session bus")
 	})
 	go startCounter()
 	go sendPidFd()
-	fmt.Println("Starting helper...")
 
 	// This is horrible, but launchTarget may have spaces
 	var rawTarget = os.Getenv("launchTarget")
@@ -579,9 +635,9 @@ func main () {
 			)
 		}
 	}
-	startMaster(targetSlice[0], args)
 	busWg.Wait()
 	go busAuxStart(bus, targetSlice)
+	go startMaster(targetSlice[0], args)
 	go terminateWatcher(terminateNotify, bus)
 	select {}
 }
