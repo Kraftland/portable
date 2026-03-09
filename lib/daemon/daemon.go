@@ -1413,6 +1413,41 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 
 type DBusPingRequest struct {}
 type DBusControlRequest struct {}
+type DBusFDStoreRequest struct {
+	/* in/out/err
+	ID -> uintptr
+	init map first!*/
+	fdMap		map[int][]uintptr
+	lock		sync.RWMutex
+}
+
+func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdout godbus.UnixFDIndex, stderr godbus.UnixFDIndex) (int, *godbus.Error) {
+	var candID int
+	fdStrSlice := []string{strconv.Itoa(int(stdin)), strconv.Itoa(int(stdout)), strconv.Itoa(int(stderr))}
+	pecho("debug", "Got file descriptor from the Bus: " + strings.Join(fdStrSlice, ", "))
+	m.lock.RLock()
+	var tries int
+	for {
+		if tries < 512 {
+			err := errors.New("Could not pick random ID")
+			return 0, godbus.MakeFailedError(err)
+		}
+		tries++
+		candID = rand.Int()
+		_, ok := m.fdMap[candID]
+		if ok {
+			break
+		}
+	}
+	m.lock.RUnlock()
+	m.lock.Lock()
+	m.fdMap[candID] = []uintptr{
+		uintptr(stdin),
+		uintptr(stdout),
+		uintptr(stderr),
+	}
+	return candID, nil
+}
 
 func (m *DBusControlRequest) Stop() (*godbus.Error) {
 	if len(runtimeInfo.instanceID) > 0 {
@@ -1466,6 +1501,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 								Name:		"stderr",
 								Type:		"h",
 								Direction:	"in",
+							},
+							{
+								Name:		"ID",
+								Type:		"i",
+								Direction:	"out",
 							},
 						},
 					},
