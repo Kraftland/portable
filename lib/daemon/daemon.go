@@ -1461,6 +1461,9 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 		busErr := godbus.MakeFailedError(err)
 		return busErr
 	}
+}
+
+func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr) {
 
 }
 
@@ -1561,11 +1564,22 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 							{
 								Name:		"FDs",
 								Type:		"ah",
+								Direction:	"out",
 							},
 						},
 					},
 				},
 				Signals:	[]introspect.Signal{
+					{
+						Name:	"AuxStartEnded",
+						Args:	[]introspect.Arg{
+							{
+								Name:		"ID",
+								Type:		"i",
+								Direction:	"out",
+							},
+						},
+					},
 					{
 						Name:	"AuxStart",
 						Args:	[]introspect.Arg{
