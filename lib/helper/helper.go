@@ -470,14 +470,71 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 	os.Exit(0)
 }
 
+type busStartProcessor struct{
+	cmdPfx		[]string
+}
+
+func (m *busStartProcessor) AuxStart (
+	customTgt bool, tray bool, customExec []string, args []string,
+	) (
+	hasFd bool,
+	stdin dbus.UnixFDIndex,
+	stdout dbus.UnixFDIndex,
+	stderr dbus.UnixFDIndex,
+	busErr *dbus.Error,
+	) {
+		if tray {
+			fmt.Println("Tray activation not supported yet")
+			return
+		}
+		var cmdline []string
+		if customTgt {
+			fmt.Println("Custom launchTarget not supported yet")
+			return
+		} else {
+			cmdline = m.cmdPfx
+		}
+
+		cmdline = append(cmdline, args...)
+		fmt.Println("Received start request from D-Bus:", cmdline)
+		hasFd = true
+		cmd := exec.Command(cmdline[0], cmdline[1:]...)
+		cmd.SysProcAttr = procAttr
+		tmpIn, err := os.CreateTemp("", "stdin-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file: " + err.Error())
+			return
+		}
+		defer os.Remove(tmpIn.Name())
+		tmpOut, err := os.CreateTemp("", "stdout-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file: " + err.Error())
+			return
+		}
+		defer os.Remove(tmpOut.Name())
+		tmpErr, err := os.CreateTemp("", "stderr-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file: " + err.Error())
+			return
+		}
+		defer os.Remove(tmpErr.Name())
+		cmd.Stdin = tmpIn
+		cmd.Stdout = tmpOut
+		cmd.Stderr = tmpErr
+		return
+	}
+
 func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
+	proc := new(busStartProcessor)
+	proc.cmdPfx = cmdPfx
 	var objPath = "/top/kimiblock/portable/init"
 	var busName = os.Getenv("appID") + ".Portable.Helper"
 
-	reply, err := conn.RequestName(busName, dbus.NameFlagDoNotQueue)
+	err := conn.Export(proc, dbus.ObjectPath(objPath), "top.kimiblock.Portable.Init")
 	if err != nil {
 		panic(err)
 	}
+
 	node := &introspect.Node{
 		Interfaces:	[]introspect.Interface{
 			{
@@ -488,6 +545,11 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 						Args:		[]introspect.Arg{
 							{
 								Name:		"CustomTarget",
+								Type:		"b",
+								Direction:	"in",
+							},
+							{
+								Name:		"TrayActivate",
 								Type:		"b",
 								Direction:	"in",
 							},
@@ -511,6 +573,16 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 								Type:		"h",
 								Direction:	"out",
 							},
+							{
+								Name:		"stdout",
+								Type:		"h",
+								Direction:	"out",
+							},
+							{
+								Name:		"stderr",
+								Type:		"h",
+								Direction:	"out",
+							},
 						},
 					},
 				},
@@ -518,6 +590,10 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 		},
 	}
 	conn.Export(introspect.NewIntrospectable(node), dbus.ObjectPath(objPath), "org.freedesktop.DBus.Introspectable")
+	reply, err := conn.RequestName(busName, dbus.NameFlagDoNotQueue)
+	if err != nil {
+		panic(err)
+	}
 	switch reply {
 		case dbus.RequestNameReplyPrimaryOwner:
 			fmt.Println("Successfully owned bus name")
@@ -526,13 +602,6 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 			os.Exit(1)
 	}
 
-	ipcPath := "/top/kimiblock/portable/IPC"
-	ipcObj := conn.Object("top.kimiblock.portable." + os.Getenv("appID"), dbus.ObjectPath(ipcPath))
-	ipcObj.AddMatchSignal("top.kimiblock.Portable.Controller", "AuxStart")
-
-	sigChan := make(chan *dbus.Signal, 4)
-	conn.Signal(sigChan)
-	busSigListener(sigChan, cmdPfx)
 }
 
 type AuxStartMsg struct {
