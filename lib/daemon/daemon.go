@@ -1474,7 +1474,7 @@ func (m *DBusControlRequest) RequestID() (int, *godbus.Error) {
 	var tries int
 	for {
 		if tries > 512 {
-			err := errors.New("Could not pick random ID")
+			err := errors.New("Could not pick random ID: max trials reached")
 			return 0, godbus.MakeFailedError(err)
 		}
 		tries++
