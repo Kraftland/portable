@@ -1146,6 +1146,7 @@ func calcDbusArg(argChan chan []string) {
 
 		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
 		"--broadcast=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.AuxStart@/top/kimiblock/portable/daemon",
+		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.IPC.*@/top/kimiblock/portable/IPC",
 
 	)
 
