@@ -1443,6 +1443,36 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
+	ipcPath := godbus.ObjectPath("/top/kimiblock/portable/IPC")
+	ipcNode := &introspect.Node{
+		Interfaces:	[]introspect.Interface{
+			{
+				Name:		"top.kimiblock.Portable.IPC",
+				Methods:	[]introspect.Method{
+					{
+						Name:	"SubmitFileDescriptor",
+						Args:	[]introspect.Arg{
+							{
+								Name:		"stdin",
+								Type:		"h",
+								Direction:	"in",
+							},
+							{
+								Name:		"stdout",
+								Type:		"h",
+								Direction:	"in",
+							},
+							{
+								Name:		"stderr",
+								Type:		"h",
+								Direction:	"in",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
@@ -1494,6 +1524,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 		},
 	}
 	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	err = conn.Export(introspect.NewIntrospectable(ipcNode), ipcPath, "org.freedesktop.DBus.Introspectable")
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
