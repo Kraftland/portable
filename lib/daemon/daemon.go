@@ -1412,7 +1412,9 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 }
 
 type DBusPingRequest struct {}
-type DBusControlRequest struct {}
+type DBusControlRequest struct {
+	Conn		*godbus.Conn
+}
 type DBusFDStoreRequest struct {
 	/* in/out/err
 	ID -> uintptr
@@ -1464,7 +1466,15 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 }
 
 func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr) {
-
+	err := m.Conn.Emit(
+		"/top/kimiblock/portable/daemon", "top.kimiblock.Portable.Controller.AuxStart",
+		customTarget,
+		targetExec,
+		args,
+	)
+	if err != nil {
+		pecho("warn", "Could not process start request: " + err.Error())
+	}
 }
 
 func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
@@ -1483,6 +1493,7 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 	fdStore := new(DBusFDStoreRequest)
 	fdStore.fdMap = make(map[int][]uintptr)
 	controller := new(DBusControlRequest)
+	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	ipcPath := godbus.ObjectPath("/top/kimiblock/portable/IPC")
 	ipcNode := &introspect.Node{
