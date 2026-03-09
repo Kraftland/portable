@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"syscall"
 	"golang.org/x/sys/unix"
 
 	"golang.org/x/net/http2"
@@ -49,6 +50,9 @@ var (
 	pipeMapGlob		= make(map[int]pipeInfo)
 	pipeLock		sync.RWMutex
 	terminateNotify		= make(chan int, 1)
+	procAttr		= &syscall.SysProcAttr{
+		Pdeathsig:	syscall.SIGKILL,
+	}
 )
 
 func updateSd(count int) {
@@ -290,7 +294,7 @@ func auxStartHandler (writer http.ResponseWriter, req *http.Request) {
 	fmt.Println("Got file map from request:", filesMap)
 	cmdlineNew := cmdlineReplacer(cmdline, filesMap)
 	cmd := exec.Command(cmdlineNew[0], cmdlineNew[1:]...)
-	//cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
+	cmd.SysProcAttr = procAttr
 	var id int
 	for {
 		id = rand.Int()
