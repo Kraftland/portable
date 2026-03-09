@@ -25,6 +25,7 @@ import (
 
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/godbus/dbus/v5/prop"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
@@ -1596,6 +1597,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 			},
 			{
 				Name:		"top.kimiblock.Portable.Controller",
+				Properties:	[]introspect.Property{
+					{
+						Name:	"",
+					},
+				},
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Stop",
