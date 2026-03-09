@@ -164,6 +164,7 @@ var (
 				}
 	pechoChan		= make(chan []string, 128)
 	filesInfo		= make(chan PassFiles, 1)
+	fdStore 		= new(DBusFDStoreRequest)
 )
 
 func pechoWorker() {
@@ -1492,7 +1493,6 @@ func listenBusStub(conn *godbus.Conn) {
 
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
-	fdStore := new(DBusFDStoreRequest)
 	fdStore.fdMap = make(map[int][]uintptr)
 	controller := new(DBusControlRequest)
 	controller.Conn = conn
