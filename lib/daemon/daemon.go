@@ -1426,7 +1426,7 @@ type DBusFDStoreRequest struct {
 	idlePairs	int
 }
 
-func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdout godbus.UnixFDIndex, stderr godbus.UnixFDIndex) (int, *godbus.Error) {
+func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdout godbus.UnixFDIndex, stderr godbus.UnixFDIndex, ID int) (*godbus.Error) {
 	var candID int
 	fdStrSlice := []string{strconv.Itoa(int(stdin)), strconv.Itoa(int(stdout)), strconv.Itoa(int(stderr))}
 	pecho("debug", "Got file descriptor from the Bus: " + strings.Join(fdStrSlice, ", "))
@@ -1467,28 +1467,6 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 		busErr := godbus.MakeFailedError(err)
 		return busErr
 	}
-}
-
-func (m *DBusControlRequest) RequestID() (int, *godbus.Error) {
-	fdStore.lock.RLock()
-	var candID int
-	var tries int
-	for {
-		if tries > 512 {
-			err := errors.New("Could not pick random ID: max trials reached")
-			return 0, godbus.MakeFailedError(err)
-		}
-		tries++
-		candID = rand.Int()
-		_, ok := fdStore.fdMap[candID]
-		if ok {
-			break
-		}
-	}
-	fdStore.lock.RUnlock()
-	fdStore.lock.Lock()
-	fdStore.fdMap[candID] = []uintptr{}
-	return candID, nil
 }
 
 func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr, *godbus.Error) {
@@ -1536,74 +1514,6 @@ func listenBusStub(conn *godbus.Conn) {
 
 }
 
-type RunningIDs []int
-
-func propUpdater(propChan chan map[int]string, bus *godbus.Conn) {
-	var propMap prop.Map
-	propInit := &prop.Prop{
-		Value:		[]int{0},
-		Writable:	true,
-		Emit:		prop.EmitTrue,
-	}
-	var valInner map[string]*prop.Prop
-	valInner["RunningIdentifiers"] = propInit
-	propMap["top.kimiblock.Portable.Controller"] = valInner
-	properties, err := prop.Export(bus, "/top/kimiblock/portable/daemon", propMap)
-	if err != nil {
-		pecho("crit", "Could not publish properties: " + err.Error())
-	}
-
-
-	for {
-		var currIDs RunningIDs
-		update := <- propChan
-		currIDRaw, buserr := properties.Get(
-			"top.kimiblock.Portable.Controller",
-			"RunningIdentifiers",
-		)
-
-		if buserr != nil {
-			pecho("warn", "Could not get current IDs: " + buserr.Error())
-			return
-		}
-		err = currIDRaw.Store(&currIDs)
-		if err != nil {
-			pecho("warn", "Could not decode current IDs: " + err.Error())
-			return
-		}
-		for k, v := range update {
-			switch v {
-				case "add":
-					pecho("debug", "Updating properties: add " + strconv.Itoa(k))
-					err = properties.Set(
-						"top.kimiblock.Portable.Controller",
-						"RunningIdentifiers",
-						godbus.MakeVariant(append(currIDs, k)))
-					if err != nil {
-						pecho("warn", "Could not update current ID pool: " + err.Error())
-					}
-				default:
-					var idNew []int
-					for _, id := range currIDs {
-						if id == k {
-							pecho("debug", "Removing ID from list")
-							continue
-						}
-						idNew = append(idNew, id)
-					}
-					err := properties.Set(
-						"top.kimiblock.Portable.Controller",
-						"RunningIdentifiers",
-						godbus.MakeVariant(idNew),
-					)
-					if err != nil {
-						pecho("warn", "Could not update current ID pool: " + err.Error())
-					}
-			}
-		}
-	}
-}
-
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
 	fdStore.fdMap = make(map[int][]uintptr)
@@ -1637,7 +1547,7 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 							{
 								Name:		"ID",
 								Type:		"i",
-								Direction:	"out",
+								Direction:	"in",
 							},
 						},
 					},
@@ -1675,16 +1585,6 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 						Name:	"Stop",
 					},
 					{
-						Name:	"RequestID",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"ID",
-								Type:		"i",
-								Direction:	"out",
-							},
-						},
-					},
-					{
 						Name:	"RequestStart",
 						Args:	[]introspect.Arg{
 							{
@@ -1711,16 +1611,6 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 					},
 				},
 				Signals:	[]introspect.Signal{
-					{
-						Name:	"AuxStartEnded",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"ID",
-								Type:		"i",
-								Direction:	"out",
-							},
-						},
-					},
 					{
 						Name:	"AuxStart",
 						Args:	[]introspect.Arg{
