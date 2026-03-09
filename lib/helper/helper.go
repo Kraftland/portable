@@ -469,6 +469,53 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 	os.Exit(0)
 }
 
+func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
+	ipcPath := "/top/kimiblock/portable/IPC"
+	ipcObj := conn.Object("top.kimiblock.portable." + os.Getenv("appID"), dbus.ObjectPath(ipcPath))
+	ipcObj.AddMatchSignal("top.kimiblock.Portable.Controller", "AuxStart")
+
+	sigChan := make(chan *dbus.Signal, 4)
+	conn.Signal(sigChan)
+	busSigListener(sigChan, cmdPfx)
+}
+
+type AuxStartMsg struct {
+	CustomTarget	bool
+	TargetExec	[]string
+	Args		[]string
+}
+
+func busSigListener(sig chan *dbus.Signal, cmdPfx []string) {
+	for signal := range sig {
+		switch signal.Name {
+			case "top.kimiblock.Portable.Controller" + ".AuxStart":
+				var msg AuxStartMsg
+				err := dbus.Store(signal.Body, &msg)
+				if err != nil {
+					fmt.Println("Could not decode AuxStart broadcast: " + err.Error())
+					return
+				}
+				fmt.Println("Received AuxStart broadcast from D-Bus:", msg)
+				var cmdline []string
+				if msg.CustomTarget {
+					cmdline = msg.TargetExec
+				} else {
+					cmdline = cmdPfx
+				}
+				cmdline = append(cmdline, msg.Args...)
+				cmd := exec.Command(cmdline[0], cmdline[1:]...)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				cmd.SysProcAttr = procAttr
+				cmd.Start()
+				startNotifier <- true
+				cmd.Wait()
+				startNotifier <- false
+				// TODO: support FD store
+		}
+	}
+}
+
 func main () {
 	var busWg sync.WaitGroup
 	var bus *dbus.Conn
@@ -533,6 +580,7 @@ func main () {
 	}
 	startMaster(targetSlice[0], args)
 	busWg.Wait()
+	go busAuxStart(bus, targetSlice)
 	go terminateWatcher(terminateNotify, bus)
 	select {}
 }
