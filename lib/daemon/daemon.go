@@ -31,6 +31,7 @@ import (
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 	"golang.org/x/net/http2"
+	"github.com/google/uuid"
 )
 
 const (
@@ -1421,39 +1422,32 @@ type DBusFDStoreRequest struct {
 	/* in/out/err
 	ID -> uintptr
 	init map first!*/
-	fdMap		map[int][]uintptr
+	stdinMap	map[uuid.UUID]uintptr
+	stdoutMap	map[uuid.UUID]uintptr
+	stderrMap	map[uuid.UUID]uintptr
+	registeredUUID	[]uuid.UUID
 	lock		sync.RWMutex
 	idlePairs	int
 }
 
-func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdout godbus.UnixFDIndex, stderr godbus.UnixFDIndex, ID int) (*godbus.Error) {
-	var candID int
-	fdStrSlice := []string{strconv.Itoa(int(stdin)), strconv.Itoa(int(stdout)), strconv.Itoa(int(stderr))}
-	pecho("debug", "Got file descriptor from the Bus: " + strings.Join(fdStrSlice, ", "))
-	m.lock.RLock()
-	var tries int
-	for {
-		if tries > 512 {
-			err := errors.New("Could not pick random ID")
-			return 0, godbus.MakeFailedError(err)
-		}
-		tries++
-		candID = rand.Int()
-		_, ok := m.fdMap[candID]
-		if ok {
-			break
-		}
+func (m *DBusFDStoreRequest) SubmitFileDescriptor(
+	stdin godbus.UnixFDIndex,
+	stdout godbus.UnixFDIndex,
+	stderr godbus.UnixFDIndex,
+	UUID string,
+	) (*godbus.Error) {
+	uuidReq, err := uuid.Parse(UUID)
+	if err != nil {
+		pecho("warn", "Invalid request: " + err.Error())
+		errBus := godbus.MakeFailedError(err)
+		return errBus
 	}
-	m.lock.RUnlock()
 	m.lock.Lock()
-	m.fdMap[candID] = []uintptr{
-		uintptr(stdin),
-		uintptr(stdout),
-		uintptr(stderr),
-	}
-	m.idlePairs++
+	m.stderrMap[uuidReq] = uintptr(stderr)
+	m.stdinMap[uuidReq] = uintptr(stdin)
+	m.stdoutMap[uuidReq] = uintptr(stdout)
 	m.lock.Unlock()
-	return candID, nil
+	return nil
 }
 
 func (m *DBusControlRequest) Stop() (*godbus.Error) {
@@ -1516,8 +1510,11 @@ func listenBusStub(conn *godbus.Conn) {
 
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
-	fdStore.fdMap = make(map[int][]uintptr)
 	controller := new(DBusControlRequest)
+	fdStore := new(DBusFDStoreRequest)
+	fdStore.stdinMap = make(map[uuid.UUID]uintptr)
+	fdStore.stderrMap = make(map[uuid.UUID]uintptr)
+	fdStore.stdoutMap = make(map[uuid.UUID]uintptr)
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	ipcPath := godbus.ObjectPath("/top/kimiblock/portable/IPC")
@@ -1545,8 +1542,8 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 								Direction:	"in",
 							},
 							{
-								Name:		"ID",
-								Type:		"i",
+								Name:		"UUID",
+								Type:		"s",
 								Direction:	"in",
 							},
 						},
