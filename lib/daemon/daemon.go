@@ -1468,6 +1468,28 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 	}
 }
 
+func (m *DBusControlRequest) RequestID() (int, *godbus.Error) {
+	fdStore.lock.RLock()
+	var candID int
+	var tries int
+	for {
+		if tries > 512 {
+			err := errors.New("Could not pick random ID")
+			return 0, godbus.MakeFailedError(err)
+		}
+		tries++
+		candID = rand.Int()
+		_, ok := fdStore.fdMap[candID]
+		if ok {
+			break
+		}
+	}
+	fdStore.lock.RUnlock()
+	fdStore.lock.Lock()
+	fdStore.fdMap[candID] = []uintptr{}
+	return candID, nil
+}
+
 func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr, *godbus.Error) {
 	fdStore.lock.RLock()
 	var candID int
