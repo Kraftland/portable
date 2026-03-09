@@ -497,7 +497,6 @@ func (m *busStartProcessor) AuxStart (
 
 		cmdline = append(cmdline, args...)
 		fmt.Println("Received start request from D-Bus:", cmdline)
-		hasFd = true
 		cmd := exec.Command(cmdline[0], cmdline[1:]...)
 		cmd.SysProcAttr = procAttr
 		tmpIn, err := os.CreateTemp("", "stdin-*")
@@ -521,6 +520,10 @@ func (m *busStartProcessor) AuxStart (
 		cmd.Stdin = tmpIn
 		cmd.Stdout = tmpOut
 		cmd.Stderr = tmpErr
+		stdin = dbus.UnixFDIndex(tmpIn.Fd())
+		stdout = dbus.UnixFDIndex(tmpOut.Fd())
+		stderr = dbus.UnixFDIndex(tmpErr.Fd())
+		hasFd = true
 		return
 	}
 
