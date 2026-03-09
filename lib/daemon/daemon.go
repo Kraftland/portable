@@ -1540,6 +1540,30 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 					{
 						Name:	"Stop",
 					},
+					{
+						Name:	"RequestStart",
+						Args:	[]introspect.Arg{
+							{
+								Name:		"CustomTarget",
+								Type:		"b",
+								Direction:	"in",
+							},
+							{
+								Name:		"TargetExec",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"Args",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"FDs",
+								Type:		"ah",
+							},
+						},
+					},
 				},
 				Signals:	[]introspect.Signal{
 					{
