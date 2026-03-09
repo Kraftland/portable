@@ -1579,6 +1579,16 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 						Name:	"Stop",
 					},
 					{
+						Name:	"RequestID",
+						Args:	[]introspect.Arg{
+							{
+								Name:		"ID",
+								Type:		"i",
+								Direction:	"out",
+							},
+						},
+					},
+					{
 						Name:	"RequestStart",
 						Args:	[]introspect.Arg{
 							{
