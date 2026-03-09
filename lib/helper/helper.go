@@ -483,6 +483,7 @@ type AuxStartMsg struct {
 	CustomTarget	bool
 	TargetExec	[]string
 	Args		[]string
+	ID		int
 }
 
 func busSigListener(sig chan *dbus.Signal, cmdPfx []string) {

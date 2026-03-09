@@ -164,7 +164,7 @@ var (
 				}
 	pechoChan		= make(chan []string, 128)
 	filesInfo		= make(chan PassFiles, 1)
-	fdStore 		= new(DBusFDStoreRequest)
+	fdStore			= new(DBusFDStoreRequest)
 )
 
 func pechoWorker() {
@@ -1422,6 +1422,7 @@ type DBusFDStoreRequest struct {
 	init map first!*/
 	fdMap		map[int][]uintptr
 	lock		sync.RWMutex
+	idlePairs	int
 }
 
 func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdout godbus.UnixFDIndex, stderr godbus.UnixFDIndex) (int, *godbus.Error) {
@@ -1431,7 +1432,7 @@ func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdo
 	m.lock.RLock()
 	var tries int
 	for {
-		if tries < 512 {
+		if tries > 512 {
 			err := errors.New("Could not pick random ID")
 			return 0, godbus.MakeFailedError(err)
 		}
@@ -1449,6 +1450,7 @@ func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdo
 		uintptr(stdout),
 		uintptr(stderr),
 	}
+	m.idlePairs++
 	m.lock.Unlock()
 	return candID, nil
 }
@@ -1467,17 +1469,37 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 }
 
 func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr, *godbus.Error) {
+	fdStore.lock.RLock()
+	var candID int
+	var tries int
+	for {
+		if tries > 512 {
+			err := errors.New("Could not pick random ID")
+			return nil, godbus.MakeFailedError(err)
+		}
+		tries++
+		candID = rand.Int()
+		_, ok := fdStore.fdMap[candID]
+		if ok {
+			break
+		}
+	}
+	fdStore.lock.RUnlock()
+
 	err := m.Conn.Emit(
 		"/top/kimiblock/portable/daemon", "top.kimiblock.Portable.Controller.AuxStart",
 		customTarget,
 		targetExec,
 		args,
+		candID,
 	)
 	if err != nil {
 		pecho("warn", "Could not process start request: " + err.Error())
 		errBus := errors.New("Could not process start request" + err.Error())
 		return nil, godbus.MakeFailedError(errBus)
 	}
+
+
 }
 
 func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
@@ -1609,6 +1631,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 							{
 								Name:		"Args",
 								Type:		"as",
+								Direction:	"out",
+							},
+							{
+								Name:		"ID",
+								Type:		"i",
 								Direction:	"out",
 							},
 						},
