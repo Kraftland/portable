@@ -1465,7 +1465,7 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 	}
 }
 
-func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr) {
+func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr, *godbus.Error) {
 	err := m.Conn.Emit(
 		"/top/kimiblock/portable/daemon", "top.kimiblock.Portable.Controller.AuxStart",
 		customTarget,
@@ -1474,6 +1474,8 @@ func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string
 	)
 	if err != nil {
 		pecho("warn", "Could not process start request: " + err.Error())
+		errBus := errors.New("Could not process start request" + err.Error())
+		return nil, godbus.MakeFailedError(errBus)
 	}
 }
 
