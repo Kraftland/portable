@@ -1446,6 +1446,7 @@ func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdo
 		uintptr(stdout),
 		uintptr(stderr),
 	}
+	m.lock.Unlock()
 	return candID, nil
 }
 
@@ -1476,6 +1477,8 @@ func listenBusStub(conn *godbus.Conn) {
 
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
+	fdStore := new(DBusFDStoreRequest)
+	fdStore.fdMap = make(map[int][]uintptr)
 	controller := new(DBusControlRequest)
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	ipcPath := godbus.ObjectPath("/top/kimiblock/portable/IPC")
@@ -1573,6 +1576,7 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
 	}
+	err = conn.Export()
 	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
