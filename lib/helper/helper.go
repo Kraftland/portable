@@ -36,8 +36,13 @@ type ResponseField struct {
 	ID			int
 }
 
+type StartNofifyMsg struct {
+	cmd			*exec.Cmd
+	files			[]*os.File
+}
+
 var (
-	startNotifier		= make(chan *exec.Cmd, 32)
+	startNotifier		= make(chan StartNofifyMsg, 32)
 	terminateNotify		= make(chan int, 1)
 	procAttr		= &syscall.SysProcAttr{
 		Pdeathsig:	syscall.SIGKILL,
@@ -81,22 +86,31 @@ func startCounter () {
 	for {
 		incoming := <- startNotifier
 		go func() {
-			err := incoming.Start()
+			err := incoming.cmd.Start()
 			if err != nil {
-				fmt.Println("Could not start executable with:", incoming.Args, err)
+				fmt.Println("Could not start executable with:", incoming.cmd.Args, err)
 				return
 			}
 			countLock.Lock()
 			startedCount++
 			go updateSd(startedCount)
 			countLock.Unlock()
-			err = incoming.Wait()
+			err = incoming.cmd.Wait()
 			if err != nil {
-				fmt.Println("Command with argument: ", incoming.Args, "failed:", err)
+				fmt.Println("Command with argument: ", incoming.cmd.Args, "failed:", err)
 			}
 			countLock.Lock()
 			startedCount--
 			go updateSd(startedCount)
+			go func () {
+				for _, file := range incoming.files {
+					if file.Fd() == 0 {
+						continue
+					} else {
+						file.Close()
+					}
+				}
+			} ()
 			countLock.Unlock()
 			if startedCount < 1 {
 				daemon.SdNotify(false, daemon.SdNotifyStopping)
@@ -132,6 +146,7 @@ func cmdlineReplacer(origin []string, files map[string]string) []string {
 }
 
 func startMaster(targetExec string, targetArgs []string) {
+	var startReq StartNofifyMsg
 	rawEnv := os.Getenv("_portableHelperExtraFiles")
 	if len(rawEnv) > 0 {
 		var decoded PassFiles
@@ -150,7 +165,8 @@ func startMaster(targetExec string, targetArgs []string) {
 	startCmd.Stderr = os.Stderr
 	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
 	go daemon.SdNotify(false, daemon.SdNotifyReady)
-	startNotifier <- startCmd
+	startReq.cmd = startCmd
+	startNotifier <- startReq
 }
 
 func sendPidFd() {
@@ -191,6 +207,17 @@ type busStartProcessor struct{
 	cmdPfx		[]string
 }
 
+func clearCloseOnExec(file *os.File) error {
+	fd := file.Fd()
+	flag, err := unix.FcntlInt(fd, unix.F_GETFD, 0)
+	if err != nil {
+		return err
+	}
+	flag &^= unix.FD_CLOEXEC
+	_, err = unix.FcntlInt(fd, unix.F_SETFD, flag)
+	return err
+}
+
 func (m *busStartProcessor) AuxStart (
 	customTgt bool, tray bool, customExec []string, args []string,
 	) (
@@ -200,17 +227,21 @@ func (m *busStartProcessor) AuxStart (
 	stderr dbus.UnixFDIndex,
 	busErr *dbus.Error,
 	) {
+		var req StartNofifyMsg
 		outR, outW, err := os.Pipe()
+		clearCloseOnExec(outR)
 		if err != nil {
 			fmt.Println("Could not create pipe for streaming:", err)
 			return
 		}
 		errR, errW, err := os.Pipe()
+		clearCloseOnExec(errR)
 		if err != nil {
 			fmt.Println("Could not create pipe for streaming:", err)
 			return
 		}
 		inR, inW, err := os.Pipe()
+		clearCloseOnExec(inW)
 		if err != nil {
 			fmt.Println("Could not create pipe for streaming:", err)
 			return
@@ -237,7 +268,8 @@ func (m *busStartProcessor) AuxStart (
 		stdout = dbus.UnixFDIndex(outR.Fd())
 		stderr = dbus.UnixFDIndex(errR.Fd())
 		hasFd = true
-		startNotifier <- cmd
+		req.cmd = cmd
+		startNotifier <- req
 		return
 	}
 
