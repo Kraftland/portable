@@ -37,7 +37,7 @@ type ResponseField struct {
 }
 
 var (
-	startNotifier		= make(chan bool, 32)
+	startNotifier		= make(chan *exec.Cmd, 32)
 	// Should check for collision first!
 	pipeMapGlob		= make(map[int]pipeInfo)
 	pipeLock		sync.RWMutex
@@ -78,24 +78,38 @@ func netsockFailNotification() {
 
 func startCounter () {
 	go netsockFailNotification()
+	var countLock sync.RWMutex
 	var startedCount int = 0
 	fmt.Println("Start counter init done")
 	for {
 		incoming := <- startNotifier
-		if incoming == true {
+		go func() {
+			err := incoming.Start()
+			if err != nil {
+				fmt.Println("Could not start executable with:", incoming.Args, err)
+				return
+			}
+			countLock.Lock()
 			startedCount++
-		} else {
-			startedCount = startedCount - 1
-		}
+			go updateSd(startedCount)
+			countLock.Unlock()
+			err = incoming.Wait()
+			if err != nil {
+				fmt.Println("Command with argument: ", incoming.Args, "failed:", err)
+			}
+			countLock.Lock()
+			startedCount--
+			go updateSd(startedCount)
+			countLock.Unlock()
+			if startedCount < 1 {
+				daemon.SdNotify(false, daemon.SdNotifyStopping)
+				fmt.Println("All tracked processes have exited")
+				terminateNotify <- 1
+				return
+			}
+		} ()
 
-		go updateSd(startedCount)
 
-		if startedCount < 1 {
-			daemon.SdNotify(false, daemon.SdNotifyStopping)
-			fmt.Println("All tracked processes have exited")
-			terminateNotify <- 1
-			break
-		}
 	}
 }
 type StartRequest struct {
@@ -137,13 +151,9 @@ func startMaster(targetExec string, targetArgs []string) {
 	startCmd.Stdin = os.Stdin
 	startCmd.Stdout = os.Stdout
 	startCmd.Stderr = os.Stderr
-	startNotifier <- true
 	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
-	startCmd.Start()
-	daemon.SdNotify(false, daemon.SdNotifyReady)
-	startCmd.Wait()
-	startNotifier <- false
-	fmt.Println("Main process exited")
+	go daemon.SdNotify(false, daemon.SdNotifyReady)
+	startNotifier <- startCmd
 }
 
 func sendPidFd() {
@@ -233,12 +243,7 @@ func (m *busStartProcessor) AuxStart (
 		stdout = dbus.UnixFDIndex(tmpOut.Fd())
 		stderr = dbus.UnixFDIndex(tmpErr.Fd())
 		hasFd = true
-		startNotifier <- true
-		errRun := cmd.Run()
-		if errRun != nil {
-			fmt.Println("Could not start auxiliary command: " + errRun.Error())
-		}
-		startNotifier <- false
+		startNotifier <- cmd
 		return
 	}
 
