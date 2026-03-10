@@ -24,6 +24,7 @@ import (
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
 	"github.com/godbus/dbus/v5"
+	"github.com/godbus/dbus/v5/introspect"
 )
 
 type PassFiles struct {
@@ -469,20 +470,153 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 	os.Exit(0)
 }
 
-func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
-	ipcPath := "/top/kimiblock/portable/IPC"
-	ipcObj := conn.Object("top.kimiblock.portable." + os.Getenv("appID"), dbus.ObjectPath(ipcPath))
-	ipcObj.AddMatchSignal("top.kimiblock.Portable.Controller", "AuxStart")
+type busStartProcessor struct{
+	cmdPfx		[]string
+}
 
-	sigChan := make(chan *dbus.Signal, 4)
-	conn.Signal(sigChan)
-	busSigListener(sigChan, cmdPfx)
+func (m *busStartProcessor) AuxStart (
+	customTgt bool, tray bool, customExec []string, args []string,
+	) (
+	hasFd bool,
+	stdin dbus.UnixFDIndex,
+	stdout dbus.UnixFDIndex,
+	stderr dbus.UnixFDIndex,
+	busErr *dbus.Error,
+	) {
+		if tray {
+			fmt.Println("Tray activation not supported yet")
+			return
+		}
+		var cmdline []string
+		if customTgt {
+			cmdline = customExec
+		} else {
+			cmdline = m.cmdPfx
+		}
+
+		cmdline = append(cmdline, args...)
+		fmt.Println("Received start request from D-Bus:", cmdline)
+		cmd := exec.Command(cmdline[0], cmdline[1:]...)
+		cmd.SysProcAttr = procAttr
+		tmpIn, err := os.CreateTemp("", "stdin-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file: " + err.Error())
+			return
+		}
+		defer os.Remove(tmpIn.Name())
+		tmpOut, err := os.CreateTemp("", "stdout-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file: " + err.Error())
+			return
+		}
+		defer os.Remove(tmpOut.Name())
+		tmpErr, err := os.CreateTemp("", "stderr-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file: " + err.Error())
+			return
+		}
+		defer os.Remove(tmpErr.Name())
+		cmd.Stdin = tmpIn
+		cmd.Stdout = tmpOut
+		cmd.Stderr = tmpErr
+		stdin = dbus.UnixFDIndex(tmpIn.Fd())
+		stdout = dbus.UnixFDIndex(tmpOut.Fd())
+		stderr = dbus.UnixFDIndex(tmpErr.Fd())
+		hasFd = true
+		startNotifier <- true
+		errRun := cmd.Run()
+		if errRun != nil {
+			fmt.Println("Could not start auxiliary command: " + errRun.Error())
+		}
+		startNotifier <- false
+		return
+	}
+
+func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
+	proc := new(busStartProcessor)
+	proc.cmdPfx = cmdPfx
+	var objPath = "/top/kimiblock/portable/init"
+	var busName = os.Getenv("appID") + ".Portable.Helper"
+
+	err := conn.Export(proc, dbus.ObjectPath(objPath), "top.kimiblock.Portable.Init")
+	if err != nil {
+		panic(err)
+	}
+
+	node := &introspect.Node{
+		Interfaces:	[]introspect.Interface{
+			{
+				Name:		"top.kimiblock.Portable.Init",
+				Methods:	[]introspect.Method{
+					{
+						Name:		"AuxStart",
+						Args:		[]introspect.Arg{
+							{
+								Name:		"CustomTarget",
+								Type:		"b",
+								Direction:	"in",
+							},
+							{
+								Name:		"TrayActivate",
+								Type:		"b",
+								Direction:	"in",
+							},
+							{
+								Name:		"TargetExec",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"Args",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"HasFileDescriptors",
+								Type:		"b",
+								Direction:	"out",
+							},
+							{
+								Name:		"stdin",
+								Type:		"h",
+								Direction:	"out",
+							},
+							{
+								Name:		"stdout",
+								Type:		"h",
+								Direction:	"out",
+							},
+							{
+								Name:		"stderr",
+								Type:		"h",
+								Direction:	"out",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	conn.Export(introspect.NewIntrospectable(node), dbus.ObjectPath(objPath), "org.freedesktop.DBus.Introspectable")
+	reply, err := conn.RequestName(busName, dbus.NameFlagDoNotQueue)
+	if err != nil {
+		panic(err)
+	}
+	switch reply {
+		case dbus.RequestNameReplyPrimaryOwner:
+			fmt.Println("Successfully owned bus name")
+		default:
+			fmt.Println("Could not own bus name: " + reply.String())
+			os.Exit(1)
+	}
+
 }
 
 type AuxStartMsg struct {
 	CustomTarget	bool
 	TargetExec	[]string
 	Args		[]string
+	ID		int
 }
 
 func busSigListener(sig chan *dbus.Signal, cmdPfx []string) {
@@ -525,10 +659,10 @@ func main () {
 		if err != nil {
 			panic("Could not connect to session bus: " + err.Error())
 		}
+		fmt.Println("Connected to session bus")
 	})
 	go startCounter()
 	go sendPidFd()
-	fmt.Println("Starting helper...")
 
 	// This is horrible, but launchTarget may have spaces
 	var rawTarget = os.Getenv("launchTarget")
@@ -578,9 +712,9 @@ func main () {
 			)
 		}
 	}
-	startMaster(targetSlice[0], args)
 	busWg.Wait()
 	go busAuxStart(bus, targetSlice)
+	go startMaster(targetSlice[0], args)
 	go terminateWatcher(terminateNotify, bus)
 	select {}
 }

@@ -30,6 +30,7 @@ import (
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 	"golang.org/x/net/http2"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -1412,42 +1413,8 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 }
 
 type DBusPingRequest struct {}
-type DBusControlRequest struct {}
-type DBusFDStoreRequest struct {
-	/* in/out/err
-	ID -> uintptr
-	init map first!*/
-	fdMap		map[int][]uintptr
-	lock		sync.RWMutex
-}
-
-func (m *DBusFDStoreRequest) SubmitFileDescriptor(stdin godbus.UnixFDIndex, stdout godbus.UnixFDIndex, stderr godbus.UnixFDIndex) (int, *godbus.Error) {
-	var candID int
-	fdStrSlice := []string{strconv.Itoa(int(stdin)), strconv.Itoa(int(stdout)), strconv.Itoa(int(stderr))}
-	pecho("debug", "Got file descriptor from the Bus: " + strings.Join(fdStrSlice, ", "))
-	m.lock.RLock()
-	var tries int
-	for {
-		if tries < 512 {
-			err := errors.New("Could not pick random ID")
-			return 0, godbus.MakeFailedError(err)
-		}
-		tries++
-		candID = rand.Int()
-		_, ok := m.fdMap[candID]
-		if ok {
-			break
-		}
-	}
-	m.lock.RUnlock()
-	m.lock.Lock()
-	m.fdMap[candID] = []uintptr{
-		uintptr(stdin),
-		uintptr(stdout),
-		uintptr(stderr),
-	}
-	m.lock.Unlock()
-	return candID, nil
+type DBusControlRequest struct {
+	Conn		*godbus.Conn
 }
 
 func (m *DBusControlRequest) Stop() (*godbus.Error) {
@@ -1461,7 +1428,6 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 		busErr := godbus.MakeFailedError(err)
 		return busErr
 	}
-
 }
 
 func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
@@ -1477,45 +1443,9 @@ func listenBusStub(conn *godbus.Conn) {
 
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
-	fdStore := new(DBusFDStoreRequest)
-	fdStore.fdMap = make(map[int][]uintptr)
 	controller := new(DBusControlRequest)
+	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
-	ipcPath := godbus.ObjectPath("/top/kimiblock/portable/IPC")
-	ipcNode := &introspect.Node{
-		Interfaces:	[]introspect.Interface{
-			{
-				Name:		"top.kimiblock.Portable.IPC",
-				Methods:	[]introspect.Method{
-					{
-						Name:	"SubmitFileDescriptor",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"stdin",
-								Type:		"h",
-								Direction:	"in",
-							},
-							{
-								Name:		"stdout",
-								Type:		"h",
-								Direction:	"in",
-							},
-							{
-								Name:		"stderr",
-								Type:		"h",
-								Direction:	"in",
-							},
-							{
-								Name:		"ID",
-								Type:		"i",
-								Direction:	"out",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
@@ -1535,72 +1465,15 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 				},
 			},
 			{
-				Name:		"top.kimiblock.Portable.Controller",
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Stop",
-					},
-					{
-						Name:	"RequestStart",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"CustomTarget",
-								Type:		"b",
-								Direction:	"in",
-							},
-							{
-								Name:		"TargetExec",
-								Type:		"as",
-								Direction:	"in",
-							},
-							{
-								Name:		"Args",
-								Type:		"as",
-								Direction:	"in",
-							},
-							{
-								Name:		"FDs",
-								Type:		"ah",
-							},
-						},
-					},
-				},
-				Signals:	[]introspect.Signal{
-					{
-						Name:	"AuxStart",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"CustomTarget",
-								Type:		"b",
-								Direction:	"out",
-							},
-							{
-								Name:		"TargetExec",
-								Type:		"as",
-								Direction:	"out",
-							},
-							{
-								Name:		"Args",
-								Type:		"as",
-								Direction:	"out",
-							},
-						},
 					},
 				},
 			},
 		},
 	}
 	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
-	if err != nil {
-		pecho("crit", "Could not export bus method: " + err.Error())
-		return
-	}
-	err = conn.Export(introspect.NewIntrospectable(ipcNode), ipcPath, "org.freedesktop.DBus.Introspectable")
-	if err != nil {
-		pecho("crit", "Could not export bus method: " + err.Error())
-		return
-	}
-	err = conn.Export(fdStore, ipcPath, "top.kimiblock.Portable.IPC")
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
@@ -3425,44 +3298,65 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	} else {
 		// TODO: remove legacy start, and do concurrent req
 		if usingDBus {
-			busAuxStartReq(conn)
-		}
-		res := auxStartNg()
-		if res {
+			busAuxStartReq(conn, false, runtimeOpt.applicationArgs)
 			miChan <- true
 			return
-		}
-		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
-		if jsonErr != nil {
-			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
-		}
-		socket, errDial := net.Dial("unix", socketPath)
-		if errDial != nil {
-			pecho("crit", "Could not dial socket: " + errDial.Error())
-		}
-		defer socket.Close()
-		_, wrErr := socket.Write(startJson)
-		if wrErr != nil {
-			pecho("crit", "Could not write signal: " + wrErr.Error())
 		} else {
-			pecho("debug", "Wrote signal: " + string(startJson))
+			res := auxStartNg()
+			if res {
+				miChan <- true
+				return
+			}
 		}
 	}
 	miChan <- true
 }
 
-func busAuxStartReq(conn *godbus.Conn) {
-	err := conn.Emit(
-		"/top/kimiblock/portable/daemon",
-		"top.kimiblock.Portable.Controller.AuxStart",
-		false, // We don't do custom targets now
-		"", // We don't do custom targets now
-		runtimeOpt.applicationArgs,
+type startReply struct {
+	hasDescriptors	bool
+	stdin		godbus.UnixFDIndex
+	stdout		godbus.UnixFDIndex
+	stderr		godbus.UnixFDIndex
+}
+
+func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
+	busObj := conn.Object(confOpts.appID + ".Portable.Helper", "/top/kimiblock/portable/init")
+	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
+		false, // For now we do not support custom target
+		tray,
+		[]string{},
+		args,
 	)
-	if err != nil {
-		pecho("crit", "Could not emit start signal: " + err.Error())
+	if call.Err != nil {
+		pecho("crit", "Could not emit start signal: " + call.Err.Error())
 		select {}
 	}
+	var reply startReply
+	err := call.Store(&reply)
+	if err != nil {
+		pecho("crit", "Could not decode bus reply: " + err.Error())
+	}
+	if reply.hasDescriptors == false {
+		pecho("debug", "Remote has no descriptors, returning...")
+		return
+	}
+
+	stdin := uintptr(reply.stdin)
+	stdout := uintptr(reply.stdout)
+	outFile := os.NewFile(stdout, "stdout-stream")
+	stderr := uintptr(reply.stderr)
+	errFile := os.NewFile(stderr, "stderr-stream")
+	err = unix.Dup2(int(stdin), 0)
+	pecho("debug", "Streaming terminal...")
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		io.Copy(os.Stdout, outFile)
+	})
+	wg.Go(func() {
+		io.Copy(os.Stderr, errFile)
+	})
+	wg.Wait()
+
 }
 
 func atSpiProxy() {
