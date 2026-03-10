@@ -3322,6 +3322,10 @@ type startReply struct {
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
+	//oldIn := os.Stdin
+	//oldOut := os.Stdout
+	//oldErr := os.Stderr
+
 	busObj := conn.Object(confOpts.appID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
 		false, // For now we do not support custom target
@@ -3349,10 +3353,20 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 	stderr := uintptr(reply.stderr)
 	errFile := os.NewFile(stderr, "stderr-stream")
 	err = unix.Dup2(int(stdin), 0)
-	pecho("debug", "Streaming terminal...")
+
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		io.Copy(os.Stdout, outFile)
+		defer outFile.Close()
+		// n, err := io.Copy(os.Stdout, outFile)
+		// if err != nil && err != io.EOF {
+		// 	pecho("debug", "Stream ended with error: " + err.Error())
+		// }
+		// pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
+		scanner := bufio.NewScanner(outFile)
+		pecho("debug", "Streaming standard output...")
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
 	})
 	wg.Go(func() {
 		io.Copy(os.Stderr, errFile)
