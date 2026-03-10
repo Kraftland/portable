@@ -38,9 +38,6 @@ type ResponseField struct {
 
 var (
 	startNotifier		= make(chan *exec.Cmd, 32)
-	// Should check for collision first!
-	pipeMapGlob		= make(map[int]pipeInfo)
-	pipeLock		sync.RWMutex
 	terminateNotify		= make(chan int, 1)
 	procAttr		= &syscall.SysProcAttr{
 		Pdeathsig:	syscall.SIGKILL,
