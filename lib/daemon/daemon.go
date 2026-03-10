@@ -1761,7 +1761,7 @@ func miscEnvs () {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
 	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env"
+	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env\n"
 	wrErr := os.WriteFile(
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
 		[]byte(file),
