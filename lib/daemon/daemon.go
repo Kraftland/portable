@@ -1418,37 +1418,6 @@ type DBusPingRequest struct {}
 type DBusControlRequest struct {
 	Conn		*godbus.Conn
 }
-type DBusFDStoreRequest struct {
-	/* in/out/err
-	ID -> uintptr
-	init map first!*/
-	stdinMap	map[uuid.UUID]uintptr
-	stdoutMap	map[uuid.UUID]uintptr
-	stderrMap	map[uuid.UUID]uintptr
-	registeredUUID	[]uuid.UUID
-	lock		sync.RWMutex
-	idlePairs	int
-}
-
-func (m *DBusFDStoreRequest) SubmitFileDescriptor(
-	stdin godbus.UnixFDIndex,
-	stdout godbus.UnixFDIndex,
-	stderr godbus.UnixFDIndex,
-	UUID string,
-	) (*godbus.Error) {
-	uuidReq, err := uuid.Parse(UUID)
-	if err != nil {
-		pecho("warn", "Invalid request: " + err.Error())
-		errBus := godbus.MakeFailedError(err)
-		return errBus
-	}
-	m.lock.Lock()
-	m.stderrMap[uuidReq] = uintptr(stderr)
-	m.stdinMap[uuidReq] = uintptr(stdin)
-	m.stdoutMap[uuidReq] = uintptr(stdout)
-	m.lock.Unlock()
-	return nil
-}
 
 func (m *DBusControlRequest) Stop() (*godbus.Error) {
 	if len(runtimeInfo.instanceID) > 0 {
@@ -1461,40 +1430,6 @@ func (m *DBusControlRequest) Stop() (*godbus.Error) {
 		busErr := godbus.MakeFailedError(err)
 		return busErr
 	}
-}
-
-func (m *DBusControlRequest) RequestStart(customTarget bool, targetExec []string, args []string) ([]uintptr, *godbus.Error) {
-	fdStore.lock.RLock()
-	var candID int
-	var tries int
-	for {
-		if tries > 512 {
-			err := errors.New("Could not pick random ID")
-			return nil, godbus.MakeFailedError(err)
-		}
-		tries++
-		candID = rand.Int()
-		_, ok := fdStore.fdMap[candID]
-		if ok {
-			break
-		}
-	}
-	fdStore.lock.RUnlock()
-
-	err := m.Conn.Emit(
-		"/top/kimiblock/portable/daemon", "top.kimiblock.Portable.Controller.AuxStart",
-		customTarget,
-		targetExec,
-		args,
-		candID,
-	)
-	if err != nil {
-		pecho("warn", "Could not process start request: " + err.Error())
-		errBus := errors.New("Could not process start request" + err.Error())
-		return nil, godbus.MakeFailedError(errBus)
-	}
-
-
 }
 
 func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
@@ -1511,47 +1446,8 @@ func listenBusStub(conn *godbus.Conn) {
 func busListener(conn *godbus.Conn, ready chan int8) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
-	fdStore := new(DBusFDStoreRequest)
-	fdStore.stdinMap = make(map[uuid.UUID]uintptr)
-	fdStore.stderrMap = make(map[uuid.UUID]uintptr)
-	fdStore.stdoutMap = make(map[uuid.UUID]uintptr)
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
-	ipcPath := godbus.ObjectPath("/top/kimiblock/portable/IPC")
-	ipcNode := &introspect.Node{
-		Interfaces:	[]introspect.Interface{
-			{
-				Name:		"top.kimiblock.Portable.IPC",
-				Methods:	[]introspect.Method{
-					{
-						Name:	"SubmitFileDescriptor",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"stdin",
-								Type:		"h",
-								Direction:	"in",
-							},
-							{
-								Name:		"stdout",
-								Type:		"h",
-								Direction:	"in",
-							},
-							{
-								Name:		"stderr",
-								Type:		"h",
-								Direction:	"in",
-							},
-							{
-								Name:		"UUID",
-								Type:		"s",
-								Direction:	"in",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
@@ -1571,83 +1467,15 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 				},
 			},
 			{
-				Name:		"top.kimiblock.Portable.Controller",
-				Properties:	[]introspect.Property{
-					{
-						Name:	"RunningIdentifiers",
-					},
-				},
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Stop",
-					},
-					{
-						Name:	"RequestStart",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"CustomTarget",
-								Type:		"b",
-								Direction:	"in",
-							},
-							{
-								Name:		"TargetExec",
-								Type:		"as",
-								Direction:	"in",
-							},
-							{
-								Name:		"Args",
-								Type:		"as",
-								Direction:	"in",
-							},
-							{
-								Name:		"FDs",
-								Type:		"ah",
-								Direction:	"out",
-							},
-						},
-					},
-				},
-				Signals:	[]introspect.Signal{
-					{
-						Name:	"AuxStart",
-						Args:	[]introspect.Arg{
-							{
-								Name:		"CustomTarget",
-								Type:		"b",
-								Direction:	"out",
-							},
-							{
-								Name:		"TargetExec",
-								Type:		"as",
-								Direction:	"out",
-							},
-							{
-								Name:		"Args",
-								Type:		"as",
-								Direction:	"out",
-							},
-							{
-								Name:		"ID",
-								Type:		"i",
-								Direction:	"out",
-							},
-						},
 					},
 				},
 			},
 		},
 	}
 	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
-	if err != nil {
-		pecho("crit", "Could not export bus method: " + err.Error())
-		return
-	}
-	err = conn.Export(introspect.NewIntrospectable(ipcNode), ipcPath, "org.freedesktop.DBus.Introspectable")
-	if err != nil {
-		pecho("crit", "Could not export bus method: " + err.Error())
-		return
-	}
-	err = conn.Export(fdStore, ipcPath, "top.kimiblock.Portable.IPC")
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
