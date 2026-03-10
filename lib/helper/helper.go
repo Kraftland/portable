@@ -523,6 +523,12 @@ func (m *busStartProcessor) AuxStart (
 		stdout = dbus.UnixFDIndex(tmpOut.Fd())
 		stderr = dbus.UnixFDIndex(tmpErr.Fd())
 		hasFd = true
+		startNotifier <- true
+		errRun := cmd.Run()
+		if errRun != nil {
+			fmt.Println("Could not start auxiliary command: " + errRun.Error())
+		}
+		startNotifier <- false
 		return
 	}
 
