@@ -1149,6 +1149,9 @@ func calcDbusArg(argChan chan []string) {
 		"--broadcast=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.AuxStart@/top/kimiblock/portable/daemon",
 		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.IPC.*@/top/kimiblock/portable/IPC",
 
+		// FileManager1 endpoints
+		"--call=org.freedesktop.FileManager1=org.freedesktop.FileManager1.*@/org/freedesktop/FileManager1",
+
 	)
 
 	if confOpts.allowKDEStatus {
@@ -1199,7 +1202,6 @@ func calcDbusArg(argChan chan []string) {
 		"org.freedesktop.portal.FileTransfer",
 		"org.freedesktop.portal.Notification",
 		"org.freedesktop.portal.Print",
-		"org.freedesktop.FileManager1",
 		"org.freedesktop.portal.Fcitx",
 		"org.freedesktop.portal.IBus",
 	}
