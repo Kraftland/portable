@@ -3337,6 +3337,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		pecho("crit", "Could not decode bus reply: " + err.Error())
 	}
 	if reply.hasDescriptors == false {
+		pecho("debug", "Remote has no descriptors, returning...")
 		return
 	}
 
@@ -3346,6 +3347,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 	stderr := uintptr(reply.stderr)
 	errFile := os.NewFile(stderr, "stderr-stream")
 	err = unix.Dup2(int(stdin), 0)
+	pecho("debug", "Streaming terminal...")
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		io.Copy(os.Stdout, outFile)
@@ -3353,6 +3355,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 	wg.Go(func() {
 		io.Copy(os.Stderr, errFile)
 	})
+	wg.Wait()
 
 }
 
