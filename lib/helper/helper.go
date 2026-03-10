@@ -329,37 +329,6 @@ type AuxStartMsg struct {
 	ID		int
 }
 
-func busSigListener(sig chan *dbus.Signal, cmdPfx []string) {
-	for signal := range sig {
-		switch signal.Name {
-			case "top.kimiblock.Portable.Controller" + ".AuxStart":
-				var msg AuxStartMsg
-				err := dbus.Store(signal.Body, &msg)
-				if err != nil {
-					fmt.Println("Could not decode AuxStart broadcast: " + err.Error())
-					return
-				}
-				fmt.Println("Received AuxStart broadcast from D-Bus:", msg)
-				var cmdline []string
-				if msg.CustomTarget {
-					cmdline = msg.TargetExec
-				} else {
-					cmdline = cmdPfx
-				}
-				cmdline = append(cmdline, msg.Args...)
-				cmd := exec.Command(cmdline[0], cmdline[1:]...)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				cmd.SysProcAttr = procAttr
-				cmd.Start()
-				startNotifier <- true
-				cmd.Wait()
-				startNotifier <- false
-				// TODO: support FD store
-		}
-	}
-}
-
 func main () {
 	var busWg sync.WaitGroup
 	var bus *dbus.Conn
