@@ -25,13 +25,11 @@ import (
 
 	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
-	"github.com/godbus/dbus/v5/prop"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 	"golang.org/x/net/http2"
-	"github.com/google/uuid"
 )
 
 const (
@@ -166,7 +164,6 @@ var (
 				}
 	pechoChan		= make(chan []string, 128)
 	filesInfo		= make(chan PassFiles, 1)
-	fdStore			= new(DBusFDStoreRequest)
 )
 
 func pechoWorker() {
