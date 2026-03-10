@@ -3370,11 +3370,12 @@ func atSpiProxy(conn *godbus.Conn) {
 	timeDeadline := time.Now().Add(5 * time.Millisecond)
 	ctxChild, cancelFunc := context.WithDeadline(ctx, timeDeadline)
 	call := a11yBusObj.CallWithContext(ctxChild, "org.a11y.Bus.GetAddress", godbus.FlagNoAutoStart)
+	cancelFunc()
 	if call.Err != nil {
 		pecho("warn", "Could not get accessibility bus address: " + call.Err.Error())
 		return
 	}
-	cancelFunc()
+
 	var a11yAddr string
 	err := call.Store(&a11yAddr)
 	if err != nil {
