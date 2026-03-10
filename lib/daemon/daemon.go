@@ -3334,7 +3334,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		select {}
 	}
 	var reply startReply
-	err := call.Store(&reply)
+	err := call.Store(&reply.hasDescriptors, &reply.stdin, &reply.stdout, &reply.stderr)
 	if err != nil {
 		pecho("crit", "Could not decode bus reply: " + err.Error())
 	}
