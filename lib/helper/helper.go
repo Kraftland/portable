@@ -489,8 +489,7 @@ func (m *busStartProcessor) AuxStart (
 		}
 		var cmdline []string
 		if customTgt {
-			fmt.Println("Custom launchTarget not supported yet")
-			return
+			cmdline = customExec
 		} else {
 			cmdline = m.cmdPfx
 		}
