@@ -191,6 +191,17 @@ type busStartProcessor struct{
 	cmdPfx		[]string
 }
 
+func clearCloseOnExec(file *os.File) error {
+	fd := file.Fd()
+	flag, err := unix.FcntlInt(fd, unix.F_GETFD, 0)
+	if err != nil {
+		return err
+	}
+	flag &^= unix.FD_CLOEXEC
+	_, err = unix.FcntlInt(fd, unix.F_SETFD, flag)
+	return err
+}
+
 func (m *busStartProcessor) AuxStart (
 	customTgt bool, tray bool, customExec []string, args []string,
 	) (
@@ -201,16 +212,19 @@ func (m *busStartProcessor) AuxStart (
 	busErr *dbus.Error,
 	) {
 		outR, outW, err := os.Pipe()
+		clearCloseOnExec(outR)
 		if err != nil {
 			fmt.Println("Could not create pipe for streaming:", err)
 			return
 		}
 		errR, errW, err := os.Pipe()
+		clearCloseOnExec(errR)
 		if err != nil {
 			fmt.Println("Could not create pipe for streaming:", err)
 			return
 		}
 		inR, inW, err := os.Pipe()
+		clearCloseOnExec(inW)
 		if err != nil {
 			fmt.Println("Could not create pipe for streaming:", err)
 			return
