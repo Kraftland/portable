@@ -30,6 +30,7 @@ import (
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 	"golang.org/x/net/http2"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -3297,44 +3298,62 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	} else {
 		// TODO: remove legacy start, and do concurrent req
 		if usingDBus {
-			busAuxStartReq(conn)
-		}
-		res := auxStartNg()
-		if res {
+			busAuxStartReq(conn, false, runtimeOpt.applicationArgs)
 			miChan <- true
 			return
-		}
-		startJson, jsonErr := json.Marshal(runtimeOpt.applicationArgs)
-		if jsonErr != nil {
-			pecho("warn", "Could not marshal application args: " + jsonErr.Error())
-		}
-		socket, errDial := net.Dial("unix", socketPath)
-		if errDial != nil {
-			pecho("crit", "Could not dial socket: " + errDial.Error())
-		}
-		defer socket.Close()
-		_, wrErr := socket.Write(startJson)
-		if wrErr != nil {
-			pecho("crit", "Could not write signal: " + wrErr.Error())
 		} else {
-			pecho("debug", "Wrote signal: " + string(startJson))
+			res := auxStartNg()
+			if res {
+				miChan <- true
+				return
+			}
 		}
 	}
 	miChan <- true
 }
 
-func busAuxStartReq(conn *godbus.Conn) {
-	err := conn.Emit(
-		"/top/kimiblock/portable/daemon",
-		"top.kimiblock.Portable.Controller.AuxStart",
-		false, // We don't do custom targets now
-		"", // We don't do custom targets now
-		runtimeOpt.applicationArgs,
+type startReply struct {
+	hasDescriptors	bool
+	stdin		godbus.UnixFDIndex
+	stdout		godbus.UnixFDIndex
+	stderr		godbus.UnixFDIndex
+}
+
+func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
+	busObj := conn.Object(confOpts.appID + ".Portable.Helper", "/top/kimiblock/portable/init")
+	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
+		false, // For now we do not support custom target
+		tray,
+		[]string{},
+		args,
 	)
-	if err != nil {
-		pecho("crit", "Could not emit start signal: " + err.Error())
+	if call.Err != nil {
+		pecho("crit", "Could not emit start signal: " + call.Err.Error())
 		select {}
 	}
+	var reply startReply
+	err := call.Store(&reply)
+	if err != nil {
+		pecho("crit", "Could not decode bus reply: " + err.Error())
+	}
+	if reply.hasDescriptors == false {
+		return
+	}
+
+	stdin := uintptr(reply.stdin)
+	stdout := uintptr(reply.stdout)
+	outFile := os.NewFile(stdout, "stdout-stream")
+	stderr := uintptr(reply.stderr)
+	errFile := os.NewFile(stderr, "stderr-stream")
+	err = unix.Dup2(int(stdin), 0)
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		io.Copy(os.Stdout, outFile)
+	})
+	wg.Go(func() {
+		io.Copy(os.Stderr, errFile)
+	})
+
 }
 
 func atSpiProxy() {
