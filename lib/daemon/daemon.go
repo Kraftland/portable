@@ -3361,10 +3361,24 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 
 }
 
-func atSpiProxy() {
-	_, err := os.Stat(xdgDir.runtimeDir + "/at-spi/bus")
+func atSpiProxy(conn *godbus.Conn) {
+	a11yBusObj := conn.Object(
+		"org.a11y.Bus",
+		"/org/a11y/bus",
+	)
+	ctx := context.TODO()
+	timeDeadline := time.Now().Add(5 * time.Millisecond)
+	ctxChild, cancelFunc := context.WithDeadline(ctx, timeDeadline)
+	call := a11yBusObj.CallWithContext(ctxChild, "org.a11y.Bus.GetAddress", godbus.FlagNoAutoStart)
+	if call.Err != nil {
+		pecho("warn", "Could not get accessibility bus address: " + call.Err.Error())
+		return
+	}
+	cancelFunc()
+	var a11yAddr string
+	err := call.Store(&a11yAddr)
 	if err != nil {
-		pecho("warn", "Could not detect accessibility bus: " + err.Error())
+		pecho("warn", "Could not decode accessibility bus address: " + err.Error())
 		return
 	}
 	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y", 0700)
@@ -3390,7 +3404,7 @@ func atSpiProxy() {
 			"/.flatpak-info",
 		"--",
 		"/usr/bin/xdg-dbus-proxy",
-		"unix:path=" + xdgDir.runtimeDir + "/at-spi/bus",
+		a11yAddr,
 		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y/bus",
 		"--filter",
 		"--sloppy-names",
@@ -3545,7 +3559,7 @@ func main() {
 	} ()
 	go func() {
 		defer wg.Done()
-		atSpiProxy()
+		atSpiProxy(busConn)
 	} ()
 
 	go pwSecContext(pwSecContextChan)
