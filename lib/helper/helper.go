@@ -200,6 +200,21 @@ func (m *busStartProcessor) AuxStart (
 	stderr dbus.UnixFDIndex,
 	busErr *dbus.Error,
 	) {
+		outR, outW, err := os.Pipe()
+		if err != nil {
+			fmt.Println("Could not create pipe for streaming:", err)
+			return
+		}
+		errR, errW, err := os.Pipe()
+		if err != nil {
+			fmt.Println("Could not create pipe for streaming:", err)
+			return
+		}
+		inR, inW, err := os.Pipe()
+		if err != nil {
+			fmt.Println("Could not create pipe for streaming:", err)
+			return
+		}
 		if tray {
 			fmt.Println("Tray activation not supported yet")
 			return
@@ -215,30 +230,12 @@ func (m *busStartProcessor) AuxStart (
 		fmt.Println("Received start request from D-Bus:", cmdline)
 		cmd := exec.Command(cmdline[0], cmdline[1:]...)
 		cmd.SysProcAttr = procAttr
-		tmpIn, err := os.CreateTemp("", "stdin-*")
-		if err != nil {
-			fmt.Println("Could not create temporary file: " + err.Error())
-			return
-		}
-		defer os.Remove(tmpIn.Name())
-		tmpOut, err := os.CreateTemp("", "stdout-*")
-		if err != nil {
-			fmt.Println("Could not create temporary file: " + err.Error())
-			return
-		}
-		defer os.Remove(tmpOut.Name())
-		tmpErr, err := os.CreateTemp("", "stderr-*")
-		if err != nil {
-			fmt.Println("Could not create temporary file: " + err.Error())
-			return
-		}
-		defer os.Remove(tmpErr.Name())
-		cmd.Stdin = tmpIn
-		cmd.Stdout = tmpOut
-		cmd.Stderr = tmpErr
-		stdin = dbus.UnixFDIndex(tmpIn.Fd())
-		stdout = dbus.UnixFDIndex(tmpOut.Fd())
-		stderr = dbus.UnixFDIndex(tmpErr.Fd())
+		cmd.Stdin = inR
+		cmd.Stdout = outW
+		cmd.Stderr = errW
+		stdin = dbus.UnixFDIndex(inW.Fd())
+		stdout = dbus.UnixFDIndex(outR.Fd())
+		stderr = dbus.UnixFDIndex(errR.Fd())
 		hasFd = true
 		startNotifier <- cmd
 		return
