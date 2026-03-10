@@ -269,6 +269,7 @@ func (m *busStartProcessor) AuxStart (
 		stderr = dbus.UnixFDIndex(errR.Fd())
 		hasFd = true
 		req.cmd = cmd
+		req.files = []*os.File{inW, outR, errR}
 		startNotifier <- req
 		return
 	}
