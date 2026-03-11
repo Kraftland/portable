@@ -90,6 +90,10 @@ func startCounter () {
 		go func() {
 			if len(incoming.UDS) == 3 {
 				go func () {
+					if incoming.UDS[0] == nil {
+						fmt.Println("Could not stream: nil socket")
+						return
+					}
 					conn, err := incoming.UDS[0].Accept()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
@@ -104,6 +108,10 @@ func startCounter () {
 					fmt.Println("Streamed", n, "bytes of stdin")
 				} ()
 				go func () {
+					if incoming.UDS[1] == nil {
+						fmt.Println("Could not stream: nil socket")
+						return
+					}
 					conn, err := incoming.UDS[1].Accept()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
@@ -118,6 +126,10 @@ func startCounter () {
 					fmt.Println("Streamed", n, "bytes of stdout")
 				} ()
 				go func () {
+					if incoming.UDS[2] == nil {
+						fmt.Println("Could not stream: nil socket")
+						return
+					}
 					conn, err := incoming.UDS[2].Accept()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
