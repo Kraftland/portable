@@ -89,10 +89,7 @@ func startCounter () {
 	fmt.Println("Start counter init done")
 	for incoming := range startNotifier {
 		go func() {
-			var waitWg sync.WaitGroup
 			var blockWg sync.WaitGroup
-
-			waitWg.Add(1)
 			if len(incoming.UDS) == 3 {
 				blockWg.Add(3)
 				go func () {
@@ -112,7 +109,6 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
-					waitWg.Wait()
 					n, err := io.Copy(inP, conn)
 					fmt.Println("Streamed", n, "bytes of stdin")
 				} ()
@@ -133,7 +129,6 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
-					waitWg.Wait()
 					n, err := io.Copy(conn, pipe)
 					fmt.Println("Streamed", n, "bytes of stdout")
 				} ()
@@ -154,7 +149,6 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
-					waitWg.Wait()
 					n, err := io.Copy(conn, pipe)
 					fmt.Println("Streamed", n, "bytes of stderr")
 				} ()
@@ -163,7 +157,6 @@ func startCounter () {
 			}
 			blockWg.Wait()
 			err := incoming.cmd.Start()
-			//waitWg.Done()
 			if err != nil {
 				fmt.Println("Could not start executable with:", incoming.cmd.Args, err)
 				return
