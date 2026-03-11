@@ -30,7 +30,6 @@ import (
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 	"golang.org/x/net/http2"
-	"golang.org/x/sys/unix"
 )
 
 const (
@@ -1467,6 +1466,7 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 				},
 			},
 			{
+				Name:		"top.kimiblock.Portable.Controller",
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Stop",
@@ -3316,9 +3316,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 
 type startReply struct {
 	hasDescriptors	bool
-	stdin		godbus.UnixFDIndex
-	stdout		godbus.UnixFDIndex
-	stderr		godbus.UnixFDIndex
+	baseDir		string
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
@@ -3338,7 +3336,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		select {}
 	}
 	var reply startReply
-	err := call.Store(&reply.hasDescriptors, &reply.stdin, &reply.stdout, &reply.stderr)
+	err := call.Store(&reply.hasDescriptors, &reply.baseDir)
 	if err != nil {
 		pecho("crit", "Could not decode bus reply: " + err.Error())
 	}
@@ -3346,31 +3344,55 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		pecho("debug", "Remote has no descriptors, returning...")
 		return
 	}
-
-	stdin := uintptr(reply.stdin)
-	stdout := uintptr(reply.stdout)
-	outFile := os.NewFile(stdout, "stdout-stream")
-	stderr := uintptr(reply.stderr)
-	errFile := os.NewFile(stderr, "stderr-stream")
-	err = unix.Dup2(int(stdin), 0)
+	baseDir := reply.baseDir
+	inFile := filepath.Join(baseDir, "stdin")
+	outFile := filepath.Join(baseDir, "stdout")
+	errFile := filepath.Join(baseDir, "stderr")
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		defer outFile.Close()
-		// n, err := io.Copy(os.Stdout, outFile)
-		// if err != nil && err != io.EOF {
-		// 	pecho("debug", "Stream ended with error: " + err.Error())
-		// }
-		// pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
-		scanner := bufio.NewScanner(outFile)
-		pecho("debug", "Streaming standard output...")
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
+		conn, err := net.Dial("unix", outFile)
+		if err != nil {
+			pecho("warn", "Could not stream standard output: " + err.Error())
+			return
+		} else {
+			defer conn.Close()
+			pecho("debug", "Streaming standard output")
 		}
+		n, err := io.Copy(os.Stdout, conn)
+		if err != nil {
+			pecho("warn", "Stream finished with error: " + err.Error())
+		}
+		pecho("debug", "Streamed stdout: " + strconv.Itoa(int(n)) + " bytes")
 	})
 	wg.Go(func() {
-		io.Copy(os.Stderr, errFile)
+		conn, err := net.Dial("unix", errFile)
+		if err != nil {
+			pecho("warn", "Could not stream standard error: " + err.Error())
+			return
+		} else {
+			defer conn.Close()
+		}
+		n, err := io.Copy(os.Stderr, conn)
+		if err != nil {
+			pecho("warn", "Stream finished with error: " + err.Error())
+		}
+		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)) + " bytes")
 	})
+	go func() {
+		conn, err := net.Dial("unix", inFile)
+		if err != nil {
+			pecho("warn", "Could not stream standard input: " + err.Error())
+			return
+		} else {
+			defer conn.Close()
+		}
+		n, err := io.Copy(conn, os.Stdin)
+		if err != nil {
+			pecho("warn", "Stream finished with error: " + err.Error())
+		}
+		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)) + " bytes")
+	} ()
 	wg.Wait()
 
 }
