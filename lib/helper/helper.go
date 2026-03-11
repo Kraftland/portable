@@ -157,6 +157,9 @@ func startCounter () {
 			go updateSd(startedCount)
 			countLock.Unlock()
 			err = incoming.cmd.Wait()
+			for _, val := range incoming.UDS {
+				val.Close()
+			}
 			if err != nil {
 				fmt.Println("Command with argument: ", incoming.cmd.Args, "failed:", err)
 			}
