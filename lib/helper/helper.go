@@ -26,14 +26,6 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-type pipeInfo struct {
-	cmdline			[]string
-	id			int
-	stdin			io.WriteCloser
-	stdout			io.ReadCloser
-	stderr			io.ReadCloser
-}
-
 type ResponseField struct {
 	Success			bool
 	ID			int
