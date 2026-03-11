@@ -26,14 +26,6 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-type pipeInfo struct {
-	cmdline			[]string
-	id			int
-	stdin			io.WriteCloser
-	stdout			io.ReadCloser
-	stderr			io.ReadCloser
-}
-
 type ResponseField struct {
 	Success			bool
 	ID			int
@@ -85,7 +77,7 @@ func netsockFailNotification() {
 func startCounter () {
 	go netsockFailNotification()
 	var countLock sync.RWMutex
-	var startedCount int = 0
+	var startedCount int
 	fmt.Println("Start counter init done")
 	for incoming := range startNotifier {
 		go func() {
@@ -158,6 +150,9 @@ func startCounter () {
 				} ()
 			} else {
 				fmt.Println("Not piping console: Listeners mismatch")
+				incoming.cmd.Stdout = os.Stdout
+				incoming.cmd.Stderr = os.Stderr
+				incoming.cmd.Stdin = os.Stdin
 			}
 			blockWg.Wait()
 			err := incoming.cmd.Start()
@@ -233,9 +228,6 @@ func startMaster(targetExec string, targetArgs []string) {
 		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
 	}
 	startCmd := exec.Command(targetExec, targetArgs...)
-	startCmd.Stdin = os.Stdin
-	startCmd.Stdout = os.Stdout
-	startCmd.Stderr = os.Stderr
 	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
 	go daemon.SdNotify(false, daemon.SdNotifyReady)
 	startReq.cmd = startCmd
