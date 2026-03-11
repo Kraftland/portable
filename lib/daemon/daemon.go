@@ -3315,9 +3315,9 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 
 type startReply struct {
 	hasDescriptors	bool
-	stdin		godbus.UnixFDIndex
-	stdout		godbus.UnixFDIndex
-	stderr		godbus.UnixFDIndex
+	stdin		godbus.UnixFD
+	stdout		godbus.UnixFD
+	stderr		godbus.UnixFD
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {

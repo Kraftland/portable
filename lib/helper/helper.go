@@ -263,9 +263,9 @@ func (m *busStartProcessor) AuxStart (
 	customTgt bool, tray bool, customExec []string, args []string,
 	) (
 	isStream bool,
-	stdin dbus.UnixFDIndex,
-	stdout dbus.UnixFDIndex,
-	stderr dbus.UnixFDIndex,
+	stdin dbus.UnixFD,
+	stdout dbus.UnixFD,
+	stderr dbus.UnixFD,
 	busErr *dbus.Error,
 	) {
 		var req StartNofifyMsg
@@ -305,9 +305,9 @@ func (m *busStartProcessor) AuxStart (
 			fmt.Println("Could not stream command:", err)
 		}
 
-		stdin = dbus.UnixFDIndex(inSock.Fd())
-		stdout = dbus.UnixFDIndex(outSock.Fd())
-		stderr = dbus.UnixFDIndex(errSock.Fd())
+		stdin = dbus.UnixFD(inSock.Fd())
+		stdout = dbus.UnixFD(outSock.Fd())
+		stderr = dbus.UnixFD(errSock.Fd())
 
 		cmdline = append(cmdline, args...)
 		fmt.Println("Received start request from D-Bus:", cmdline)
