@@ -3379,7 +3379,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		}
 		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)) + " bytes")
 	})
-	wg.Go(func() {
+	go func() {
 		conn, err := net.Dial("unix", inFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard input: " + err.Error())
@@ -3392,7 +3392,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 			pecho("warn", "Stream finished with error: " + err.Error())
 		}
 		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)) + " bytes")
-	})
+	} ()
 	wg.Wait()
 
 }

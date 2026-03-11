@@ -89,6 +89,7 @@ func startCounter () {
 	fmt.Println("Start counter init done")
 	for incoming := range startNotifier {
 		go func() {
+			var stopStreaming = make(chan int, 1)
 			var blockWg sync.WaitGroup
 			if len(incoming.UDS) == 3 {
 				blockWg.Add(3)
@@ -102,7 +103,10 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
-					defer conn.Close()
+					go func () {
+						<- stopStreaming
+						conn.Close()
+					} ()
 					inP, err := incoming.cmd.StdinPipe()
 					blockWg.Done()
 					if err != nil {
@@ -167,9 +171,13 @@ func startCounter () {
 			go updateSd(startedCount)
 			countLock.Unlock()
 			err = incoming.cmd.Wait()
-			for _, val := range incoming.UDS {
-				val.Close()
-			}
+			go func () {
+				stopStreaming <- 1
+				for _, val := range incoming.UDS {
+					val.Close()
+				}
+			} ()
+
 			if err != nil {
 				fmt.Println("Command with argument: ", incoming.cmd.Args, "failed:", err)
 			}
