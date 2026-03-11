@@ -30,7 +30,6 @@ import (
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
 	"golang.org/x/net/http2"
-	"golang.org/x/sys/unix"
 )
 
 const (
@@ -3360,6 +3359,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		conn, err := net.FileConn(outFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard output: " + err.Error())
+			return
 		} else {
 			defer conn.Close()
 		}
@@ -3374,6 +3374,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		conn, err := net.FileConn(errFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard error: " + err.Error())
+			return
 		} else {
 			defer conn.Close()
 		}
@@ -3388,6 +3389,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		conn, err := net.FileConn(inFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard input: " + err.Error())
+			return
 		} else {
 			defer conn.Close()
 		}
