@@ -1466,6 +1466,7 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 				},
 			},
 			{
+				Name:		"top.kimiblock.Portable.Controller",
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Stop",
