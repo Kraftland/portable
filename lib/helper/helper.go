@@ -272,7 +272,7 @@ func (m *busStartProcessor) AuxStart (
 		if err != nil {
 			fmt.Println("Could not create temporary file for streaming: " + err.Error())
 		}
-		stdinListen, err := net.Listen("unix", inSock.Name())
+		stdinListen, err := net.Listen("unix", inSock.Name() + ".sock")
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
 		}
@@ -280,7 +280,7 @@ func (m *busStartProcessor) AuxStart (
 		if err != nil {
 			fmt.Println("Could not create temporary file for streaming: " + err.Error())
 		}
-		stdoutListen, err := net.Listen("unix", outSock.Name())
+		stdoutListen, err := net.Listen("unix", outSock.Name() + ".sock")
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
 		}
@@ -288,7 +288,7 @@ func (m *busStartProcessor) AuxStart (
 		if err != nil {
 			fmt.Println("Could not create temporary file for streaming: " + err.Error())
 		}
-		stderrListen, err := net.Listen("unix", errSock.Name())
+		stderrListen, err := net.Listen("unix", errSock.Name() + ".sock")
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
 		}
