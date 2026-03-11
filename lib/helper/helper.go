@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 	"golang.org/x/sys/unix"
+	"net"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
@@ -38,7 +39,8 @@ type ResponseField struct {
 
 type StartNofifyMsg struct {
 	cmd			*exec.Cmd
-	files			[]*os.File
+	UDS			[]net.Listener
+
 }
 
 var (
@@ -86,11 +88,58 @@ func startCounter () {
 	for {
 		incoming := <- startNotifier
 		go func() {
+			if len(incoming.UDS) == 3 {
+				go func () {
+					conn, err := incoming.UDS[0].Accept()
+					if err != nil {
+						fmt.Println("Could not accept connection:", err)
+						return
+					}
+					inP, err := incoming.cmd.StdinPipe()
+					if err != nil {
+						fmt.Println("Could not accept connection:", err)
+						return
+					}
+					n, err := io.Copy(inP, conn)
+					fmt.Println("Streamed", n, "bytes of stdin")
+				} ()
+				go func () {
+					conn, err := incoming.UDS[1].Accept()
+					if err != nil {
+						fmt.Println("Could not accept connection:", err)
+						return
+					}
+					pipe, err := incoming.cmd.StdoutPipe()
+					if err != nil {
+						fmt.Println("Could not accept connection:", err)
+						return
+					}
+					n, err := io.Copy(conn, pipe)
+					fmt.Println("Streamed", n, "bytes of stdout")
+				} ()
+				go func () {
+					conn, err := incoming.UDS[2].Accept()
+					if err != nil {
+						fmt.Println("Could not accept connection:", err)
+						return
+					}
+					pipe, err := incoming.cmd.StderrPipe()
+					if err != nil {
+						fmt.Println("Could not accept connection:", err)
+						return
+					}
+					n, err := io.Copy(conn, pipe)
+					fmt.Println("Streamed", n, "bytes of stderr")
+				} ()
+			} else {
+				fmt.Println("Not piping console: Listeners mismatch")
+			}
 			err := incoming.cmd.Start()
 			if err != nil {
 				fmt.Println("Could not start executable with:", incoming.cmd.Args, err)
 				return
 			}
+
 			countLock.Lock()
 			startedCount++
 			go updateSd(startedCount)
@@ -102,15 +151,6 @@ func startCounter () {
 			countLock.Lock()
 			startedCount--
 			go updateSd(startedCount)
-			go func () {
-				for _, file := range incoming.files {
-					if file.Fd() == 0 {
-						continue
-					} else {
-						file.Close()
-					}
-				}
-			} ()
 			countLock.Unlock()
 			if startedCount < 1 {
 				daemon.SdNotify(false, daemon.SdNotifyStopping)
@@ -207,45 +247,16 @@ type busStartProcessor struct{
 	cmdPfx		[]string
 }
 
-func clearCloseOnExec(file *os.File) error {
-	fd := file.Fd()
-	flag, err := unix.FcntlInt(fd, unix.F_GETFD, 0)
-	if err != nil {
-		return err
-	}
-	flag &^= unix.FD_CLOEXEC
-	_, err = unix.FcntlInt(fd, unix.F_SETFD, flag)
-	return err
-}
-
 func (m *busStartProcessor) AuxStart (
 	customTgt bool, tray bool, customExec []string, args []string,
 	) (
-	hasFd bool,
+	isStream bool,
 	stdin dbus.UnixFDIndex,
 	stdout dbus.UnixFDIndex,
 	stderr dbus.UnixFDIndex,
 	busErr *dbus.Error,
 	) {
 		var req StartNofifyMsg
-		outR, outW, err := os.Pipe()
-		clearCloseOnExec(outR)
-		if err != nil {
-			fmt.Println("Could not create pipe for streaming:", err)
-			return
-		}
-		errR, errW, err := os.Pipe()
-		clearCloseOnExec(errR)
-		if err != nil {
-			fmt.Println("Could not create pipe for streaming:", err)
-			return
-		}
-		inR, inW, err := os.Pipe()
-		clearCloseOnExec(inW)
-		if err != nil {
-			fmt.Println("Could not create pipe for streaming:", err)
-			return
-		}
 		if tray {
 			fmt.Println("Tray activation not supported yet")
 			return
@@ -257,19 +268,42 @@ func (m *busStartProcessor) AuxStart (
 			cmdline = m.cmdPfx
 		}
 
+		inSock, err := os.CreateTemp("", "stdin-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file for streaming: " + err.Error())
+		}
+		stdinListen, err := net.Listen("unix", inSock.Name())
+		if err != nil {
+			fmt.Println("Could not stream command:", err)
+		}
+		outSock, err := os.CreateTemp("", "stdout-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file for streaming: " + err.Error())
+		}
+		stdoutListen, err := net.Listen("unix", outSock.Name())
+		if err != nil {
+			fmt.Println("Could not stream command:", err)
+		}
+		errSock, err := os.CreateTemp("", "stderr-*")
+		if err != nil {
+			fmt.Println("Could not create temporary file for streaming: " + err.Error())
+		}
+		stderrListen, err := net.Listen("unix", errSock.Name())
+		if err != nil {
+			fmt.Println("Could not stream command:", err)
+		}
+
+		stdin = dbus.UnixFDIndex(inSock.Fd())
+		stdout = dbus.UnixFDIndex(outSock.Fd())
+		stderr = dbus.UnixFDIndex(errSock.Fd())
+
 		cmdline = append(cmdline, args...)
 		fmt.Println("Received start request from D-Bus:", cmdline)
 		cmd := exec.Command(cmdline[0], cmdline[1:]...)
 		cmd.SysProcAttr = procAttr
-		cmd.Stdin = inR
-		cmd.Stdout = outW
-		cmd.Stderr = errW
-		stdin = dbus.UnixFDIndex(inW.Fd())
-		stdout = dbus.UnixFDIndex(outR.Fd())
-		stderr = dbus.UnixFDIndex(errR.Fd())
-		hasFd = true
+		isStream = true
 		req.cmd = cmd
-		req.files = []*os.File{inW, outR, errR}
+		req.UDS = []net.Listener{stdinListen, stdoutListen, stderrListen}
 		startNotifier <- req
 		return
 	}
@@ -314,7 +348,7 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 								Direction:	"in",
 							},
 							{
-								Name:		"HasFileDescriptors",
+								Name:		"IsStream",
 								Type:		"b",
 								Direction:	"out",
 							},
