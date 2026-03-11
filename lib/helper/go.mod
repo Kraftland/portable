@@ -10,4 +10,8 @@ require (
 	golang.org/x/sys v0.41.0
 )
 
-require golang.org/x/text v0.34.0 // indirect
+require (
+	github.com/landlock-lsm/go-landlock v0.7.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 // indirect
+)

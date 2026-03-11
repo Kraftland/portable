@@ -19,6 +19,8 @@ import (
 	"github.com/rymdport/portal/notification"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
+	"github.com/landlock-lsm/go-landlock/landlock"
+	landlockSyscall "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 type PassFiles struct {
@@ -44,6 +46,29 @@ var (
 		Pdeathsig:	syscall.SIGKILL,
 	}
 )
+
+func engageLandlock () {
+	homePath, err := os.UserHomeDir()
+	homeAccess := landlock.PathAccess(
+		landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
+landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscall.AccessFSRemoveFile|landlockSyscall.AccessFSMakeChar|landlockSyscall.AccessFSMakeDir|landlockSyscall.AccessFSMakeReg|landlockSyscall.AccessFSMakeSock|landlockSyscall.AccessFSMakeFifo|landlockSyscall.AccessFSMakeBlock|landlockSyscall.AccessFSMakeSym|landlockSyscall.AccessFSRefer|landlockSyscall.AccessFSTruncate|landlockSyscall.AccessFSIoctlDev,
+		homePath,
+	)
+	rootAccess := landlock.PathAccess(
+		landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
+landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscall.AccessFSRemoveFile|landlockSyscall.AccessFSMakeChar|landlockSyscall.AccessFSMakeDir|landlockSyscall.AccessFSMakeReg|landlockSyscall.AccessFSMakeSock|landlockSyscall.AccessFSMakeFifo|landlockSyscall.AccessFSMakeBlock|landlockSyscall.AccessFSMakeSym|landlockSyscall.AccessFSRefer|landlockSyscall.AccessFSTruncate|landlockSyscall.AccessFSIoctlDev,
+		"/",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = landlock.V7.RestrictPaths(
+		rootAccess,
+		homeAccess,
+	)
+
+}
 
 func updateSd(count int) {
 	status := "STATUS=" + "Tracking processes: " + strconv.Itoa(count)
@@ -444,6 +469,10 @@ type AuxStartMsg struct {
 }
 
 func main () {
+	var landlockWg sync.WaitGroup
+	landlockWg.Go(func() {
+		engageLandlock()
+	})
 	var busWg sync.WaitGroup
 	var bus *dbus.Conn
 	busWg.Go(func() {
@@ -505,6 +534,7 @@ func main () {
 		}
 	}
 	busWg.Wait()
+	landlockWg.Wait()
 	go busAuxStart(bus, targetSlice)
 	go startMaster(targetSlice[0], args)
 	go terminateWatcher(terminateNotify, bus)
