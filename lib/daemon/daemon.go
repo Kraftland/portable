@@ -3316,9 +3316,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 
 type startReply struct {
 	hasDescriptors	bool
-	stdin		godbus.UnixFD
-	stdout		godbus.UnixFD
-	stderr		godbus.UnixFD
+	baseDir		string
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
@@ -3338,7 +3336,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		select {}
 	}
 	var reply startReply
-	err := call.Store(&reply.hasDescriptors, &reply.stdin, &reply.stdout, &reply.stderr)
+	err := call.Store(&reply.hasDescriptors, &reply.baseDir)
 	if err != nil {
 		pecho("crit", "Could not decode bus reply: " + err.Error())
 	}
@@ -3346,23 +3344,20 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		pecho("debug", "Remote has no descriptors, returning...")
 		return
 	}
-
-	stdin := uintptr(reply.stdin)
-	inFile := os.NewFile(stdin, "stdin-stream")
-	stdout := uintptr(reply.stdout)
-	outFile := os.NewFile(stdout, "stdout-stream")
-	stderr := uintptr(reply.stderr)
-	errFile := os.NewFile(stderr, "stderr-stream")
+	baseDir := reply.baseDir
+	inFile := filepath.Join(baseDir, "stdin")
+	outFile := filepath.Join(baseDir, "stdout")
+	errFile := filepath.Join(baseDir, "stderr")
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		defer outFile.Close()
-		conn, err := net.FileConn(outFile)
+		conn, err := net.Dial("unix", outFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard output: " + err.Error())
 			return
 		} else {
 			defer conn.Close()
+			pecho("debug", "Streaming standard output")
 		}
 		n, err := io.Copy(os.Stdout, conn)
 		if err != nil {
@@ -3371,8 +3366,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
 	})
 	wg.Go(func() {
-		defer errFile.Close()
-		conn, err := net.FileConn(errFile)
+		conn, err := net.Dial("unix", errFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard error: " + err.Error())
 			return
@@ -3386,8 +3380,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
 	})
 	wg.Go(func() {
-		defer inFile.Close()
-		conn, err := net.FileConn(inFile)
+		conn, err := net.Dial("unix", inFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard input: " + err.Error())
 			return

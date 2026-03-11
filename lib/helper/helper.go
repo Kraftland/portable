@@ -87,10 +87,14 @@ func startCounter () {
 	var countLock sync.RWMutex
 	var startedCount int = 0
 	fmt.Println("Start counter init done")
-	for {
-		incoming := <- startNotifier
+	for incoming := range startNotifier {
 		go func() {
+			var waitWg sync.WaitGroup
+			var blockWg sync.WaitGroup
+
+			waitWg.Add(1)
 			if len(incoming.UDS) == 3 {
+				blockWg.Add(3)
 				go func () {
 					if incoming.UDS[0] == nil {
 						fmt.Println("Could not stream: nil socket")
@@ -103,10 +107,12 @@ func startCounter () {
 					}
 					defer conn.Close()
 					inP, err := incoming.cmd.StdinPipe()
+					blockWg.Done()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
+					waitWg.Wait()
 					n, err := io.Copy(inP, conn)
 					fmt.Println("Streamed", n, "bytes of stdin")
 				} ()
@@ -122,10 +128,12 @@ func startCounter () {
 					}
 					defer conn.Close()
 					pipe, err := incoming.cmd.StdoutPipe()
+					blockWg.Done()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
+					waitWg.Wait()
 					n, err := io.Copy(conn, pipe)
 					fmt.Println("Streamed", n, "bytes of stdout")
 				} ()
@@ -141,17 +149,21 @@ func startCounter () {
 					}
 					defer conn.Close()
 					pipe, err := incoming.cmd.StderrPipe()
+					blockWg.Done()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
+					waitWg.Wait()
 					n, err := io.Copy(conn, pipe)
 					fmt.Println("Streamed", n, "bytes of stderr")
 				} ()
 			} else {
 				fmt.Println("Not piping console: Listeners mismatch")
 			}
+			blockWg.Wait()
 			err := incoming.cmd.Start()
+			//waitWg.Done()
 			if err != nil {
 				fmt.Println("Could not start executable with:", incoming.cmd.Args, err)
 				return
@@ -271,9 +283,7 @@ func (m *busStartProcessor) AuxStart (
 	customTgt bool, tray bool, customExec []string, args []string,
 	) (
 	isStream bool,
-	stdin dbus.UnixFD,
-	stdout dbus.UnixFD,
-	stderr dbus.UnixFD,
+	baseDir	string,
 	busErr *dbus.Error,
 	) {
 		path := os.Getenv("XDG_RUNTIME_DIR")
@@ -302,9 +312,9 @@ func (m *busStartProcessor) AuxStart (
 				return
 			}
 			trials++
-			idCand := rand.Int()
-			ID := strconv.Itoa(idCand)
-			sockDir = filepath.Join(path, "portable", os.Getenv("appID"), "stream", ID)
+			id := rand.Int()
+			idCand := strconv.Itoa(id)
+			sockDir = filepath.Join(path, "portable", os.Getenv("appID"), "stream", idCand)
 
 			_, err := os.Stat(sockDir)
 			if err != nil {
@@ -318,6 +328,8 @@ func (m *busStartProcessor) AuxStart (
 				continue
 			}
 		}
+
+		baseDir = sockDir
 
 		inAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdin"))
 		if err != nil {
@@ -349,23 +361,6 @@ func (m *busStartProcessor) AuxStart (
 			fmt.Println("Could not stream command:", err)
 			return
 		}
-
-		fdIn, err := stdinListen.File()
-		if err != nil {
-			fmt.Println("Could not obtain file descriptor: " + err.Error())
-		}
-		fdOut, err := stdoutListen.File()
-		if err != nil {
-			fmt.Println("Could not obtain file descriptor: " + err.Error())
-		}
-		fdErr, err := stderrListen.File()
-		if err != nil {
-			fmt.Println("Could not obtain file descriptor: " + err.Error())
-		}
-
-		stdin = dbus.UnixFD(fdIn.Fd())
-		stdout = dbus.UnixFD(fdOut.Fd())
-		stderr = dbus.UnixFD(fdErr.Fd())
 
 		cmdline = append(cmdline, args...)
 		fmt.Println("Received start request from D-Bus:", cmdline)
@@ -423,18 +418,8 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 								Direction:	"out",
 							},
 							{
-								Name:		"stdin",
-								Type:		"h",
-								Direction:	"out",
-							},
-							{
-								Name:		"stdout",
-								Type:		"h",
-								Direction:	"out",
-							},
-							{
-								Name:		"stderr",
-								Type:		"h",
+								Name:		"BaseDir",
+								Type:		"s",
 								Direction:	"out",
 							},
 						},
