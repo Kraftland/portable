@@ -3348,28 +3348,54 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 	}
 
 	stdin := uintptr(reply.stdin)
+	inFile := os.NewFile(stdin, "stdin-stream")
 	stdout := uintptr(reply.stdout)
 	outFile := os.NewFile(stdout, "stdout-stream")
 	stderr := uintptr(reply.stderr)
 	errFile := os.NewFile(stderr, "stderr-stream")
-	err = unix.Dup2(int(stdin), 0)
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		defer outFile.Close()
-		// n, err := io.Copy(os.Stdout, outFile)
-		// if err != nil && err != io.EOF {
-		// 	pecho("debug", "Stream ended with error: " + err.Error())
-		// }
-		// pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
-		scanner := bufio.NewScanner(outFile)
-		pecho("debug", "Streaming standard output...")
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
+		conn, err := net.FileConn(outFile)
+		if err != nil {
+			pecho("warn", "Could not stream standard output: " + err.Error())
+		} else {
+			defer conn.Close()
 		}
+		n, err := io.Copy(os.Stdout, conn)
+		if err != nil {
+			pecho("warn", "Stream finished with error: " + err.Error())
+		}
+		pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
 	})
 	wg.Go(func() {
-		io.Copy(os.Stderr, errFile)
+		defer errFile.Close()
+		conn, err := net.FileConn(errFile)
+		if err != nil {
+			pecho("warn", "Could not stream standard error: " + err.Error())
+		} else {
+			defer conn.Close()
+		}
+		n, err := io.Copy(os.Stderr, conn)
+		if err != nil {
+			pecho("warn", "Stream finished with error: " + err.Error())
+		}
+		pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
+	})
+	wg.Go(func() {
+		defer inFile.Close()
+		conn, err := net.FileConn(inFile)
+		if err != nil {
+			pecho("warn", "Could not stream standard input: " + err.Error())
+		} else {
+			defer conn.Close()
+		}
+		n, err := io.Copy(conn, os.Stdin)
+		if err != nil {
+			pecho("warn", "Stream finished with error: " + err.Error())
+		}
+		pecho("debug", "Streamed " + strconv.Itoa(int(n)) + " bytes")
 	})
 	wg.Wait()
 
