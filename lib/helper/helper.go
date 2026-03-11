@@ -280,34 +280,58 @@ func (m *busStartProcessor) AuxStart (
 			cmdline = m.cmdPfx
 		}
 
-		inSock, err := os.CreateTemp("", "stdin-*")
+		inSock, err := os.CreateTemp("", "stream-holder-*")
 		if err != nil {
 			fmt.Println("Could not create temporary file for streaming: " + err.Error())
+			return
 		}
-		stdinListen, err := net.Listen("unix", inSock.Name() + ".sock")
+		inAddr, err := net.ResolveUnixAddr("unix", inSock.Name() + "stdin.sock")
+		if err != nil {
+			fmt.Println("Could not resolve address: " + err.Error())
+			return
+		}
+		stdinListen, err := net.ListenUnix("unix", inAddr)
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
+			return
 		}
-		outSock, err := os.CreateTemp("", "stdout-*")
+		outAddr, err := net.ResolveUnixAddr("unix", inSock.Name() + "stdout.sock")
 		if err != nil {
-			fmt.Println("Could not create temporary file for streaming: " + err.Error())
+			fmt.Println("Could not resolve address: " + err.Error())
+			return
 		}
-		stdoutListen, err := net.Listen("unix", outSock.Name() + ".sock")
-		if err != nil {
-			fmt.Println("Could not stream command:", err)
-		}
-		errSock, err := os.CreateTemp("", "stderr-*")
-		if err != nil {
-			fmt.Println("Could not create temporary file for streaming: " + err.Error())
-		}
-		stderrListen, err := net.Listen("unix", errSock.Name() + ".sock")
+		stdoutListen, err := net.ListenUnix("unix", outAddr)
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
+			return
+		}
+		errAddr, err := net.ResolveUnixAddr("unix", inSock.Name() + "stderr.sock")
+		if err != nil {
+			fmt.Println("Could not resolve address: " + err.Error())
+			return
+		}
+		stderrListen, err := net.ListenUnix("unix", errAddr)
+		if err != nil {
+			fmt.Println("Could not stream command:", err)
+			return
 		}
 
-		stdin = dbus.UnixFD(inSock.Fd())
-		stdout = dbus.UnixFD(outSock.Fd())
-		stderr = dbus.UnixFD(errSock.Fd())
+		fdIn, err := stdinListen.File()
+		if err != nil {
+			fmt.Println("Could not obtain file descriptor: " + err.Error())
+		}
+		fdOut, err := stdoutListen.File()
+		if err != nil {
+			fmt.Println("Could not obtain file descriptor: " + err.Error())
+		}
+		fdErr, err := stderrListen.File()
+		if err != nil {
+			fmt.Println("Could not obtain file descriptor: " + err.Error())
+		}
+
+		stdin = dbus.UnixFD(fdIn.Fd())
+		stdout = dbus.UnixFD(fdOut.Fd())
+		stderr = dbus.UnixFD(fdErr.Fd())
 
 		cmdline = append(cmdline, args...)
 		fmt.Println("Received start request from D-Bus:", cmdline)
