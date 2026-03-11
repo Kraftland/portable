@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"golang.org/x/sys/unix"
 	"net"
+	"path/filepath"
+	"math/rand"
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/rymdport/portal/notification"
@@ -99,6 +101,7 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
+					defer conn.Close()
 					inP, err := incoming.cmd.StdinPipe()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
@@ -117,6 +120,7 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
+					defer conn.Close()
 					pipe, err := incoming.cmd.StdoutPipe()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
@@ -135,6 +139,7 @@ func startCounter () {
 						fmt.Println("Could not accept connection:", err)
 						return
 					}
+					defer conn.Close()
 					pipe, err := incoming.cmd.StderrPipe()
 					if err != nil {
 						fmt.Println("Could not accept connection:", err)
@@ -167,15 +172,13 @@ func startCounter () {
 			startedCount--
 			go updateSd(startedCount)
 			countLock.Unlock()
-			if startedCount < 1 {
+			if startedCount == 0 {
 				daemon.SdNotify(false, daemon.SdNotifyStopping)
 				fmt.Println("All tracked processes have exited")
 				terminateNotify <- 1
 				return
 			}
 		} ()
-
-
 	}
 }
 type StartRequest struct {
@@ -271,6 +274,11 @@ func (m *busStartProcessor) AuxStart (
 	stderr dbus.UnixFD,
 	busErr *dbus.Error,
 	) {
+		path := os.Getenv("XDG_RUNTIME_DIR")
+		if len(path) == 0 {
+			fmt.Println("XDG_RUNTIME_DIR not set")
+			return
+		}
 		var req StartNofifyMsg
 		if tray {
 			fmt.Println("Tray activation not supported yet")
@@ -283,12 +291,33 @@ func (m *busStartProcessor) AuxStart (
 			cmdline = m.cmdPfx
 		}
 
-		inSock, err := os.CreateTemp("", "stream-holder-*")
-		if err != nil {
-			fmt.Println("Could not create temporary file for streaming: " + err.Error())
-			return
+		var sockDir string
+		var trials int
+
+		for {
+			if trials > 512 {
+				fmt.Println("Could not pick temp dir")
+				return
+			}
+			trials++
+			idCand := rand.Int()
+			ID := strconv.Itoa(idCand)
+			sockDir = filepath.Join(path, "portable", os.Getenv("appID"), "stream", ID)
+
+			_, err := os.Stat(sockDir)
+			if err != nil {
+				err := os.MkdirAll(sockDir, 0700)
+				if err != nil {
+					fmt.Println("Could not create directory for stream: " + err.Error())
+				} else {
+					break
+				}
+			} else {
+				continue
+			}
 		}
-		inAddr, err := net.ResolveUnixAddr("unix", inSock.Name() + "stdin.sock")
+
+		inAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdin"))
 		if err != nil {
 			fmt.Println("Could not resolve address: " + err.Error())
 			return
@@ -298,7 +327,7 @@ func (m *busStartProcessor) AuxStart (
 			fmt.Println("Could not stream command:", err)
 			return
 		}
-		outAddr, err := net.ResolveUnixAddr("unix", inSock.Name() + "stdout.sock")
+		outAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdout"))
 		if err != nil {
 			fmt.Println("Could not resolve address: " + err.Error())
 			return
@@ -308,7 +337,7 @@ func (m *busStartProcessor) AuxStart (
 			fmt.Println("Could not stream command:", err)
 			return
 		}
-		errAddr, err := net.ResolveUnixAddr("unix", inSock.Name() + "stderr.sock")
+		errAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stderr"))
 		if err != nil {
 			fmt.Println("Could not resolve address: " + err.Error())
 			return
