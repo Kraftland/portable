@@ -172,12 +172,14 @@ func startCounter () {
 			startedCount--
 			go updateSd(startedCount)
 			countLock.Unlock()
+			countLock.RLock()
 			if startedCount == 0 {
 				daemon.SdNotify(false, daemon.SdNotifyStopping)
 				fmt.Println("All tracked processes have exited")
 				terminateNotify <- 1
 				return
 			}
+			countLock.RUnlock()
 		} ()
 	}
 }
