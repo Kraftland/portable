@@ -54,12 +54,6 @@ func engageLandlock () {
 	} else {
 		config.RestrictScoped()
 	}
-
-	err = landlock.V7.RestrictNet(
-		landlock.BindTCP(443),
-	)
-
-
 }
 
 func updateSd(count int) {
