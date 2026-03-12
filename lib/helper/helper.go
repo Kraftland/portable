@@ -82,7 +82,7 @@ landlockSyscall.AccessFSReadDir)
 			landlock.PathAccess(dirRoRule, "/opt"),
 			landlock.PathAccess(dirRoRule, "/sbin"),
 			landlock.PathAccess(dirRoRule, "/usr"),
-			landlock.PathAccess(dirRoRule, "/.flatpak-info"),
+			landlock.ROFiles("/.flatpak-info"),
 			landlock.PathAccess(dirAccRule, "/run"),
 			landlock.PathAccess(dirAccRule, "/tmp"),
 			landlock.PathAccess(dirAccRule, homeDir),
