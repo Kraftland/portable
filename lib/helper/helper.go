@@ -19,6 +19,8 @@ import (
 	"github.com/rymdport/portal/notification"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
+	"github.com/landlock-lsm/go-landlock/landlock"
+	landlockSyscall "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 type PassFiles struct {
@@ -44,6 +46,15 @@ var (
 		Pdeathsig:	syscall.SIGKILL,
 	}
 )
+
+func engageLandlock () {
+	config, err := landlock.NewConfig(landlock.ScopedSet(landlockSyscall.ScopeSignal))
+	if err != nil {
+		fmt.Println("Could not restrict sending signals: " + err.Error())
+	} else {
+		config.RestrictScoped()
+	}
+}
 
 func updateSd(count int) {
 	status := "STATUS=" + "Tracking processes: " + strconv.Itoa(count)
@@ -444,6 +455,10 @@ type AuxStartMsg struct {
 }
 
 func main () {
+	var landlockWg sync.WaitGroup
+	landlockWg.Go(func() {
+		engageLandlock()
+	})
 	var busWg sync.WaitGroup
 	var bus *dbus.Conn
 	busWg.Go(func() {
@@ -505,6 +520,7 @@ func main () {
 		}
 	}
 	busWg.Wait()
+	landlockWg.Wait()
 	go busAuxStart(bus, targetSlice)
 	go startMaster(targetSlice[0], args)
 	go terminateWatcher(terminateNotify, bus)
