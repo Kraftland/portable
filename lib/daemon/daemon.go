@@ -3324,12 +3324,23 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 	//oldOut := os.Stdout
 	//oldErr := os.Stderr
 
+	var files PassFiles
+
+	files = <- filesInfo
+
+	var fileSlice []string
+
+	for key, val := range files.FileMap {
+		fileSlice = append(fileSlice, key, val)
+	}
+
 	busObj := conn.Object(confOpts.appID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
 		false, // For now we do not support custom target
 		tray,
 		[]string{},
 		args,
+		fileSlice,
 	)
 	if call.Err != nil {
 		pecho("crit", "Could not emit start signal: " + call.Err.Error())

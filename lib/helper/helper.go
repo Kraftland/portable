@@ -321,7 +321,7 @@ type busStartProcessor struct{
 }
 
 func (m *busStartProcessor) AuxStart (
-	customTgt bool, tray bool, customExec []string, args []string,
+	customTgt bool, tray bool, customExec []string, args []string, filesExpose []string,
 	) (
 	isStream bool,
 	baseDir	string,
@@ -404,8 +404,13 @@ func (m *busStartProcessor) AuxStart (
 		}
 
 		cmdline = append(cmdline, args...)
+		replacer := strings.NewReplacer(filesExpose...)
+		cmdlineFinal := []string{}
+		for _, cmd := range cmdline {
+			cmdlineFinal = append(cmdlineFinal, replacer.Replace(cmd))
+		}
 		fmt.Println("Received start request from D-Bus:", cmdline)
-		cmd := exec.Command(cmdline[0], cmdline[1:]...)
+		cmd := exec.Command(cmdlineFinal[0], cmdlineFinal[1:]...)
 		cmd.SysProcAttr = procAttr
 		isStream = true
 		req.cmd = cmd
@@ -450,6 +455,11 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 							},
 							{
 								Name:		"Args",
+								Type:		"as",
+								Direction:	"in",
+							},
+							{
+								Name:		"ExtraFiles",
 								Type:		"as",
 								Direction:	"in",
 							},
