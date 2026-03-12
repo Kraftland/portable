@@ -48,25 +48,17 @@ var (
 )
 
 func engageLandlock () {
-	homePath, err := os.UserHomeDir()
-	homeAccess := landlock.PathAccess(
-		landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
-landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscall.AccessFSRemoveFile|landlockSyscall.AccessFSMakeChar|landlockSyscall.AccessFSMakeDir|landlockSyscall.AccessFSMakeReg|landlockSyscall.AccessFSMakeSock|landlockSyscall.AccessFSMakeFifo|landlockSyscall.AccessFSMakeBlock|landlockSyscall.AccessFSMakeSym|landlockSyscall.AccessFSRefer|landlockSyscall.AccessFSTruncate|landlockSyscall.AccessFSIoctlDev,
-		homePath,
-	)
-	rootAccess := landlock.PathAccess(
-		landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
-landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscall.AccessFSRemoveFile|landlockSyscall.AccessFSMakeChar|landlockSyscall.AccessFSMakeDir|landlockSyscall.AccessFSMakeReg|landlockSyscall.AccessFSMakeSock|landlockSyscall.AccessFSMakeFifo|landlockSyscall.AccessFSMakeBlock|landlockSyscall.AccessFSMakeSym|landlockSyscall.AccessFSRefer|landlockSyscall.AccessFSTruncate|landlockSyscall.AccessFSIoctlDev,
-		"/",
-	)
+	config, err := landlock.NewConfig(landlock.ScopedSet(landlockSyscall.ScopeSignal))
 	if err != nil {
-		panic(err)
+		fmt.Println("Could not restrict sending signals: " + err.Error())
+	} else {
+		config.RestrictScoped()
 	}
 
-	err = landlock.V7.RestrictPaths(
-		rootAccess,
-		homeAccess,
+	err = landlock.V7.RestrictNet(
+		landlock.BindTCP(443),
 	)
+
 
 }
 
