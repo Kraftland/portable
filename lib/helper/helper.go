@@ -54,6 +54,43 @@ func engageLandlock () {
 	} else {
 		config.RestrictScoped()
 	}
+
+	mountInfoCfg := os.Getenv("mountInfo")
+	if mountInfoCfg == "false" {
+		return
+	} else {
+		fullAccRule := landlock.AccessFSSet(landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
+landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscall.AccessFSRemoveFile|landlockSyscall.AccessFSMakeChar|landlockSyscall.AccessFSMakeDir|landlockSyscall.AccessFSMakeReg|landlockSyscall.AccessFSMakeSock|landlockSyscall.AccessFSMakeFifo|landlockSyscall.AccessFSMakeBlock|landlockSyscall.AccessFSMakeSym|landlockSyscall.AccessFSRefer|landlockSyscall.AccessFSTruncate|landlockSyscall.AccessFSIoctlDev)
+		dirAccRule := landlock.AccessFSSet(landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
+landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscall.AccessFSRemoveFile|landlockSyscall.AccessFSMakeDir|landlockSyscall.AccessFSMakeReg|landlockSyscall.AccessFSMakeSock|landlockSyscall.AccessFSMakeFifo|landlockSyscall.AccessFSMakeSym|landlockSyscall.AccessFSRefer|landlockSyscall.AccessFSTruncate)
+		dirRoRule := landlock.AccessFSSet(landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSReadFile|
+landlockSyscall.AccessFSReadDir)
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Println("Could not get user home: " + err.Error())
+			return
+		}
+		err = landlock.V7.RestrictPaths(
+			landlock.PathAccess(landlockSyscall.AccessFSReadDir, "/"), // Root
+			landlock.PathAccess(dirRoRule, "/bin"),
+			landlock.PathAccess(fullAccRule, "/dev"),
+			landlock.PathAccess(fullAccRule, "/proc"),
+			landlock.PathAccess(fullAccRule, "/sys"),
+			landlock.PathAccess(dirRoRule, "/etc"),
+			landlock.PathAccess(dirRoRule, "/lib"),
+			landlock.PathAccess(dirRoRule, "/lib64"),
+			landlock.PathAccess(dirRoRule, "/opt"),
+			landlock.PathAccess(dirRoRule, "/sbin"),
+			landlock.PathAccess(dirRoRule, "/usr"),
+			landlock.PathAccess(dirRoRule, "/.flatpak-info"),
+			landlock.PathAccess(dirAccRule, "/run"),
+			landlock.PathAccess(dirAccRule, "/tmp"),
+			landlock.PathAccess(dirAccRule, homeDir),
+		)
+		if err != nil {
+			fmt.Println("Could not enforce file system landlock: " + err.Error())
+		}
+	}
 }
 
 func updateSd(count int) {
