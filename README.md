@@ -3,6 +3,7 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 
 - enables unprivileged user namespaces
 - uses systemd >=258
+- has landlock version 6 and above (optional)
 - Follows the [FHS (Filesystem Hierarchy Standard)](https://specifications.freedesktop.org/fhs/latest/)
 	- Note that `/lib` `/lib64` `/bin` `/sbin` should be symlinks to their respective locations under `/usr`
 
