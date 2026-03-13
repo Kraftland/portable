@@ -70,7 +70,7 @@ landlockSyscall.AccessFSReadDir)
 			fmt.Println("Could not get user home: " + err.Error())
 			return
 		}
-		err = landlock.V7.RestrictPaths(
+		err = landlock.V6.RestrictPaths(
 			landlock.PathAccess(landlockSyscall.AccessFSReadDir, "/"), // Root
 			landlock.PathAccess(dirRoRule, "/bin"),
 			landlock.PathAccess(fullAccRule, "/dev"),
