@@ -1125,7 +1125,6 @@ func calcDbusArg(argChan chan []string) {
 		"--talk=org.unifiedpush.Distributor.*",
 		"--own=" + confOpts.appID,
 		"--own=" + confOpts.appID + ".*",
-		"--talk=org.kde.StatusNotifierWatcher",
 		"--talk=com.canonical.AppMenu.Registrar",
 		"--see=org.a11y.Bus",
 		"--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus",
@@ -1150,6 +1149,9 @@ func calcDbusArg(argChan chan []string) {
 
 		// FileManager1 endpoints
 		"--call=org.freedesktop.FileManager1=org.freedesktop.FileManager1.*@/org/freedesktop/FileManager1",
+
+		"--call=org.kde.StatusNotifierWatcher=*@/StatusNotifierWatcher",
+		"--broadcast=org.kde.StatusNotifierWatcher=*@/StatusNotifierWatcher",
 
 	)
 
