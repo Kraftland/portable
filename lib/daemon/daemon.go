@@ -305,7 +305,6 @@ func bytesToMb(bytes int) float64 {
 }
 
 func showStats() {
-	var active bool
 	conn, err := godbus.ConnectSessionBus()
 	busName := "top.kimiblock.portable." + confOpts.appID
 	if err != nil {
@@ -313,20 +312,35 @@ func showStats() {
 	}
 	defer conn.Close()
 	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
+
+	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
+	var builder strings.Builder
+	builder.WriteString("Application Statistics: \n")
+	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "\n")
 	call := busObj.Call(busName + ".Ping", 0)
 	if call.Err != nil {
 		pecho("debug", "Could not call running instance")
 	} else {
-		active = true
 		pecho("debug", "Remote instance responded with Pong")
+		call = busObj.Call("top.kimiblock.portable.Info.GetInfo", 0)
+		if call.Err != nil {
+			pecho(
+				"warn",
+				"Could not obtain runtime info from remote: " + call.Err.Error(),
+			)
+		} else {
+			var reply []string
+			err := call.Store(&reply)
+			if err != nil {
+				pecho("warn", "Could not decode remote reply: " + err.Error())
+			} else {
+				builder.WriteString("Runtime Status: \n")
+				for _, val := range reply {
+					builder.WriteString("	" + val + "\n")
+				}
+			}
+		}
 	}
-	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
-	var builder strings.Builder
-	builder.WriteString("Application Statistics: \n")
-	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64))
-	builder.WriteString("M\n")
-	builder.WriteString("	Active: " + strconv.FormatBool(active))
-
 
 	fmt.Println(builder.String())
 	os.Exit(0)
