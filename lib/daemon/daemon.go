@@ -1460,6 +1460,7 @@ type DBusInfoRequest struct {
 
 func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 	var reply = []string{
+		"Daemon version: " + strconv.FormatFloat(float64(version), 'f', 0, 64),
 		"Instance ID: " + runtimeInfo.instanceID,
 		"Unit name: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
 	}
@@ -1496,9 +1497,19 @@ func parseNum(v any) (float64) {
 	}
 }
 
-func appendProps(m map[string]interface{}) []string {
-	var ret = []string{
+func parseStr(v any) (string) {
+	switch n := v.(type) {
+		case string:
+			return string(n)
+		default:
+			typeInfo := reflect.TypeOf(v)
+			pecho("warn", "Could not parse type " + typeInfo.String())
+			return ""
 	}
+}
+
+func appendProps(m map[string]interface{}) []string {
+	var ret = []string{}
 
 	cpuTime, ok := m["CPUUsageNSec"]
 	if ok {
@@ -1517,9 +1528,18 @@ func appendProps(m map[string]interface{}) []string {
 			"Memory usage: " + strconv.FormatFloat(memRaw, 'f', 2, 64) + "M",
 		)
 	} else {
-		pecho("warn", "Missing property: CPUUsageNSec")
+		pecho("warn", "Missing property: MemoryCurrent")
 	}
 
+	cgroup, ok := m["ControlGroup"]
+	if ok {
+		cgName := parseStr(cgroup)
+		ret = append(ret,
+			"Control Group: " + cgName,
+		)
+	} else {
+		pecho("warn", "Missing property: ControlGroup")
+	}
 
 	return ret
 }
