@@ -1415,6 +1415,7 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 	}
 }
 
+
 type DBusPingRequest struct {}
 type DBusControlRequest struct {
 	Conn		*godbus.Conn
@@ -1452,6 +1453,21 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
+			{
+				Name:		"top.kimiblock.portable.Info",
+				Methods:	[]introspect.Method{
+					{
+						Name:	"GetInfo",
+						Args:	[]introspect.Arg{
+							{
+								Name:	"Info",
+								Type:	"as",
+								Direction:	"out",
+							},
+						},
+					},
+				},
+			},
 			{
 				Name:		"top.kimiblock.portable." + confOpts.appID,
 				Methods:	[]introspect.Method{
