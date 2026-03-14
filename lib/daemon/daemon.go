@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1458,33 +1459,69 @@ type DBusInfoRequest struct {
 }
 
 func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
-	var reply []string
+	var reply = []string{
+		"Instance ID: " + runtimeInfo.instanceID,
+		"Unit name: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+	}
 	if runtimeInfo.instanceID == "" {
 		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
 	}
 	if m.Conn == nil || m.SdConn == nil {
 		return []string{}, godbus.MakeFailedError(errors.New("Connection not available"))
 	}
-	propActive, err := getProp("ActiveState", m.SdConn)
+	ctx := context.TODO()
+	ctxDdl, cancelFunc := context.WithDeadline(ctx, time.Now().Add(1 * time.Second))
+	propMap := make(map[string]any)
+	propMap, err := m.SdConn.GetAllPropertiesContext(
+		ctxDdl,
+		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service",
+	)
+	cancelFunc()
 	if err != nil {
-		return []string{}, godbus.MakeFailedError(err)
+		return reply, godbus.MakeFailedError(err)
 	}
-	reply = append(reply, "Active: " + propActive)
+	reply = append(reply, appendProps(propMap)...)
+	//fmt.Println(propMap)
 	return reply, nil
 }
 
-func getProp(prop string, con *dbus.Conn) (string, error) {
-	ctx := context.TODO()
-	propBus, err := con.GetUnitPropertyContext(
-		ctx,
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service",
-		prop,
-	)
-	pecho("debug", "Obtaining property " + prop + " for unit: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service")
-	if err != nil {
-		return "", err
+func parseNum(v any) (float64) {
+	switch n := v.(type) {
+		case uint64:
+			return float64(n)
+		default:
+			typeInfo := reflect.TypeOf(v)
+			pecho("warn", "Could not parse type " + typeInfo.String())
+			return 0
 	}
-	return propBus.Value.String(), nil
+}
+
+func appendProps(m map[string]interface{}) []string {
+	var ret = []string{
+	}
+
+	cpuTime, ok := m["CPUUsageNSec"]
+	if ok {
+		timeDur := time.Duration(parseNum(cpuTime)) * time.Nanosecond
+		ret = append(ret,
+			"CPU time: " + timeDur.String(),
+		)
+	} else {
+		pecho("warn", "Missing property: CPUUsageNSec")
+	}
+
+	memUse, ok := m["MemoryCurrent"]
+	if ok {
+		memRaw := bytesToMb(int(parseNum(memUse)))
+		ret = append(ret,
+			"Memory usage: " + strconv.FormatFloat(memRaw, 'f', 2, 64) + "M",
+		)
+	} else {
+		pecho("warn", "Missing property: CPUUsageNSec")
+	}
+
+
+	return ret
 }
 
 func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn) {
