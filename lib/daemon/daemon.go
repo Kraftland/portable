@@ -317,7 +317,7 @@ func showStats() {
 	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
 	var builder strings.Builder
 	builder.WriteString("Application Statistics: \n")
-	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "\n")
+	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "M\n")
 	call := busObj.Call(busName + ".Ping", 0)
 	if call.Err != nil {
 		pecho("debug", "Could not call running instance")
