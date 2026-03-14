@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -305,7 +306,6 @@ func bytesToMb(bytes int) float64 {
 }
 
 func showStats() {
-	var active bool
 	conn, err := godbus.ConnectSessionBus()
 	busName := "top.kimiblock.portable." + confOpts.appID
 	if err != nil {
@@ -313,20 +313,35 @@ func showStats() {
 	}
 	defer conn.Close()
 	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
+
+	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
+	var builder strings.Builder
+	builder.WriteString("Application Statistics: \n")
+	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "\n")
 	call := busObj.Call(busName + ".Ping", 0)
 	if call.Err != nil {
 		pecho("debug", "Could not call running instance")
 	} else {
-		active = true
 		pecho("debug", "Remote instance responded with Pong")
+		call = busObj.Call("top.kimiblock.portable.Info.GetInfo", 0)
+		if call.Err != nil {
+			pecho(
+				"warn",
+				"Could not obtain runtime info from remote: " + call.Err.Error(),
+			)
+		} else {
+			var reply []string
+			err := call.Store(&reply)
+			if err != nil {
+				pecho("warn", "Could not decode remote reply: " + err.Error())
+			} else {
+				builder.WriteString("Runtime Status: \n")
+				for _, val := range reply {
+					builder.WriteString("	" + val + "\n")
+				}
+			}
+		}
 	}
-	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
-	var builder strings.Builder
-	builder.WriteString("Application Statistics: \n")
-	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64))
-	builder.WriteString("M\n")
-	builder.WriteString("	Active: " + strconv.FormatBool(active))
-
 
 	fmt.Println(builder.String())
 	os.Exit(0)
@@ -1415,6 +1430,7 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 	}
 }
 
+
 type DBusPingRequest struct {}
 type DBusControlRequest struct {
 	Conn		*godbus.Conn
@@ -1437,21 +1453,130 @@ func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 	return "Pong", nil
 }
 
-func listenBusStub(conn *godbus.Conn) {
+type DBusInfoRequest struct {
+	Conn		*godbus.Conn
+	SdConn		*dbus.Conn
+}
+
+func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
+	var reply = []string{
+		"Daemon version: " + strconv.FormatFloat(float64(version), 'f', 0, 64),
+		"Instance ID: " + runtimeInfo.instanceID,
+		"Unit name: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+	}
+	if runtimeInfo.instanceID == "" {
+		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
+	}
+	if m.Conn == nil || m.SdConn == nil {
+		return []string{}, godbus.MakeFailedError(errors.New("Connection not available"))
+	}
+	ctx := context.TODO()
+	ctxDdl, cancelFunc := context.WithDeadline(ctx, time.Now().Add(1 * time.Second))
+	propMap := make(map[string]any)
+	propMap, err := m.SdConn.GetAllPropertiesContext(
+		ctxDdl,
+		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service",
+	)
+	cancelFunc()
+	if err != nil {
+		return reply, godbus.MakeFailedError(err)
+	}
+	reply = append(reply, appendProps(propMap)...)
+	//fmt.Println(propMap)
+	return reply, nil
+}
+
+func parseNum(v any) (float64) {
+	switch n := v.(type) {
+		case uint64:
+			return float64(n)
+		default:
+			typeInfo := reflect.TypeOf(v)
+			pecho("warn", "Could not parse type " + typeInfo.String())
+			return 0
+	}
+}
+
+func parseStr(v any) (string) {
+	switch n := v.(type) {
+		case string:
+			return string(n)
+		default:
+			typeInfo := reflect.TypeOf(v)
+			pecho("warn", "Could not parse type " + typeInfo.String())
+			return ""
+	}
+}
+
+func appendProps(m map[string]interface{}) []string {
+	var ret = []string{}
+
+	cpuTime, ok := m["CPUUsageNSec"]
+	if ok {
+		timeDur := time.Duration(parseNum(cpuTime)) * time.Nanosecond
+		ret = append(ret,
+			"CPU time: " + timeDur.String(),
+		)
+	} else {
+		pecho("warn", "Missing property: CPUUsageNSec")
+	}
+
+	memUse, ok := m["MemoryCurrent"]
+	if ok {
+		memRaw := bytesToMb(int(parseNum(memUse)))
+		ret = append(ret,
+			"Memory usage: " + strconv.FormatFloat(memRaw, 'f', 2, 64) + "M",
+		)
+	} else {
+		pecho("warn", "Missing property: MemoryCurrent")
+	}
+
+	cgroup, ok := m["ControlGroup"]
+	if ok {
+		cgName := parseStr(cgroup)
+		ret = append(ret,
+			"Control Group: " + cgName,
+		)
+	} else {
+		pecho("warn", "Missing property: ControlGroup")
+	}
+
+	return ret
+}
+
+func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn) {
 	ready := make(chan int8, 1)
-	go busListener(conn, ready)
+	go busListener(conn, ready, sdConn)
 	<- ready
 
 }
 
-func busListener(conn *godbus.Conn, ready chan int8) {
+func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
+	info := new(DBusInfoRequest)
+	info.SdConn = sdConn
+	info.Conn = conn
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
 		Interfaces:	[]introspect.Interface{
+			{
+				Name:		"top.kimiblock.portable.Info",
+				Methods:	[]introspect.Method{
+					{
+						Name:	"GetInfo",
+						Args:	[]introspect.Arg{
+							{
+								Name:	"Info",
+								Type:	"as",
+								Direction:	"out",
+							},
+						},
+					},
+				},
+			},
 			{
 				Name:		"top.kimiblock.portable." + confOpts.appID,
 				Methods:	[]introspect.Method{
@@ -1478,6 +1603,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 		},
 	}
 	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	err = conn.Export(info, objPath, "top.kimiblock.portable.Info")
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
@@ -3590,7 +3720,7 @@ func main() {
 		sanityChecks()
 	})
 	wg.Go(func() {
-		listenBusStub(busConn)
+		listenBusStub(busConn, conn)
 	})
 	go flushEnvs()
 	go setFirewall()
