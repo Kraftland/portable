@@ -1438,16 +1438,54 @@ func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 	return "Pong", nil
 }
 
-func listenBusStub(conn *godbus.Conn) {
+type DBusInfoRequest struct {
+	Conn		*godbus.Conn
+	SdConn		*dbus.Conn
+}
+
+func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
+	var reply []string
+	if runtimeInfo.instanceID == "" {
+		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
+	}
+	if m.Conn == nil || m.SdConn == nil {
+		return []string{}, godbus.MakeFailedError(errors.New("Connection not available"))
+	}
+	propActive, err := getProp("ActiveState", m.SdConn)
+	if err != nil {
+		return []string{}, godbus.MakeFailedError(err)
+	}
+	reply = append(reply, "Active: " + propActive)
+	return reply, nil
+}
+
+func getProp(prop string, con *dbus.Conn) (string, error) {
+	ctx := context.TODO()
+	propBus, err := con.GetUnitPropertyContext(
+		ctx,
+		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service",
+		prop,
+	)
+	pecho("debug", "Obtaining property " + prop + " for unit: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service")
+	if err != nil {
+		return "", err
+	}
+	return propBus.Value.String(), nil
+}
+
+func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn) {
 	ready := make(chan int8, 1)
-	go busListener(conn, ready)
+	go busListener(conn, ready, sdConn)
 	<- ready
 
 }
 
-func busListener(conn *godbus.Conn, ready chan int8) {
+func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
+	info := new(DBusInfoRequest)
+	info.SdConn = sdConn
+	info.Conn = conn
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
@@ -1494,6 +1532,11 @@ func busListener(conn *godbus.Conn, ready chan int8) {
 		},
 	}
 	err := conn.Export(introspect.NewIntrospectable(node), objPath, "org.freedesktop.DBus.Introspectable")
+	if err != nil {
+		pecho("crit", "Could not export bus method: " + err.Error())
+		return
+	}
+	err = conn.Export(info, objPath, "top.kimiblock.portable.Info")
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
@@ -3606,7 +3649,7 @@ func main() {
 		sanityChecks()
 	})
 	wg.Go(func() {
-		listenBusStub(busConn)
+		listenBusStub(busConn, conn)
 	})
 	go flushEnvs()
 	go setFirewall()
