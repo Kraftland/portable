@@ -3567,6 +3567,7 @@ func atSpiProxy(conn *godbus.Conn) {
 		return
 	}
 	atspiArgs := []string{
+		"--die-with-parent",
 		"--symlink", "/usr/lib64", "/lib64",
 		"--ro-bind", "/usr/lib", "/usr/lib",
 		"--ro-bind", "/usr/lib64", "/usr/lib64",
@@ -3604,7 +3605,7 @@ func atSpiProxy(conn *godbus.Conn) {
 	}
 
 	sysattr := syscall.SysProcAttr{
-		Pdeathsig:		syscall.SIGKILL,
+		Pdeathsig:		syscall.SIGTERM,
 	}
 	atSpiProxyCmd.SysProcAttr = &sysattr
 
