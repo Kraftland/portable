@@ -713,7 +713,7 @@ func setFirewall() {
 
 	rules := make(chan string, 1)
 	wg.Go(func() {
-		dialNetsock(rules)
+		go dialNetsock(rules)
 	})
 
 
@@ -745,6 +745,7 @@ type IncomingSig struct {
 }
 
 func dialNetsock(rules chan string) {
+
 	transport := http.Transport {
 		Proxy:		nil,
 		Dial:		func(network, addr string) (net.Conn, error) {return net.Dial("unix", "/run/netsock/control.sock")},
@@ -761,7 +762,6 @@ func dialNetsock(rules chan string) {
 	respPtr, postErr := client.Post("http://127.0.0.114/add", "application/json", buf)
 	if postErr != nil {
 		pecho("warn", "Could not post data to netsock: " + postErr.Error())
-		addEnv("netsockFail=" + "Could not post data to netsock, check netsock.socket enabled and running")
 		return
 	}
 	defer respPtr.Body.Close()
@@ -771,13 +771,12 @@ func dialNetsock(rules chan string) {
 	err := decoder.Decode(&resp)
 	if err != nil {
 		pecho("warn", "Could not decode response from netsock: " + err.Error())
-		addEnv("netsockFail=" + "Could not decode response from netsock: " + err.Error())
+		return
 	}
 	if resp.Success == true {
 		pecho("debug", "Firewall active")
 	} else {
 		pecho("warn", "netsock respond with: " + resp.Log)
-		addEnv("netsockFail=1" + "netsock respond with: " + resp.Log)
 	}
 }
 
