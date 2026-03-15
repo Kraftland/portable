@@ -695,8 +695,13 @@ func readConf() {
 }
 
 func setFirewall() {
+	var wg sync.WaitGroup
 	rawDenyList := strings.TrimSpace(confOpts.networkDeny)
 	denyList := strings.Split(rawDenyList, " ")
+	if len(rawDenyList) == 0 {
+		pecho("debug", "Did not find any network restriction")
+		return
+	}
 
 	pecho("debug", "Decoded raw deny list: " + strings.Join(denyList, ", "))
 
@@ -707,14 +712,11 @@ func setFirewall() {
 	sig.CgroupNested = "app.slice/app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service/portable-cgroup"
 
 	rules := make(chan string, 1)
-	ready := make(chan int, 1)
+	wg.Go(func() {
+		dialNetsock(rules)
+	})
 
-	go dialNetsock(rules, ready)
 
-	if len(rawDenyList) == 0 {
-		pecho("debug", "Did not find any network restriction")
-		return
-	}
 
 	jsonObj, encodeErr := json.Marshal(sig)
 	if encodeErr != nil {
@@ -724,6 +726,7 @@ func setFirewall() {
 
 	rules <- string(jsonObj)
 	close(rules)
+	wg.Wait()
 
 
 }
@@ -741,13 +744,7 @@ type IncomingSig struct {
 	AppID			string
 }
 
-func dialNetsock(rules chan string, ready chan int) {
-	// dialer, errorDial := net.Dial("unix", "/run/netsock/control.sock")
-	// if errorDial != nil {
-	// 	pecho("warn", "Could not dial netsock socket, firewall disabled")
-	// 	ready <- 1
-	// 	return
-	// }
+func dialNetsock(rules chan string) {
 	transport := http.Transport {
 		Proxy:		nil,
 		Dial:		func(network, addr string) (net.Conn, error) {return net.Dial("unix", "/run/netsock/control.sock")},
@@ -782,7 +779,6 @@ func dialNetsock(rules chan string, ready chan int) {
 		pecho("warn", "netsock respond with: " + resp.Log)
 		addEnv("netsockFail=1" + "netsock respond with: " + resp.Log)
 	}
-	ready <- 1
 }
 
 func mkdirPool(dirs []string) {
@@ -3718,13 +3714,16 @@ func main() {
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
+		setFirewall()
+	})
+	wg.Go(func() {
 		sanityChecks()
 	})
 	wg.Go(func() {
 		listenBusStub(busConn, conn)
 	})
 	go flushEnvs()
-	go setFirewall()
+
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
