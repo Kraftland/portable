@@ -106,24 +106,7 @@ func updateSd(count int) {
 		}
 	}
 }
-
-func netsockFailNotification() {
-	failmsg := os.Getenv("netsockFail")
-	if len(failmsg) > 0 {
-		var content = notification.Content {
-			Title:		"Failed to apply firewall",
-			Body:		failmsg,
-			Priority:	"urgent",
-		}
-		err := notification.Add(2147483647, content)
-		if err != nil {
-			fmt.Println("Failed to send notification: " + err.Error())
-		}
-	}
-}
-
 func startCounter () {
-	go netsockFailNotification()
 	var countLock sync.RWMutex
 	var startedCount int
 	fmt.Println("Start counter init done")
