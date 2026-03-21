@@ -16,7 +16,6 @@ import (
 	"math/rand"
 
 	"github.com/coreos/go-systemd/v22/daemon"
-	"github.com/rymdport/portal/notification"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/landlock-lsm/go-landlock/landlock"
