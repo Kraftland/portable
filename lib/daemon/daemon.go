@@ -338,7 +338,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 					addEnv("_portableDebug=1")
 				case "share-file", "share-files":
 					startAct = "abort"
-					shareFile()
+					shareFile(config)
 				case "opendir", "home", "openhome":
 					startAct = "abort"
 					openHome(config)
@@ -385,7 +385,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 }
 
-func shareFile() {
+func shareFile(config Config) {
 	var paths []string
 	zenityCmd := exec.Command("/usr/bin/zenity", "--file-selection", "--multiple")
 	zenityCmd.Stderr = os.Stderr
@@ -413,7 +413,8 @@ func shareFile() {
 		pathSp := strings.Split(path, "/")
 		pathslices := len(pathSp)
 		basename := pathSp[pathslices - 1]
-		reflinkErr := reflink.Auto(path, xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared/" + basename)
+		dest := filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared", basename)
+		reflinkErr := reflink.Auto(path, dest)
 		if reflinkErr != nil {
 			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
 		}
