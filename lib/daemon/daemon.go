@@ -1756,6 +1756,7 @@ func genBwArg(
 	inputChan chan []string,
 	wayDisplayChan chan []string,
 	miscChan	chan []string,
+	config Config,
 	) {
 
 	if internalLoggingLevel > 1 {
@@ -1769,12 +1770,12 @@ func genBwArg(
 		"--service-type=notify",
 		"--wait",
 		"--pty",
-		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+		"--unit=" + "app-portable-" + config.Metadata.AppID + "-" + runtimeInfo.instanceID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
 		"-p", "DelegateSubgroup=portable-cgroup",
-		"-p", "BindsTo=" + confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
-		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
+		"-p", "BindsTo=" + config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		"-p", "Description=Portable Sandbox for " + config.Metadata.FriendlyName + " (" + config.Metadata.AppID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
 		"-p", "SuccessExitStatus=SIGKILL",
@@ -1790,7 +1791,7 @@ func genBwArg(
 		"-p", "OOMScoreAdjust=100",
 		"-p", "IPAccounting=yes",
 		"-p", "MemoryPressureWatch=yes",
-		"-p", "SyslogIdentifier=portable-" + confOpts.appID,
+		"-p", "SyslogIdentifier=portable-" + config.Metadata.AppID,
 		"-p", "SystemCallLog=@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources",
 		"-p", "SystemCallLog=~@sandbox",
 		"-p", "PrivateIPC=yes",
@@ -1809,9 +1810,9 @@ func genBwArg(
 		"-p", "TimeoutStopSec=10s",
 		"-p", "UMask=077",
 		"-p",
-		"EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
+		"EnvironmentFile=" + filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "generated.env"),
 		"-p", "Environment=instanceId=" + runtimeInfo.instanceID,
-		"-p", "Environment=busDir=" + xdgDir.runtimeDir + "/app/" + confOpts.appID,
+		"-p", "Environment=busDir=" + filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID),
 		"-p", "UnsetEnvironment=GNOME_SETUP_DISPLAY",
 		"-p", "UnsetEnvironment=PIPEWIRE_REMOTE",
 		"-p", "UnsetEnvironment=PAM_KWALLET5_LOGIN",
@@ -1823,7 +1824,7 @@ func genBwArg(
 		"-p", "UnsetEnvironment=SSH_AUTH_SOCK",
 		"-p", "UnsetEnvironment=MAIL",
 		"-p", "UnsetEnvironment=SYSTEMD_EXEC_PID",
-		"-p", "WorkingDirectory=" + xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		"-p", "WorkingDirectory=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 		//"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env",
 		"-p", "SystemCallFilter=~@clock",
 		"-p", "SystemCallFilter=~@cpu-emulation",
@@ -1835,7 +1836,7 @@ func genBwArg(
 		"-p", "SystemCallErrorNumber=EAGAIN",
 	)
 
-	if confOpts.bindNetwork == false {
+	if ! config.Network.Enable {
 		pecho("info", "Network Access disabled")
 		runtimeInfo.bwCmd = append(
 			runtimeInfo.bwCmd,
@@ -1941,49 +1942,51 @@ func genBwArg(
 
 		// Run binds
 		"--bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
 			"/run",
 		"--bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
+
+		// For homed users
 		"--ro-bind-try",
 			"/run/systemd/userdb/io.systemd.Home",
 			"/run/systemd/userdb/io.systemd.Home",
 		"--ro-bind",
-			xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+			filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID, "bus"),
 			"/run/sessionBus",
 		"--ro-bind-try",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
-			xdgDir.runtimeDir + "/at-spi",
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "a11y"),
+			filepath.Join(xdgDir.runtimeDir, "at-spi"),
 		"--dir",		"/run/host",
 		"--bind",
-			xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID,
-			xdgDir.runtimeDir + "/doc",
+			filepath.Join(xdgDir.runtimeDir, "doc/by-app", config.Metadata.AppID),
+			filepath.Join(xdgDir.runtimeDir, "doc"),
 		"--ro-bind-try",
 			"/run/systemd/resolve/stub-resolv.conf",
 			"/run/systemd/resolve/stub-resolv.conf",
 		"--bind",
-			xdgDir.runtimeDir + "/systemd/notify",
-			xdgDir.runtimeDir + "/systemd/notify",
+			filepath.Join(xdgDir.runtimeDir, "systemd/notify"),
+			filepath.Join(xdgDir.runtimeDir, "systemd/notify"),
 		"--ro-bind-try",
-			xdgDir.runtimeDir + "/pulse",
-			xdgDir.runtimeDir + "/pulse",
+			filepath.Join(xdgDir.runtimeDir, "pulse"),
+			filepath.Join(xdgDir.runtimeDir, "pulse"),
 
 		// HOME binds
 		"--bind",
-			xdgDir.dataDir + "/" + confOpts.stateDirectory,
+			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 			xdgDir.home,
 		"--bind",
-			xdgDir.dataDir + "/" + confOpts.stateDirectory,
-			xdgDir.dataDir + "/" + confOpts.stateDirectory,
+			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
+			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 
 		"--ro-bind",		"/etc", "/etc",
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
 		"--tmpfs",		"/usr/share/applications",
-		"--tmpfs",		xdgDir.home + "/options",
-		"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/options",
+		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
+		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 
 	)
 
@@ -2007,7 +2010,7 @@ func genBwArg(
 		)
 	}
 
-	if confOpts.bindInputDevices == true {
+	if config.Privacy.Input {
 		for inputArg := range inputChan {
 			runtimeInfo.bwCmd = append(
 				runtimeInfo.bwCmd,
