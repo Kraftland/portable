@@ -2,6 +2,13 @@ package main
 
 type Config struct {
 	Metadata	Metadata
+	Exec		Exec
+	BusActivation	BusLaunch
+	Processes	ProcMgmt
+	System		SysMgmt
+	Network		NetworkOpts
+	Privacy		PrivacyOpts
+	Advanced	AdvancedOpts
 }
 
 type Metadata struct {
@@ -26,8 +33,9 @@ type ProcMgmt struct {
 }
 
 type SysMgmt struct {
-	Inhibit		bool
+	InhibitSuspend	bool
 	GlobalShortcuts	bool
+	GameMode	bool
 }
 
 type NetworkOpts struct {
