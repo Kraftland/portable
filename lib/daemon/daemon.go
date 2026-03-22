@@ -874,7 +874,7 @@ func pwSecContext(pwChan chan []string, config Config) {
 	}
 }
 
-func calcDbusArg(argChan chan []string) {
+func calcDbusArg(argChan chan []string, config Config) {
 	argList := []string{}
 	argList = append(
 		argList,
@@ -888,20 +888,20 @@ func calcDbusArg(argChan chan []string) {
 		"--ro-bind-try", "/usr/share", "/usr/share",
 		"--bind", xdgDir.runtimeDir, xdgDir.runtimeDir,
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-			xdgDir.runtimeDir + "/.flatpak-info",
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info"),
+			filepath.Join(xdgDir.runtimeDir, ".flatpak-info"),
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info"),
 			"/.flatpak-info",
 		"--",
 		"/usr/bin/xdg-dbus-proxy",
 		os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
-		xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+		filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID, "/bus"),
 		"--filter",
 		"--own=com.belmoussaoui.ashpd.demo",
 		"--talk=org.unifiedpush.Distributor.*",
-		"--own=" + confOpts.appID,
-		"--own=" + confOpts.appID + ".*",
+		"--own=" + config.Metadata.AppID,
+		"--own=" + config.Metadata.AppID + ".*",
 		"--talk=com.canonical.AppMenu.Registrar",
 		"--see=org.a11y.Bus",
 		"--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus",
@@ -920,9 +920,9 @@ func calcDbusArg(argChan chan []string) {
 		"--call=org.freedesktop.portal.Request=*",
 		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
 
-		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
-		"--broadcast=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.AuxStart@/top/kimiblock/portable/daemon",
-		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.IPC.*@/top/kimiblock/portable/IPC",
+		"--call=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
+		"--broadcast=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.Controller.AuxStart@/top/kimiblock/portable/daemon",
+		"--call=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.IPC.*@/top/kimiblock/portable/IPC",
 
 		// FileManager1 endpoints
 		"--call=org.freedesktop.FileManager1=org.freedesktop.FileManager1.*@/org/freedesktop/FileManager1",
@@ -932,7 +932,7 @@ func calcDbusArg(argChan chan []string) {
 
 	)
 
-	if confOpts.allowKDEStatus {
+	if config.Advanced.KDEStatus {
 		argList = append(argList,
 			"--call=org.kde.JobViewServer=org.kde.JobViewServerV2.requestView@/JobViewServer", // This is for adding jobs to KDE
 			"--call=org.kde.JobViewServer=org.kde.JobViewV3.update@/org/kde/notificationmanager/jobs/*",
@@ -1003,7 +1003,10 @@ func calcDbusArg(argChan chan []string) {
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*",
 			)
 	}
-	os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID, 0700)
+	err := os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + config.Metadata.AppID, 0700)
+	if err != nil {
+		pecho("crit", "Could not create documents path: " + err.Error())
+	}
 
 	// Shitty MPRIS calc code
 	mprisOwnList := []string{}
@@ -1012,27 +1015,30 @@ func calcDbusArg(argChan chan []string) {
 		appIDSepNum would be 3
 		so appIDSplit[3 - 1] should be the last part
 	*/
-	appIDSplit := strings.Split(confOpts.appID, ".")
+	appIDSplit := strings.Split(config.Metadata.AppID, ".")
 	appIDSegNum := len(appIDSplit)
 	var appIDLastSeg string = appIDSplit[appIDSegNum - 1]
 	mprisOwnList = append(
 		mprisOwnList,
-		"--own=org.mpris.MediaPlayer2." + confOpts.appID,
-		"--own=org.mpris.MediaPlayer2." + confOpts.appID + ".*",
+		"--own=org.mpris.MediaPlayer2." + config.Metadata.AppID,
+		"--own=org.mpris.MediaPlayer2." + config.Metadata.AppID + ".*",
 		"--own=org.mpris.MediaPlayer2." + appIDLastSeg,
 		"--own=org.mpris.MediaPlayer2." + appIDLastSeg + ".*",
 	)
-	if len(confOpts.mprisName) == 0 {
+	if len(config.Advanced.MprisName) == 0 {
 		pecho("debug", "Using default MPRIS own name")
 	} else {
-		mprisOwnList = append(
-			mprisOwnList,
-			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName,
-			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName + ".*",
-		)
+		for _, name := range config.Advanced.MprisName {
+			mprisOwnList = append(
+				mprisOwnList,
+				"--own=org.mpris.MediaPlayer2." + name,
+				"--own=org.mpris.MediaPlayer2." + name + ".*",
+			)
+		}
+
 	}
 
-	if confOpts.allowClassicNotifs == true {
+	if config.Privacy.ClassicNotifications {
 		argList = append(
 			argList,
 			"--talk=org.freedesktop.Notifications",
@@ -1040,7 +1046,7 @@ func calcDbusArg(argChan chan []string) {
 		)
 	}
 
-	if confOpts.allowInhibit == true {
+	if config.System.InhibitSuspend {
 		argList = append(
 			argList,
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit",
@@ -1048,7 +1054,7 @@ func calcDbusArg(argChan chan []string) {
 		)
 	}
 
-	if confOpts.allowGlobalShortcuts == true {
+	if config.System.GlobalShortcuts {
 		argList = append(
 			argList,
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts",
