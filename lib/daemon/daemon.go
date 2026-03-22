@@ -1078,11 +1078,11 @@ func calcDbusArg(argChan chan []string, config Config) {
 	argChan <- argList
 }
 
-func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
+func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, config Config) {
 	defer sdCancelFunc()
 	var wg sync.WaitGroup
 	var units = []string{
-		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 	}
 	for _, unit := range units {
 		wg.Add(1)
@@ -1117,7 +1117,7 @@ func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context
 	pecho("debug", "Cleaning ready")
 }
 
-func startProxy(conn *dbus.Conn, ctx context.Context) {
+func startProxy(conn *dbus.Conn, ctx context.Context, config Config) {
 	dbusProps := []dbus.Property{}
 	var wg sync.WaitGroup
 	var dbusArgs []string
@@ -1143,7 +1143,7 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 	go func () {
 		defer wg.Done()
 		os.MkdirAll(
-			xdgDir.runtimeDir + "/app/" + confOpts.appID,
+			xdgDir.runtimeDir + "/app/" + config.Metadata.AppID,
 			0700,
 		)
 	} ()
@@ -1172,9 +1172,9 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 		)
 		dbusProps = append(
 			dbusProps,
-			dbus.PropSlice("portable-" + confOpts.friendlyName + ".slice"),
+			dbus.PropSlice("portable-" + config.Metadata.FriendlyName + ".slice"),
 			dbus.PropWants(unitWants...),
-			dbus.PropDescription("D-Bus proxy for portable sandbox " + confOpts.appID),
+			dbus.PropDescription("D-Bus proxy for portable sandbox " + config.Metadata.AppID),
 	)
 	wg.Wait()
 	dbusProps = append(
@@ -1188,7 +1188,7 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 
 	_, err := conn.StartTransientUnitContext(
 		ctx,
-		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 		"replace",
 		dbusProps,
 		nil,
