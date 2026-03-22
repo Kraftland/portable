@@ -12,7 +12,8 @@ Supported arguments:
 	--distro [distro name]	-> Specify the distribution.
 	--mode [copy <[pkg]>]	-> Modes of operation
 	--hash [true / false]	-> Enables hashing of configuration file. Currently has no effect. (optional)
-	--config [path]	-	-> Specify the configuration source for sandbox
+	--config [path]	-	-> Specify the legacy configuration source for sandbox
+	--config-ng [path]	-> Specify the TOML configuration source for sandbox
 	--desktop-file [path]	-> Specify the desktop file path for sandbox
 	--dbus-activation	-> Enables the activation from D-Bus (optional)
 	--dbus-arguments	-> Specify arguments to use when being activated

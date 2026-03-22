@@ -22,7 +22,8 @@ function printHelp() {
 	echo "		copy [pkg]	-> Copy from existing package"
 	echo "		post		-> Post-package mode. Do clean ups, leak tests and install config + .desktop file."
 	echo "	--hash [true / false]	-> Enables hashing of configuration file. Currently has no effect. (optional)"
-	echo "	--config [path]	-	-> Specify the configuration source for sandbox"
+	echo "	--config [path]	-	-> Specify the legacy configuration source for sandbox"
+	echo "	--config-ng [path]	-> Specify the TOML configuration source for sandbox"
 	echo "	--desktop-file [path]	-> Specify the desktop file path for sandbox"
 	echo "	--dbus-activation	-> Enables the activation from D-Bus (optional)"
 	echo "	--dbus-arguments	-> Specify arguments to use when being activated"
@@ -78,6 +79,10 @@ function cmdlineDispatcher() {
 				pecho crit "Failed reading configuration: "$(realpath $1)""
 				exit 200
 			fi
+			declare -g configPath="${configPath}"
+		elif [[ $1 = "--config-ng" ]]; then
+			shift
+			declare -r configPath="$(realpath --quiet $1)"
 			declare -g configPath="${configPath}"
 		elif [[ $1 = "--desktop-file" ]]; then
 			pecho debug "Verifying desktop file..."

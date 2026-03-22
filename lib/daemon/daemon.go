@@ -60,91 +60,8 @@ type XDG_DIRS struct {
 	home			string
 }
 
-type portableConfigOpts struct {
-	confPath		string
-	networkDeny		string
-	friendlyName		string
-	appID			string
-	stateDirectory		string
-	launchTarget		string	// this one may be empty?
-	busLaunchTarget		string	// also may be empty
-	bindNetwork		bool
-	terminateImmediately	bool
-	allowClassicNotifs	bool
-	useZink			bool
-	qt5Compat		bool
-	waylandOnly		bool
-	gameMode		bool
-	mprisName		string // may be empty
-	bindCameras		bool
-	bindPipewire		bool
-	bindInputDevices	bool
-	allowInhibit		bool
-	allowGlobalShortcuts	bool
-	allowKDEStatus		bool
-	dbusWake		bool
-	mountInfo		bool
-}
-
-type confTarget struct {
-	str			*string
-	b			*bool
-}
-
-// Defaults should be set in readConf()
-var targets = map[string]confTarget{
-	"appID":		{str: &confOpts.appID},
-	"friendlyName":		{str: &confOpts.friendlyName},
-	"stateDirectory":	{str: &confOpts.stateDirectory},
-	"launchTarget":		{str: &confOpts.launchTarget},
-	"busLaunchTarget":	{str: &confOpts.busLaunchTarget},
-	"mprisName":		{str: &confOpts.mprisName},
-	"bindNetwork":		{b: &confOpts.bindNetwork},
-	"terminateImmediately":	{b: &confOpts.terminateImmediately},
-	"networkDeny":		{str: &confOpts.networkDeny},
-	"allowClassicNotifs":	{b: &confOpts.allowClassicNotifs},
-	"useZink":		{b: &confOpts.useZink},
-	"qt5Compat":		{b: &confOpts.qt5Compat},
-	"waylandOnly":		{b: &confOpts.waylandOnly},
-	"gameMode":		{b: &confOpts.gameMode},
-	"bindCameras":		{b: &confOpts.bindCameras},
-	"bindPipewire":		{b: &confOpts.bindPipewire},
-	"bindInputDevices":	{b: &confOpts.bindInputDevices},
-	"allowInhibit":		{b: &confOpts.allowInhibit},
-	"allowGlobalShortcuts":	{b: &confOpts.allowGlobalShortcuts},
-	"allowKDEStatus":	{b: &confOpts.allowKDEStatus},
-	"dbusWake":		{b: &confOpts.dbusWake},
-	"mountInfo":		{b: &confOpts.mountInfo},
-}
-
-var confInfo = map[string]string{
-	"appID":		"string",
-	"friendlyName":		"string",
-	"stateDirectory":	"string",
-	"launchTarget":		"string",
-	"busLaunchTarget":	"string",
-	"bindNetwork":		"bool",
-	"terminateImmediately":	"bool",
-	"networkDeny":		"string",
-	"allowClassicNotifs":	"bool",
-	"useZink":		"bool",
-	"qt5Compat":		"bool",
-	"waylandOnly":		"bool",
-	"gameMode":		"bool",
-	"mprisName":		"string",
-	"bindCameras":		"bool",
-	"bindPipewire":		"bool",
-	"bindInputDevices":	"bool",
-	"allowInhibit":		"bool",
-	"allowGlobalShortcuts":	"bool",
-	"allowKDEStatus":	"bool",
-	"dbusWake":		"bool",
-	"mountInfo":		"bool",
-}
-
 var (
 	internalLoggingLevel	int
-	confOpts		portableConfigOpts
 	runtimeInfo		RUNTIME_PARAMS
 	xdgDir			XDG_DIRS
 	runtimeOpt		RUNTIME_OPT
@@ -215,34 +132,34 @@ func pecho(level string, message string) {
 }
 
 
-func sanityChecks() {
+func sanityChecks(config Config) {
 	if sdutil.IsRunningSystemd() == false {
 		pecho("crit", "Portable requires the systemd service manager")
 	}
 	var appIDValid bool = true
-	if len("top.kimiblock.portable." + confOpts.appID) > 255 {
+	if len("top.kimiblock.portable." + config.Metadata.AppID) > 255 {
 		appIDValid = false
 		pecho("warn", "Application ID too long")
 	}
-	if strings.Contains(confOpts.appID, "org.freedesktop.impl") == true {
+	if strings.Contains(config.Metadata.AppID, "org.freedesktop.impl") == true {
 		appIDValid = false
-	} else if strings.Contains(confOpts.appID, "org.gtk.vfs") == true {
+	} else if strings.Contains(config.Metadata.AppID, "org.gtk.vfs") == true {
 		appIDValid = false
-	} else if confOpts.appID == "org.mpris.MediaPlayer2" {
+	} else if config.Metadata.AppID == "org.mpris.MediaPlayer2" {
 		appIDValid = false
-	} else if len(confOpts.appID) == 0 {
+	} else if len(config.Metadata.AppID) == 0 {
 		appIDValid = false
-	} else if len(strings.Split(confOpts.appID, ".")) < 2 {
+	} else if len(strings.Split(config.Metadata.AppID, ".")) < 2 {
 		appIDValid = false
 	}
 	if appIDValid == false {
 		startAct = "abort"
-		pecho("crit", "Invalid appID: " + confOpts.appID)
+		pecho("crit", "Invalid appID: " + config.Metadata.AppID)
 	}
-	if len(confOpts.friendlyName) == 0 {
+	if len(config.Metadata.FriendlyName) == 0 {
 		pecho("crit", "Could not parse friendlyName")
 	}
-	if len(confOpts.stateDirectory) == 0 {
+	if len(config.Metadata.StateDirectory) == 0 {
 		pecho("crit", "Could not parse stateDirectory")
 	}
 
@@ -257,12 +174,12 @@ func sanityChecks() {
 	}
 	mountCheckCmd := exec.Command("systemd-run", mountCheckArgs...)
 	mountCheckCmd.Stderr = os.Stderr
-	stdout, errP := mountCheckCmd.StdoutPipe()
+	stdout, errP := mountCheckCmd.Output()
 	if errP != nil {
 		pecho("crit", "Failed to pipe findmnt output: " + errP.Error())
+		select {}
 	}
-	scanner := bufio.NewScanner(stdout)
-	err := mountCheckCmd.Run()
+	scanner := bufio.NewScanner(strings.NewReader(string(stdout)))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "/usr/bin/") {
@@ -270,18 +187,15 @@ func sanityChecks() {
 			pecho("crit", "Found mount points inside /usr/bin")
 		}
 	}
-	if err != nil {
-		pecho("crit", "Could not check mountpoints: " + err.Error())
-	}
 }
 
 func addEnv(envToAdd string) {
 	envsChan <- envToAdd
 }
 
-func openHome () {
+func openHome (config Config) {
 	cmdArgs := []string{
-		xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 	}
 	openCmd := exec.Command("/usr/bin/xdg-open", cmdArgs...)
 	openCmd.Stderr = os.Stderr
@@ -289,10 +203,10 @@ func openHome () {
 	os.Exit(0)
 }
 
-func resetDocs () {
+func resetDocs (config Config) {
 	cmdArgs := []string{
 		"permission-reset",
-		confOpts.appID,
+		config.Metadata.AppID,
 	}
 	openCmd := exec.Command("flatpak", cmdArgs...)
 	openCmd.Stderr = os.Stderr
@@ -305,16 +219,16 @@ func bytesToMb(bytes int) float64 {
 	return float64(bytes) / div
 }
 
-func showStats() {
+func showStats(config Config) {
 	conn, err := godbus.ConnectSessionBus()
-	busName := "top.kimiblock.portable." + confOpts.appID
+	busName := "top.kimiblock.portable." + config.Metadata.AppID
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
 
-	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
+	size := getDirSize(filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
 	var builder strings.Builder
 	builder.WriteString("Application Statistics: \n")
 	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "M\n")
@@ -376,7 +290,7 @@ func getDirSize(path string) float64 {
 	return bytesToMb(totalBytes)
 }
 
-func cmdlineDispatcher(cmdChan chan int8) {
+func cmdlineDispatcher(cmdChan chan int8, config Config) {
 	var skipCount int
 	var hasExpose bool
 	var exposeMap = map[string]string{}
@@ -422,33 +336,18 @@ func cmdlineDispatcher(cmdChan chan int8) {
 					pecho("debug", "Received quit request from user")
 				case "debug-shell":
 					addEnv("_portableDebug=1")
-				case "share-file":
+				case "share-file", "share-files":
 					startAct = "abort"
-					shareFile()
-				case "share-files":
+					shareFile(config)
+				case "opendir", "home", "openhome":
 					startAct = "abort"
-					shareFile()
-				case "openhome":
+					openHome(config)
+				case "reset-document", "reset-documents":
 					startAct = "abort"
-					openHome()
-				case "opendir":
+					resetDocs(config)
+				case "stat", "stats":
 					startAct = "abort"
-					openHome()
-				case "home":
-					startAct = "abort"
-					openHome()
-				case "reset-document":
-					startAct = "abort"
-					resetDocs()
-				case "reset-documents":
-					startAct = "abort"
-					resetDocs()
-				case "stat":
-					startAct = "abort"
-					showStats()
-				case "stats":
-					startAct = "abort"
-					showStats()
+					showStats(config)
 				default:
 					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
 			}
@@ -465,7 +364,7 @@ func cmdlineDispatcher(cmdChan chan int8) {
 		for key, _ := range exposeMap {
 			exposeList = append(exposeList, key)
 		}
-		res := questionExpose(exposeList)
+		res := questionExpose(exposeList, config)
 		if res {
 			runtimeOpt.userExpose <- exposeMap
 		}
@@ -486,7 +385,7 @@ func cmdlineDispatcher(cmdChan chan int8) {
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 }
 
-func shareFile() {
+func shareFile(config Config) {
 	var paths []string
 	zenityCmd := exec.Command("/usr/bin/zenity", "--file-selection", "--multiple")
 	zenityCmd.Stderr = os.Stderr
@@ -514,14 +413,15 @@ func shareFile() {
 		pathSp := strings.Split(path, "/")
 		pathslices := len(pathSp)
 		basename := pathSp[pathslices - 1]
-		reflinkErr := reflink.Auto(path, xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared/" + basename)
+		dest := filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared", basename)
+		reflinkErr := reflink.Auto(path, dest)
 		if reflinkErr != nil {
 			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
 		}
 	}
 }
 
-func getVariables() {
+func getVariables(config Config) {
 	runtimeOpt.userLang = os.Getenv("LANG")
 	bindVar := os.Getenv("bwBindPar")
 	if len(bindVar) > 0 {
@@ -533,7 +433,7 @@ func getVariables() {
 		pecho("warn",
 		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
 		)
-		res := questionExpose([]string{bindVar})
+		res := questionExpose([]string{bindVar}, config)
 		if res {
 			bwBindParMap := map[string]string{
 				bindVar:		bindVar,
@@ -541,58 +441,6 @@ func getVariables() {
 			runtimeOpt.userExpose <- bwBindParMap
 		}
 	}
-}
-
-func isPathSuitableForConf(path string) (result bool) {
-	pecho("debug", "Trying configuration: " + path)
-	confInfo, confReadErr := os.Stat(path)
-	if confReadErr != nil {
-		pecho("debug", "Unable to pick configuration at " + path + " for reason: " + confReadErr.Error())
-	} else {
-		if confInfo.IsDir() == true {
-			pecho("debug", "Unable to pick configuration at " + path + " for reason: " + "is a directory")
-			result = false
-			return
-		}
-		pecho("debug", "Using configuration from " + path)
-		result = true
-		return
-	}
-	result = false
-	return
-}
-
-func determineConfPath() {
-	var portableConfigLegacyRaw string
-	var portableConfigRaw string
-	currentWd, wdErr := os.Getwd()
-	portableConfigLegacyRaw = os.Getenv("_portalConfig")
-	portableConfigRaw = os.Getenv("_portableConfig")
-	if len(portableConfigLegacyRaw) > 0 {
-		pecho("warn", "Using legacy configuration variable!")
-		portableConfigRaw = portableConfigLegacyRaw
-	}
-	if len(portableConfigRaw) == 0 {
-		pecho("crit", "_portableConfig undefined")
-	}
-	if isPathSuitableForConf(portableConfigRaw) == true {
-		confOpts.confPath = portableConfigRaw
-		return
-	}
-	if isPathSuitableForConf(filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")) {
-	confOpts.confPath = filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")
-	} else if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
-		confOpts.confPath = "/usr/lib/portable/info/" + portableConfigRaw + "/config"
-		return
-	} else if wdErr == nil {
-		if isPathSuitableForConf(currentWd + portableConfigRaw) == true {
-			confOpts.confPath = currentWd + portableConfigRaw
-			return
-		}
-	} else if wdErr != nil {
-		pecho("warn", "Unable to get working directory: " + wdErr.Error())
-	}
-	pecho("crit", "Unable to determine configuration location")
 }
 
 func tryUnquote(input string) (output string) {
@@ -609,107 +457,26 @@ func tryUnquote(input string) (output string) {
 	return
 }
 
-func readConf() {
-	lookUpXDG()
-	determineConfPath()
-	sessionType := os.Getenv("XDG_SESSION_TYPE")
-
-	switch sessionType {
-		case "wayland":
-			confOpts.waylandOnly = true
-		default:
-			confOpts.waylandOnly = false
-	}
-	confOpts.launchTarget = os.Getenv("launchTarget")
-	confOpts.bindNetwork = true
-	confOpts.terminateImmediately = true
-	confOpts.allowClassicNotifs = true
-	confOpts.qt5Compat = true
-	confOpts.mountInfo = true
-	confOpts.allowKDEStatus = true
-
-	if len(os.Getenv("launchTarget")) > 0 {
-		confOpts.launchTarget = os.Getenv("launchTarget")
-	}
-	if len(os.Getenv("busLaunchTarget")) > 0 {
-		confOpts.busLaunchTarget = os.Getenv("busLaunchTarget")
-	}
-	confFd, fdErr := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
-	if fdErr != nil {
-		pecho("crit", "Could not open configuration for reading: " + fdErr.Error())
-	}
-	defer confFd.Close()
-	scanner := bufio.NewScanner(confFd)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if len(line) == 0 || strings.HasPrefix(line, "#") {
-			continue
-		}
-		confSlice := strings.SplitN(line, "=", 2)
-		var val string
-
-		if len(confSlice) < 2 {
-			pecho("debug", "Using default value for" + confSlice[0])
-		} else {
-			val = tryUnquote(confSlice[1])
-		}
-		key := confSlice[0]
-		target, ok := targets[key]
-		if ! ok {
-			pecho("warn", "Unknown option " + confSlice[0])
-			continue
-		}
-		switch confInfo[key] {
-			case "string":
-				if target.str == nil {
-					pecho("warn", "Unknown option: " + key)
-					continue
-				}
-				if len(val) == 0 {
-					continue
-				}
-				*target.str = val
-			case "bool":
-				if target.b == nil {
-					pecho("warn", "Unknown option: " + key)
-					continue
-				}
-				if len(val) == 0 {
-					continue
-				}
-				switch val {
-					case "true":
-						*target.b = true
-					case "false":
-						*target.b = false
-					default:
-						if key == "waylandOnly" {
-							if val == "adaptive" {
-								continue
-							}
-						}
-						pecho("warn", "Invalid value for boolean option: " + key)
-				}
-		}
-	}
-}
-
-func setFirewall() {
+func setFirewall(config Config) {
 	var wg sync.WaitGroup
-	rawDenyList := strings.TrimSpace(confOpts.networkDeny)
-	denyList := strings.Split(rawDenyList, " ")
-	if len(rawDenyList) == 0 {
-		pecho("debug", "Did not find any network restriction")
+	denyList := config.Network.FilterDest
+	if ! config.Network.Filter {
+		pecho("debug", "Network filtering disabled")
 		return
 	}
 
 	pecho("debug", "Decoded raw deny list: " + strings.Join(denyList, ", "))
-
+	type IncomingSig struct {
+		CgroupNested		string
+		RawDenyList		[]string
+		SandboxEng		string
+		AppID			string
+	}
 	var sig IncomingSig
 	sig.RawDenyList = denyList
-	sig.AppID = confOpts.appID
+	sig.AppID = config.Metadata.AppID
 	sig.SandboxEng = "top.kimiblock.portable"
-	sig.CgroupNested = "app.slice/app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service/portable-cgroup"
+	sig.CgroupNested = "app.slice/app-portable-" + config.Metadata.AppID + "-" + runtimeInfo.instanceID + ".service/portable-cgroup"
 
 	rules := make(chan string, 1)
 	wg.Go(func() {
@@ -731,21 +498,12 @@ func setFirewall() {
 
 }
 
-// Copied from netsock
-type ResponseSignal struct {
-	Success			bool
-	Log			string
-}
-
-type IncomingSig struct {
-	CgroupNested		string
-	RawDenyList		[]string
-	SandboxEng		string
-	AppID			string
-}
-
 func dialNetsock(rules chan string) {
-
+	// Copied from netsock
+	type ResponseSignal struct {
+		Success			bool
+		Log			string
+	}
 	transport := http.Transport {
 		Proxy:		nil,
 		Dial:		func(network, addr string) (net.Conn, error) {return net.Dial("unix", "/run/netsock/control.sock")},
@@ -792,7 +550,7 @@ func mkdirPool(dirs []string) {
 	wg.Wait()
 }
 
-func genInstanceID(genInfo chan int8, proceed chan int8) {
+func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 	var wg sync.WaitGroup
 	pecho("debug", "Generating instance ID")
 	for {
@@ -810,13 +568,13 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 		}
 	}
 	dirs := []string {
-		xdgDir.dataDir + "/" + confOpts.stateDirectory,
-		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/xdg-run",
-		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID, "xdg-run"),
+		filepath.Join(xdgDir.runtimeDir, "/.flatpak/", config.Metadata.AppID, "tmp"),
 	}
 
 	wg.Go(func() {
-		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control"), 0700)
+		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "portable-control"), 0700)
 		if err != nil {
 			pecho("crit", "Could not create control directory: " + err.Error())
 		}
@@ -833,26 +591,26 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 	wg.Add(2)
 	go func () {
 		defer wg.Done()
-		writeInfoFile(genInfo)
+		writeInfoFile(genInfo, config)
 	} ()
 	go func () {
 		defer wg.Done()
-		writeFlatpakRef()
+		writeFlatpakRef(config)
 	} ()
 	wg.Wait()
 }
 
-func writeFlatpakRef() {
+func writeFlatpakRef(config Config) {
 	var flatpakRef string = ""
-	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID, 0700)
+	os.MkdirAll(filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID), 0700)
 	os.WriteFile(
-		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref",
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID, ".ref"),
 		[]byte(flatpakRef),
 		0700,
 	)
 }
 
-func writeInfoFile(ready chan int8) {
+func writeInfoFile(ready chan int8, config Config) {
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
@@ -864,35 +622,44 @@ func writeInfoFile(ready chan int8) {
 	}
 	stringObj := string(infoObj)
 	replacer := strings.NewReplacer(
-		"placeHolderAppName", confOpts.appID,
-		"placeholderInstanceId", runtimeInfo.instanceID,
-		"placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		"placeHolderAppName",		config.Metadata.AppID,
+		"placeholderInstanceId",	runtimeInfo.instanceID,
+		"placeholderPath",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 	)
 	stringObj = replacer.Replace(stringObj)
-	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID, 0700)
-	os.WriteFile(
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info.tmp",
-		[]byte(stringObj),
-		0700,
-	)
-	err = os.Rename(
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info.tmp",
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info",
-	)
+	err = os.MkdirAll(filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID), 0700)
 	if err != nil {
-		panic(err)
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
 	}
-	os.WriteFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info.tmp",
+	err = os.WriteFile(
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info.tmp"),
 		[]byte(stringObj),
 		0700,
 	)
+	if err != nil {
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
+	}
 	err = os.Rename(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info.tmp",
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info.tmp"),
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info"),
 	)
 	if err != nil {
-		panic(err)
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
+	}
+	err = os.WriteFile(
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info.tmp"),
+		[]byte(stringObj),
+		0700,
+	)
+	if err != nil {
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
+	}
+	err = os.Rename(
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info.tmp"),
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info"),
+	)
+	if err != nil {
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
 	}
 	ready <- 1
 	pecho("debug", "Wrote info file")
@@ -914,7 +681,7 @@ func removeWrapChan(pathChan chan string) {
 	wg.Wait()
 }
 
-func cleanDirs() {
+func cleanDirs(config Config) {
 	var wg sync.WaitGroup
 	pathChan := make(chan string, 8)
 	wg.Go(func() {removeWrapChan(pathChan)})
@@ -922,18 +689,18 @@ func cleanDirs() {
 	pathChan <- filepath.Join(
 		xdgDir.runtimeDir,
 		"/portable/",
-		confOpts.appID,
+		config.Metadata.AppID,
 	)
 	pathChan <- filepath.Join(
 		xdgDir.runtimeDir,
 		"app",
-		confOpts.appID,
+		config.Metadata.AppID,
 	)
 	if runtimeOpt.writtenDesktop {
 		pathChan <- filepath.Join(
 			xdgDir.dataDir,
 			"applications",
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		)
 	}
 	localID := runtimeInfo.instanceID
@@ -944,7 +711,7 @@ func cleanDirs() {
 		pathChan <- filepath.Join(
 			xdgDir.runtimeDir,
 			".flatpak",
-			confOpts.appID,
+			config.Metadata.AppID,
 		)
 		pathChan <- filepath.Join(
 			xdgDir.runtimeDir,
@@ -958,7 +725,7 @@ func cleanDirs() {
 	wg.Wait()
 }
 
-func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn) {
+func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn, config Config) {
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
 	var wg sync.WaitGroup
@@ -967,7 +734,7 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 			pecho("warn", "Race detected: bus already terminated")
 			return
 		}
-		reply, err := busconn.ReleaseName("top.kimiblock.portable." + confOpts.appID)
+		reply, err := busconn.ReleaseName("top.kimiblock.portable." + config.Metadata.AppID)
 		if err != nil {
 			pecho("warn", "Could not request bus to release name: " + err.Error())
 			switch reply {
@@ -979,10 +746,10 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 		}
 	})
 	wg.Go(func() {
-		doCleanUnit(conn, sdCancelFunc, sdContext)
+		doCleanUnit(conn, sdCancelFunc, sdContext, config)
 	})
 	wg.Go(func() {
-		cleanDirs()
+		cleanDirs(config)
 	})
 	close(socketStop)
 	//socketStop <- 1
@@ -1057,10 +824,10 @@ func lookUpXDG() {
 	}
 }
 
-func pwSecContext(pwChan chan []string) {
+func pwSecContext(pwChan chan []string, config Config) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
-	if confOpts.bindPipewire == false {
+	if config.Privacy.PipeWire == false {
 		close(pwChan)
 		return
 	}
@@ -1107,7 +874,7 @@ func pwSecContext(pwChan chan []string) {
 	}
 }
 
-func calcDbusArg(argChan chan []string) {
+func calcDbusArg(argChan chan []string, config Config) {
 	argList := []string{}
 	argList = append(
 		argList,
@@ -1121,20 +888,20 @@ func calcDbusArg(argChan chan []string) {
 		"--ro-bind-try", "/usr/share", "/usr/share",
 		"--bind", xdgDir.runtimeDir, xdgDir.runtimeDir,
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-			xdgDir.runtimeDir + "/.flatpak-info",
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info"),
+			filepath.Join(xdgDir.runtimeDir, ".flatpak-info"),
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info"),
 			"/.flatpak-info",
 		"--",
 		"/usr/bin/xdg-dbus-proxy",
 		os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
-		xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+		filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID, "/bus"),
 		"--filter",
 		"--own=com.belmoussaoui.ashpd.demo",
 		"--talk=org.unifiedpush.Distributor.*",
-		"--own=" + confOpts.appID,
-		"--own=" + confOpts.appID + ".*",
+		"--own=" + config.Metadata.AppID,
+		"--own=" + config.Metadata.AppID + ".*",
 		"--talk=com.canonical.AppMenu.Registrar",
 		"--see=org.a11y.Bus",
 		"--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus",
@@ -1153,9 +920,9 @@ func calcDbusArg(argChan chan []string) {
 		"--call=org.freedesktop.portal.Request=*",
 		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
 
-		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
-		"--broadcast=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.Controller.AuxStart@/top/kimiblock/portable/daemon",
-		"--call=top.kimiblock.portable." + confOpts.appID + "=top.kimiblock.Portable.IPC.*@/top/kimiblock/portable/IPC",
+		"--call=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
+		"--broadcast=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.Controller.AuxStart@/top/kimiblock/portable/daemon",
+		"--call=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.IPC.*@/top/kimiblock/portable/IPC",
 
 		// FileManager1 endpoints
 		"--call=org.freedesktop.FileManager1=org.freedesktop.FileManager1.*@/org/freedesktop/FileManager1",
@@ -1165,7 +932,7 @@ func calcDbusArg(argChan chan []string) {
 
 	)
 
-	if confOpts.allowKDEStatus {
+	if config.Advanced.KDEStatus {
 		argList = append(argList,
 			"--call=org.kde.JobViewServer=org.kde.JobViewServerV2.requestView@/JobViewServer", // This is for adding jobs to KDE
 			"--call=org.kde.JobViewServer=org.kde.JobViewV3.update@/org/kde/notificationmanager/jobs/*",
@@ -1236,7 +1003,10 @@ func calcDbusArg(argChan chan []string) {
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*",
 			)
 	}
-	os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID, 0700)
+	err := os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + config.Metadata.AppID, 0700)
+	if err != nil {
+		pecho("crit", "Could not create documents path: " + err.Error())
+	}
 
 	// Shitty MPRIS calc code
 	mprisOwnList := []string{}
@@ -1245,27 +1015,30 @@ func calcDbusArg(argChan chan []string) {
 		appIDSepNum would be 3
 		so appIDSplit[3 - 1] should be the last part
 	*/
-	appIDSplit := strings.Split(confOpts.appID, ".")
+	appIDSplit := strings.Split(config.Metadata.AppID, ".")
 	appIDSegNum := len(appIDSplit)
 	var appIDLastSeg string = appIDSplit[appIDSegNum - 1]
 	mprisOwnList = append(
 		mprisOwnList,
-		"--own=org.mpris.MediaPlayer2." + confOpts.appID,
-		"--own=org.mpris.MediaPlayer2." + confOpts.appID + ".*",
+		"--own=org.mpris.MediaPlayer2." + config.Metadata.AppID,
+		"--own=org.mpris.MediaPlayer2." + config.Metadata.AppID + ".*",
 		"--own=org.mpris.MediaPlayer2." + appIDLastSeg,
 		"--own=org.mpris.MediaPlayer2." + appIDLastSeg + ".*",
 	)
-	if len(confOpts.mprisName) == 0 {
+	if len(config.Advanced.MprisName) == 0 {
 		pecho("debug", "Using default MPRIS own name")
 	} else {
-		mprisOwnList = append(
-			mprisOwnList,
-			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName,
-			"--own=org.mpris.MediaPlayer2." + confOpts.mprisName + ".*",
-		)
+		for _, name := range config.Advanced.MprisName {
+			mprisOwnList = append(
+				mprisOwnList,
+				"--own=org.mpris.MediaPlayer2." + name,
+				"--own=org.mpris.MediaPlayer2." + name + ".*",
+			)
+		}
+
 	}
 
-	if confOpts.allowClassicNotifs == true {
+	if config.Privacy.ClassicNotifications {
 		argList = append(
 			argList,
 			"--talk=org.freedesktop.Notifications",
@@ -1273,7 +1046,7 @@ func calcDbusArg(argChan chan []string) {
 		)
 	}
 
-	if confOpts.allowInhibit == true {
+	if config.System.InhibitSuspend {
 		argList = append(
 			argList,
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit",
@@ -1281,7 +1054,7 @@ func calcDbusArg(argChan chan []string) {
 		)
 	}
 
-	if confOpts.allowGlobalShortcuts == true {
+	if config.System.GlobalShortcuts {
 		argList = append(
 			argList,
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts",
@@ -1305,11 +1078,11 @@ func calcDbusArg(argChan chan []string) {
 	argChan <- argList
 }
 
-func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context) {
+func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, config Config) {
 	defer sdCancelFunc()
 	var wg sync.WaitGroup
 	var units = []string{
-		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 	}
 	for _, unit := range units {
 		wg.Add(1)
@@ -1344,7 +1117,7 @@ func doCleanUnit(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context
 	pecho("debug", "Cleaning ready")
 }
 
-func startProxy(conn *dbus.Conn, ctx context.Context) {
+func startProxy(conn *dbus.Conn, ctx context.Context, config Config) {
 	dbusProps := []dbus.Property{}
 	var wg sync.WaitGroup
 	var dbusArgs []string
@@ -1370,7 +1143,7 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 	go func () {
 		defer wg.Done()
 		os.MkdirAll(
-			xdgDir.runtimeDir + "/app/" + confOpts.appID,
+			xdgDir.runtimeDir + "/app/" + config.Metadata.AppID,
 			0700,
 		)
 	} ()
@@ -1399,9 +1172,9 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 		)
 		dbusProps = append(
 			dbusProps,
-			dbus.PropSlice("portable-" + confOpts.friendlyName + ".slice"),
+			dbus.PropSlice("portable-" + config.Metadata.FriendlyName + ".slice"),
 			dbus.PropWants(unitWants...),
-			dbus.PropDescription("D-Bus proxy for portable sandbox " + confOpts.appID),
+			dbus.PropDescription("D-Bus proxy for portable sandbox " + config.Metadata.AppID),
 	)
 	wg.Wait()
 	dbusProps = append(
@@ -1415,7 +1188,7 @@ func startProxy(conn *dbus.Conn, ctx context.Context) {
 
 	_, err := conn.StartTransientUnitContext(
 		ctx,
-		confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 		"replace",
 		dbusProps,
 		nil,
@@ -1451,13 +1224,14 @@ func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 type DBusInfoRequest struct {
 	Conn		*godbus.Conn
 	SdConn		*dbus.Conn
+	Config		Config
 }
 
 func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 	var reply = []string{
 		"Daemon version: " + strconv.FormatFloat(float64(version), 'f', 0, 64),
 		"Instance ID: " + runtimeInfo.instanceID,
-		"Unit name: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+		"Unit name: " + "app-portable-" + m.Config.Metadata.AppID + "-" + runtimeInfo.instanceID,
 	}
 	if runtimeInfo.instanceID == "" {
 		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
@@ -1470,7 +1244,7 @@ func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 	propMap := make(map[string]any)
 	propMap, err := m.SdConn.GetAllPropertiesContext(
 		ctxDdl,
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service",
+		"app-portable-" + m.Config.Metadata.AppID + "-" + runtimeInfo.instanceID + ".service",
 	)
 	cancelFunc()
 	if err != nil {
@@ -1539,18 +1313,19 @@ func appendProps(m map[string]interface{}) []string {
 	return ret
 }
 
-func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn) {
+func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn, config Config) {
 	ready := make(chan int8, 1)
-	go busListener(conn, ready, sdConn)
+	go busListener(conn, ready, sdConn, config)
 	<- ready
 
 }
 
-func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
+func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config Config) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
 	info := new(DBusInfoRequest)
 	info.SdConn = sdConn
+	info.Config = config
 	info.Conn = conn
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
@@ -1573,7 +1348,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
 				},
 			},
 			{
-				Name:		"top.kimiblock.portable." + confOpts.appID,
+				Name:		"top.kimiblock.portable." + config.Metadata.AppID,
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Ping",
@@ -1607,7 +1382,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
 	}
-	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
+	err = conn.Export(req, objPath, "top.kimiblock.portable." + config.Metadata.AppID)
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
@@ -1617,7 +1392,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
 	}
-	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
+	reply, err := conn.RequestName("top.kimiblock.portable." + config.Metadata.AppID, godbus.NameFlagDoNotQueue)
 	if err != nil {
 		pecho("crit", "Could not request bus name: " + err.Error())
 		return
@@ -1635,8 +1410,8 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
 	select {}
 }
 
-func startApp() {
-	go forceBackgroundPerm()
+func startApp(config Config) {
+	go forceBackgroundPerm(config)
 	sdArgs := append(
 		runtimeInfo.bwCmd,
 		runtimeOpt.applicationArgs...,
@@ -1661,9 +1436,9 @@ func startApp() {
 	}
 }
 
-func forceBackgroundPerm() {
+func forceBackgroundPerm(config Config) {
 	pecho("debug", "Unrestricting background limits")
-	dbusSendExec := exec.Command("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.impl.portal.PermissionStore", "/org/freedesktop/impl/portal/PermissionStore", "org.freedesktop.impl.portal.PermissionStore.SetPermission", "string:background", "boolean:true", "string:background", "string:" + confOpts.appID, "array:string:yes")
+	dbusSendExec := exec.Command("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.impl.portal.PermissionStore", "/org/freedesktop/impl/portal/PermissionStore", "org.freedesktop.impl.portal.PermissionStore.SetPermission", "string:background", "boolean:true", "string:background", "string:" + config.Metadata.AppID, "array:string:yes")
 	dbusSendExec.Stderr = os.Stderr
 	if internalLoggingLevel <= 1 {
 		dbusSendExec.Stdout = os.Stdout
@@ -1723,7 +1498,7 @@ func waylandDisplay(wdChan chan []string) () {
 	wdChan <- waylandArgs
 }
 
-func instDesktopFile() {
+func instDesktopFile(config Config) {
 	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
 	for val := range xdgDataDirs {
 		if strings.Contains(val, "/var/lib/flatpak") {
@@ -1732,7 +1507,7 @@ func instDesktopFile() {
 		statPath := filepath.Join(
 			val,
 			"applications",
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		)
 		_, err := os.Stat(statPath)
 		if err == nil {
@@ -1746,7 +1521,7 @@ func instDesktopFile() {
 	for _, path := range hardcodedDesktopPath {
 		statPath := filepath.Join(
 			path,
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		)
 		_, err := os.Stat(statPath)
 		if err == nil {
@@ -1757,14 +1532,14 @@ func instDesktopFile() {
 
 	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
 	replacer := strings.NewReplacer(
-		"placeholderName",		"Portable sandbox for " + confOpts.appID,
-		"placeholderConfig",		confOpts.confPath,
+		"placeholderName",		"Portable sandbox: " + config.Metadata.AppID,
+		"placeholderConfig",		config.Path,
 	)
 	file, err := os.OpenFile(
 		filepath.Join(
 			xdgDir.dataDir,
 			"applications",
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		),
 		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 		0700,
@@ -1786,25 +1561,25 @@ func instDesktopFile() {
 	pecho("warn", "You should supply your own .desktop file")
 }
 
-func setXDGEnvs() {
-	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir))
-	addEnv("XDG_DOCUMENTS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Documents")
-	addEnv("XDG_DATA_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/share")
-	addEnv("XDG_STATE_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/state")
-	addEnv("XDG_CACHE_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/cache")
-	addEnv("XDG_DESKTOP_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Desktop")
-	addEnv("XDG_DOWNLOAD_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Downloads")
-	addEnv("XDG_TEMPLATES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Templates")
-	addEnv("XDG_PUBLICSHARE_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Public")
-	addEnv("XDG_MUSIC_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Music")
-	addEnv("XDG_PICTURES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Pictures")
-	addEnv("XDG_VIDEOS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Videos")
+func setXDGEnvs(config Config) {
+	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir, config))
+	addEnv("XDG_DOCUMENTS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Documents"))
+	addEnv("XDG_DATA_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, ".local/share"))
+	addEnv("XDG_STATE_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, ".local/state"))
+	addEnv("XDG_CACHE_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "cache"))
+	addEnv("XDG_DESKTOP_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Desktop"))
+	addEnv("XDG_DOWNLOAD_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Downloads"))
+	addEnv("XDG_TEMPLATES_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Templates"))
+	addEnv("XDG_PUBLICSHARE_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Public"))
+	addEnv("XDG_MUSIC_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Music"))
+	addEnv("XDG_PICTURES_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Pictures"))
+	addEnv("XDG_VIDEOS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Videos"))
 }
 
-func imEnvs () {
+func imEnvs (config Config) {
 	addEnv("IBUS_USE_PORTAL=1")
 	var imKind string
-	if confOpts.waylandOnly == true {
+	if ! config.Privacy.X11 {
 		addEnv("QT_IM_MODULE=wayland")
 		addEnv("GTK_IM_MODULE=wayland")
 	} else {
@@ -1878,21 +1653,36 @@ func imEnvs () {
 	}
 }
 
-func setupSharedDir () {
-	os.MkdirAll(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared", 0700)
-	os.Link(
-		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared",
-		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/共享文件")
+func setupSharedDir (config Config) {
+	err := os.MkdirAll(
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared"),
+		0700,
+	)
+	if err != nil {
+		pecho("warn", "Could not setup shared directory: " + err.Error())
+	}
+	err = os.Link(
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared"),
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "共享文件"),
+	)
+	if err != nil {
+		if os.IsExist(err) {} else {
+			pecho("warn", "Could not setup shared directory: " + err.Error())
+		}
+	}
 }
 
-func miscEnvs () {
-	if confOpts.qt5Compat == true {
+func miscEnvs (config Config) {
+	if config.Advanced.Qt5Compat {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
-	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env\n"
+	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID, 0700)
+	if err != nil {
+		pecho("crit", "Could not create runtime directory: " + err.Error())
+	}
+	var file string = "source " + filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "generated.env") + "\n"
 	wrErr := os.WriteFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "bashrc"),
 		[]byte(file),
 		0700)
 	if wrErr != nil {
@@ -1902,28 +1692,55 @@ func miscEnvs () {
 	addEnv("GTK_USE_PORTAL=1")
 	addEnv("QT_AUTO_SCREEN_SCALE_FACTOR=1")
 	addEnv("QT_ENABLE_HIGHDPI_SCALING=1")
-	addEnv("PS1=" + strconv.Quote("╰─>Portable·" + confOpts.appID + "·🤓 ⤔ "))
+	addEnv("PS1=" + strconv.Quote("╰─>Portable·" + config.Metadata.AppID + "·🤓 ⤔ "))
 	addEnv("QT_SCALE_FACTOR=" + os.Getenv("QT_SCALE_FACTOR"))
-	addEnv("HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	addEnv("HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
 	addEnv("XDG_SESSION_TYPE=" + os.Getenv("XDG_SESSION_TYPE"))
-	addEnv("WAYLAND_DISPLAY=" + xdgDir.runtimeDir + "/wayland-0")
+	addEnv("WAYLAND_DISPLAY=" + filepath.Join(xdgDir.runtimeDir, "wayland-0"))
 	addEnv("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus")
 }
 
-func prepareEnvs() {
+func prepareEnvs(config Config) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		imEnvs()
+		if ! config.Advanced.FlatpakInfo {
+			addEnv("_portableNoFlatpakInfo=1")
+		}
+		addEnv("appID=" + config.Metadata.AppID)
+		if len(config.Exec.Arguments) > 0 {
+			jsonObj, err := json.Marshal(runtimeOpt.applicationArgs)
+			if err != nil {
+				pecho("warn", "Could not marshal application arguments: " + err.Error())
+			} else {
+				addEnv("_portableExtraArgs=" + string(jsonObj))
+			}
+		}
+		addEnv("_portableLaunchTarget=" + config.Exec.Target)
+		if config.BusActivation.Enable {
+			addEnv("_portableBusActivate=1")
+			addEnv("_portableBusActivateTarget=" + config.BusActivation.Target)
+			jsonObj, err := json.Marshal(config.BusActivation.Arguments)
+			if err != nil {
+				pecho("warn", "Could not marshal application arguments: " + err.Error())
+			} else {
+				addEnv("_portableBusActivateArgs=" + string(jsonObj))
+			}
+		}
+
 	})
 	wg.Go(func() {
-		setXDGEnvs()
+		imEnvs(config)
 	})
 	wg.Go(func() {
-		miscEnvs()
+		setXDGEnvs(config)
 	})
 	wg.Go(func() {
+		miscEnvs(config)
+	})
+	wg.Go(func() {
+		statePath := filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "portable.env")
 		userEnvs, err := os.OpenFile(
-			xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+			statePath,
 			os.O_RDONLY,
 			0700,
 		)
@@ -1931,7 +1748,7 @@ func prepareEnvs() {
 			if os.IsNotExist(err) {
 				const template = "# This file accepts simple KEY=VAL envs"
 				os.WriteFile(
-					xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+					statePath,
 					[]byte(template),
 					0700,
 				)
@@ -1958,29 +1775,6 @@ func prepareEnvs() {
 		}
 	})
 
-	wg.Go(func() {
-		packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
-		if errPkg != nil {
-			pecho(
-				"crit",
-				"Could not open package config " + confOpts.confPath + ": " + errPkg.Error(),
-				)
-		} else {
-			defer packageEnvs.Close()
-			scanner := bufio.NewScanner(packageEnvs)
-			for scanner.Scan() {
-				if scanner.Err() != nil {
-					pecho(
-						"crit",
-						"Could not read package defined environment variables",
-						)
-				}
-				line := scanner.Text()
-				addEnv(line)
-			}
-		}
-	})
-
 	wg.Wait()
 }
 
@@ -1990,6 +1784,7 @@ func genBwArg(
 	inputChan chan []string,
 	wayDisplayChan chan []string,
 	miscChan	chan []string,
+	config Config,
 	) {
 
 	if internalLoggingLevel > 1 {
@@ -2003,12 +1798,12 @@ func genBwArg(
 		"--service-type=notify",
 		"--wait",
 		"--pty",
-		"--unit=" + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+		"--unit=" + "app-portable-" + config.Metadata.AppID + "-" + runtimeInfo.instanceID,
 		"--slice=app.slice",
 		"-p", "Delegate=yes",
 		"-p", "DelegateSubgroup=portable-cgroup",
-		"-p", "BindsTo=" + confOpts.friendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
-		"-p", "Description=Portable Sandbox for " + confOpts.friendlyName + " (" + confOpts.appID + ")",
+		"-p", "BindsTo=" + config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
+		"-p", "Description=Portable Sandbox for " + config.Metadata.FriendlyName + " (" + config.Metadata.AppID + ")",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
 		"-p", "SuccessExitStatus=SIGKILL",
@@ -2024,7 +1819,7 @@ func genBwArg(
 		"-p", "OOMScoreAdjust=100",
 		"-p", "IPAccounting=yes",
 		"-p", "MemoryPressureWatch=yes",
-		"-p", "SyslogIdentifier=portable-" + confOpts.appID,
+		"-p", "SyslogIdentifier=portable-" + config.Metadata.AppID,
 		"-p", "SystemCallLog=@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources",
 		"-p", "SystemCallLog=~@sandbox",
 		"-p", "PrivateIPC=yes",
@@ -2043,9 +1838,9 @@ func genBwArg(
 		"-p", "TimeoutStopSec=10s",
 		"-p", "UMask=077",
 		"-p",
-		"EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
+		"EnvironmentFile=" + filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "generated.env"),
 		"-p", "Environment=instanceId=" + runtimeInfo.instanceID,
-		"-p", "Environment=busDir=" + xdgDir.runtimeDir + "/app/" + confOpts.appID,
+		"-p", "Environment=busDir=" + filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID),
 		"-p", "UnsetEnvironment=GNOME_SETUP_DISPLAY",
 		"-p", "UnsetEnvironment=PIPEWIRE_REMOTE",
 		"-p", "UnsetEnvironment=PAM_KWALLET5_LOGIN",
@@ -2057,7 +1852,7 @@ func genBwArg(
 		"-p", "UnsetEnvironment=SSH_AUTH_SOCK",
 		"-p", "UnsetEnvironment=MAIL",
 		"-p", "UnsetEnvironment=SYSTEMD_EXEC_PID",
-		"-p", "WorkingDirectory=" + xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		"-p", "WorkingDirectory=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 		//"-p", "EnvironmentFile=" + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/portable-generated-new.env",
 		"-p", "SystemCallFilter=~@clock",
 		"-p", "SystemCallFilter=~@cpu-emulation",
@@ -2069,7 +1864,7 @@ func genBwArg(
 		"-p", "SystemCallErrorNumber=EAGAIN",
 	)
 
-	if confOpts.bindNetwork == false {
+	if ! config.Network.Enable {
 		pecho("info", "Network Access disabled")
 		runtimeInfo.bwCmd = append(
 			runtimeInfo.bwCmd,
@@ -2175,49 +1970,51 @@ func genBwArg(
 
 		// Run binds
 		"--bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
 			"/run",
 		"--bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID,
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
+
+		// For homed users
 		"--ro-bind-try",
 			"/run/systemd/userdb/io.systemd.Home",
 			"/run/systemd/userdb/io.systemd.Home",
 		"--ro-bind",
-			xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+			filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID, "bus"),
 			"/run/sessionBus",
 		"--ro-bind-try",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
-			xdgDir.runtimeDir + "/at-spi",
+			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "a11y"),
+			filepath.Join(xdgDir.runtimeDir, "at-spi"),
 		"--dir",		"/run/host",
 		"--bind",
-			xdgDir.runtimeDir + "/doc/by-app/" + confOpts.appID,
-			xdgDir.runtimeDir + "/doc",
+			filepath.Join(xdgDir.runtimeDir, "doc/by-app", config.Metadata.AppID),
+			filepath.Join(xdgDir.runtimeDir, "doc"),
 		"--ro-bind-try",
 			"/run/systemd/resolve/stub-resolv.conf",
 			"/run/systemd/resolve/stub-resolv.conf",
 		"--bind",
-			xdgDir.runtimeDir + "/systemd/notify",
-			xdgDir.runtimeDir + "/systemd/notify",
+			filepath.Join(xdgDir.runtimeDir, "systemd/notify"),
+			filepath.Join(xdgDir.runtimeDir, "systemd/notify"),
 		"--ro-bind-try",
-			xdgDir.runtimeDir + "/pulse",
-			xdgDir.runtimeDir + "/pulse",
+			filepath.Join(xdgDir.runtimeDir, "pulse"),
+			filepath.Join(xdgDir.runtimeDir, "pulse"),
 
 		// HOME binds
 		"--bind",
-			xdgDir.dataDir + "/" + confOpts.stateDirectory,
+			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 			xdgDir.home,
 		"--bind",
-			xdgDir.dataDir + "/" + confOpts.stateDirectory,
-			xdgDir.dataDir + "/" + confOpts.stateDirectory,
+			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
+			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 
 		"--ro-bind",		"/etc", "/etc",
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
 		"--tmpfs",		"/usr/share/applications",
-		"--tmpfs",		xdgDir.home + "/options",
-		"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/options",
+		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
+		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 
 	)
 
@@ -2241,7 +2038,7 @@ func genBwArg(
 		)
 	}
 
-	if confOpts.bindInputDevices == true {
+	if config.Privacy.Input {
 		for inputArg := range inputChan {
 			runtimeInfo.bwCmd = append(
 				runtimeInfo.bwCmd,
@@ -2271,7 +2068,7 @@ func genBwArg(
 	)
 }
 
-func flushEnvs() {
+func flushEnvs(config Config) {
 	var builder strings.Builder
 
 	for env := range envsChan {
@@ -2280,7 +2077,7 @@ func flushEnvs() {
 	}
 
 	fd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
+		xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/generated.env",
 			os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
 			0700,
 	)
@@ -2301,16 +2098,16 @@ func flushEnvs() {
 	close(envsFlushReady)
 }
 
-func translatePath(input string) (output string) {
-	output = strings.ReplaceAll(input, xdgDir.home, xdgDir.dataDir + "/" + confOpts.stateDirectory)
+func translatePath(input string, config Config) (output string) {
+	output = strings.ReplaceAll(input, xdgDir.home, filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
 	return
 }
 
 // Does not take empty input
-func questionExpose(paths []string) bool {
+func questionExpose(paths []string, config Config) bool {
 	zenityArgs := []string{
 		"--title",
-			confOpts.friendlyName,
+			config.Metadata.FriendlyName,
 		"--icon=folder-open-symbolic",
 		"--question",
 		"--default-cancel",
@@ -2364,7 +2161,7 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn) {
+func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn, config Config) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2401,7 +2198,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.confDir + "/fontconfig",
-			translatePath(xdgDir.confDir + "/fontconfig"),
+			translatePath(filepath.Join(xdgDir.confDir, "fontconfig"), config),
 		}
 	})
 
@@ -2409,7 +2206,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string {
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-3.0/gtk.css",
-			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css"),
+			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css", config),
 		}
 	})
 
@@ -2417,7 +2214,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string {
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-3.0/colors.css",
-			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css"),
+			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css", config),
 		}
 	})
 
@@ -2425,7 +2222,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string {
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-4.0/gtk.css",
-			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css"),
+			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css", config),
 		}
 	})
 
@@ -2433,7 +2230,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.confDir + "/qt6ct",
-			translatePath(xdgDir.confDir + "/qt6ct"),
+			translatePath(xdgDir.confDir + "/qt6ct", config),
 		}
 	})
 
@@ -2441,7 +2238,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.dataDir + "/fonts",
-			translatePath(xdgDir.dataDir + "/fonts"),
+			translatePath(xdgDir.dataDir + "/fonts", config),
 		}
 	})
 
@@ -2449,7 +2246,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.dataDir + "/icons",
-			translatePath(xdgDir.dataDir + "/icons"),
+			translatePath(xdgDir.dataDir + "/icons", config),
 		}
 	})
 
@@ -2494,7 +2291,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 			})
 		}
 	}
-	if confOpts.mountInfo == true {
+	if config.Advanced.FlatpakInfo {
 		miscArgs = append(
 			miscArgs,
 			"--ro-bind",
@@ -2507,21 +2304,21 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
 				xdgDir.runtimeDir + "/flatpak-runtime-directory",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 				"/.flatpak-info",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 				xdgDir.runtimeDir + "/.flatpak-info",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.flatpak-info",
+				xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.flatpak-info",
 			"--tmpfs",		xdgDir.home + "/.var",
-			"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var",
+			"--tmpfs",		xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var",
 			"--bind",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory,
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID,
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory,
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var/app/" + config.Metadata.AppID,
 			"--tmpfs",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID + "/options",
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var/app/" + config.Metadata.AppID + "/options",
 		)
 	}
 
@@ -2563,7 +2360,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		//connBus.Signal(busSigChan)
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
-		addFilesToPortal(connBus, pathList, filesInfo)
+		addFilesToPortal(connBus, pathList, filesInfo, config)
 	}
 	pecho("debug", "Send files info")
 	close(filesInfo)
@@ -2599,7 +2396,7 @@ type AddDocumentFullData struct {
 }
 
 // This portal does not need Request?
-func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles) {
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles, config Config) {
 	var filesInfoTmp PassFiles
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
@@ -2614,7 +2411,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		busFdList = append(busFdList, godbus.UnixFD(fd))
 	}
 	var busData	AddDocumentFullData
-	busData.AppID = confOpts.appID
+	busData.AppID = config.Metadata.AppID
 	busData.Flags = 1
 	busData.PathFDs = busFdList
 	busData.Permissions = []string{"read", "write", "grant-permissions"}
@@ -2655,9 +2452,9 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	filesInfo <- filesInfoTmp
 }
 
-func bindXAuth(xauthChan chan []string) {
+func bindXAuth(xauthChan chan []string, config Config) {
 	var xArg = []string{}
-	if confOpts.waylandOnly == false {
+	if config.Privacy.X11 {
 		xArg = append(
 			xArg,
 			"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
@@ -2742,7 +2539,7 @@ func detectCardStatus(cardList chan []string, cardPath string, cardNamed string)
 	}
 }
 
-func gpuBind(gpuChan chan []string) {
+func gpuBind(gpuChan chan []string, config Config) {
 	u := udev.Udev{}
 	e := u.NewEnumerate()
 	e.AddMatchIsInitialized()
@@ -2804,7 +2601,7 @@ func gpuBind(gpuChan chan []string) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		default:
-			if confOpts.gameMode == true {
+			if config.System.GameMode {
 				wg.Add(1)
 				go func () {
 					defer wg.Done()
@@ -2814,7 +2611,7 @@ func gpuBind(gpuChan chan []string) {
 					wg.Add(1)
 					go func (card string, arg chan []string) {
 						defer wg.Done()
-						bindCard(card, arg)
+						bindCard(card, arg, config)
 					} (cardName, argChan)
 				}
 				wg.Go(
@@ -2844,7 +2641,7 @@ func gpuBind(gpuChan chan []string) {
 					wg.Add(1)
 					go func (card string) {
 						defer wg.Done()
-						bindCard(card, argChan)
+						bindCard(card, argChan, config)
 					} (cardName)
 				}
 			}
@@ -2888,7 +2685,7 @@ func setOffloadEnvs() () {
 	}
 }
 
-func bindCard(cardName string, argChan chan []string) {
+func bindCard(cardName string, argChan chan []string, config Config) {
 	var wg sync.WaitGroup
 	u := udev.Udev{}
 	var cardID string
@@ -2945,7 +2742,7 @@ func bindCard(cardName string, argChan chan []string) {
 		}
 		if strings.Contains(string(cardVendor), "0x10de") == true {
 			pecho("debug", "Found NVIDIA device")
-			if confOpts.useZink == true {
+			if config.Advanced.Zink {
 				addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
 				addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
 				addEnv("GALLIUM_DRIVER=zink")
@@ -3013,9 +2810,9 @@ func bindCard(cardName string, argChan chan []string) {
 	wg.Wait()
 }
 
-func tryBindCam(camChan chan []string) {
+func tryBindCam(camChan chan []string, config Config) {
 	camArg := []string{}
-	if confOpts.bindCameras == true {
+	if config.Privacy.Cameras {
 		camEntries, err := os.ReadDir("/dev")
 		if err != nil {
 			pecho("warn", "Failed to parse camera entries")
@@ -3159,11 +2956,12 @@ type StartRequest struct {
 	CustomTarget	bool
 	Files		PassFiles
 }
-func auxStartNg() bool {
+
+func auxStartNg(config Config) bool {
 	socketPath := filepath.Join(
 		xdgDir.runtimeDir,
 		"/portable/",
-		confOpts.appID,
+		config.Metadata.AppID,
 		"/portable-control/helper",
 	)
 	conn, err := net.Dial("unix", socketPath)
@@ -3298,14 +3096,14 @@ func processStream(resp *http.Response, socketPath string) {
 	//} ()
 }
 
-func multiInstance(miChan chan bool, conn *godbus.Conn) {
+func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 	var hasRunningInstance bool
 	var usingDBus bool
 
-	busName := "top.kimiblock.portable." + confOpts.appID
+	busName := "top.kimiblock.portable." + config.Metadata.AppID
 
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
+	socketPath = socketPath + config.Metadata.AppID + "/portable-control/daemon"
 
 	var dialWg sync.WaitGroup
 	var dialChan = make(chan bool, 2)
@@ -3348,7 +3146,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 		}
 	}
 	socketPath = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+	socketPath = socketPath + config.Metadata.AppID + "/portable-control/auxStart"
 
 	if hasRunningInstance == false {
 		if runtimeOpt.miTerminate == true {
@@ -3370,7 +3168,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 				}
 			} else {
 				var daemonPath string = xdgDir.runtimeDir + "/portable/"
-				daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
+				daemonPath = daemonPath + config.Metadata.AppID + "/portable-control/daemon"
 				const signal = "terminate-now" + "\n"
 				controlSock, dialErr := net.Dial("unix", daemonPath)
 				if dialErr != nil {
@@ -3385,10 +3183,10 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 		}
 		startAct = "aux"
 	}
-	if confOpts.dbusWake == true {
+	if config.Advanced.TrayWake {
 		pecho("debug", "Trying to resolve tray ID")
 		queryTrayArg := []string{
-			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + config.Metadata.AppID + "/bus",
 			"--dest=org.kde.StatusNotifierWatcher",
 			"--type=method_call",
 			"--print-reply=literal",
@@ -3427,11 +3225,11 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 	} else {
 		// TODO: remove legacy start, and do concurrent req
 		if usingDBus {
-			busAuxStartReq(conn, false, runtimeOpt.applicationArgs)
+			busAuxStartReq(conn, false, runtimeOpt.applicationArgs, config)
 			miChan <- true
 			return
 		} else {
-			res := auxStartNg()
+			res := auxStartNg(config)
 			if res {
 				miChan <- true
 				return
@@ -3446,7 +3244,7 @@ type startReply struct {
 	baseDir		string
 }
 
-func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
+func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config) {
 	//oldIn := os.Stdin
 	//oldOut := os.Stdout
 	//oldErr := os.Stderr
@@ -3461,7 +3259,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		fileSlice = append(fileSlice, key, val)
 	}
 
-	busObj := conn.Object(confOpts.appID + ".Portable.Helper", "/top/kimiblock/portable/init")
+	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
 		false, // For now we do not support custom target
 		tray,
@@ -3535,7 +3333,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 
 }
 
-func atSpiProxy(conn *godbus.Conn) {
+func atSpiProxy(conn *godbus.Conn, config Config) {
 	a11yBusObj := conn.Object(
 		"org.a11y.Bus",
 		"/org/a11y/bus",
@@ -3556,7 +3354,7 @@ func atSpiProxy(conn *godbus.Conn) {
 		pecho("warn", "Could not decode accessibility bus address: " + err.Error())
 		return
 	}
-	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y", 0700)
+	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y", 0700)
 	if err != nil {
 		pecho("warn", "Could not create directory for accessibility bus: " + err.Error())
 		return
@@ -3570,18 +3368,18 @@ func atSpiProxy(conn *godbus.Conn) {
 		"--ro-bind", "/usr/share", "/usr/share",
 		"--bind", xdgDir.runtimeDir + "/at-spi", xdgDir.runtimeDir + "/at-spi",
 		"--bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y",
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 			xdgDir.runtimeDir + "/.flatpak-info",
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 			"/.flatpak-info",
 		"--",
 		"/usr/bin/xdg-dbus-proxy",
 		a11yAddr,
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y/bus",
+		xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y/bus",
 		"--filter",
 		"--sloppy-names",
 		"--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root",
@@ -3608,13 +3406,18 @@ func atSpiProxy(conn *godbus.Conn) {
 }
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
+	var wg sync.WaitGroup
+	var config Config
+	wg.Go(func() {
+		config = getConf()
+	})
 	sigChan := make(chan os.Signal, 1)
 	var busConn *godbus.Conn
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	timeNow := time.Now()
 
-	var wg sync.WaitGroup
+
 	wg.Go(func() {
 		var err error
 		busConn, err = godbus.SessionBus()
@@ -3625,13 +3428,7 @@ func main() {
 			panic("D-Bus has no support for passing File Descriptors")
 		}
 	})
-	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
-	wg.Go(func() {
-		getVariables()
-	})
-	wg.Go(func() {
-		readConf()
-	})
+
 	var sdContext context.Context
 	var sdCancelFunc context.CancelFunc
 	var conn *dbus.Conn
@@ -3653,21 +3450,25 @@ func main() {
 	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
-	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn)
+	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
+	wg.Go(func() {
+		getVariables(config)
+	})
+	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
 
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
 
-	go cmdlineDispatcher(cmdChan)
-	go gpuBind(gpuChan)
+	go cmdlineDispatcher(cmdChan, config)
+	go gpuBind(gpuChan, config)
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
 
 	wg.Go(func() {
-		instDesktopFile()
+		instDesktopFile(config)
 	})
 	wg.Go(func() {
-		setupSharedDir()
+		setupSharedDir(config)
 	})
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
 		and we signal back when multi-instance is cleared
@@ -3676,15 +3477,15 @@ func main() {
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
-		genInstanceID(genChan, genChanProceed)
+		genInstanceID(genChan, genChanProceed, config)
 	} ()
 	xChan := make(chan []string, 1)
-	go bindXAuth(xChan)
+	go bindXAuth(xChan, config)
 	camChan := make(chan []string, 1)
-	go tryBindCam(camChan)
+	go tryBindCam(camChan, config)
 
 	<- cmdChan
-	go miscBinds(miscChan, pwSecContextChan, busConn)
+	go miscBinds(miscChan, pwSecContextChan, busConn, config)
 
 
 	if startAct == "abort" {
@@ -3697,14 +3498,12 @@ func main() {
 	miChan := make(chan bool, 1)
 
 	// MI
-	go multiInstance(miChan, busConn)
+	go multiInstance(miChan, busConn, config)
 
 
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		prepareEnvs()
-	} ()
+	wg.Go(func() {
+		prepareEnvs(config)
+	})
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
@@ -3713,39 +3512,38 @@ func main() {
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
-		setFirewall()
+		setFirewall(config)
 	})
 	wg.Go(func() {
-		sanityChecks()
+		sanityChecks(config)
 	})
 	wg.Go(func() {
-		listenBusStub(busConn, conn)
+		listenBusStub(busConn, conn, config)
 	})
-	go flushEnvs()
+	go flushEnvs(config)
 
 	<- genChan // Stage one, ensures that IDs are actually present
-	go func () {
-		defer wg.Done()
-		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan)
-	} ()
+	wg.Go(func() {
+		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan, config)
+	})
 	genChanProceed <- 1
-	go calcDbusArg(busArgChan)
+	go calcDbusArg(busArgChan, config)
 	wg.Add(2)
 	<- genChan // Stage 2, ensures that info file is ready
 	go func() {
 		defer wg.Done()
-		startProxy(conn, sdContext)
+		startProxy(conn, sdContext, config)
 	} ()
 	go func() {
 		defer wg.Done()
-		atSpiProxy(busConn)
+		atSpiProxy(busConn, config)
 	} ()
 
-	go pwSecContext(pwSecContextChan)
+	go pwSecContext(pwSecContextChan, config)
 	wg.Wait()
 	close(envsChan)
 	pecho("debug", "Started Portable in " + time.Since(timeNow).String())
-	startApp()
+	startApp(config)
 	if busConn != nil {
 		busConn.Close()
 	}

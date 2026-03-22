@@ -6,7 +6,7 @@ MPRIS is used by applications to expose their playback state.
 
 Configuration options:
 
-	- mprisName
+	- advanced.mprisName
 		- Default: The last part of the application ID, if left empty
 		- Possible values: ASCII characters
 		- Description: Defines which client name the sandboxed application shall own.
