@@ -1701,6 +1701,32 @@ func miscEnvs (config Config) {
 func prepareEnvs(config Config) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
+		if ! config.Advanced.FlatpakInfo {
+			addEnv("_portableNoFlatpakInfo=1")
+		}
+		addEnv("appID=" + config.Metadata.AppID)
+		if len(config.Exec.Arguments) > 0 {
+			jsonObj, err := json.Marshal(runtimeOpt.applicationArgs)
+			if err != nil {
+				pecho("warn", "Could not marshal application arguments: " + err.Error())
+			} else {
+				addEnv("_portableExtraArgs=" + string(jsonObj))
+			}
+		}
+		addEnv("_portableLaunchTarget=" + config.Exec.Target)
+		if config.BusActivation.Enable {
+			addEnv("_portableBusActivate=1")
+			addEnv("_portableBusActivateTarget=" + config.BusActivation.Target)
+			jsonObj, err := json.Marshal(config.BusActivation.Arguments)
+			if err != nil {
+				pecho("warn", "Could not marshal application arguments: " + err.Error())
+			} else {
+				addEnv("_portableBusActivateArgs=" + string(jsonObj))
+			}
+		}
+
+	})
+	wg.Go(func() {
 		imEnvs(config)
 	})
 	wg.Go(func() {

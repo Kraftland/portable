@@ -54,8 +54,8 @@ func engageLandlock () {
 		config.RestrictScoped()
 	}
 
-	mountInfoCfg := os.Getenv("mountInfo")
-	if mountInfoCfg == "false" {
+	mountInfoCfg := os.Getenv("_portableNoFlatpakInfo")
+	if len(mountInfoCfg) > 0 {
 		return
 	} else {
 		fullAccRule := landlock.AccessFSSet(landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
@@ -502,56 +502,46 @@ func main () {
 	go sendPidFd()
 
 	// This is horrible, but launchTarget may have spaces
-	var rawTarget = os.Getenv("launchTarget")
-	targetSlice := strings.Split(rawTarget, " ")
-	targetArgs := targetSlice[1:]
-	targetArgs = append(
-		targetArgs,
-		os.Args[1:]...
-	)
+	var rawTarget = os.Getenv("_portableLaunchTarget")
+	var targetSlice = []string{
+		rawTarget,
+	}
+	targetArgs := os.Args[1:]
+	extraArgs := os.Getenv("_portableExtraArgs")
+	if len(extraArgs) > 0 {
+		args := []string{}
+		err := json.Unmarshal([]byte(extraArgs), &args)
+		if err != nil {
+			panic(err)
+		}
+		targetSlice = append(targetSlice, args...)
+	}
 	fmt.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	if os.Getenv("_portableDebug") == "1" {
-		targetSlice[0] = "/usr/bin/bash"
+		rawTarget = "/usr/bin/bash"
 		newArgSlice := []string{
 			"--noprofile",
 			"--rcfile", "/run/bashrc",
 		}
-		targetArgs = append(
-			newArgSlice,
-			targetArgs...
-		)
+		targetArgs = newArgSlice
 	} else if os.Getenv("_portableBusActivate") == "1" {
-		rawBus := os.Getenv("busLaunchTarget")
-		if len(rawBus) > 0 {
-			busTarget := strings.Split(rawBus, " ")
-			busArg := busTarget[1:]
-			targetSlice[0] = busTarget[0]
-			newArgs := []string{}
-			newArgs = append(
-				newArgs,
-				busArg...
-			)
-		} else {
-			fmt.Println("Undefined busLaunchTarget!")
+		busTarget := os.Getenv("_portableBusActivateTarget")
+		busArgs := []string{}
+		err := json.Unmarshal([]byte(os.Getenv("_portableBusActivateArgs")), &busArgs)
+		if err != nil {
+			panic(err)
 		}
+		targetArgs = append(busArgs, os.Args[1:]...)
+		targetSlice = []string{busTarget}
 	} else if len(exposedEnvs) > 0 {
 		var exposeList PassFiles
 		json.Unmarshal([]byte(exposedEnvs), &exposeList)
 	}
-	args := []string{}
-	for _, arg := range targetArgs {
-		if len(arg) > 0 {
-			args = append(
-				args,
-				arg,
-			)
-		}
-	}
 	busWg.Wait()
 	landlockWg.Wait()
 	go busAuxStart(bus, targetSlice)
-	go startMaster(targetSlice[0], args)
+	go startMaster(targetSlice[0], targetArgs)
 	go terminateWatcher(terminateNotify, bus)
 	select {}
 }
