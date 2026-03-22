@@ -126,7 +126,9 @@ func determineLegacyConfPath() string {
 
 func readLegacyConf() Config {
 	path := determineLegacyConfPath()
+
 	config := setDefaultConfOpts()
+	config.Path = path
 
 
 	confFd, fdErr := os.OpenFile(path, os.O_RDONLY, 0700)

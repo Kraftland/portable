@@ -9,6 +9,7 @@ type Config struct {
 	Network		NetworkOpts
 	Privacy		PrivacyOpts
 	Advanced	AdvancedOpts
+	Path		string
 }
 
 type Metadata struct {

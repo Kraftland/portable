@@ -141,6 +141,7 @@ func getConf() Config {
 			pecho("crit", "Could not decode configuration: " + err.Error())
 			select {}
 		}
+		config.Path = configPath
 		switch len(md.Undecoded()) {
 			case 0:
 			case 1:
@@ -149,6 +150,5 @@ func getConf() Config {
 				pecho("warn", "Could not decode " + strconv.Itoa(len(md.Undecoded())) + " keys in configuration")
 		}
 	}
-
 	return config
 }
