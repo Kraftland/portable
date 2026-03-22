@@ -466,7 +466,12 @@ func setFirewall(config Config) {
 	}
 
 	pecho("debug", "Decoded raw deny list: " + strings.Join(denyList, ", "))
-
+	type IncomingSig struct {
+		CgroupNested		string
+		RawDenyList		[]string
+		SandboxEng		string
+		AppID			string
+	}
 	var sig IncomingSig
 	sig.RawDenyList = denyList
 	sig.AppID = config.Metadata.AppID
@@ -493,21 +498,12 @@ func setFirewall(config Config) {
 
 }
 
-// Copied from netsock
-type ResponseSignal struct {
-	Success			bool
-	Log			string
-}
-
-type IncomingSig struct {
-	CgroupNested		string
-	RawDenyList		[]string
-	SandboxEng		string
-	AppID			string
-}
-
 func dialNetsock(rules chan string) {
-
+	// Copied from netsock
+	type ResponseSignal struct {
+		Success			bool
+		Log			string
+	}
 	transport := http.Transport {
 		Proxy:		nil,
 		Dial:		func(network, addr string) (net.Conn, error) {return net.Dial("unix", "/run/netsock/control.sock")},
