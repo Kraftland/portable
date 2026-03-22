@@ -824,10 +824,10 @@ func lookUpXDG() {
 	}
 }
 
-func pwSecContext(pwChan chan []string) {
+func pwSecContext(pwChan chan []string, config Config) {
 	var pwSecArg = []string{}
 	var pwProxySocket string
-	if confOpts.bindPipewire == false {
+	if config.Privacy.PipeWire == false {
 		close(pwChan)
 		return
 	}
