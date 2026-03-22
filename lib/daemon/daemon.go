@@ -681,7 +681,7 @@ func removeWrapChan(pathChan chan string) {
 	wg.Wait()
 }
 
-func cleanDirs() {
+func cleanDirs(config Config) {
 	var wg sync.WaitGroup
 	pathChan := make(chan string, 8)
 	wg.Go(func() {removeWrapChan(pathChan)})
@@ -689,18 +689,18 @@ func cleanDirs() {
 	pathChan <- filepath.Join(
 		xdgDir.runtimeDir,
 		"/portable/",
-		confOpts.appID,
+		config.Metadata.AppID,
 	)
 	pathChan <- filepath.Join(
 		xdgDir.runtimeDir,
 		"app",
-		confOpts.appID,
+		config.Metadata.AppID,
 	)
 	if runtimeOpt.writtenDesktop {
 		pathChan <- filepath.Join(
 			xdgDir.dataDir,
 			"applications",
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		)
 	}
 	localID := runtimeInfo.instanceID
@@ -711,7 +711,7 @@ func cleanDirs() {
 		pathChan <- filepath.Join(
 			xdgDir.runtimeDir,
 			".flatpak",
-			confOpts.appID,
+			config.Metadata.AppID,
 		)
 		pathChan <- filepath.Join(
 			xdgDir.runtimeDir,
@@ -725,7 +725,7 @@ func cleanDirs() {
 	wg.Wait()
 }
 
-func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn) {
+func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn, config Config) {
 	<- stopAppChan
 	pecho("debug", "Received a quit request from channel")
 	var wg sync.WaitGroup
@@ -734,7 +734,7 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 			pecho("warn", "Race detected: bus already terminated")
 			return
 		}
-		reply, err := busconn.ReleaseName("top.kimiblock.portable." + confOpts.appID)
+		reply, err := busconn.ReleaseName("top.kimiblock.portable." + config.Metadata.AppID)
 		if err != nil {
 			pecho("warn", "Could not request bus to release name: " + err.Error())
 			switch reply {
@@ -749,7 +749,7 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 		doCleanUnit(conn, sdCancelFunc, sdContext)
 	})
 	wg.Go(func() {
-		cleanDirs()
+		cleanDirs(config)
 	})
 	close(socketStop)
 	//socketStop <- 1
