@@ -1498,7 +1498,7 @@ func waylandDisplay(wdChan chan []string) () {
 	wdChan <- waylandArgs
 }
 
-func instDesktopFile() {
+func instDesktopFile(config Config) {
 	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
 	for val := range xdgDataDirs {
 		if strings.Contains(val, "/var/lib/flatpak") {
@@ -1507,7 +1507,7 @@ func instDesktopFile() {
 		statPath := filepath.Join(
 			val,
 			"applications",
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		)
 		_, err := os.Stat(statPath)
 		if err == nil {
@@ -1521,7 +1521,7 @@ func instDesktopFile() {
 	for _, path := range hardcodedDesktopPath {
 		statPath := filepath.Join(
 			path,
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		)
 		_, err := os.Stat(statPath)
 		if err == nil {
@@ -1532,14 +1532,14 @@ func instDesktopFile() {
 
 	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
 	replacer := strings.NewReplacer(
-		"placeholderName",		"Portable sandbox for " + confOpts.appID,
-		"placeholderConfig",		confOpts.confPath,
+		"placeholderName",		"Portable sandbox: " + config.Metadata.AppID,
+		"placeholderConfig",		config.Path,
 	)
 	file, err := os.OpenFile(
 		filepath.Join(
 			xdgDir.dataDir,
 			"applications",
-			confOpts.appID + ".desktop",
+			config.Metadata.AppID + ".desktop",
 		),
 		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 		0700,
@@ -1561,19 +1561,19 @@ func instDesktopFile() {
 	pecho("warn", "You should supply your own .desktop file")
 }
 
-func setXDGEnvs() {
+func setXDGEnvs(config Config) {
 	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir))
-	addEnv("XDG_DOCUMENTS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Documents")
-	addEnv("XDG_DATA_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/share")
-	addEnv("XDG_STATE_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.local/state")
-	addEnv("XDG_CACHE_HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/cache")
-	addEnv("XDG_DESKTOP_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Desktop")
-	addEnv("XDG_DOWNLOAD_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Downloads")
-	addEnv("XDG_TEMPLATES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Templates")
-	addEnv("XDG_PUBLICSHARE_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Public")
-	addEnv("XDG_MUSIC_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Music")
-	addEnv("XDG_PICTURES_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Pictures")
-	addEnv("XDG_VIDEOS_DIR=" + xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Videos")
+	addEnv("XDG_DOCUMENTS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Documents"))
+	addEnv("XDG_DATA_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, ".local/share"))
+	addEnv("XDG_STATE_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, ".local/state"))
+	addEnv("XDG_CACHE_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "cache"))
+	addEnv("XDG_DESKTOP_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Desktop"))
+	addEnv("XDG_DOWNLOAD_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Downloads"))
+	addEnv("XDG_TEMPLATES_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Templates"))
+	addEnv("XDG_PUBLICSHARE_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Public"))
+	addEnv("XDG_MUSIC_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Music"))
+	addEnv("XDG_PICTURES_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Pictures"))
+	addEnv("XDG_VIDEOS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Videos"))
 }
 
 func imEnvs () {
