@@ -550,7 +550,7 @@ func mkdirPool(dirs []string) {
 	wg.Wait()
 }
 
-func genInstanceID(genInfo chan int8, proceed chan int8) {
+func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 	var wg sync.WaitGroup
 	pecho("debug", "Generating instance ID")
 	for {
@@ -568,13 +568,13 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 		}
 	}
 	dirs := []string {
-		xdgDir.dataDir + "/" + confOpts.stateDirectory,
-		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/xdg-run",
-		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/tmp",
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID, "xdg-run"),
+		filepath.Join(xdgDir.runtimeDir, "/.flatpak/", config.Metadata.AppID, "tmp"),
 	}
 
 	wg.Go(func() {
-		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", confOpts.appID, "portable-control"), 0700)
+		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "portable-control"), 0700)
 		if err != nil {
 			pecho("crit", "Could not create control directory: " + err.Error())
 		}
@@ -591,26 +591,26 @@ func genInstanceID(genInfo chan int8, proceed chan int8) {
 	wg.Add(2)
 	go func () {
 		defer wg.Done()
-		writeInfoFile(genInfo)
+		writeInfoFile(genInfo, config)
 	} ()
 	go func () {
 		defer wg.Done()
-		writeFlatpakRef()
+		writeFlatpakRef(config)
 	} ()
 	wg.Wait()
 }
 
-func writeFlatpakRef() {
+func writeFlatpakRef(config Config) {
 	var flatpakRef string = ""
-	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID, 0700)
+	os.MkdirAll(filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID), 0700)
 	os.WriteFile(
-		xdgDir.runtimeDir + "/.flatpak/" + confOpts.appID + "/.ref",
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID, ".ref"),
 		[]byte(flatpakRef),
 		0700,
 	)
 }
 
-func writeInfoFile(ready chan int8) {
+func writeInfoFile(ready chan int8, config Config) {
 	flatpakInfo, err := os.OpenFile("/usr/lib/portable/flatpak-info", os.O_RDONLY, 0600)
 	if err != nil {
 		pecho("crit", "Failed to read preset Flatpak info")
@@ -622,35 +622,44 @@ func writeInfoFile(ready chan int8) {
 	}
 	stringObj := string(infoObj)
 	replacer := strings.NewReplacer(
-		"placeHolderAppName", confOpts.appID,
-		"placeholderInstanceId", runtimeInfo.instanceID,
-		"placeholderPath", xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		"placeHolderAppName",		config.Metadata.AppID,
+		"placeholderInstanceId",	runtimeInfo.instanceID,
+		"placeholderPath",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 	)
 	stringObj = replacer.Replace(stringObj)
-	os.MkdirAll(xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID, 0700)
-	os.WriteFile(
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info.tmp",
-		[]byte(stringObj),
-		0700,
-	)
-	err = os.Rename(
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info.tmp",
-		xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "/info",
-	)
+	err = os.MkdirAll(filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID), 0700)
 	if err != nil {
-		panic(err)
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
 	}
-	os.WriteFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info.tmp",
+	err = os.WriteFile(
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info.tmp"),
 		[]byte(stringObj),
 		0700,
 	)
+	if err != nil {
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
+	}
 	err = os.Rename(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info.tmp",
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info.tmp"),
+		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info"),
 	)
 	if err != nil {
-		panic(err)
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
+	}
+	err = os.WriteFile(
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info.tmp"),
+		[]byte(stringObj),
+		0700,
+	)
+	if err != nil {
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
+	}
+	err = os.Rename(
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info.tmp"),
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "flatpak-info"),
+	)
+	if err != nil {
+		pecho("crit", "Could not create .flatpak path: " + err.Error())
 	}
 	ready <- 1
 	pecho("debug", "Wrote info file")
