@@ -364,7 +364,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 		for key, _ := range exposeMap {
 			exposeList = append(exposeList, key)
 		}
-		res := questionExpose(exposeList)
+		res := questionExpose(exposeList, config)
 		if res {
 			runtimeOpt.userExpose <- exposeMap
 		}
@@ -421,7 +421,7 @@ func shareFile(config Config) {
 	}
 }
 
-func getVariables() {
+func getVariables(config Config) {
 	runtimeOpt.userLang = os.Getenv("LANG")
 	bindVar := os.Getenv("bwBindPar")
 	if len(bindVar) > 0 {
@@ -433,7 +433,7 @@ func getVariables() {
 		pecho("warn",
 		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
 		)
-		res := questionExpose([]string{bindVar})
+		res := questionExpose([]string{bindVar}, config)
 		if res {
 			bwBindParMap := map[string]string{
 				bindVar:		bindVar,
@@ -746,7 +746,7 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 		}
 	})
 	wg.Go(func() {
-		doCleanUnit(conn, sdCancelFunc, sdContext)
+		doCleanUnit(conn, sdCancelFunc, sdContext, config)
 	})
 	wg.Go(func() {
 		cleanDirs(config)
@@ -1410,8 +1410,8 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 	select {}
 }
 
-func startApp() {
-	go forceBackgroundPerm()
+func startApp(config Config) {
+	go forceBackgroundPerm(config)
 	sdArgs := append(
 		runtimeInfo.bwCmd,
 		runtimeOpt.applicationArgs...,
@@ -1562,7 +1562,7 @@ func instDesktopFile(config Config) {
 }
 
 func setXDGEnvs(config Config) {
-	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir))
+	addEnv("XDG_CONFIG_HOME=" + translatePath(xdgDir.confDir, config))
 	addEnv("XDG_DOCUMENTS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Documents"))
 	addEnv("XDG_DATA_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, ".local/share"))
 	addEnv("XDG_STATE_HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, ".local/state"))
@@ -2332,7 +2332,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		//connBus.Signal(busSigChan)
 		//var respRes = make(chan bool, 1)
 		//go watchResult(busSigChan, respRes)
-		addFilesToPortal(connBus, pathList, filesInfo)
+		addFilesToPortal(connBus, pathList, filesInfo, config)
 	}
 	pecho("debug", "Send files info")
 	close(filesInfo)
@@ -2583,7 +2583,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 					wg.Add(1)
 					go func (card string, arg chan []string) {
 						defer wg.Done()
-						bindCard(card, arg)
+						bindCard(card, arg, config)
 					} (cardName, argChan)
 				}
 				wg.Go(
@@ -2613,7 +2613,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 					wg.Add(1)
 					go func (card string) {
 						defer wg.Done()
-						bindCard(card, argChan)
+						bindCard(card, argChan, config)
 					} (cardName)
 				}
 			}
@@ -3197,7 +3197,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 	} else {
 		// TODO: remove legacy start, and do concurrent req
 		if usingDBus {
-			busAuxStartReq(conn, false, runtimeOpt.applicationArgs)
+			busAuxStartReq(conn, false, runtimeOpt.applicationArgs, config)
 			miChan <- true
 			return
 		} else {
@@ -3378,13 +3378,18 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 }
 func main() {
 	runtimeOpt.userExpose = make(chan map[string]string, 2048)
+	var wg sync.WaitGroup
+	var config Config
+	wg.Go(func() {
+		config = getConf()
+	})
 	sigChan := make(chan os.Signal, 1)
 	var busConn *godbus.Conn
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	timeNow := time.Now()
 
-	var wg sync.WaitGroup
+
 	wg.Go(func() {
 		var err error
 		busConn, err = godbus.SessionBus()
@@ -3395,13 +3400,7 @@ func main() {
 			panic("D-Bus has no support for passing File Descriptors")
 		}
 	})
-	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
-	wg.Go(func() {
-		getVariables()
-	})
-	wg.Go(func() {
-		readConf()
-	})
+
 	var sdContext context.Context
 	var sdCancelFunc context.CancelFunc
 	var conn *dbus.Conn
@@ -3423,21 +3422,25 @@ func main() {
 	fmt.Println("Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
-	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn)
+	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
+	wg.Go(func() {
+		getVariables(config)
+	})
+	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
 
 	wayDisplayChan := make(chan[]string, 1)
 	go waylandDisplay(wayDisplayChan)
 
-	go cmdlineDispatcher(cmdChan)
-	go gpuBind(gpuChan)
+	go cmdlineDispatcher(cmdChan, config)
+	go gpuBind(gpuChan, config)
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
 
 	wg.Go(func() {
-		instDesktopFile()
+		instDesktopFile(config)
 	})
 	wg.Go(func() {
-		setupSharedDir()
+		setupSharedDir(config)
 	})
 	genChan := make(chan int8, 2) /* Signals when an ID has been chosen,
 		and we signal back when multi-instance is cleared
@@ -3446,15 +3449,15 @@ func main() {
 	wg.Add(1)
 	go func () {
 		defer wg.Done()
-		genInstanceID(genChan, genChanProceed)
+		genInstanceID(genChan, genChanProceed, config)
 	} ()
 	xChan := make(chan []string, 1)
-	go bindXAuth(xChan)
+	go bindXAuth(xChan, config)
 	camChan := make(chan []string, 1)
-	go tryBindCam(camChan)
+	go tryBindCam(camChan, config)
 
 	<- cmdChan
-	go miscBinds(miscChan, pwSecContextChan, busConn)
+	go miscBinds(miscChan, pwSecContextChan, busConn, config)
 
 
 	if startAct == "abort" {
@@ -3467,14 +3470,12 @@ func main() {
 	miChan := make(chan bool, 1)
 
 	// MI
-	go multiInstance(miChan, busConn)
+	go multiInstance(miChan, busConn, config)
 
 
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		prepareEnvs()
-	} ()
+	wg.Go(func() {
+		prepareEnvs(config)
+	})
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
 		startAct = "aux"
@@ -3483,39 +3484,39 @@ func main() {
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
-		setFirewall()
+		setFirewall(config)
 	})
 	wg.Go(func() {
-		sanityChecks()
+		sanityChecks(config)
 	})
 	wg.Go(func() {
-		listenBusStub(busConn, conn)
+		listenBusStub(busConn, conn, config)
 	})
-	go flushEnvs()
+	go flushEnvs(config)
 
 	<- genChan // Stage one, ensures that IDs are actually present
 	go func () {
 		defer wg.Done()
-		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan)
+		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan, config)
 	} ()
 	genChanProceed <- 1
-	go calcDbusArg(busArgChan)
+	go calcDbusArg(busArgChan, config)
 	wg.Add(2)
 	<- genChan // Stage 2, ensures that info file is ready
 	go func() {
 		defer wg.Done()
-		startProxy(conn, sdContext)
+		startProxy(conn, sdContext, config)
 	} ()
 	go func() {
 		defer wg.Done()
-		atSpiProxy(busConn)
+		atSpiProxy(busConn, config)
 	} ()
 
-	go pwSecContext(pwSecContextChan)
+	go pwSecContext(pwSecContextChan, config)
 	wg.Wait()
 	close(envsChan)
 	pecho("debug", "Started Portable in " + time.Since(timeNow).String())
-	startApp()
+	startApp(config)
 	if busConn != nil {
 		busConn.Close()
 	}
