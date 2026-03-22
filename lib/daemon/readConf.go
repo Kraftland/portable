@@ -150,5 +150,14 @@ func getConf() Config {
 				pecho("warn", "Could not decode " + strconv.Itoa(len(md.Undecoded())) + " keys in configuration")
 		}
 	}
+	sessionType := os.Getenv("XDG_SESSION_TYPE")
+	switch sessionType {
+		case "wayland":
+		case "x11":
+			config.Privacy.X11 = true
+		default:
+			pecho("warn", "Could not obtain session type")
+			config.Privacy.X11 = true
+	}
 	return config
 }
