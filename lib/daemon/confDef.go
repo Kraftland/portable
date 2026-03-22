@@ -55,8 +55,9 @@ type PrivacyOpts struct {
 type AdvancedOpts struct {
 	Zink			bool
 	Qt5Compat		bool
-	MprisName		string
+	MprisName		[]string
 	TrayWake		bool
 	KDEStatus		bool
 	FlatpakInfo		bool
 }
+
