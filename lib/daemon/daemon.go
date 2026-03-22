@@ -203,10 +203,10 @@ func openHome (config Config) {
 	os.Exit(0)
 }
 
-func resetDocs () {
+func resetDocs (config Config) {
 	cmdArgs := []string{
 		"permission-reset",
-		confOpts.appID,
+		config.Metadata.AppID,
 	}
 	openCmd := exec.Command("flatpak", cmdArgs...)
 	openCmd.Stderr = os.Stderr
