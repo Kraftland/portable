@@ -1224,13 +1224,14 @@ func (m *DBusPingRequest) Ping() (string, *godbus.Error) {
 type DBusInfoRequest struct {
 	Conn		*godbus.Conn
 	SdConn		*dbus.Conn
+	Config		Config
 }
 
 func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 	var reply = []string{
 		"Daemon version: " + strconv.FormatFloat(float64(version), 'f', 0, 64),
 		"Instance ID: " + runtimeInfo.instanceID,
-		"Unit name: " + "app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID,
+		"Unit name: " + "app-portable-" + m.Config.Metadata.AppID + "-" + runtimeInfo.instanceID,
 	}
 	if runtimeInfo.instanceID == "" {
 		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
@@ -1243,7 +1244,7 @@ func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 	propMap := make(map[string]any)
 	propMap, err := m.SdConn.GetAllPropertiesContext(
 		ctxDdl,
-		"app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service",
+		"app-portable-" + m.Config.Metadata.AppID + "-" + runtimeInfo.instanceID + ".service",
 	)
 	cancelFunc()
 	if err != nil {
@@ -1312,18 +1313,19 @@ func appendProps(m map[string]interface{}) []string {
 	return ret
 }
 
-func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn) {
+func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn, config Config) {
 	ready := make(chan int8, 1)
-	go busListener(conn, ready, sdConn)
+	go busListener(conn, ready, sdConn, config)
 	<- ready
 
 }
 
-func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn) {
+func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config Config) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
 	info := new(DBusInfoRequest)
 	info.SdConn = sdConn
+	info.Config = config
 	info.Conn = conn
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
