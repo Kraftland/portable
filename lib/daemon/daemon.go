@@ -457,12 +457,11 @@ func tryUnquote(input string) (output string) {
 	return
 }
 
-func setFirewall() {
+func setFirewall(config Config) {
 	var wg sync.WaitGroup
-	rawDenyList := strings.TrimSpace(confOpts.networkDeny)
-	denyList := strings.Split(rawDenyList, " ")
-	if len(rawDenyList) == 0 {
-		pecho("debug", "Did not find any network restriction")
+	denyList := config.Network.FilterDest
+	if ! config.Network.Filter {
+		pecho("debug", "Network filtering disabled")
 		return
 	}
 
@@ -470,9 +469,9 @@ func setFirewall() {
 
 	var sig IncomingSig
 	sig.RawDenyList = denyList
-	sig.AppID = confOpts.appID
+	sig.AppID = config.Metadata.AppID
 	sig.SandboxEng = "top.kimiblock.portable"
-	sig.CgroupNested = "app.slice/app-portable-" + confOpts.appID + "-" + runtimeInfo.instanceID + ".service/portable-cgroup"
+	sig.CgroupNested = "app.slice/app-portable-" + config.Metadata.AppID + "-" + runtimeInfo.instanceID + ".service/portable-cgroup"
 
 	rules := make(chan string, 1)
 	wg.Go(func() {
