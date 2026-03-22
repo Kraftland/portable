@@ -192,6 +192,10 @@ func readLegacyConf() Config {
 	config.Metadata.AppID = legacyConf.appID
 	config.Metadata.FriendlyName = legacyConf.friendlyName
 	config.Metadata.StateDirectory = legacyConf.stateDirectory
+	switch legacyConf.waylandOnly {
+		case false:
+			config.Privacy.X11 = true
+	}
 	if len(legacyConf.launchTarget) > 0 {
 		split := strings.Split(legacyConf.launchTarget, " ")
 		if len(split) > 1 {
