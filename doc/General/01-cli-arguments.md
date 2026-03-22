@@ -9,10 +9,10 @@ Environment variables:
 - PORTABLE_LOGGING	-> Optional
 	- Possible values: debug, info
 
-- _portableConfig	-> Required
+- PORTABLE_CONF		-> Required
 	- Possible values:
 		- Application ID of installed sandbox under /usr/lib/portable/info (recommended), or XDG_CONFIG_DIR/portable/info
-			- The configuration will be read from info/ID/config
+			- The configuration will be read from info/ID/config.toml
 		- Relative or absolute path to a configuration file
 
 
