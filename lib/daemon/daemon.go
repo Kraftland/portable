@@ -290,7 +290,7 @@ func getDirSize(path string) float64 {
 	return bytesToMb(totalBytes)
 }
 
-func cmdlineDispatcher(cmdChan chan int8) {
+func cmdlineDispatcher(cmdChan chan int8, config Config) {
 	var skipCount int
 	var hasExpose bool
 	var exposeMap = map[string]string{}
@@ -336,33 +336,18 @@ func cmdlineDispatcher(cmdChan chan int8) {
 					pecho("debug", "Received quit request from user")
 				case "debug-shell":
 					addEnv("_portableDebug=1")
-				case "share-file":
+				case "share-file", "share-files":
 					startAct = "abort"
 					shareFile()
-				case "share-files":
+				case "opendir", "home", "openhome":
 					startAct = "abort"
-					shareFile()
-				case "openhome":
+					openHome(config)
+				case "reset-document", "reset-documents":
 					startAct = "abort"
-					openHome()
-				case "opendir":
+					resetDocs(config)
+				case "stat", "stats":
 					startAct = "abort"
-					openHome()
-				case "home":
-					startAct = "abort"
-					openHome()
-				case "reset-document":
-					startAct = "abort"
-					resetDocs()
-				case "reset-documents":
-					startAct = "abort"
-					resetDocs()
-				case "stat":
-					startAct = "abort"
-					showStats()
-				case "stats":
-					startAct = "abort"
-					showStats()
+					showStats(config)
 				default:
 					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
 			}
