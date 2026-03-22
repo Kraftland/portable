@@ -60,11 +60,8 @@ type XDG_DIRS struct {
 	home			string
 }
 
-
-
 var (
 	internalLoggingLevel	int
-	confOpts		portableConfigOpts
 	runtimeInfo		RUNTIME_PARAMS
 	xdgDir			XDG_DIRS
 	runtimeOpt		RUNTIME_OPT
@@ -135,34 +132,34 @@ func pecho(level string, message string) {
 }
 
 
-func sanityChecks() {
+func sanityChecks(config Config) {
 	if sdutil.IsRunningSystemd() == false {
 		pecho("crit", "Portable requires the systemd service manager")
 	}
 	var appIDValid bool = true
-	if len("top.kimiblock.portable." + confOpts.appID) > 255 {
+	if len("top.kimiblock.portable." + config.Metadata.AppID) > 255 {
 		appIDValid = false
 		pecho("warn", "Application ID too long")
 	}
-	if strings.Contains(confOpts.appID, "org.freedesktop.impl") == true {
+	if strings.Contains(config.Metadata.AppID, "org.freedesktop.impl") == true {
 		appIDValid = false
-	} else if strings.Contains(confOpts.appID, "org.gtk.vfs") == true {
+	} else if strings.Contains(config.Metadata.AppID, "org.gtk.vfs") == true {
 		appIDValid = false
-	} else if confOpts.appID == "org.mpris.MediaPlayer2" {
+	} else if config.Metadata.AppID == "org.mpris.MediaPlayer2" {
 		appIDValid = false
-	} else if len(confOpts.appID) == 0 {
+	} else if len(config.Metadata.AppID) == 0 {
 		appIDValid = false
-	} else if len(strings.Split(confOpts.appID, ".")) < 2 {
+	} else if len(strings.Split(config.Metadata.AppID, ".")) < 2 {
 		appIDValid = false
 	}
 	if appIDValid == false {
 		startAct = "abort"
-		pecho("crit", "Invalid appID: " + confOpts.appID)
+		pecho("crit", "Invalid appID: " + config.Metadata.AppID)
 	}
-	if len(confOpts.friendlyName) == 0 {
+	if len(config.Metadata.FriendlyName) == 0 {
 		pecho("crit", "Could not parse friendlyName")
 	}
-	if len(confOpts.stateDirectory) == 0 {
+	if len(config.Metadata.StateDirectory) == 0 {
 		pecho("crit", "Could not parse stateDirectory")
 	}
 
@@ -177,21 +174,18 @@ func sanityChecks() {
 	}
 	mountCheckCmd := exec.Command("systemd-run", mountCheckArgs...)
 	mountCheckCmd.Stderr = os.Stderr
-	stdout, errP := mountCheckCmd.StdoutPipe()
+	stdout, errP := mountCheckCmd.Output()
 	if errP != nil {
 		pecho("crit", "Failed to pipe findmnt output: " + errP.Error())
+		select {}
 	}
-	scanner := bufio.NewScanner(stdout)
-	err := mountCheckCmd.Run()
+	scanner := bufio.NewScanner(strings.NewReader(string(stdout)))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "/usr/bin/") {
 			startAct = "abort"
 			pecho("crit", "Found mount points inside /usr/bin")
 		}
-	}
-	if err != nil {
-		pecho("crit", "Could not check mountpoints: " + err.Error())
 	}
 }
 
@@ -461,58 +455,6 @@ func getVariables() {
 			runtimeOpt.userExpose <- bwBindParMap
 		}
 	}
-}
-
-func isPathSuitableForConf(path string) (result bool) {
-	pecho("debug", "Trying configuration: " + path)
-	confInfo, confReadErr := os.Stat(path)
-	if confReadErr != nil {
-		pecho("debug", "Unable to pick configuration at " + path + " for reason: " + confReadErr.Error())
-	} else {
-		if confInfo.IsDir() == true {
-			pecho("debug", "Unable to pick configuration at " + path + " for reason: " + "is a directory")
-			result = false
-			return
-		}
-		pecho("debug", "Using configuration from " + path)
-		result = true
-		return
-	}
-	result = false
-	return
-}
-
-func determineConfPath() {
-	var portableConfigLegacyRaw string
-	var portableConfigRaw string
-	currentWd, wdErr := os.Getwd()
-	portableConfigLegacyRaw = os.Getenv("_portalConfig")
-	portableConfigRaw = os.Getenv("_portableConfig")
-	if len(portableConfigLegacyRaw) > 0 {
-		pecho("warn", "Using legacy configuration variable!")
-		portableConfigRaw = portableConfigLegacyRaw
-	}
-	if len(portableConfigRaw) == 0 {
-		pecho("crit", "_portableConfig undefined")
-	}
-	if isPathSuitableForConf(portableConfigRaw) == true {
-		confOpts.confPath = portableConfigRaw
-		return
-	}
-	if isPathSuitableForConf(filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")) {
-	confOpts.confPath = filepath.Join(xdgDir.confDir, "/portable/info", portableConfigRaw, "config")
-	} else if isPathSuitableForConf("/usr/lib/portable/info/" + portableConfigRaw + "/config") == true {
-		confOpts.confPath = "/usr/lib/portable/info/" + portableConfigRaw + "/config"
-		return
-	} else if wdErr == nil {
-		if isPathSuitableForConf(currentWd + portableConfigRaw) == true {
-			confOpts.confPath = currentWd + portableConfigRaw
-			return
-		}
-	} else if wdErr != nil {
-		pecho("warn", "Unable to get working directory: " + wdErr.Error())
-	}
-	pecho("crit", "Unable to determine configuration location")
 }
 
 func tryUnquote(input string) (output string) {
