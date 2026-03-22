@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Returns a new Config object with defaults set
 func setDefaultConfOpts() Config {
 	var config Config
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
