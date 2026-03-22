@@ -3521,10 +3521,9 @@ func main() {
 	go flushEnvs(config)
 
 	<- genChan // Stage one, ensures that IDs are actually present
-	go func () {
-		defer wg.Done()
+	wg.Go(func() {
 		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan, config)
-	} ()
+	})
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan, config)
 	wg.Add(2)
