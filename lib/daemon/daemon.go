@@ -1576,10 +1576,10 @@ func setXDGEnvs(config Config) {
 	addEnv("XDG_VIDEOS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Videos"))
 }
 
-func imEnvs () {
+func imEnvs (config Config) {
 	addEnv("IBUS_USE_PORTAL=1")
 	var imKind string
-	if confOpts.waylandOnly == true {
+	if ! config.Privacy.X11 {
 		addEnv("QT_IM_MODULE=wayland")
 		addEnv("GTK_IM_MODULE=wayland")
 	} else {
@@ -1653,21 +1653,34 @@ func imEnvs () {
 	}
 }
 
-func setupSharedDir () {
-	os.MkdirAll(xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared", 0700)
-	os.Link(
-		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/Shared",
-		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/共享文件")
+func setupSharedDir (config Config) {
+	err := os.MkdirAll(
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared"),
+		0700,
+	)
+	if err != nil {
+		pecho("warn", "Could not setup shared directory: " + err.Error())
+	}
+	err = os.Link(
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared"),
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "共享文件"),
+	)
+	if err != nil {
+		pecho("warn", "Could not setup shared directory: " + err.Error())
+	}
 }
 
-func miscEnvs () {
-	if confOpts.qt5Compat == true {
+func miscEnvs (config Config) {
+	if config.Advanced.Qt5Compat {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
-	os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID, 0700)
-	var file string = "source " + xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env\n"
+	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID, 0700)
+	if err != nil {
+		pecho("crit", "Could not create runtime directory: " + err.Error())
+	}
+	var file string = "source " + filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "generated.env") + "\n"
 	wrErr := os.WriteFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/bashrc",
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "bashrc"),
 		[]byte(file),
 		0700)
 	if wrErr != nil {
@@ -1677,28 +1690,29 @@ func miscEnvs () {
 	addEnv("GTK_USE_PORTAL=1")
 	addEnv("QT_AUTO_SCREEN_SCALE_FACTOR=1")
 	addEnv("QT_ENABLE_HIGHDPI_SCALING=1")
-	addEnv("PS1=" + strconv.Quote("╰─>Portable·" + confOpts.appID + "·🤓 ⤔ "))
+	addEnv("PS1=" + strconv.Quote("╰─>Portable·" + config.Metadata.AppID + "·🤓 ⤔ "))
 	addEnv("QT_SCALE_FACTOR=" + os.Getenv("QT_SCALE_FACTOR"))
-	addEnv("HOME=" + xdgDir.dataDir + "/" + confOpts.stateDirectory)
+	addEnv("HOME=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
 	addEnv("XDG_SESSION_TYPE=" + os.Getenv("XDG_SESSION_TYPE"))
-	addEnv("WAYLAND_DISPLAY=" + xdgDir.runtimeDir + "/wayland-0")
+	addEnv("WAYLAND_DISPLAY=" + filepath.Join(xdgDir.runtimeDir, "wayland-0"))
 	addEnv("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/sessionBus")
 }
 
-func prepareEnvs() {
+func prepareEnvs(config Config) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		imEnvs()
+		imEnvs(config)
 	})
 	wg.Go(func() {
-		setXDGEnvs()
+		setXDGEnvs(config)
 	})
 	wg.Go(func() {
-		miscEnvs()
+		miscEnvs(config)
 	})
 	wg.Go(func() {
+		statePath := filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "portable.env")
 		userEnvs, err := os.OpenFile(
-			xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+			statePath,
 			os.O_RDONLY,
 			0700,
 		)
@@ -1706,7 +1720,7 @@ func prepareEnvs() {
 			if os.IsNotExist(err) {
 				const template = "# This file accepts simple KEY=VAL envs"
 				os.WriteFile(
-					xdgDir.dataDir + "/" + confOpts.stateDirectory + "/portable.env",
+					statePath,
 					[]byte(template),
 					0700,
 				)
@@ -1726,29 +1740,6 @@ func prepareEnvs() {
 					"Could not read user environment variables" + scanner.Err().Error(),
 					)
 					continue
-				}
-				line := scanner.Text()
-				addEnv(line)
-			}
-		}
-	})
-
-	wg.Go(func() {
-		packageEnvs, errPkg := os.OpenFile(confOpts.confPath, os.O_RDONLY, 0700)
-		if errPkg != nil {
-			pecho(
-				"crit",
-				"Could not open package config " + confOpts.confPath + ": " + errPkg.Error(),
-				)
-		} else {
-			defer packageEnvs.Close()
-			scanner := bufio.NewScanner(packageEnvs)
-			for scanner.Scan() {
-				if scanner.Err() != nil {
-					pecho(
-						"crit",
-						"Could not read package defined environment variables",
-						)
 				}
 				line := scanner.Text()
 				addEnv(line)
