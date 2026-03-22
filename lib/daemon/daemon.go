@@ -1348,7 +1348,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 				},
 			},
 			{
-				Name:		"top.kimiblock.portable." + confOpts.appID,
+				Name:		"top.kimiblock.portable." + config.Metadata.AppID,
 				Methods:	[]introspect.Method{
 					{
 						Name:	"Ping",
@@ -1382,7 +1382,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
 	}
-	err = conn.Export(req, objPath, "top.kimiblock.portable." + confOpts.appID)
+	err = conn.Export(req, objPath, "top.kimiblock.portable." + config.Metadata.AppID)
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
@@ -1392,7 +1392,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
 	}
-	reply, err := conn.RequestName("top.kimiblock.portable." + confOpts.appID, godbus.NameFlagDoNotQueue)
+	reply, err := conn.RequestName("top.kimiblock.portable." + config.Metadata.AppID, godbus.NameFlagDoNotQueue)
 	if err != nil {
 		pecho("crit", "Could not request bus name: " + err.Error())
 		return
@@ -1436,9 +1436,9 @@ func startApp() {
 	}
 }
 
-func forceBackgroundPerm() {
+func forceBackgroundPerm(config Config) {
 	pecho("debug", "Unrestricting background limits")
-	dbusSendExec := exec.Command("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.impl.portal.PermissionStore", "/org/freedesktop/impl/portal/PermissionStore", "org.freedesktop.impl.portal.PermissionStore.SetPermission", "string:background", "boolean:true", "string:background", "string:" + confOpts.appID, "array:string:yes")
+	dbusSendExec := exec.Command("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.impl.portal.PermissionStore", "/org/freedesktop/impl/portal/PermissionStore", "org.freedesktop.impl.portal.PermissionStore.SetPermission", "string:background", "boolean:true", "string:background", "string:" + config.Metadata.AppID, "array:string:yes")
 	dbusSendExec.Stderr = os.Stderr
 	if internalLoggingLevel <= 1 {
 		dbusSendExec.Stdout = os.Stdout
