@@ -219,16 +219,16 @@ func bytesToMb(bytes int) float64 {
 	return float64(bytes) / div
 }
 
-func showStats() {
+func showStats(config Config) {
 	conn, err := godbus.ConnectSessionBus()
-	busName := "top.kimiblock.portable." + confOpts.appID
+	busName := "top.kimiblock.portable." + config.Metadata.AppID
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
 
-	size := getDirSize(filepath.Join(xdgDir.dataDir, confOpts.stateDirectory))
+	size := getDirSize(filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
 	var builder strings.Builder
 	builder.WriteString("Application Statistics: \n")
 	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "M\n")
