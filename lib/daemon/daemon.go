@@ -193,9 +193,9 @@ func addEnv(envToAdd string) {
 	envsChan <- envToAdd
 }
 
-func openHome () {
+func openHome (config Config) {
 	cmdArgs := []string{
-		xdgDir.dataDir + "/" + confOpts.stateDirectory,
+		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 	}
 	openCmd := exec.Command("/usr/bin/xdg-open", cmdArgs...)
 	openCmd.Stderr = os.Stderr
