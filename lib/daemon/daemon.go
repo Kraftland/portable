@@ -2040,7 +2040,7 @@ func genBwArg(
 	)
 }
 
-func flushEnvs() {
+func flushEnvs(config Config) {
 	var builder strings.Builder
 
 	for env := range envsChan {
@@ -2049,7 +2049,7 @@ func flushEnvs() {
 	}
 
 	fd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/generated.env",
+		xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/generated.env",
 			os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
 			0700,
 	)
@@ -2070,16 +2070,16 @@ func flushEnvs() {
 	close(envsFlushReady)
 }
 
-func translatePath(input string) (output string) {
-	output = strings.ReplaceAll(input, xdgDir.home, xdgDir.dataDir + "/" + confOpts.stateDirectory)
+func translatePath(input string, config Config) (output string) {
+	output = strings.ReplaceAll(input, xdgDir.home, filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
 	return
 }
 
 // Does not take empty input
-func questionExpose(paths []string) bool {
+func questionExpose(paths []string, config Config) bool {
 	zenityArgs := []string{
 		"--title",
-			confOpts.friendlyName,
+			config.Metadata.FriendlyName,
 		"--icon=folder-open-symbolic",
 		"--question",
 		"--default-cancel",
@@ -2133,7 +2133,7 @@ type PassFiles struct {
 	FileMap		map[string]string
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn) {
+func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn, config Config) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
 
@@ -2170,7 +2170,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.confDir + "/fontconfig",
-			translatePath(xdgDir.confDir + "/fontconfig"),
+			translatePath(filepath.Join(xdgDir.confDir, "fontconfig"), config),
 		}
 	})
 
@@ -2178,7 +2178,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string {
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-3.0/gtk.css",
-			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css"),
+			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css", config),
 		}
 	})
 
@@ -2186,7 +2186,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string {
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-3.0/colors.css",
-			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css"),
+			translatePath(xdgDir.confDir + "/gtk-3.0/colors.css", config),
 		}
 	})
 
@@ -2194,7 +2194,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string {
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-4.0/gtk.css",
-			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css"),
+			translatePath(xdgDir.confDir + "/gtk-4.0/gtk.css", config),
 		}
 	})
 
@@ -2202,7 +2202,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.confDir + "/qt6ct",
-			translatePath(xdgDir.confDir + "/qt6ct"),
+			translatePath(xdgDir.confDir + "/qt6ct", config),
 		}
 	})
 
@@ -2210,7 +2210,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.dataDir + "/fonts",
-			translatePath(xdgDir.dataDir + "/fonts"),
+			translatePath(xdgDir.dataDir + "/fonts", config),
 		}
 	})
 
@@ -2218,7 +2218,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		miscChan <- []string{
 			"--ro-bind-try",
 			xdgDir.dataDir + "/icons",
-			translatePath(xdgDir.dataDir + "/icons"),
+			translatePath(xdgDir.dataDir + "/icons", config),
 		}
 	})
 
@@ -2263,7 +2263,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 			})
 		}
 	}
-	if confOpts.mountInfo == true {
+	if config.Advanced.FlatpakInfo {
 		miscArgs = append(
 			miscArgs,
 			"--ro-bind",
@@ -2276,21 +2276,21 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
 				xdgDir.runtimeDir + "/flatpak-runtime-directory",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 				"/.flatpak-info",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+				xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 				xdgDir.runtimeDir + "/.flatpak-info",
 			"--ro-bind",
-				xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.flatpak-info",
+				xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.flatpak-info",
 			"--tmpfs",		xdgDir.home + "/.var",
-			"--tmpfs",		xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var",
+			"--tmpfs",		xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var",
 			"--bind",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory,
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID,
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory,
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var/app/" + config.Metadata.AppID,
 			"--tmpfs",
-				xdgDir.dataDir + "/" + confOpts.stateDirectory + "/.var/app/" + confOpts.appID + "/options",
+				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var/app/" + config.Metadata.AppID + "/options",
 		)
 	}
 
@@ -2368,7 +2368,7 @@ type AddDocumentFullData struct {
 }
 
 // This portal does not need Request?
-func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles) {
+func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles, config Config) {
 	var filesInfoTmp PassFiles
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
@@ -2383,7 +2383,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		busFdList = append(busFdList, godbus.UnixFD(fd))
 	}
 	var busData	AddDocumentFullData
-	busData.AppID = confOpts.appID
+	busData.AppID = config.Metadata.AppID
 	busData.Flags = 1
 	busData.PathFDs = busFdList
 	busData.Permissions = []string{"read", "write", "grant-permissions"}
@@ -2424,9 +2424,9 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	filesInfo <- filesInfoTmp
 }
 
-func bindXAuth(xauthChan chan []string) {
+func bindXAuth(xauthChan chan []string, config Config) {
 	var xArg = []string{}
-	if confOpts.waylandOnly == false {
+	if config.Privacy.X11 {
 		xArg = append(
 			xArg,
 			"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
@@ -2511,7 +2511,7 @@ func detectCardStatus(cardList chan []string, cardPath string, cardNamed string)
 	}
 }
 
-func gpuBind(gpuChan chan []string) {
+func gpuBind(gpuChan chan []string, config Config) {
 	u := udev.Udev{}
 	e := u.NewEnumerate()
 	e.AddMatchIsInitialized()
@@ -2573,7 +2573,7 @@ func gpuBind(gpuChan chan []string) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		default:
-			if confOpts.gameMode == true {
+			if config.System.GameMode {
 				wg.Add(1)
 				go func () {
 					defer wg.Done()
@@ -2657,7 +2657,7 @@ func setOffloadEnvs() () {
 	}
 }
 
-func bindCard(cardName string, argChan chan []string) {
+func bindCard(cardName string, argChan chan []string, config Config) {
 	var wg sync.WaitGroup
 	u := udev.Udev{}
 	var cardID string
@@ -2714,7 +2714,7 @@ func bindCard(cardName string, argChan chan []string) {
 		}
 		if strings.Contains(string(cardVendor), "0x10de") == true {
 			pecho("debug", "Found NVIDIA device")
-			if confOpts.useZink == true {
+			if config.Advanced.Zink {
 				addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
 				addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
 				addEnv("GALLIUM_DRIVER=zink")
@@ -2782,9 +2782,9 @@ func bindCard(cardName string, argChan chan []string) {
 	wg.Wait()
 }
 
-func tryBindCam(camChan chan []string) {
+func tryBindCam(camChan chan []string, config Config) {
 	camArg := []string{}
-	if confOpts.bindCameras == true {
+	if config.Privacy.Cameras {
 		camEntries, err := os.ReadDir("/dev")
 		if err != nil {
 			pecho("warn", "Failed to parse camera entries")
@@ -2928,11 +2928,12 @@ type StartRequest struct {
 	CustomTarget	bool
 	Files		PassFiles
 }
-func auxStartNg() bool {
+
+func auxStartNg(config Config) bool {
 	socketPath := filepath.Join(
 		xdgDir.runtimeDir,
 		"/portable/",
-		confOpts.appID,
+		config.Metadata.AppID,
 		"/portable-control/helper",
 	)
 	conn, err := net.Dial("unix", socketPath)
@@ -3067,14 +3068,14 @@ func processStream(resp *http.Response, socketPath string) {
 	//} ()
 }
 
-func multiInstance(miChan chan bool, conn *godbus.Conn) {
+func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 	var hasRunningInstance bool
 	var usingDBus bool
 
-	busName := "top.kimiblock.portable." + confOpts.appID
+	busName := "top.kimiblock.portable." + config.Metadata.AppID
 
 	var socketPath string = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + confOpts.appID + "/portable-control/daemon"
+	socketPath = socketPath + config.Metadata.AppID + "/portable-control/daemon"
 
 	var dialWg sync.WaitGroup
 	var dialChan = make(chan bool, 2)
@@ -3117,7 +3118,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 		}
 	}
 	socketPath = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + confOpts.appID + "/portable-control/auxStart"
+	socketPath = socketPath + config.Metadata.AppID + "/portable-control/auxStart"
 
 	if hasRunningInstance == false {
 		if runtimeOpt.miTerminate == true {
@@ -3139,7 +3140,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 				}
 			} else {
 				var daemonPath string = xdgDir.runtimeDir + "/portable/"
-				daemonPath = daemonPath + confOpts.appID + "/portable-control/daemon"
+				daemonPath = daemonPath + config.Metadata.AppID + "/portable-control/daemon"
 				const signal = "terminate-now" + "\n"
 				controlSock, dialErr := net.Dial("unix", daemonPath)
 				if dialErr != nil {
@@ -3154,10 +3155,10 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 		}
 		startAct = "aux"
 	}
-	if confOpts.dbusWake == true {
+	if config.Advanced.TrayWake {
 		pecho("debug", "Trying to resolve tray ID")
 		queryTrayArg := []string{
-			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + confOpts.appID + "/bus",
+			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + config.Metadata.AppID + "/bus",
 			"--dest=org.kde.StatusNotifierWatcher",
 			"--type=method_call",
 			"--print-reply=literal",
@@ -3200,7 +3201,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn) {
 			miChan <- true
 			return
 		} else {
-			res := auxStartNg()
+			res := auxStartNg(config)
 			if res {
 				miChan <- true
 				return
@@ -3215,7 +3216,7 @@ type startReply struct {
 	baseDir		string
 }
 
-func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
+func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config) {
 	//oldIn := os.Stdin
 	//oldOut := os.Stdout
 	//oldErr := os.Stderr
@@ -3230,7 +3231,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 		fileSlice = append(fileSlice, key, val)
 	}
 
-	busObj := conn.Object(confOpts.appID + ".Portable.Helper", "/top/kimiblock/portable/init")
+	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
 		false, // For now we do not support custom target
 		tray,
@@ -3304,7 +3305,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string) {
 
 }
 
-func atSpiProxy(conn *godbus.Conn) {
+func atSpiProxy(conn *godbus.Conn, config Config) {
 	a11yBusObj := conn.Object(
 		"org.a11y.Bus",
 		"/org/a11y/bus",
@@ -3325,7 +3326,7 @@ func atSpiProxy(conn *godbus.Conn) {
 		pecho("warn", "Could not decode accessibility bus address: " + err.Error())
 		return
 	}
-	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y", 0700)
+	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y", 0700)
 	if err != nil {
 		pecho("warn", "Could not create directory for accessibility bus: " + err.Error())
 		return
@@ -3339,18 +3340,18 @@ func atSpiProxy(conn *godbus.Conn) {
 		"--ro-bind", "/usr/share", "/usr/share",
 		"--bind", xdgDir.runtimeDir + "/at-spi", xdgDir.runtimeDir + "/at-spi",
 		"--bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y",
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 			xdgDir.runtimeDir + "/.flatpak-info",
 		"--ro-bind",
-			xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/flatpak-info",
+			xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/flatpak-info",
 			"/.flatpak-info",
 		"--",
 		"/usr/bin/xdg-dbus-proxy",
 		a11yAddr,
-		xdgDir.runtimeDir + "/portable/" + confOpts.appID + "/a11y/bus",
+		xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y/bus",
 		"--filter",
 		"--sloppy-names",
 		"--call=org.a11y.atspi.Registry=org.a11y.atspi.Socket.Embed@/org/a11y/atspi/accessible/root",
