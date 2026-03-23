@@ -587,7 +587,9 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 	} ()
 
 	<- proceed
-
+	wg.Go(func() {
+		generatePasswdFile(config)
+	})
 	wg.Add(2)
 	go func () {
 		defer wg.Done()
@@ -2009,6 +2011,7 @@ func genBwArg(
 			filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 
 		"--ro-bind",		"/etc", "/etc",
+		"--ro-bind-try",	filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "passwd"), "/etc/passwd",
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
