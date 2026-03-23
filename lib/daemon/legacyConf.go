@@ -182,7 +182,7 @@ func readLegacyConf() Config {
 					default:
 						if key == "waylandOnly" {
 							if val == "adaptive" {
-								continue
+								*target.b = true
 							}
 						}
 						pecho("warn", "Invalid value for boolean option: " + key)
@@ -195,6 +195,8 @@ func readLegacyConf() Config {
 	switch legacyConf.waylandOnly {
 		case false:
 			config.Privacy.X11 = true
+		case true:
+			config.Privacy.X11 = false
 	}
 	if len(legacyConf.launchTarget) > 0 {
 		split := strings.Split(legacyConf.launchTarget, " ")
