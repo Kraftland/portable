@@ -16,7 +16,6 @@ function buildGo() {
 		-trimpath \
 		-buildmode=pie \
 		-modcacherw \
-		-mod=readonly \
 		-ldflags "-linkmode external -extldflags \"${LDFLAGS}\"" \
 		.
 	cd "${currDir}"
