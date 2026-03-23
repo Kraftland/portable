@@ -15,7 +15,7 @@ func generateNsswitch (config Config) {
 	builder.WriteString("shadow: files\n")
 	builder.WriteString("gshadow: files\n")
 	builder.WriteString("publickey: files\n")
-	builder.WriteString("hosts: files myhostname resolve [!UNAVAIL=return] dns\n")
+	builder.WriteString("hosts: files myhostname dns\n")
 	builder.WriteString("networks: files\n")
 	builder.WriteString("protocols: files\n")
 	builder.WriteString("services: files\n")
