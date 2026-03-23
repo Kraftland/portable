@@ -295,6 +295,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 	var hasExpose bool
 	var exposeMap = map[string]string{}
 	cmdlineArray := os.Args
+	runtimeOpt.applicationArgs = config.Exec.Arguments
 	for index, value := range cmdlineArray {
 		if index == 0 {
 			continue

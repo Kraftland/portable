@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
 	"bufio"
-	"strings"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 type portableLegacyConfigOpts struct {
