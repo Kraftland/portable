@@ -25,6 +25,7 @@ func generatePasswdFile(config Config) {
 		pecho("warn", "Could not open fake passwd file")
 		return
 	}
+	defer file.Close()
 	builder := strings.Builder{}
 
 	// Own user
