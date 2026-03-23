@@ -590,6 +590,9 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 	wg.Go(func() {
 		generatePasswdFile(config)
 	})
+	wg.Go(func() {
+		generateNsswitch(config)
+	})
 	wg.Add(2)
 	go func () {
 		defer wg.Done()
@@ -2012,6 +2015,7 @@ func genBwArg(
 
 		"--ro-bind",		"/etc", "/etc",
 		"--ro-bind-try",	filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "passwd"), "/etc/passwd",
+		"--ro-bind-try",	filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "nsswitch"), "/etc/nsswitch.conf",
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
