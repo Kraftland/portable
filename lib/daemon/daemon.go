@@ -1723,7 +1723,6 @@ func prepareEnvs(config Config) {
 		}
 		addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		if config.BusActivation.Enable {
-			addEnv("_portableBusActivate=1")
 			addEnv("_portableBusActivateTarget=" + config.BusActivation.Target)
 			jsonObj, err := json.Marshal(config.BusActivation.Arguments)
 			if err != nil {
