@@ -56,7 +56,7 @@ Name=AppName
 GenericName=Stub for MPRIS
 Icon=IconName
 TryExec=portable
-Exec=env _portableConfig="appID" portable -- %u
+Exec=env PORTABLE_CONF="appID" portable -- %u
 Terminal=false
 NoDisplay=true
 ```

@@ -88,7 +88,7 @@ See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
 
 ## Starting portable
 
-Start portable with environment variable `_portableConfig`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${_portableConfig}`. It searches for each of them respectively.
+Start portable with environment variable `PORTABLE_CONF`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${PORTABLE_CONF}`. It searches for each of them respectively.
 
 - Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
 
