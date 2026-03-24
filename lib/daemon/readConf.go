@@ -19,8 +19,7 @@ func determineConfType () (legacy bool) {
 		return true
 	}
 	pecho("crit", "Please specify the PORTABLE_CONF variable for configuration")
-	select {}
-	//return false
+	return false
 }
 
 func isPathSuitableForConf(path string) (result bool) {
@@ -111,7 +110,6 @@ func determineModernConfPath(raw string) string {
 	}
 	if len(finalPathInfo.Path) == 0 {
 		pecho("crit", "Could not obtain configuration path")
-		select {}
 	} else {
 		pecho("debug", "Using configuration path " + finalPathInfo.Path)
 	}
@@ -130,15 +128,13 @@ func getConf() Config {
 		configPath := determineModernConfPath(os.Getenv("PORTABLE_CONF"))
 		file, err := os.OpenFile(configPath, os.O_RDONLY, 0700)
 		if err != nil {
-			pecho("crit", "Could not open configuration: " + err.Error())
-			select {}
+			panic("Could not open configuration: " + err.Error())
 		}
 		reader := bufio.NewReader(file)
 		decoder := toml.NewDecoder(reader)
 		md ,err := decoder.Decode(&config)
 		if err != nil {
-			pecho("crit", "Could not decode configuration: " + err.Error())
-			select {}
+			panic("Could not decode configuration: " + err.Error())
 		}
 		config.Path = configPath
 		switch len(md.Undecoded()) {
