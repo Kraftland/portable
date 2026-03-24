@@ -11,6 +11,13 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 
 This is the rewrite of the original Portable. For the legacy version, see `legacy` branch.
 
+Portable has companion projects for packaging and sandboxing:
+| Project       | Descripton      |
+| ------------- | -------------   |
+| [StashPak](https://github.com/Kimiblock/stashpak) | Build a Portable package for Arch Linux |
+| [Packer](https://github.com/Kimiblock/portable-packer) | Packaging utility for Portable on Arch Linux |
+| [Netsock](https://github.com/Kimiblock/netsock) | Network firewall |
+
 # Why Portable?
 
 See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.md)
