@@ -339,14 +339,17 @@ func main () {
 			"--rcfile", "/run/bashrc",
 		}
 	} else if os.Getenv("_portableBusActivate") == "1" {
-		busTarget := os.Getenv("_portableBusActivateTarget")
 		busArgs := []string{}
 		err := json.Unmarshal([]byte(os.Getenv("_portableBusActivateArgs")), &busArgs)
 		if err != nil {
 			panic(err)
 		}
-		targetArgs = append(busArgs, os.Args[1:]...)
-		targetSlice = []string{busTarget}
+		if len(os.Args) > 1 {
+			targetArgs = os.Args[1:]
+		} else {
+			targetArgs = []string{}
+		}
+		targetSlice = busArgs
 	} else if len(exposedEnvs) > 0 {
 		var exposeList PassFiles
 		json.Unmarshal([]byte(exposedEnvs), &exposeList)
