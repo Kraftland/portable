@@ -1726,8 +1726,8 @@ func prepareEnvs(config Config) {
 		}
 		addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		if config.BusActivation.Enable {
-			addEnv("_portableBusActivateTarget=" + config.BusActivation.Target)
-			jsonObj, err := json.Marshal(config.BusActivation.Arguments)
+			actSlice := append([]string{config.BusActivation.Target}, config.BusActivation.Arguments...)
+			jsonObj, err := json.Marshal(actSlice)
 			if err != nil {
 				pecho("warn", "Could not marshal application arguments: " + err.Error())
 			} else {
