@@ -354,6 +354,9 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 			}
 			case "--dbus-activation":
 				addEnv("_portableBusActivate=1")
+				if ! config.BusActivation.Enable {
+					pecho("crit", "Could not start application: bus activation not enabled")
+				}
 			case "--":
 				runtimeOpt.argStop = true
 			default:
