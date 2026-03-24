@@ -243,9 +243,10 @@ func cmdlineReplacer(origin []string, files map[string]string) []string {
 	return result
 }
 
-func startMaster(targetExec string, targetArgs []string) {
+func startMaster(targetExec []string, targetArgs []string) {
 	var startReq StartNofifyMsg
 	rawEnv := os.Getenv("_portableHelperExtraFiles")
+	var args []string
 	if len(rawEnv) > 0 {
 		var decoded PassFiles
 		err := json.Unmarshal([]byte(rawEnv), &decoded)
@@ -253,11 +254,12 @@ func startMaster(targetExec string, targetArgs []string) {
 			panic("Could not decode JSON from environment variable: " + err.Error())
 		}
 		fmt.Println("Replacing cmdline using file map:", decoded)
-		var execSlice = []string{targetExec}
-		targetExec = cmdlineReplacer(execSlice, decoded.FileMap)[0]
+
+		targetExec = cmdlineReplacer(targetExec, decoded.FileMap)
 		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
+		args = append([]string{targetExec[0]}, targetArgs...)
 	}
-	startCmd := exec.Command(targetExec, targetArgs...)
+	startCmd := exec.Command(targetExec[0], args...)
 	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
 	go daemon.SdNotify(false, daemon.SdNotifyReady)
 	startReq.cmd = startCmd
@@ -519,12 +521,11 @@ func main () {
 	fmt.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	if os.Getenv("_portableDebug") == "1" {
-		rawTarget = "/usr/bin/bash"
-		newArgSlice := []string{
+		targetSlice = []string{
+			"/usr/bin/bash",
 			"--noprofile",
 			"--rcfile", "/run/bashrc",
 		}
-		targetArgs = newArgSlice
 	} else if os.Getenv("_portableBusActivate") == "1" {
 		busTarget := os.Getenv("_portableBusActivateTarget")
 		busArgs := []string{}
@@ -541,7 +542,7 @@ func main () {
 	busWg.Wait()
 	landlockWg.Wait()
 	go busAuxStart(bus, targetSlice)
-	go startMaster(targetSlice[0], targetArgs)
+	go startMaster(targetSlice, targetArgs)
 	go terminateWatcher(terminateNotify, bus)
 	select {}
 }
