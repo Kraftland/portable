@@ -120,8 +120,7 @@ func determineLegacyConfPath() string {
 	} else if wdErr != nil {
 		pecho("warn", "Unable to get working directory: " + wdErr.Error())
 	}
-	pecho("crit", "Unable to determine configuration location")
-	select {}
+	panic("Unable to determine configuration location")
 }
 
 func readLegacyConf() Config {
