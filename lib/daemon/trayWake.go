@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -54,7 +55,7 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 		return err
 	}
 	var ret = make(map[string]any)
-	ret, err = sdConn.GetUnitPropertiesContext(ctx, config.Metadata.FriendlyName + "-" + id + "-dbus.service")
+	ret, err = sdConn.GetAllPropertiesContext(ctx, config.Metadata.FriendlyName + "-" + id + "-dbus.service")
 	if err != nil {
 		return err
 	}
@@ -67,6 +68,7 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 		return errors.New("Could not obtain bus control group: reply invalid")
 	}
 	pecho("debug", "Obtained Bus control group: " + cgPath)
+
 	pidsFile, err := os.OpenFile(
 		filepath.Join(cgMnt, cgPath, "cgroup.procs"),
 		os.O_RDONLY,
@@ -76,6 +78,7 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 		return err
 	}
 	defer pidsFile.Close()
+
 	scanner := bufio.NewScanner(pidsFile)
 	var pids []string
 	for scanner.Scan() {
@@ -126,9 +129,10 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 			if slices.Contains(pids, pidStr) {
 				pecho("debug", "Calling Activate on Tray...")
 				tray := conn.Object(name, "/StatusNotifierItem")
-				call := tray.Call("org.kde.StatusNotifierItem.Activate", 0, 1, 18)
+				call := tray.Call("org.kde.StatusNotifierItem.Activate", 0, int32(1), int32(18))
 				if call.Err != nil {
 					pecho("warn", "Could not call for tray wakeup: " + call.Err.Error())
+					fmt.Println(call.Err)
 					return
 				}
 			} else {

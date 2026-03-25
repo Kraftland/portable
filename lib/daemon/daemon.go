@@ -3192,7 +3192,6 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 	}
 	if config.Advanced.TrayWake {
 		err := trayWakeNG(config, conn)
-		time.Sleep(1 * time.Second)
 		if err != nil {
 			pecho("crit", "Could not wake remote: " + err.Error())
 		}
