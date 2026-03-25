@@ -117,6 +117,7 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 			} else {
 				name = notif
 			}
+			pecho("debug", "Trying tray name " + name)
 			call := busObjUID.Call("org.freedesktop.DBus.GetConnectionUnixProcessID", 0, name)
 			if call.Err != nil {
 				pecho("warn", "Could not get peer PID: " + call.Err.Error())
