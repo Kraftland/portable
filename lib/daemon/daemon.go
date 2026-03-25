@@ -885,7 +885,6 @@ func pwSecContext(pwChan chan []string, config Config) {
 
 func calcDbusArg(argChan chan []string, config Config) {
 	argList := []string{
-		argList,
 		"bwrap",
 		"--json-status-fd", "2",
 		"--unshare-all",
