@@ -1713,14 +1713,6 @@ func prepareEnvs(config Config) {
 			addEnv("_portableNoFlatpakInfo=1")
 		}
 		addEnv("appID=" + config.Metadata.AppID)
-		if len(config.Exec.Arguments) > 0 {
-			jsonObj, err := json.Marshal(runtimeOpt.applicationArgs)
-			if err != nil {
-				pecho("warn", "Could not marshal application arguments: " + err.Error())
-			} else {
-				addEnv("_portableExtraArgs=" + string(jsonObj))
-			}
-		}
 		addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		if config.BusActivation.Enable {
 			actSlice := append([]string{config.BusActivation.Target}, config.BusActivation.Arguments...)

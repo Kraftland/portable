@@ -254,10 +254,11 @@ func startMaster(targetExec []string, targetArgs []string) {
 
 		targetExec = cmdlineReplacer(targetExec, decoded.FileMap)
 		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
-		args = append([]string{targetExec[0]}, targetArgs...)
 	}
-	startCmd := exec.Command(targetExec[0], args...)
-	fmt.Println("Starting main application", targetExec, "with cmdline:", targetArgs)
+	args = append(targetExec, targetArgs...)
+
+	startCmd := exec.Command(args[0], args[1:]...)
+	fmt.Println("Starting main application", args[0], "with cmdline:", args[1:])
 	go daemon.SdNotify(false, daemon.SdNotifyReady)
 	startReq.cmd = startCmd
 	startNotifier <- startReq
@@ -321,15 +322,6 @@ func main () {
 		rawTarget,
 	}
 	targetArgs := os.Args[1:]
-	extraArgs := os.Getenv("_portableExtraArgs")
-	if len(extraArgs) > 0 {
-		args := []string{}
-		err := json.Unmarshal([]byte(extraArgs), &args)
-		if err != nil {
-			panic(err)
-		}
-		targetSlice = append(targetSlice, args...)
-	}
 	fmt.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	if os.Getenv("_portableDebug") == "1" {
