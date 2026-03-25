@@ -330,6 +330,7 @@ func main () {
 			"--noprofile",
 			"--rcfile", "/run/bashrc",
 		}
+		targetArgs = []string{}
 	} else if os.Getenv("_portableBusActivate") == "1" {
 		busArgs := []string{}
 		err := json.Unmarshal([]byte(os.Getenv("_portableBusActivateArgs")), &busArgs)
