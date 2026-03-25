@@ -884,9 +884,7 @@ func pwSecContext(pwChan chan []string, config Config) {
 }
 
 func calcDbusArg(argChan chan []string, config Config) {
-	argList := []string{}
-	argList = append(
-		argList,
+	argList := []string{
 		"bwrap",
 		"--json-status-fd", "2",
 		"--unshare-all",
@@ -939,7 +937,7 @@ func calcDbusArg(argChan chan []string, config Config) {
 		"--call=org.kde.StatusNotifierWatcher=*@/StatusNotifierWatcher",
 		"--broadcast=org.kde.StatusNotifierWatcher=*@/StatusNotifierWatcher",
 
-	)
+	}
 
 	if config.Advanced.KDEStatus {
 		argList = append(argList,
