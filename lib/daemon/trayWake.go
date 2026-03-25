@@ -111,6 +111,9 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 				//newStyle = true
 				sp := strings.Split(notif, "@")
 				name = sp[0]
+			} else if strings.Contains(notif, "/") {
+				sp := strings.Split(notif, "/")
+				name = sp[0]
 			} else {
 				name = notif
 			}
