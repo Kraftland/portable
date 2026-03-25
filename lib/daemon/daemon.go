@@ -17,7 +17,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -3192,43 +3191,10 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 		startAct = "aux"
 	}
 	if config.Advanced.TrayWake {
-		pecho("debug", "Trying to resolve tray ID")
-		queryTrayArg := []string{
-			"--bus=unix:path=" + xdgDir.runtimeDir + "/app/" + config.Metadata.AppID + "/bus",
-			"--dest=org.kde.StatusNotifierWatcher",
-			"--type=method_call",
-			"--print-reply=literal",
-			"/StatusNotifierWatcher",
-			"org.freedesktop.DBus.Properties.Get",
-			"string:org.kde.StatusNotifierWatcher",
-			"string:RegisteredStatusNotifierItems",
-		}
-		out, err := exec.Command("/usr/bin/dbus-send", queryTrayArg...).CombinedOutput()
+		err := trayWakeNG(config, conn)
+		time.Sleep(1 * time.Second)
 		if err != nil {
-			pecho("crit", "Could not get tray ID: " + err.Error())
-		}
-		re := regexp.MustCompile(`org\.kde\.StatusNotifierItem-[0-9-]+`)
-		output := string(out)
-		match := re.FindString(output)
-		trayID := match
-
-		if len(trayID) > 0 {
-			pecho("debug", "Got tray ID: " + trayID)
-			wakeArgs := []string{
-				"--print-reply",
-				"--session",
-				"--dest=" + trayID,
-				"--type=method_call",
-				"/StatusNotifierItem",
-				"org.kde.StatusNotifierItem.Activate",
-				"int32:114514",
-				"int32:1919810",
-			}
-			wakeCmd := exec.Command("dbus-send", wakeArgs...)
-			wakeCmd.Stderr = os.Stderr
-			wakeCmd.Run()
-		} else {
-			pecho("crit", "Unable to get tray ID")
+			pecho("crit", "Could not wake remote: " + err.Error())
 		}
 	} else {
 		// TODO: remove legacy start, and do concurrent req
@@ -3246,6 +3212,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 	}
 	miChan <- true
 }
+
 
 type startReply struct {
 	hasDescriptors	bool

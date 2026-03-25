@@ -6,15 +6,18 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/coreos/go-systemd/v22/dbus"
 	godbus "github.com/godbus/dbus/v5"
 )
 
 func trayWakeNG(config Config, conn *godbus.Conn) error {
+	pecho("debug", "Attempting tray wakeup")
 	const cgMnt string = "/sys/fs/cgroup"
 
 	busObj := conn.Object(
@@ -45,10 +48,17 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 	}
 	ctx := context.Background()
 	ctxNew, cancelFunc := context.WithTimeout(ctx, 10 *time.Second)
-	sdConn := dbus.NewUserConnectionContext(ctxNew)
-	var ret = make(map[string]interface{})
-	ret, err = sdConn.GetUnitProperties()
-	cancelFunc()
+	defer cancelFunc()
+	sdConn, err := dbus.NewUserConnectionContext(ctxNew)
+	if err != nil {
+		return err
+	}
+	var ret = make(map[string]any)
+	ret, err = sdConn.GetUnitPropertiesContext(ctx, config.Metadata.FriendlyName + "-" + id + "-dbus.service")
+	if err != nil {
+		return err
+	}
+	sdConn.Close()
 	var cgPath string
 	cgroupPath, ok := ret["ControlGroup"]
 	if ok {
@@ -65,6 +75,7 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 	if err != nil {
 		return err
 	}
+	defer pidsFile.Close()
 	scanner := bufio.NewScanner(pidsFile)
 	var pids []string
 	for scanner.Scan() {
@@ -74,4 +85,59 @@ func trayWakeNG(config Config, conn *godbus.Conn) error {
 		}
 		pids = append(pids, line)
 	}
+	var registeredNotifs []string
+	trayObj := conn.Object("org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher")
+	call = trayObj.Call("org.freedesktop.DBus.Properties.Get", 0, "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems")
+	if call.Err != nil {
+		return call.Err
+	}
+	err = call.Store(&registeredNotifs)
+	if err != nil {
+		return err
+	}
+	if len(registeredNotifs) == 0 {
+		return errors.New("No registered tray icon")
+	}
+	busObjUID := conn.Object("org.freedesktop.DBus", "/org/freedesktop/DBus")
+	var wg sync.WaitGroup
+	for _, notif := range registeredNotifs {
+		wg.Go(func() {
+			//var newStyle bool
+			var name string
+			if strings.Contains(notif, "@") {
+				//newStyle = true
+				sp := strings.Split(notif, "@")
+				name = sp[0]
+			} else {
+				name = notif
+			}
+			call := busObjUID.Call("org.freedesktop.DBus.GetConnectionUnixProcessID", 0, name)
+			if call.Err != nil {
+				pecho("warn", "Could not get peer PID: " + call.Err.Error())
+				return
+			}
+			var pid int
+			err := call.Store(&pid)
+			if err != nil {
+				pecho("warn", "Could not get peer PID: " + err.Error())
+				return
+			}
+			pidStr := strconv.Itoa(pid)
+			if slices.Contains(pids, pidStr) {
+				pecho("debug", "Calling Activate on Tray...")
+				tray := conn.Object(name, "/StatusNotifierItem")
+				call := tray.Call("org.kde.StatusNotifierItem.Activate", 0, 1, 18)
+				if call.Err != nil {
+					pecho("warn", "Could not call for tray wakeup: " + call.Err.Error())
+					return
+				}
+			} else {
+				return
+			}
+		})
+	}
+
+	wg.Wait()
+
+	return nil
 }
