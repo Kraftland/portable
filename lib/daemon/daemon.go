@@ -1806,7 +1806,6 @@ func genBwArg(
 		"-p", "SuccessExitStatus=SIGKILL",
 		"-p", "NotifyAccess=all",
 		"-p", "TimeoutStartSec=infinity",
-		"-p", "OOMPolicy=stop",
 		"-p", "SecureBits=noroot-locked",
 		"-p", "NoNewPrivileges=yes",
 		"-p", "KillMode=control-group",
