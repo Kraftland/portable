@@ -1672,7 +1672,7 @@ func setupSharedDir (config Config) {
 		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "共享文件"),
 	)
 	if err != nil {
-		if os.IsExist(err) {} else {
+		if os.IsExist(err) {} else if os.IsPermission(err) {} else {
 			pecho("warn", "Could not setup shared directory: " + err.Error())
 		}
 	}
