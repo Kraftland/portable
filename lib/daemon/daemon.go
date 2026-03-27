@@ -1712,6 +1712,9 @@ func prepareEnvs(config Config) {
 		if ! config.Advanced.FlatpakInfo {
 			addEnv("_portableNoFlatpakInfo=1")
 		}
+		if config.System.InhibitOnBehalf {
+			addEnv("_portableInhibit=1")
+		}
 		addEnv("appID=" + config.Metadata.AppID)
 		addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		if config.BusActivation.Enable {

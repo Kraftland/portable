@@ -48,6 +48,9 @@ globalShortcuts = false
 # Whether or not to expose all GPUs and prefer discrete graphics card. By default, Portable blocks any GPU except the integrated one to improve user experience and power consumption on hybrid systems.
 gameMode = false
 
+# Inhibit suspend and idle on behalf of applications. Requires system.inhibitSuspend being true
+inhibitOnBehalf = false
+
 # The network section defines behaviour of Portable's network firewall. Requires netsock for filtering.
 [network]
 # Whether or not an application can use network interfaces. Defaults to true.
