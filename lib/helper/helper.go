@@ -290,6 +290,24 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 	busName := "top.kimiblock.portable." + os.Getenv("appID")
 	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
 	<- blocker
+	if packageHasInhibit {
+		name := conn.Names()[0]
+		name = strings.ReplaceAll(name, ".", "_")
+		name = strings.TrimPrefix(name, ":")
+		path := "/org/freedesktop/portal/desktop/request/"
+		path = path + name + "/" + inhibitRequest
+		reqObj := conn.Object(
+			"org.freedesktop.portal.Desktop",
+			dbus.ObjectPath(path),
+		)
+		call := reqObj.Call(
+			"org.freedesktop.portal.Request.Close",
+			dbus.FlagNoReplyExpected,
+		)
+		if call.Err != nil {
+			fmt.Println("Could not unregister inhibit:", call.Err)
+		}
+	}
 	fmt.Println("Requesting termination...")
 	call := busObj.Call("top.kimiblock.Portable.Controller.Stop", dbus.FlagNoReplyExpected)
 	if call.Err != nil {
@@ -299,19 +317,24 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 }
 
 func main () {
-	var landlockWg sync.WaitGroup
-	landlockWg.Go(func() {
+	var wg sync.WaitGroup
+	wg.Go(func() {
 		engageLandlock()
 	})
-	var busWg sync.WaitGroup
 	var bus *dbus.Conn
-	busWg.Go(func() {
+	wg.Go(func() {
 		var err error
 		bus, err = dbus.ConnectSessionBus()
 		if err != nil {
 			panic("Could not connect to session bus: " + err.Error())
 		}
-		fmt.Println("Connected to session bus")
+		env := os.Getenv("_portableInhibit")
+		if env == "1" {
+			packageHasInhibit = true
+		} else {
+			return
+		}
+		callInhibit(bus)
 	})
 	go startCounter()
 	go sendPidFd()
@@ -347,8 +370,7 @@ func main () {
 		var exposeList PassFiles
 		json.Unmarshal([]byte(exposedEnvs), &exposeList)
 	}
-	busWg.Wait()
-	landlockWg.Wait()
+	wg.Wait()
 	go busAuxStart(bus, targetSlice)
 	go startMaster(targetSlice, targetArgs)
 	go terminateWatcher(terminateNotify, bus)

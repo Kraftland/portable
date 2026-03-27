@@ -1667,12 +1667,12 @@ func setupSharedDir (config Config) {
 	if err != nil {
 		pecho("warn", "Could not setup shared directory: " + err.Error())
 	}
-	err = os.Link(
+	err = os.Symlink(
 		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared"),
 		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "共享文件"),
 	)
 	if err != nil {
-		if os.IsExist(err) {} else if os.IsPermission(err) {} else {
+		if os.IsExist(err) {} else {
 			pecho("warn", "Could not setup shared directory: " + err.Error())
 		}
 	}
@@ -1711,6 +1711,9 @@ func prepareEnvs(config Config) {
 	wg.Go(func() {
 		if ! config.Advanced.FlatpakInfo {
 			addEnv("_portableNoFlatpakInfo=1")
+		}
+		if config.System.InhibitOnBehalf {
+			addEnv("_portableInhibit=1")
 		}
 		addEnv("appID=" + config.Metadata.AppID)
 		addEnv("_portableLaunchTarget=" + config.Exec.Target)

@@ -35,6 +35,7 @@ type ProcMgmt struct {
 
 type SysMgmt struct {
 	InhibitSuspend	bool
+	InhibitOnBehalf	bool
 	GlobalShortcuts	bool
 	GameMode	bool
 }
