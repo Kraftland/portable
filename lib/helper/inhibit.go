@@ -8,7 +8,7 @@ import (
 
 const (
 	// e.g. /org/freedesktop/portal/desktop/request/1_155/gtk769392454
-	inhibitRequest string = "phelper"
+	inhibitRequest string = "portablehelper"
 )
 
 var (
@@ -22,9 +22,7 @@ func callInhibit(conn *dbus.Conn) {
 	busObj := conn.Object("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop")
 	m := make(map[string]dbus.Variant)
 	m["handle_token"] = dbus.MakeVariant(inhibitRequest)
-	m["reason"] = dbus.MakeVariant("Package requested inhibition")
-	var options []map[string]dbus.Variant
-	options = append(options, m)
+	m["reason"] = dbus.MakeVariant("Portable package requested inhibition")
 	call := busObj.Call(
 		"org.freedesktop.portal.Inhibit.Inhibit",
 		0,
