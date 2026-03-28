@@ -51,8 +51,8 @@ func engageLandlock () {
 		config.RestrictScoped()
 	}
 
-	mountInfoCfg := os.Getenv("_portableNoFlatpakInfo")
-	if len(mountInfoCfg) > 0 {
+	mountInfoCfg := os.Getenv("_portableEnableLandlock")
+	if len(mountInfoCfg) == 0 {
 		return
 	} else {
 		fullAccRule := landlock.AccessFSSet(landlockSyscall.AccessFSExecute|landlockSyscall.AccessFSWriteFile|landlockSyscall.AccessFSReadFile|
