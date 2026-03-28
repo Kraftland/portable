@@ -7,92 +7,6 @@ import (
 	"strings"
 )
 
-type portableLegacyConfigOpts struct {
-	confPath		string
-	networkDeny		string
-	friendlyName		string
-	appID			string
-	stateDirectory		string
-	launchTarget		string	// this one may be empty?
-	busLaunchTarget		string	// also may be empty
-	bindNetwork		bool
-	terminateImmediately	bool
-	allowClassicNotifs	bool
-	useZink			bool
-	qt5Compat		bool
-	waylandOnly		bool
-	gameMode		bool
-	mprisName		string // may be empty
-	bindCameras		bool
-	bindPipewire		bool
-	bindInputDevices	bool
-	allowInhibit		bool
-	allowGlobalShortcuts	bool
-	allowKDEStatus		bool
-	dbusWake		bool
-	mountInfo		bool
-}
-
-type confTarget struct {
-	str			*string
-	b			*bool
-}
-
-var (
-	legacyConf		portableLegacyConfigOpts
-)
-
-// Defaults should be set in readConf()
-var targets = map[string]confTarget{
-	"appID":		{str: &legacyConf.appID},
-	"friendlyName":		{str: &legacyConf.friendlyName},
-	"stateDirectory":	{str: &legacyConf.stateDirectory},
-	"launchTarget":		{str: &legacyConf.launchTarget},
-	"busLaunchTarget":	{str: &legacyConf.busLaunchTarget},
-	"mprisName":		{str: &legacyConf.mprisName},
-	"bindNetwork":		{b: &legacyConf.bindNetwork},
-	"terminateImmediately":	{b: &legacyConf.terminateImmediately},
-	"networkDeny":		{str: &legacyConf.networkDeny},
-	"allowClassicNotifs":	{b: &legacyConf.allowClassicNotifs},
-	"useZink":		{b: &legacyConf.useZink},
-	"qt5Compat":		{b: &legacyConf.qt5Compat},
-	"waylandOnly":		{b: &legacyConf.waylandOnly},
-	"gameMode":		{b: &legacyConf.gameMode},
-	"bindCameras":		{b: &legacyConf.bindCameras},
-	"bindPipewire":		{b: &legacyConf.bindPipewire},
-	"bindInputDevices":	{b: &legacyConf.bindInputDevices},
-	"allowInhibit":		{b: &legacyConf.allowInhibit},
-	"allowGlobalShortcuts":	{b: &legacyConf.allowGlobalShortcuts},
-	"allowKDEStatus":	{b: &legacyConf.allowKDEStatus},
-	"dbusWake":		{b: &legacyConf.dbusWake},
-	"mountInfo":		{b: &legacyConf.mountInfo},
-}
-
-var confInfo = map[string]string{
-	"appID":		"string",
-	"friendlyName":		"string",
-	"stateDirectory":	"string",
-	"launchTarget":		"string",
-	"busLaunchTarget":	"string",
-	"bindNetwork":		"bool",
-	"terminateImmediately":	"bool",
-	"networkDeny":		"string",
-	"allowClassicNotifs":	"bool",
-	"useZink":		"bool",
-	"qt5Compat":		"bool",
-	"waylandOnly":		"bool",
-	"gameMode":		"bool",
-	"mprisName":		"string",
-	"bindCameras":		"bool",
-	"bindPipewire":		"bool",
-	"bindInputDevices":	"bool",
-	"allowInhibit":		"bool",
-	"allowGlobalShortcuts":	"bool",
-	"allowKDEStatus":	"bool",
-	"dbusWake":		"bool",
-	"mountInfo":		"bool",
-}
-
 func determineLegacyConfPath() string {
 	var portableConfigLegacyRaw string
 	var portableConfigRaw string
@@ -124,6 +38,90 @@ func determineLegacyConfPath() string {
 }
 
 func readLegacyConf() Config {
+	type portableLegacyConfigOpts struct {
+		confPath		string
+		networkDeny		string
+		friendlyName		string
+		appID			string
+		stateDirectory		string
+		launchTarget		string	// this one may be empty?
+		busLaunchTarget		string	// also may be empty
+		bindNetwork		bool
+		terminateImmediately	bool
+		allowClassicNotifs	bool
+		useZink			bool
+		qt5Compat		bool
+		waylandOnly		bool
+		gameMode		bool
+		mprisName		string // may be empty
+		bindCameras		bool
+		bindPipewire		bool
+		bindInputDevices	bool
+		allowInhibit		bool
+		allowGlobalShortcuts	bool
+		allowKDEStatus		bool
+		dbusWake		bool
+		mountInfo		bool
+	}
+
+	type confTarget struct {
+		str			*string
+		b			*bool
+	}
+
+	var (
+		legacyConf		portableLegacyConfigOpts
+	)
+
+	var targets = map[string]confTarget{
+		"appID":		{str: &legacyConf.appID},
+		"friendlyName":		{str: &legacyConf.friendlyName},
+		"stateDirectory":	{str: &legacyConf.stateDirectory},
+		"launchTarget":		{str: &legacyConf.launchTarget},
+		"busLaunchTarget":	{str: &legacyConf.busLaunchTarget},
+		"mprisName":		{str: &legacyConf.mprisName},
+		"bindNetwork":		{b: &legacyConf.bindNetwork},
+		"terminateImmediately":	{b: &legacyConf.terminateImmediately},
+		"networkDeny":		{str: &legacyConf.networkDeny},
+		"allowClassicNotifs":	{b: &legacyConf.allowClassicNotifs},
+		"useZink":		{b: &legacyConf.useZink},
+		"qt5Compat":		{b: &legacyConf.qt5Compat},
+		"waylandOnly":		{b: &legacyConf.waylandOnly},
+		"gameMode":		{b: &legacyConf.gameMode},
+		"bindCameras":		{b: &legacyConf.bindCameras},
+		"bindPipewire":		{b: &legacyConf.bindPipewire},
+		"bindInputDevices":	{b: &legacyConf.bindInputDevices},
+		"allowInhibit":		{b: &legacyConf.allowInhibit},
+		"allowGlobalShortcuts":	{b: &legacyConf.allowGlobalShortcuts},
+		"allowKDEStatus":	{b: &legacyConf.allowKDEStatus},
+		"dbusWake":		{b: &legacyConf.dbusWake},
+		"mountInfo":		{b: &legacyConf.mountInfo},
+	}
+
+	var confInfo = map[string]string{
+		"appID":		"string",
+		"friendlyName":		"string",
+		"stateDirectory":	"string",
+		"launchTarget":		"string",
+		"busLaunchTarget":	"string",
+		"bindNetwork":		"bool",
+		"terminateImmediately":	"bool",
+		"networkDeny":		"string",
+		"allowClassicNotifs":	"bool",
+		"useZink":		"bool",
+		"qt5Compat":		"bool",
+		"waylandOnly":		"bool",
+		"gameMode":		"bool",
+		"mprisName":		"string",
+		"bindCameras":		"bool",
+		"bindPipewire":		"bool",
+		"bindInputDevices":	"bool",
+		"allowInhibit":		"bool",
+		"allowGlobalShortcuts":	"bool",
+		"allowKDEStatus":	"bool",
+		"dbusWake":		"bool",
+		"mountInfo":		"bool",
+	}
 	legacyConf.mountInfo = true
 	path := determineLegacyConfPath()
 
