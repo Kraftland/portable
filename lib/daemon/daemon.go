@@ -1709,6 +1709,9 @@ func miscEnvs (config Config) {
 func prepareEnvs(config Config) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
+		if config.Advanced.Landlock {
+			addEnv("_portableEnableLandlock=1")
+		}
 		if ! config.Advanced.FlatpakInfo {
 			addEnv("_portableNoFlatpakInfo=1")
 		}
