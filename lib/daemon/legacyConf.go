@@ -124,6 +124,7 @@ func determineLegacyConfPath() string {
 }
 
 func readLegacyConf() Config {
+	legacyConf.mountInfo = true
 	path := determineLegacyConfPath()
 
 	config := setDefaultConfOpts()
