@@ -3248,6 +3248,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config) 
 		pecho("debug", "Remote has no descriptors, returning...")
 		return
 	}
+	fmt.Println("Streaming console from sandbox, press Control-D to detach")
 	baseDir := reply.baseDir
 	inFile := filepath.Join(baseDir, "stdin")
 	outFile := filepath.Join(baseDir, "stdout")
