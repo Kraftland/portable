@@ -352,6 +352,7 @@ func main () {
 			"/usr/bin/bash",
 			"--noprofile",
 			"--rcfile", "/run/bashrc",
+			"-i",
 		}
 		targetArgs = []string{}
 	} else if os.Getenv("_portableBusActivate") == "1" {
