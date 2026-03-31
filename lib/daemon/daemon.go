@@ -1963,7 +1963,15 @@ func genBwArg(
 		"--tmpfs",		"/var/opt",
 		"--tmpfs",		"/var/spool",
 		"--tmpfs",		"/var/tmp",
-		"--ro-bind-try",	"/opt", "/opt",
+
+		"--perms",		"0755",
+		"--dir",		"/host",
+		"--ro-bind-try",	"/opt", "/host/opt",
+		"--symlink",		"/host/opt", "/opt",
+		"--bind",		"/usr", "/host/usr",
+		"--overlay-src",	"/usr/bin",
+		"--overlay-src",	"/usr/lib/portable/overlay-usr",
+		"--ro-overlay",		"/host/usr/bin",
 
 		"--ro-bind-try",	"/var/cache/fontconfig", "/var/cache/fontconfig",
 
