@@ -2188,7 +2188,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 			miscChan <- []string{
 				"--ro-bind",
 				"/usr/lib/portable/overlay-usr/flatpak-spawn",
-				"/usr/lib/flatpak-xdg-utils/flatpak-spawn",
+				"/host/usr/lib/flatpak-xdg-utils/flatpak-spawn",
 			}
 		}
 	})
