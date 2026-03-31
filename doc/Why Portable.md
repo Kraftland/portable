@@ -19,7 +19,7 @@ Portable is designed to be simple to use, privacy first and efficient while oper
 - Package defined input device expose, use controllers without exposing the whole `/sys` and `/dev` directory
 - Automatic input method workarounds
 - Curated, safe list of Portals exposed
-- Optional, user defined shared path via environment variable `bwBindPar=/path`
+- Optional, user defined shared path via argument `--expose`
 
 You may want a comparison between Flatpak and Portable:
 
