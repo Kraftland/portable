@@ -1891,6 +1891,19 @@ func genBwArg(
 		"--unshare-pid",
 		"--unshare-user",
 
+		"--perms",		"0755",
+		"--dir",		"/host",
+		"--ro-bind-try",	"/opt", "/host/opt",
+		"--symlink",		"/host/opt", "/opt",
+		"--ro-bind",		"/usr", "/host/usr",
+		"--symlink",		"/host/usr", "/usr",
+		"--overlay-src",	"/usr/bin",
+		"--overlay-src",	"/usr/lib/portable/overlay-usr",
+		"--ro-overlay",		"/host/usr/bin",
+		"--symlink",		"/host/usr/lib", "/lib",
+		"--symlink",		"/host/usr/lib", "/lib64",
+		"--symlink",		"/host/usr/bin", "/bin",
+		"--symlink",		"/host/usr/bin", "/sbin",
 		// Tmp binds
 		"--tmpfs",		"/tmp",
 
@@ -1918,16 +1931,6 @@ func genBwArg(
 		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
 		"--ro-bind",		"/sys/kernel", "/sys/kernel",
 		"--ro-bind",		"/sys/devices/virtual", "/sys/devices/virtual",
-
-		// usr binds
-		"--bind",		"/usr", "/usr",
-		"--overlay-src",	"/usr/bin",
-		"--overlay-src",	"/usr/lib/portable/overlay-usr",
-		"--ro-overlay",		"/usr/bin",
-		"--symlink",		"/usr/lib", "/lib",
-		"--symlink",		"/usr/lib", "/lib64",
-		"--symlink",		"/usr/bin", "/bin",
-		"--symlink",		"/usr/bin", "/sbin",
 
 		// Proc binds
 		"--proc",		"/proc",
@@ -1963,15 +1966,6 @@ func genBwArg(
 		"--tmpfs",		"/var/opt",
 		"--tmpfs",		"/var/spool",
 		"--tmpfs",		"/var/tmp",
-
-		"--perms",		"0755",
-		"--dir",		"/host",
-		"--ro-bind-try",	"/opt", "/host/opt",
-		"--symlink",		"/host/opt", "/opt",
-		"--bind",		"/usr", "/host/usr",
-		"--overlay-src",	"/usr/bin",
-		"--overlay-src",	"/usr/lib/portable/overlay-usr",
-		"--ro-overlay",		"/host/usr/bin",
 
 		"--ro-bind-try",	"/var/cache/fontconfig", "/var/cache/fontconfig",
 
@@ -2021,7 +2015,7 @@ func genBwArg(
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
-		"--tmpfs",		"/usr/share/applications",
+		"--tmpfs",		"/host/usr/share/applications",
 		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 
