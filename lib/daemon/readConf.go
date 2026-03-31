@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/BurntSushi/toml"
@@ -153,6 +154,9 @@ func getConf() Config {
 		default:
 			pecho("warn", "Could not obtain session type")
 			config.Privacy.X11 = true
+	}
+	if strings.HasPrefix(config.Exec.Target, "/opt") || strings.HasPrefix(config.Exec.Target, "/usr") {
+		config.Exec.Target = "/host" + config.Exec.Target
 	}
 	return config
 }
