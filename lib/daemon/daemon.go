@@ -1897,16 +1897,18 @@ func genBwArg(
 		"--symlink",		"/host/opt", "/opt",
 		"--ro-bind",		"/usr", "/usr",
 		"--ro-bind",		"/usr", "/host/usr",
+		// Steam breaks on this, it sucks
+		//"--symlink",		"/host/usr", "/usr",
 		"--overlay-src",	"/usr/bin",
 		"--overlay-src",	"/usr/lib/portable/overlay-usr",
 		"--ro-overlay",		"/host/usr/bin",
 		"--overlay-src",	"/usr/bin",
 		"--overlay-src",	"/usr/lib/portable/overlay-usr",
 		"--ro-overlay",		"/usr/bin",
-		"--symlink",		"/host/usr/lib", "/lib",
-		"--symlink",		"/host/usr/lib", "/lib64",
-		"--symlink",		"/host/usr/bin", "/bin",
-		"--symlink",		"/host/usr/bin", "/sbin",
+		"--symlink",		"/usr/lib", "/lib",
+		"--symlink",		"/usr/lib", "/lib64",
+		"--symlink",		"/usr/bin", "/bin",
+		"--symlink",		"/usr/bin", "/sbin",
 		// Tmp binds
 		"--tmpfs",		"/tmp",
 
