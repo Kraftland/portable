@@ -2232,6 +2232,8 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 						ori,
 						strings.TrimPrefix(dest, "dev:"),
 					}
+				} else if dest == "null" {
+					return
 				} else {
 					validBwBindArgs <- []string{
 						"--bind",
