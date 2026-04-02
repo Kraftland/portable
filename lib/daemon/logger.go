@@ -2,19 +2,24 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
 var (
-	pechoChan		= make(chan []string, 128)
+	pechoChan		= make(chan pechoMsg, 128)
 )
 
-func pecho(level string, message string) {
-	var msgSlice = []string{
-		level,
-		message,
+type pechoMsg struct {
+	level		string
+	msg		[]any
+}
+
+func pecho(level string, message ...any) {
+	pechoChan <- pechoMsg {
+		level:	level,
+		msg:	message,
 	}
-	pechoChan <- msgSlice
 }
 
 
@@ -30,29 +35,28 @@ func pechoWorker() {
 		default:
 			internalLoggingLevel = 3
 	}
-	pechoChan <- []string{
-		"debug",
-		"Initialized logging daemon",
-	}
+	var debugLogger = log.New(os.Stdout, "[Debug] ", 0)
+	var critLogger = log.New(os.Stderr, "[Critical] ", 0)
+	var warnLogger = log.New(os.Stderr, "[Warn] ", 0)
 	for {
 		chanRes := <- pechoChan
-		switch chanRes[0] {
+		switch chanRes.level {
 			case "debug":
 				if internalLoggingLevel <= 1 {
-					fmt.Println("[Debug] ", chanRes[1])
+					debugLogger.Println(chanRes.msg)
 				}
 			case "info":
 				if internalLoggingLevel <= 2 {
-					fmt.Println("[Info] ", chanRes[1])
+					fmt.Println("[Info] ", chanRes.msg)
 				}
 			case "warn":
-				fmt.Println("[Warn] ", chanRes[1])
+				warnLogger.Println(chanRes.msg)
 			case "crit":
-				fmt.Println("[Critical] ", chanRes[1])
+				critLogger.Println(chanRes.msg)
 				stopApp()
-				panic("A critical error has happened")
+				critLogger.Fatalln("A critical error has happened")
 			default:
-				fmt.Println("[Undefined] ", chanRes[1])
+				panic("Unknown logging level")
 		}
 	}
 }
