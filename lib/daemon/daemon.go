@@ -1893,15 +1893,8 @@ func genBwArg(
 
 		"--perms",		"0755",
 		"--dir",		"/host",
-		"--ro-bind-try",	"/opt", "/host/opt",
-		"--symlink",		"/host/opt", "/opt",
+		"--ro-bind-try",	"/opt", "/opt",
 		"--ro-bind",		"/usr", "/usr",
-		"--ro-bind",		"/usr", "/host/usr",
-		// Steam breaks on this, it sucks
-		//"--symlink",		"/host/usr", "/usr",
-		"--overlay-src",	"/usr/bin",
-		"--overlay-src",	"/usr/lib/portable/overlay-usr",
-		"--ro-overlay",		"/host/usr/bin",
 		"--overlay-src",	"/usr/bin",
 		"--overlay-src",	"/usr/lib/portable/overlay-usr",
 		"--ro-overlay",		"/usr/bin",
