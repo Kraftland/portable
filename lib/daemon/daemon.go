@@ -36,15 +36,6 @@ const (
 	version		float32	=	15
 )
 
-type RUNTIME_OPT struct {
-	argStop		bool
-	applicationArgs	[]string
-	userExpose	chan map[string]string
-	userLang	string
-	miTerminate	bool
-	writtenDesktop	bool
-}
-
 type RUNTIME_PARAMS struct {
 	instanceID		string
 	waylandDisplay		string
@@ -287,6 +278,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 					pecho("debug", "Received quit request from user")
 				case "debug-shell":
 					addEnv("_portableDebug=1")
+					runtimeOpt.isDebug = true
 				case "share-file", "share-files":
 					startAct = "abort"
 					shareFile(config)
@@ -3181,10 +3173,22 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config) 
 	}
 
 	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
+	var sl []string
+	var customTgt bool
+	if runtimeOpt.isDebug {
+		sl = []string{
+			"/usr/bin/bash",
+			"--noprofile",
+			"--rcfile", "/run/bashrc",
+			"-i",
+		}
+		args = []string{}
+		customTgt = true
+	}
 	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
-		false, // For now we do not support custom target
+		customTgt,
 		tray,
-		[]string{},
+		sl,
 		args,
 		fileSlice,
 	)
