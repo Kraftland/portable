@@ -347,6 +347,12 @@ func main () {
 	targetArgs := os.Args[1:]
 	fmt.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
+	if len(exposedEnvs) > 0 {
+		var exposeList PassFiles
+		json.Unmarshal([]byte(exposedEnvs), &exposeList)
+	}
+	wg.Wait()
+	go busAuxStart(bus, targetSlice)
 	if os.Getenv("_portableDebug") == "1" {
 		targetSlice = []string{
 			"/usr/bin/bash",
@@ -367,12 +373,7 @@ func main () {
 			targetArgs = []string{}
 		}
 		targetSlice = busArgs
-	} else if len(exposedEnvs) > 0 {
-		var exposeList PassFiles
-		json.Unmarshal([]byte(exposedEnvs), &exposeList)
 	}
-	wg.Wait()
-	go busAuxStart(bus, targetSlice)
 	go startMaster(targetSlice, targetArgs)
 	go terminateWatcher(terminateNotify, bus)
 	select {}
