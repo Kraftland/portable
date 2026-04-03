@@ -1956,7 +1956,7 @@ func genBwArg(
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
-		"--tmpfs",		"/host/usr/share/applications",
+		"--tmpfs",		"/usr/share/applications",
 		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 
