@@ -8,6 +8,11 @@ import (
 	"strings"
 	"bufio"
 	"github.com/KarpelesLab/reflink"
+	"strconv"
+	"fmt"
+	"io/fs"
+	godbus "github.com/godbus/dbus/v5"
+	"sync"
 )
 
 func openHome (config Config) {
@@ -166,4 +171,76 @@ func shareFile(config Config) {
 			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
 		}
 	}
+}
+
+
+func showStats(config Config) {
+	conn, err := godbus.ConnectSessionBus()
+	busName := "top.kimiblock.portable." + config.Metadata.AppID
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
+
+	size := getDirSize(filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory))
+	var builder strings.Builder
+	builder.WriteString("Application Statistics: \n")
+	builder.WriteString("	Total disk use: " + strconv.FormatFloat(size,'f', 2, 64) + "M\n")
+	call := busObj.Call(busName + ".Ping", 0)
+	if call.Err != nil {
+		pecho("debug", "Could not call running instance")
+	} else {
+		pecho("debug", "Remote instance responded with Pong")
+		call = busObj.Call("top.kimiblock.portable.Info.GetInfo", 0)
+		if call.Err != nil {
+			pecho(
+				"warn",
+				"Could not obtain runtime info from remote: " + call.Err.Error(),
+			)
+		} else {
+			var reply []string
+			err := call.Store(&reply)
+			if err != nil {
+				pecho("warn", "Could not decode remote reply: " + err.Error())
+			} else {
+				builder.WriteString("Runtime Status: \n")
+				for _, val := range reply {
+					builder.WriteString("	" + val + "\n")
+				}
+			}
+		}
+	}
+
+	fmt.Println(builder.String())
+	os.Exit(0)
+}
+
+func getDirSize(path string) float64 {
+	sizeChan := make(chan int, 512)
+	var wg sync.WaitGroup
+	var totalBytes int
+	var totalFiles int
+	wg.Go(func() {
+		for size := range sizeChan {
+			totalBytes = totalBytes + size
+			totalFiles++
+		}
+	})
+	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		stat, errStat := os.Stat(path)
+		if errStat != nil {
+			pecho("debug", "Could not stat " + path + ": " + errStat.Error())
+			return nil
+		}
+		sizeChan <- int(stat.Size())
+	return nil
+	})
+	close(sizeChan)
+	if err != nil {
+		return 0
+	}
+	wg.Wait()
+	pecho("debug", "Calculated " + strconv.Itoa(totalFiles) + " files")
+	return bytesToMb(totalBytes)
 }
