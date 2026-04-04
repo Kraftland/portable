@@ -22,8 +22,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/KarpelesLab/reflink"
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
@@ -134,27 +132,6 @@ func addEnv(envToAdd string) {
 	envsChan <- envToAdd
 }
 
-func openHome (config Config) {
-	cmdArgs := []string{
-		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
-	}
-	openCmd := exec.Command("/usr/bin/xdg-open", cmdArgs...)
-	openCmd.Stderr = os.Stderr
-	openCmd.Run()
-	os.Exit(0)
-}
-
-func resetDocs (config Config) {
-	cmdArgs := []string{
-		"permission-reset",
-		config.Metadata.AppID,
-	}
-	openCmd := exec.Command("flatpak", cmdArgs...)
-	openCmd.Stderr = os.Stderr
-	openCmd.Run()
-	os.Exit(0)
-}
-
 func bytesToMb(bytes int) float64 {
 	var div float64 = 1024 * 1024
 	return float64(bytes) / div
@@ -231,141 +208,6 @@ func getDirSize(path string) float64 {
 	return bytesToMb(totalBytes)
 }
 
-func cmdlineDispatcher(cmdChan chan int8, config Config) {
-	var skipCount int
-	var hasExpose bool
-	var exposeMap = map[string]string{}
-	cmdlineArray := os.Args
-	runtimeOpt.applicationArgs = config.Exec.Arguments
-	for index, value := range cmdlineArray {
-		if index == 0 {
-			continue
-		}
-		if skipCount > 0 {
-			skipCount--
-			continue
-		} else if runtimeOpt.argStop == true {
-			runtimeOpt.applicationArgs = append(
-				runtimeOpt.applicationArgs,
-				value,
-			)
-			continue
-		}
-		switch value {
-			case "--expose":
-				if len(cmdlineArray) <= index + 2 {
-					pecho("warn", "--expose requires 2 arguments")
-					break
-				}
-				if filepath.IsAbs(cmdlineArray[index + 1]) {
-					pecho("debug", "Validated absolute path")
-				} else {
-					pecho("warn", "Rejecting non absolute path")
-					continue
-				}
-				hasExpose = true
-				skipCount += 2
-				exposeMap[cmdlineArray[index + 1]] = cmdlineArray[index + 2]
-			case "--actions" :
-			skipCount++
-			if len(cmdlineArray) <= index + 1 {
-				pecho("warn", "--actions require an argument")
-				break
-			}
-			switch cmdlineArray[index + 1] {
-				case "quit":
-					runtimeOpt.miTerminate = true
-					pecho("debug", "Received quit request from user")
-				case "debug-shell":
-					addEnv("_portableDebug=1")
-					runtimeOpt.isDebug = true
-				case "share-file", "share-files":
-					startAct = "abort"
-					shareFile(config)
-				case "opendir", "home", "openhome":
-					startAct = "abort"
-					openHome(config)
-				case "reset-document", "reset-documents":
-					startAct = "abort"
-					resetDocs(config)
-				case "stat", "stats":
-					startAct = "abort"
-					showStats(config)
-				default:
-					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
-			}
-			case "--dbus-activation":
-				addEnv("_portableBusActivate=1")
-				if ! config.BusActivation.Enable {
-					pecho("crit", "Could not start application: bus activation not enabled")
-				}
-			case "--":
-				runtimeOpt.argStop = true
-			default:
-				pecho("warn", "Unrecognised option: " + value)
-		}
-	}
-	if hasExpose {
-		exposeList := []string{}
-		for key, _ := range exposeMap {
-			exposeList = append(exposeList, key)
-		}
-		res := questionExpose(exposeList, config)
-		if res {
-			runtimeOpt.userExpose <- exposeMap
-		}
-	}
-	for index, _ := range runtimeOpt.applicationArgs {
-		runtimeOpt.applicationArgs[index] = strings.TrimSuffix(
-			runtimeOpt.applicationArgs[index],
-			"\n")
-	}
-	encodedArg, errEncode := json.Marshal(runtimeOpt.applicationArgs)
-	if errEncode != nil {
-		pecho("warn", "Could not encode arguments as json")
-	}
-	addEnv("targetArgs=" + string(encodedArg))
-	cmdChan <- 1
-	fullCmdline := strings.Join(cmdlineArray, ", ")
-	pecho("debug", "Full command line: " + fullCmdline)
-	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
-}
-
-func shareFile(config Config) {
-	var paths []string
-	zenityCmd := exec.Command("/usr/bin/zenity", "--file-selection", "--multiple")
-	zenityCmd.Stderr = os.Stderr
-	zenityOut, err := zenityCmd.StdoutPipe()
-	zenityCmd.Start()
-	if err != nil {
-		pecho("crit", "Unable to pipe zenity's output" + err.Error())
-	}
-	scanner := bufio.NewScanner(zenityOut)
-	for scanner.Scan() {
-		text := scanner.Text()
-		paths = append(
-			paths,
-			strings.Split(text, "|")...
-		)
-	}
-	if len(paths) == 0 {
-		pecho("warn", "Did not get any path from zenity")
-		os.Exit(2)
-	} else {
-		pecho("debug", "Got paths from zenity: " + strings.Join(paths, ", "))
-	}
-	for _, path := range paths {
-		// stdlib doesn't seem to do reflink
-		pathSp := strings.Split(path, "/")
-		pathslices := len(pathSp)
-		basename := pathSp[pathslices - 1]
-		dest := filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared", basename)
-		reflinkErr := reflink.Auto(path, dest)
-		if reflinkErr != nil {
-			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
-		}
-	}
-}
 
 func getVariables(config Config) {
 	runtimeOpt.userLang = os.Getenv("LANG")
@@ -1956,7 +1798,7 @@ func genBwArg(
 
 		// Privacy mounts
 		"--tmpfs",		"/proc/1",
-		"--tmpfs",		"/host/usr/share/applications",
+		"--tmpfs",		"/usr/share/applications",
 		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 
