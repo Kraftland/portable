@@ -29,47 +29,6 @@ import (
 	"golang.org/x/net/http2"
 )
 
-const (
-	version		float32	=	15
-)
-
-type RUNTIME_PARAMS struct {
-	instanceID		string
-	waylandDisplay		string
-	bwCmd			[]string
-}
-
-type XDG_DIRS struct {
-	runtimeDir		string
-	confDir			string
-	cacheDir		string
-	dataDir			string
-	home			string
-}
-
-var (
-	internalLoggingLevel	int
-	runtimeInfo		RUNTIME_PARAMS
-	xdgDir			XDG_DIRS
-	runtimeOpt		RUNTIME_OPT
-	envsChan		= make(chan string, 512)
-	envsFlushReady		= make(chan int8, 1)
-	startAct		string
-	gpuChan 		= make(chan []string, 1)
-	busArgChan		= make(chan []string, 1)
-	socketStop		= make(chan int8, 10)
-	stopAppChan		= make(chan int8, 512)
-	stopAppDone		= make(chan int8)
-	nvKernelModulePath 	= []string{
-					"/sys/module/nvidia",
-					"/sys/module/nvidia_drm",
-					"/sys/module/nvidia_modeset",
-					"/sys/module/nvidia_uvm",
-					"/sys/module/nvidia_wmi_ec_backlight",
-				}
-	filesInfo		= make(chan PassFiles, 1)
-)
-
 func sanityChecks(config Config) {
 	if sdutil.IsRunningSystemd() == false {
 		pecho("crit", "Portable requires the systemd service manager")
@@ -1869,11 +1828,6 @@ func maskDir(path string) (maskArgs []string) {
 	return
 }
 
-type PassFiles struct {
-	// FileMap is a map that contains [host path string](docid string)
-	FileMap		map[string]string
-}
-
 func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn, config Config) {
 	var wg sync.WaitGroup
 	var miscArgs = []string{}
@@ -2085,12 +2039,12 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 	close(miscChan)
 }
 
-type PortalResponse struct {
-	DocIDs		[]string
-	ExtraInfo	map[string]godbus.Variant
-}
 
 func watchResult(sigChan chan *godbus.Signal, result chan bool) {
+	type PortalResponse struct {
+		DocIDs		[]string
+		ExtraInfo	map[string]godbus.Variant
+	}
 	for signal := range sigChan {
 		var response PortalResponse
 		pecho("debug", "Processing D-Bus signal from " + signal.Sender)
@@ -2101,13 +2055,6 @@ func watchResult(sigChan chan *godbus.Signal, result chan bool) {
 
 		pecho("debug", "Got document ID slice: " + strings.Join(response.DocIDs, ", "))
 	}
-}
-
-type AddDocumentFullData struct {
-	PathFDs		[]godbus.UnixFD
-	Flags		uint32
-	AppID		string
-	Permissions	[]string
 }
 
 // This portal does not need Request?
@@ -2124,6 +2071,12 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		filesInfoTmp.FileMap[path] = "unknown"
 		fd := fileObj.Fd()
 		busFdList = append(busFdList, godbus.UnixFD(fd))
+	}
+	type AddDocumentFullData struct {
+		PathFDs		[]godbus.UnixFD
+		Flags		uint32
+		AppID		string
+		Permissions	[]string
 	}
 	var busData	AddDocumentFullData
 	busData.AppID = config.Metadata.AppID
@@ -2147,6 +2100,10 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	if call.Err != nil {
 		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
 		fmt.Println(call)
+	}
+	type PortalResponse struct {
+		DocIDs		[]string
+		ExtraInfo	map[string]godbus.Variant
 	}
 	var resp PortalResponse
 	err := godbus.Store(call.Body, &resp.DocIDs, &resp.ExtraInfo)
