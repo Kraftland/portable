@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -76,15 +75,12 @@ func OpenURI(uri string) error {
 	logger.Println("Got response on request")
 	switch res {
 		case 0:
-			os.Exit(0)
 			return nil
 		case 1:
 			logger.Println("Interaction cancelled")
-			os.Exit(0)
-			return nil
+			return errors.New("Interaction cancelled")
 		case 2:
 			logger.Println("User interaction was ended in some other way")
-			os.Exit(0)
 			return errors.New("User interaction was ended in some other way")
 		default:
 			logger.Println("Unexpected Response signal:", res)
