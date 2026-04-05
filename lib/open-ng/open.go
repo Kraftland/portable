@@ -281,7 +281,10 @@ func main () {
 		}
 	} else if strings.Contains(os.Args[1], "file://") == false && linkRegexp.Match([]byte(os.Args[1])) {
 		fmt.Println("Got a link")
-		OpenURI(os.Args[1])
+		err := OpenURI(os.Args[1])
+		if err != nil {
+			warn.Fatalln("Could not open link:", err)
+		}
 	} else {
 		openPath(os.Args[1], false)
 	}
