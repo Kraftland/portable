@@ -20,18 +20,18 @@ var (
 )
 
 func openPath(path string, showItem bool) {
-	modPath, _ := evalPath(path)
+	modPath := evalPath(path)
 
-	log.Println("evalPath returned path", modPath)
+	logger.Println("evalPath returned path", modPath)
 
 	if len(modPath) == 0 {
-		log.Fatalln("Failed to resolve path")
+		warn.Fatalln("Failed to resolve path")
 		return
 	}
 
 	stat, err := os.Stat(modPath)
 	if err != nil {
-		log.Fatalln("Could not stat path: " + err.Error())
+		warn.Fatalln("Could not stat path: " + err.Error())
 		return
 	}
 
@@ -62,7 +62,20 @@ func openPath(path string, showItem bool) {
 }
 
 func openPathPortal(path string, dir bool) (success bool) {
-	busConn, err := dbus.ConnectSessionBus()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		warn.Println("Could not get home path:", err)
+		return false
+	}
+	if ! strings.HasPrefix(path, home + "/") {
+		err := saveFile(path)
+		if err != nil {
+			warn.Println("Could not call SaveFile:", err)
+			return false
+		}
+		return true
+	}
+	busConn, err := dbus.SessionBus()
 	if err != nil {
 		panic(err)
 	}
@@ -147,15 +160,14 @@ func openPathPortal(path string, dir bool) (success bool) {
 			os.Exit(0)
 			return true
 		case 1:
-			log.Println("Interaction cancelled")
+			logger.Println("Interaction cancelled")
 			os.Exit(0)
 			return true
 		case 2:
-			log.Println("User interaction was ended in some other way")
-			os.Exit(0)
-			return true
+			logger.Println("User interaction was ended in some other way")
+			return false
 		default:
-			log.Println("Unexpected Response signal:", res)
+			warn.Println("Unexpected Response signal:", res)
 			return false
 	}
 }
