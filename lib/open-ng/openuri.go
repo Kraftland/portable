@@ -13,7 +13,7 @@ import (
 
 func OpenURI(uri string) error {
 	logger.Println("Calling OpenURI for opening link:", uri)
-	conn, err := dbus.ConnectSessionBus()
+	conn, err := dbus.SessionBus()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,6 @@ func OpenURI(uri string) error {
 		conn.Signal(sigChan)
 		wg.Done()
 		for sig := range sigChan {
-			logger.Println("Incoming signal")
 			var v dbus.Variant
 			var stat uint32
 			if sig.Path == dbus.ObjectPath(objPath) && sig.Name == "org.freedesktop.portal.Request.Response" {
@@ -77,13 +76,10 @@ func OpenURI(uri string) error {
 		case 0:
 			return nil
 		case 1:
-			logger.Println("Interaction cancelled")
 			return errors.New("Interaction cancelled")
 		case 2:
-			logger.Println("User interaction was ended in some other way")
 			return errors.New("User interaction was ended in some other way")
 		default:
-			logger.Println("Unexpected Response signal:", res)
 			return errors.New("Unexpected Response signal: " + strconv.Itoa(int(res)))
 	}
 }
