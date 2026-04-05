@@ -5,14 +5,13 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"os/user"
+
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/KarpelesLab/reflink"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -21,18 +20,18 @@ var (
 )
 
 func openPath(path string, showItem bool) {
-	modPath, _ := evalPath(path)
+	modPath := evalPath(path)
 
-	log.Println("evalPath returned path", modPath)
+	logger.Println("evalPath returned path", modPath)
 
 	if len(modPath) == 0 {
-		log.Fatalln("Failed to resolve path")
+		warn.Fatalln("Failed to resolve path")
 		return
 	}
 
 	stat, err := os.Stat(modPath)
 	if err != nil {
-		log.Fatalln("Could not stat path: " + err.Error())
+		warn.Fatalln("Could not stat path: " + err.Error())
 		return
 	}
 
@@ -62,105 +61,21 @@ func openPath(path string, showItem bool) {
 	)
 }
 
-func evalPath(path string) (finalPath string, modified bool) {
-	inputAbs, err := filepath.Abs(path)
-	if err != nil {
-		log.Fatalln("Could not get absolute path: " + err.Error())
-		return
-	}
-
-	inputAbs, _ = strings.CutPrefix(path, "file://")
-
-	log.Println("Resolved absolute path", inputAbs)
-
-
-	sandboxHome, err := filepath.Abs(os.Getenv("HOME"))
-	if err != nil {
-		log.Fatalln("Could not get home path: " + err.Error())
-		return
-	}
-
-	var userName string
-	userInfo, err := user.Current()
-	if err != nil {
-		log.Println("Could not get current user name")
-	} else {
-		userName = userInfo.Username
-	}
-
-	if inputAbs == sandboxHome {
-		finalPath = sandboxHome
-		return
-	} else if strings.HasPrefix(inputAbs, filepath.Join("/home", userName)) {
-		if strings.Contains(inputAbs, sandboxHome) == false {
-			finalPath = sandboxHome
-			return
-		}
-	} else if inputAbs == "/home" {
-		finalPath = sandboxHome
-		return
-	}
-	if strings.HasPrefix(inputAbs, sandboxHome) {
-		modified = false
-		finalPath = inputAbs
-		log.Println("Translated sandbox path " + path + " to " + finalPath)
-		return
-	}
-
-	openBlacklist := []string{
-		"/sandbox",
-		"/.flatpak-info",
-		"/run",
-		"/media",
-		"/mnt",
-		"/proc",
-		"/root",
-		"/srv",
-		"/tmp",
-		"top.kimiblock.portable",
-		"/var",
-		filepath.Join(sandboxHome, "options"),
-		filepath.Join(sandboxHome, ".flatpak-info"),
-		filepath.Join(sandboxHome, ".var"),
-	}
-
-	sharedPath := filepath.Join(
-		sandboxHome,
-		"Shared",
-		filepath.Base(inputAbs),
-	)
-
-	for _, val := range openBlacklist {
-		if strings.HasPrefix(inputAbs, val) {
-			modified = true
-			log.Println("Rewriting path")
-			os.RemoveAll(sharedPath)
-			err := reflink.Auto(inputAbs, sharedPath)
-			if err != nil {
-				log.Fatalln("Could not copy shared file: " + err.Error())
-				return
-			}
-			finalPath = sharedPath
-			break
-		}
-	}
-
-	if modified == false {
-		log.Println("Linking unknown path")
-		os.RemoveAll(sharedPath)
-		err := os.Symlink(inputAbs, sharedPath)
-		if err != nil {
-			log.Fatalln("Could not link path: " + err.Error())
-		}
-		finalPath = filepath.Dir(sharedPath)
-	}
-
-	log.Println("Translated " + path + " to " + finalPath)
-	return
-}
-
 func openPathPortal(path string, dir bool) (success bool) {
-	busConn, err := dbus.ConnectSessionBus()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		warn.Println("Could not get home path:", err)
+		return false
+	}
+	if ! strings.HasPrefix(path, home + "/") {
+		err := saveFile(path)
+		if err != nil {
+			warn.Println("Could not call SaveFile:", err)
+			return false
+		}
+		return true
+	}
+	busConn, err := dbus.SessionBus()
 	if err != nil {
 		panic(err)
 	}
@@ -245,15 +160,14 @@ func openPathPortal(path string, dir bool) (success bool) {
 			os.Exit(0)
 			return true
 		case 1:
-			log.Println("Interaction cancelled")
+			logger.Println("Interaction cancelled")
 			os.Exit(0)
 			return true
 		case 2:
-			log.Println("User interaction was ended in some other way")
-			os.Exit(0)
-			return true
+			logger.Println("User interaction was ended in some other way")
+			return false
 		default:
-			log.Println("Unexpected Response signal:", res)
+			warn.Println("Unexpected Response signal:", res)
 			return false
 	}
 }
