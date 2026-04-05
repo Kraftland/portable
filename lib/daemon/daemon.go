@@ -1646,10 +1646,6 @@ func genBwArg(
 			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
 			filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID),
 
-		// For homed users
-		"--ro-bind-try",
-			"/run/systemd/userdb/io.systemd.Home",
-			"/run/systemd/userdb/io.systemd.Home",
 		"--ro-bind",
 			filepath.Join(xdgDir.runtimeDir, "app", config.Metadata.AppID, "bus"),
 			"/run/sessionBus",
