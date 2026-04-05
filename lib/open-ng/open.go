@@ -14,7 +14,6 @@ import (
 
 	"github.com/KarpelesLab/reflink"
 	"github.com/godbus/dbus/v5"
-	"github.com/rymdport/portal/openuri"
 )
 
 var (
@@ -259,17 +258,6 @@ func openPathPortal(path string, dir bool) (success bool) {
 	}
 }
 
-func openLink(link string) {
-	opts := openuri.Options{
-		Writable:	true,
-		Ask:		true,
-	}
-	err := openuri.OpenURI("", link, &opts)
-	if err != nil {
-		log.Fatalln("Could not call portal for opening links: " + err.Error())
-	}
-}
-
 func main () {
 	rawCmdArgs := os.Args
 	fmt.Println("Received command line open request: " + strings.Join(rawCmdArgs, ", "))
@@ -293,7 +281,7 @@ func main () {
 		}
 	} else if strings.Contains(os.Args[1], "file://") == false && linkRegexp.Match([]byte(os.Args[1])) {
 		fmt.Println("Got a link")
-		openLink(os.Args[1])
+		OpenURI(os.Args[1])
 	} else {
 		openPath(os.Args[1], false)
 	}
