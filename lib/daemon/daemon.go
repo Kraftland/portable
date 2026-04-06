@@ -1127,6 +1127,16 @@ func forceBackgroundPerm(config Config) {
 }
 
 func instDesktopFile(config Config) {
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		err := os.MkdirAll(
+			filepath.Join(
+				xdgDir.dataDir,
+				"applications",
+				),
+			0700,
+		)
+	})
 	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
 	for val := range xdgDataDirs {
 		if strings.Contains(val, "/var/lib/flatpak") {
