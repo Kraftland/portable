@@ -67,7 +67,7 @@ func openPathPortal(path string, dir bool) (success bool) {
 		warn.Println("Could not get home path:", err)
 		return false
 	}
-	if ! strings.HasPrefix(path, home + "/") {
+	if ! strings.HasPrefix(path, home) {
 		err := saveFile(path)
 		if err != nil {
 			warn.Println("Could not call SaveFile:", err)
