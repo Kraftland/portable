@@ -16,7 +16,6 @@ const (
 
 type RUNTIME_PARAMS struct {
 	instanceID		string
-	waylandDisplay		string
 	bwCmd			[]string
 }
 
