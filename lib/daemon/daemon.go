@@ -3067,7 +3067,8 @@ func main() {
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	timeNow := time.Now()
-
+	wayDisplayChan := make(chan[]string, 1)
+	go waylandDisplay(wayDisplayChan)
 
 	wg.Go(func() {
 		var err error
@@ -3106,9 +3107,6 @@ func main() {
 		getVariables(config)
 	})
 	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
-
-	wayDisplayChan := make(chan[]string, 1)
-	go waylandDisplay(wayDisplayChan)
 
 	go cmdlineDispatcher(cmdChan, config)
 	go gpuBind(gpuChan, config)
