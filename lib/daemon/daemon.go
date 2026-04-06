@@ -1115,14 +1115,27 @@ func startApp(config Config) {
 
 func forceBackgroundPerm(config Config) {
 	pecho("debug", "Unrestricting background limits")
-	dbusSendExec := exec.Command("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.impl.portal.PermissionStore", "/org/freedesktop/impl/portal/PermissionStore", "org.freedesktop.impl.portal.PermissionStore.SetPermission", "string:background", "boolean:true", "string:background", "string:" + config.Metadata.AppID, "array:string:yes")
-	dbusSendExec.Stderr = os.Stderr
-	if internalLoggingLevel <= 1 {
-		dbusSendExec.Stdout = os.Stdout
-	}
-	err := dbusSendExec.Run()
+	conn, err := godbus.SessionBus()
 	if err != nil {
-		pecho("warn", "Failed to set background permission, you apps may be terminated by desktop unexpectly: " + err.Error())
+		pecho("warn", "Could not unrestrict background limits:", err)
+		return
+	}
+	obj := conn.Object(
+		"org.freedesktop.impl.portal.PermissionStore",
+		"/org/freedesktop/impl/portal/PermissionStore",
+	)
+	call := obj.Call(
+		"org.freedesktop.impl.portal.PermissionStore.SetPermission",
+		0,
+		"background",
+		true,
+		"background",
+		config.Metadata.AppID,
+		[]string{"yes"},
+	)
+	if call.Err != nil {
+		pecho("warn", "Could not unrestrict background limits:", call.Err)
+		return
 	}
 }
 
