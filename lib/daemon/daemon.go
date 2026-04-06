@@ -231,14 +231,14 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 		idCandidate := rand.Intn(2147483647)
 		pecho("debug", "Trying instance ID: " + strconv.Itoa(idCandidate))
 		_, err := os.Stat(xdgDir.runtimeDir + "/.flatpak/" + strconv.Itoa(idCandidate))
-		if err == nil {
-			pecho("warn", "Unable to use instance ID " + strconv.Itoa(idCandidate))
-		} else if idCandidate < 1024 {
-			pecho("debug", "Rejecting low ID")
-		} else {
+		if os.IsNotExist(err) {
 			runtimeInfo.instanceID = strconv.Itoa(idCandidate)
 			genInfo <- 1
 			break
+		} else if err != nil {
+			pecho("crit", "Could not stat instance path:", err)
+		} else {
+			pecho("warn", "Unable to use instance ID " + strconv.Itoa(idCandidate))
 		}
 	}
 	dirs := []string {
@@ -3095,7 +3095,7 @@ func main() {
 
 	inputChan := make(chan []string, 4)
 	go inputBind(inputChan) // This is fine, since genBwArg takes care of conf switching
-	fmt.Println("Portable daemon", version)
+	pecho("info", "Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
