@@ -1127,6 +1127,19 @@ func forceBackgroundPerm(config Config) {
 }
 
 func instDesktopFile(config Config) {
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		err := os.MkdirAll(
+			filepath.Join(
+				xdgDir.dataDir,
+				"applications",
+				),
+			0700,
+		)
+		if err != nil {
+			pecho("crit", "Could not create directory:", err)
+		}
+	})
 	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
 	for val := range xdgDataDirs {
 		if strings.Contains(val, "/var/lib/flatpak") {
@@ -1163,6 +1176,7 @@ func instDesktopFile(config Config) {
 		"placeholderName",		"Portable sandbox: " + config.Metadata.AppID,
 		"placeholderConfig",		config.Path,
 	)
+	wg.Wait()
 	file, err := os.OpenFile(
 		filepath.Join(
 			xdgDir.dataDir,
