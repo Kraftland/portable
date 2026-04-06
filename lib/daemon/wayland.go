@@ -53,7 +53,7 @@ func waylandDisplay(wdChan chan []string) () {
 		} else {
 			resChan <- wDisplay{
 				Path:		pth,
-				Priority:	1,
+				Priority:	2,
 			}
 		}
 	})
@@ -65,7 +65,7 @@ func waylandDisplay(wdChan chan []string) () {
 		} else {
 			resChan <- wDisplay{
 				Path:		pth,
-				Priority:	1,
+				Priority:	3,
 			}
 		}
 	})
