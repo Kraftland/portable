@@ -583,18 +583,34 @@ func calcDbusArg(argChan chan []string, config Config) {
 		"--see=org.a11y.Bus",
 		"--call=org.a11y.Bus=org.a11y.Bus.GetAddress@/org/a11y/bus",
 		"--call=org.a11y.Bus=org.freedesktop.DBus.Properties.Get@/org/a11y/bus",
-		// Screenshot stuff
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.Screenshot",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request.*@/org/freedesktop/portal/desktop/request/*",
+		"--call=org.freedesktop.portal.Desktop=*@/org/freedesktop/portal/desktop/session/*",
 
-		"--see=org.freedesktop.portal.Request",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.GetAll",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Session.Close",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.ReadAll",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.Read",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Request",
-		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.Get@/org/freedesktop/portal/desktop",
-		"--call=org.freedesktop.portal.Request=*",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Account.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Camera.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Clipboard.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Email.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.FileChooser.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.InputCapture.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.MemoryMonitor.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.NetworkMonitor.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Notification.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.OpenURI.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.PowerProfileMonitor.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Print.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ProxyResolver.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.RemoteDesktop.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.ScreenCast.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Screenshot.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Secret.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Settings.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Trash.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Wallpaper.*@/org/freedesktop/portal/desktop",
+
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.*@/org/freedesktop/portal/desktop/*",
+
 		"--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*",
 
 		"--call=top.kimiblock.portable." + config.Metadata.AppID + "=top.kimiblock.Portable.Controller.Stop@/top/kimiblock/portable/daemon",
@@ -619,44 +635,8 @@ func calcDbusArg(argChan chan []string, config Config) {
 
 	pecho("debug", "Expanding built-in rules")
 
-	allowedPortals := []string{
-		"Screenshot",
-		"Email",
-		"Usb",
-		"PowerProfileMonitor",
-		"MemoryMonitor",
-		"ProxyResolver.Lookup",
-		"ScreenCast",
-		"Account.GetUserInformation",
-		"Camera",
-		"RemoteDesktop",
-		"Documents",
-		"Device",
-		"FileChooser",
-		"FileTransfer",
-		"Notification",
-		"Print",
-		"NetworkMonitor",
-		"OpenURI",
-		"Fcitx",
-		"IBus",
-		"Secret",
-		"OpenURI",
-	}
-
-	for _, talkDest := range allowedPortals {
-		argList = append(
-			argList,
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal." + talkDest,
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal." + talkDest + ".*",
-		)
-	}
-
 	allowedTalks := []string{
 		"org.freedesktop.portal.Documents",
-		"org.freedesktop.portal.FileTransfer",
-		"org.freedesktop.portal.Notification",
-		"org.freedesktop.portal.Print",
 		"org.freedesktop.portal.Fcitx",
 		"org.freedesktop.portal.IBus",
 	}
@@ -671,14 +651,6 @@ func calcDbusArg(argChan chan []string, config Config) {
 
 	if internalLoggingLevel <= 1 {
 		argList = append(argList, "--log")
-	}
-	if os.Getenv("XDG_CURRENT_DESKTOP") == "gnome" {
-		pecho("debug", "Enabling GNOME exclusive feature: Location")
-		argList = append(
-			argList,
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location",
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Location.*",
-			)
 	}
 	err := os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + config.Metadata.AppID, 0700)
 	if err != nil {
@@ -726,16 +698,14 @@ func calcDbusArg(argChan chan []string, config Config) {
 	if config.System.InhibitSuspend {
 		argList = append(
 			argList,
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit",
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*@/org/freedesktop/portal/desktop",
 		)
 	}
 
 	if config.System.GlobalShortcuts {
 		argList = append(
 			argList,
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts",
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*",
+			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*@/org/freedesktop/portal/desktop",
 		)
 	}
 
