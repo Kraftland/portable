@@ -2770,8 +2770,6 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 
 	busName := "top.kimiblock.portable." + config.Metadata.AppID
 
-	var socketPath string = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + config.Metadata.AppID + "/portable-control/daemon"
 
 	var dialWg sync.WaitGroup
 	var dialChan = make(chan bool, 2)
@@ -2789,6 +2787,13 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 
 	})
 	dialWg.Go(func() {
+		var socketPath string = filepath.Join(
+			xdgDir.runtimeDir,
+			"portable",
+			config.Metadata.AppID,
+			"portable-control",
+			"daemon",
+		)
 		_, errStat := os.Stat(socketPath)
 		if errStat != nil && os.IsNotExist(errStat) {
 			dialChan <- false
@@ -2813,8 +2818,6 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 			break
 		}
 	}
-	socketPath = xdgDir.runtimeDir + "/portable/"
-	socketPath = socketPath + config.Metadata.AppID + "/portable-control/auxStart"
 
 	if hasRunningInstance == false {
 		if runtimeOpt.miTerminate == true {
