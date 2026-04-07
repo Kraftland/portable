@@ -78,7 +78,6 @@ func waylandDisplay(wdChan chan []string) () {
 	for res := range resChan {
 		if res.Priority > result.Priority {
 			result = res
-			break
 		}
 	}
 	if result.Priority == 0 {
