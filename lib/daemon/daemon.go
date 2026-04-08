@@ -3017,7 +3017,6 @@ func main() {
 	go pechoWorker()
 	timeNow := time.Now()
 	wayDisplayChan := make(chan[]string, 1)
-	go waylandDisplay(wayDisplayChan)
 
 	wg.Go(func() {
 		var err error
@@ -3051,6 +3050,7 @@ func main() {
 	pecho("info", "Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
+	go waylandDisplay(wayDisplayChan)
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
 		getVariables(config)
