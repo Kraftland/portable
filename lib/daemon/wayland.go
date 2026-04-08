@@ -1,14 +1,21 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
 )
 
 func testWaylandSocket(path string) error {
-	_, err := os.Stat(path)
-	return err
+	stat, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if stat.Mode() & os.ModeSocket == 0 {
+		return errors.New("Not a socket")
+	}
+	return nil
 }
 
 func waylandDisplay(wdChan chan []string) () {
@@ -19,7 +26,7 @@ func waylandDisplay(wdChan chan []string) () {
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
 	switch sessionType {
 		case "x11":
-			pecho("warn", "Running on X11, this is insecure")
+			pecho("warn", "Running on X11, this is insecure and deprecated")
 			return
 		case "wayland":
 		default:
@@ -30,14 +37,14 @@ func waylandDisplay(wdChan chan []string) () {
 	var wg sync.WaitGroup
 	resChan := make(chan wDisplay, 3)
 	wg.Go(func() {
-		if len(os.Getenv("WAYLAND_DISPLAY")) > 0 {
+		if len(socketInfo) > 0 {
 			pecho("debug", "Not using default socket: WAYLAND_DISPLAY set")
 			return
 		}
 		pth := filepath.Join(xdgDir.runtimeDir, "wayland-0")
 		err := testWaylandSocket(pth)
 		if err != nil {
-			pecho("debug", "Could not use socket:", err)
+			pecho("warn", "Could not use socket:", err)
 		} else {
 			resChan <- wDisplay{
 				Path:		pth,
@@ -46,10 +53,13 @@ func waylandDisplay(wdChan chan []string) () {
 		}
 	})
 	wg.Go(func() {
+		if len(socketInfo) == 0 {
+			return
+		}
 		pth := filepath.Join(xdgDir.runtimeDir, socketInfo)
 		err := testWaylandSocket(pth)
 		if err != nil {
-			pecho("debug", "Could not use socket:", err)
+			pecho("warn", "Could not use socket:", err)
 		} else {
 			resChan <- wDisplay{
 				Path:		pth,
@@ -58,6 +68,9 @@ func waylandDisplay(wdChan chan []string) () {
 		}
 	})
 	wg.Go(func() {
+		if len(socketInfo) == 0 {
+			return
+		}
 		pth := socketInfo
 		err := testWaylandSocket(pth)
 		if err != nil {
