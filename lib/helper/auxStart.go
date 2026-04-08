@@ -34,15 +34,17 @@ func (m *busStartProcessor) AuxStart (
 		var notif = notification{
 			notif:	make(map[string]dbus.Variant),
 		}
-		var butt button
-		butt.action = "terminate"
-		butt.label = "Terminate app"
 		notif.notif["title"] = dbus.MakeVariant("Failed to start auxiliary instance - Portable")
-		notif.notif["icon"] = dbus.MakeVariant(icon{
-			themed:		[]string{"sad-computer-symbolic"},
+		iconMap := make(map[string]dbus.Variant)
+		iconMap["themed"] = dbus.MakeVariant([]string{"sad-computer-symbolic"})
+		notif.notif["icon"] = dbus.MakeVariant(iconMap)
+		var buttMap []map[string]dbus.Variant
+		buttMap = append(buttMap, map[string]dbus.Variant{
+			"action":	dbus.MakeVariant("terminate"),
+			"label":	dbus.MakeVariant("Terminate app"),
 		})
 		notif.notif["priority"] = dbus.MakeVariant("high")
-		notif.notif["buttons"] = dbus.MakeVariant([]button{butt})
+		notif.notif["buttons"] = dbus.MakeVariant(buttMap)
 		notif.notif["display-hint"] = dbus.MakeVariant([]string{"persistent", "show-as-new"})
 		path := os.Getenv("XDG_RUNTIME_DIR")
 		if len(path) == 0 {
