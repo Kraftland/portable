@@ -31,6 +31,19 @@ func (m *busStartProcessor) AuxStart (
 	baseDir	string,
 	busErr *dbus.Error,
 	) {
+		var notif = notification{
+			notif:	make(map[string]dbus.Variant),
+		}
+		var butt button
+		butt.action = "terminate"
+		butt.label = "Terminate app"
+		notif.notif["title"] = dbus.MakeVariant("Failed to start auxiliary instance - Portable")
+		notif.notif["icon"] = dbus.MakeVariant(icon{
+			themed:		[]string{"sad-computer-symbolic"},
+		})
+		notif.notif["priority"] = dbus.MakeVariant("high")
+		notif.notif["buttons"] = dbus.MakeVariant([]button{butt})
+		notif.notif["display-hint"] = dbus.MakeVariant([]string{"persistent", "show-as-new"})
 		path := os.Getenv("XDG_RUNTIME_DIR")
 		if len(path) == 0 {
 			fmt.Println("XDG_RUNTIME_DIR not set")
@@ -54,6 +67,12 @@ func (m *busStartProcessor) AuxStart (
 		for {
 			if trials > 512 {
 				fmt.Println("Could not pick temp dir")
+				notif.notif["body"] = dbus.MakeVariant("Could not pick temp dir")
+				err := addNotif(notif, []string{"terminate"})
+				if err != nil {
+					panic(err)
+				}
+				terminateNotify <- 1
 				return
 			}
 			trials++
@@ -66,6 +85,12 @@ func (m *busStartProcessor) AuxStart (
 				err := os.MkdirAll(sockDir, 0700)
 				if err != nil {
 					fmt.Println("Could not create directory for stream: " + err.Error())
+					notif.notif["body"] = dbus.MakeVariant("Could not create directory for stream: " + err.Error())
+					err := addNotif(notif, []string{"terminate"})
+					if err != nil {
+						panic(err)
+					}
+					terminateNotify <- 1
 				} else {
 					break
 				}
@@ -79,31 +104,67 @@ func (m *busStartProcessor) AuxStart (
 		inAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdin"))
 		if err != nil {
 			fmt.Println("Could not resolve address: " + err.Error())
+			notif.notif["body"] = dbus.MakeVariant("Could not resolve address: " + err.Error())
+			err := addNotif(notif, []string{"terminate"})
+			if err != nil {
+				panic(err)
+			}
+			terminateNotify <- 1
 			return
 		}
 		stdinListen, err := net.ListenUnix("unix", inAddr)
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
+			notif.notif["body"] = dbus.MakeVariant("Could not stream command: " + err.Error())
+			err := addNotif(notif, []string{"terminate"})
+			if err != nil {
+				panic(err)
+			}
+			terminateNotify <- 1
 			return
 		}
 		outAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdout"))
 		if err != nil {
 			fmt.Println("Could not resolve address: " + err.Error())
+			notif.notif["body"] = dbus.MakeVariant("Could not resolve address: " + err.Error())
+			err := addNotif(notif, []string{"terminate"})
+			if err != nil {
+				panic(err)
+			}
+			terminateNotify <- 1
 			return
 		}
 		stdoutListen, err := net.ListenUnix("unix", outAddr)
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
+			notif.notif["body"] = dbus.MakeVariant("Could not stream command: " + err.Error())
+			err := addNotif(notif, []string{"terminate"})
+			if err != nil {
+				panic(err)
+			}
+			terminateNotify <- 1
 			return
 		}
 		errAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stderr"))
 		if err != nil {
 			fmt.Println("Could not resolve address: " + err.Error())
+			notif.notif["body"] = dbus.MakeVariant("Could not resolve address: " + err.Error())
+			err := addNotif(notif, []string{"terminate"})
+			if err != nil {
+				panic(err)
+			}
+			terminateNotify <- 1
 			return
 		}
 		stderrListen, err := net.ListenUnix("unix", errAddr)
 		if err != nil {
 			fmt.Println("Could not stream command:", err)
+			notif.notif["body"] = dbus.MakeVariant("Could not stream command: " + err.Error())
+			err := addNotif(notif, []string{"terminate"})
+			if err != nil {
+				panic(err)
+			}
+			terminateNotify <- 1
 			return
 		}
 

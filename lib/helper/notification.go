@@ -19,6 +19,10 @@ type button struct {
 	purpose	string
 }
 
+type icon struct {
+	themed	[]string
+}
+
 // Calls the AddNotification method, waits if a button is present
 func addNotif(notif notification, waitActions []string) error {
 	var errChan = make(chan error, 16)
