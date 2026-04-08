@@ -31,6 +31,7 @@ type ResponseField struct {
 type StartNofifyMsg struct {
 	cmd			*exec.Cmd
 	UDS			[]net.Listener
+	sockDir			string
 
 }
 

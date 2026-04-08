@@ -40,7 +40,20 @@ func startCounterV2(chann chan StartNofifyMsg) {
 	}
 }
 
+func rmSockDir(path string) {
+	if len(path) == 0 {
+		return
+	}
+	err := os.RemoveAll(path)
+	if err != nil {
+		warn.Println("Unable to clean up streaming directory:", err)
+	} else {
+		debug.Println("Cleaned up", path)
+	}
+}
+
 func startAux(msg StartNofifyMsg, ch chan bool) {
+	defer rmSockDir(msg.sockDir)
 	ch <- true
 	var streamWg sync.WaitGroup
 	if len(msg.UDS) != 3 {

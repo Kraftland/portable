@@ -181,6 +181,7 @@ func (m *busStartProcessor) AuxStart (
 		cmd.SysProcAttr = procAttr
 		isStream = true
 		req.cmd = cmd
+		req.sockDir = sockDir
 		req.UDS = []net.Listener{stdinListen, stdoutListen, stderrListen}
 		startNotifier <- req
 		return
