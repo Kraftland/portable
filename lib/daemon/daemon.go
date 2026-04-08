@@ -1984,24 +1984,6 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 	close(miscChan)
 }
 
-
-func watchResult(sigChan chan *godbus.Signal, result chan bool) {
-	type PortalResponse struct {
-		DocIDs		[]string
-		ExtraInfo	map[string]godbus.Variant
-	}
-	for signal := range sigChan {
-		var response PortalResponse
-		pecho("debug", "Processing D-Bus signal from " + signal.Sender)
-		err := godbus.Store(signal.Body, &response)
-		if err != nil {
-			pecho("warn", "Could not process signal: " + err.Error())
-		}
-
-		pecho("debug", "Got document ID slice: " + strings.Join(response.DocIDs, ", "))
-	}
-}
-
 // This portal does not need Request?
 func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles, config Config) {
 	var filesInfoTmp PassFiles
