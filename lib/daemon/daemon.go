@@ -1990,7 +1990,7 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
 	for _, path := range pathList {
-		fileObj, err := os.OpenFile(path, os.O_RDWR, 0700)
+		fileObj, err := os.Open(path)
 		if err != nil {
 			pecho("warn", "Could not open file: " + err.Error())
 			continue
@@ -2026,7 +2026,6 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	pecho("debug", "AddFull call done")
 	if call.Err != nil {
 		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
-		fmt.Println(call)
 	}
 	type PortalResponse struct {
 		DocIDs		[]string
