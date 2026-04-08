@@ -1338,6 +1338,7 @@ func prepareEnvs(config Config) {
 			addEnv("_portableInhibit=1")
 		}
 		addEnv("appID=" + config.Metadata.AppID)
+		addEnv("friendlyName=" + config.Metadata.FriendlyName)
 		addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		if config.BusActivation.Enable {
 			actSlice := append([]string{config.BusActivation.Target}, config.BusActivation.Arguments...)
