@@ -12,13 +12,6 @@ type notification struct {
 	notif	map[string]dbus.Variant
 }
 
-type button struct {
-	label	string
-	action	string
-	target	dbus.Variant
-	purpose	string
-}
-
 // Calls the AddNotification method, waits if a button is present
 func addNotif(notif notification, waitActions []string) error {
 	var errChan = make(chan error, 16)
@@ -34,13 +27,8 @@ func addNotif(notif notification, waitActions []string) error {
 
 	var wg sync.WaitGroup
 	var listenReady = make(chan bool, 1)
-	val, ok := notif.notif["buttons"]
+	_, ok := notif.notif["buttons"]
 	if ok {
-		var buttons []button
-		err := val.Store(&buttons)
-		if err != nil {
-			return err
-		}
 		wg.Go(func() {
 			if len(waitActions) == 0 {
 				return

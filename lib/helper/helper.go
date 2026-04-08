@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strconv"
@@ -32,11 +31,12 @@ type ResponseField struct {
 type StartNofifyMsg struct {
 	cmd			*exec.Cmd
 	UDS			[]net.Listener
+	sockDir			string
 
 }
 
 var (
-	startNotifier		= make(chan StartNofifyMsg, 32)
+	startNotifier		= make(chan StartNofifyMsg, 2)
 	terminateNotify		= make(chan int, 1)
 	procAttr		= &syscall.SysProcAttr{
 		Pdeathsig:	syscall.SIGKILL,
@@ -102,122 +102,7 @@ func updateSd(count int) {
 		}
 	}
 }
-func startCounter () {
-	var countLock sync.RWMutex
-	var startedCount int
-	fmt.Println("Start counter init done")
-	for incoming := range startNotifier {
-		go func() {
-			var stopStreaming = make(chan int, 1)
-			var blockWg sync.WaitGroup
-			if len(incoming.UDS) == 3 {
-				blockWg.Add(3)
-				go func () {
-					if incoming.UDS[0] == nil {
-						fmt.Println("Could not stream: nil socket")
-						return
-					}
-					conn, err := incoming.UDS[0].Accept()
-					if err != nil {
-						fmt.Println("Could not accept connection:", err)
-						return
-					}
-					go func () {
-						<- stopStreaming
-						conn.Close()
-					} ()
-					inP, err := incoming.cmd.StdinPipe()
-					blockWg.Done()
-					if err != nil {
-						fmt.Println("Could not accept connection:", err)
-						return
-					}
-					n, err := io.Copy(inP, conn)
-					fmt.Println("Streamed", n, "bytes of stdin")
-				} ()
-				go func () {
-					if incoming.UDS[1] == nil {
-						fmt.Println("Could not stream: nil socket")
-						return
-					}
-					conn, err := incoming.UDS[1].Accept()
-					if err != nil {
-						fmt.Println("Could not accept connection:", err)
-						return
-					}
-					defer conn.Close()
-					pipe, err := incoming.cmd.StdoutPipe()
-					blockWg.Done()
-					if err != nil {
-						fmt.Println("Could not accept connection:", err)
-						return
-					}
-					n, err := io.Copy(conn, pipe)
-					fmt.Println("Streamed", n, "bytes of stdout")
-				} ()
-				go func () {
-					if incoming.UDS[2] == nil {
-						fmt.Println("Could not stream: nil socket")
-						return
-					}
-					conn, err := incoming.UDS[2].Accept()
-					if err != nil {
-						fmt.Println("Could not accept connection:", err)
-						return
-					}
-					defer conn.Close()
-					pipe, err := incoming.cmd.StderrPipe()
-					blockWg.Done()
-					if err != nil {
-						fmt.Println("Could not accept connection:", err)
-						return
-					}
-					n, err := io.Copy(conn, pipe)
-					fmt.Println("Streamed", n, "bytes of stderr")
-				} ()
-			} else {
-				fmt.Println("Not piping console: Listeners mismatch")
-				incoming.cmd.Stdout = os.Stdout
-				incoming.cmd.Stderr = os.Stderr
-				incoming.cmd.Stdin = os.Stdin
-			}
-			blockWg.Wait()
-			err := incoming.cmd.Start()
-			if err != nil {
-				fmt.Println("Could not start executable with:", incoming.cmd.Args, err)
-				return
-			}
 
-			countLock.Lock()
-			startedCount++
-			go updateSd(startedCount)
-			countLock.Unlock()
-			err = incoming.cmd.Wait()
-			go func () {
-				stopStreaming <- 1
-				for _, val := range incoming.UDS {
-					val.Close()
-				}
-			} ()
-
-			if err != nil {
-				fmt.Println("Command with argument: ", incoming.cmd.Args, "failed:", err)
-			}
-			countLock.Lock()
-			startedCount--
-			go updateSd(startedCount)
-			countLock.Unlock()
-			countLock.RLock()
-			if startedCount == 0 {
-				daemon.SdNotify(false, daemon.SdNotifyStopping)
-				fmt.Println("All tracked processes have exited")
-				terminateNotify <- 1
-				return
-			}
-			countLock.RUnlock()
-		} ()
-	}
-}
 type StartRequest struct {
 	Exec		[]string
 	CustomTarget	bool
@@ -336,7 +221,7 @@ func main () {
 		}
 		callInhibit(bus)
 	})
-	go startCounter()
+	go startCounterV2(startNotifier)
 	go sendPidFd()
 
 	// This is horrible, but launchTarget may have spaces
