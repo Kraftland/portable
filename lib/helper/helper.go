@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -46,7 +45,7 @@ var (
 func engageLandlock () {
 	config, err := landlock.NewConfig(landlock.ScopedSet(landlockSyscall.ScopeSignal))
 	if err != nil {
-		fmt.Println("Could not restrict sending signals: " + err.Error())
+		warn.Println("Could not restrict sending signals: " + err.Error())
 	} else {
 		config.RestrictScoped()
 	}
@@ -63,7 +62,7 @@ landlockSyscall.AccessFSReadDir|landlockSyscall.AccessFSRemoveDir|landlockSyscal
 landlockSyscall.AccessFSReadDir)
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			fmt.Println("Could not get user home: " + err.Error())
+			warn.Println("Could not get user home: " + err.Error())
 			return
 		}
 		err = landlock.V6.RestrictPaths(
@@ -84,7 +83,7 @@ landlockSyscall.AccessFSReadDir)
 			landlock.PathAccess(dirAccRule, homeDir),
 		)
 		if err != nil {
-			fmt.Println("Could not enforce file system landlock: " + err.Error())
+			warn.Println("Could not enforce file system landlock: " + err.Error())
 		}
 	}
 }
@@ -93,12 +92,12 @@ func updateSd(count int) {
 	status := "STATUS=" + "Tracking processes: " + strconv.Itoa(count)
 	sent, err := daemon.SdNotify(false, status)
 	if sent == true {
-		fmt.Println("Updated tracking status: ", count)
+		debug.Println("Updated tracking status: ", count)
 	} else {
 		if err == nil {
-			fmt.Println("Notification of daemon status not supported")
+			warn.Println("Notification of daemon status not supported")
 		} else {
-			fmt.Println("Failed to update status: " + err.Error())
+			warn.Println("Failed to update status: " + err.Error())
 		}
 	}
 }
@@ -135,7 +134,7 @@ func startMaster(targetExec []string, targetArgs []string) {
 		if err != nil {
 			panic("Could not decode JSON from environment variable: " + err.Error())
 		}
-		fmt.Println("Replacing cmdline using file map:", decoded)
+		debug.Println("Replacing cmdline using file map:", decoded)
 
 		targetExec = cmdlineReplacer(targetExec, decoded.FileMap)
 		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
@@ -143,7 +142,7 @@ func startMaster(targetExec []string, targetArgs []string) {
 	args = append(targetExec, targetArgs...)
 
 	startCmd := exec.Command(args[0], args[1:]...)
-	fmt.Println("Starting main application", args[0], "with cmdline:", args[1:])
+	debug.Println("Starting main application", args[0], "with cmdline:", args[1:])
 	go daemon.SdNotify(false, daemon.SdNotifyReady)
 	startReq.cmd = startCmd
 	startNotifier <- startReq
@@ -155,19 +154,19 @@ func sendPidFd() {
 
 	pidfd, err := unix.PidfdOpen(pid, 0)
 	if err != nil {
-		fmt.Println("Could not obtain PIDFD: " + err.Error())
+		warn.Println("Could not obtain PIDFD: " + err.Error())
 		return
 	}
 	err = unix.Fstat(pidfd, &st)
 	if err != nil {
-		fmt.Println("Could not obtain PIDFD inode: " + err.Error())
+		warn.Println("Could not obtain PIDFD inode: " + err.Error())
 		return
 	}
 	res, err := daemon.SdNotify(false, "MAINPIDFDID=" + strconv.Itoa(int(st.Ino)))
 	if err != nil {
-		fmt.Println("Could not set Main PID: " + err.Error())
+		warn.Println("Could not set Main PID: " + err.Error())
 	} else if res == false {
-		fmt.Println("Could not set Main PID: " + "unknown error")
+		warn.Println("Could not set Main PID: " + "unknown error")
 	}
 }
 
@@ -190,10 +189,10 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 			dbus.FlagNoReplyExpected,
 		)
 		if call.Err != nil {
-			fmt.Println("Could not unregister inhibit:", call.Err)
+			warn.Println("Could not unregister inhibit:", call.Err)
 		}
 	}
-	fmt.Println("Requesting termination...")
+	warn.Println("Requesting termination...")
 	call := busObj.Call("top.kimiblock.Portable.Controller.Stop", dbus.FlagNoReplyExpected)
 	if call.Err != nil {
 		panic(call.Err)
@@ -230,7 +229,7 @@ func main () {
 		rawTarget,
 	}
 	targetArgs := os.Args[1:]
-	fmt.Println("Got raw command line arguments:", targetArgs)
+	debug.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	if len(exposedEnvs) > 0 {
 		var exposeList PassFiles

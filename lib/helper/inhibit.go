@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/godbus/dbus/v5"
 )
 
@@ -31,7 +29,7 @@ func callInhibit(conn *dbus.Conn) {
 		m,
 	)
 	if call.Err != nil {
-		fmt.Println("Could not inhibit suspend:", call.Err)
+		warn.Println("Could not inhibit suspend:", call.Err)
 	}
 
 }

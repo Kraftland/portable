@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
-	"fmt"
 	"os"
 	"math/rand"
 	"strconv"
@@ -48,12 +47,12 @@ func (m *busStartProcessor) AuxStart (
 		notif.notif["display-hint"] = dbus.MakeVariant([]string{"persistent", "show-as-new"})
 		path := os.Getenv("XDG_RUNTIME_DIR")
 		if len(path) == 0 {
-			fmt.Println("XDG_RUNTIME_DIR not set")
+			warn.Println("XDG_RUNTIME_DIR not set")
 			return
 		}
 		var req StartNofifyMsg
 		if tray {
-			fmt.Println("Tray activation not supported yet")
+			warn.Println("Tray activation not supported yet")
 			return
 		}
 		var cmdline []string
@@ -68,7 +67,7 @@ func (m *busStartProcessor) AuxStart (
 
 		for {
 			if trials > 512 {
-				fmt.Println("Could not pick temp dir")
+				warn.Println("Could not pick temp dir")
 				notif.notif["body"] = dbus.MakeVariant("Could not pick temp dir")
 				err := addNotif(notif, []string{"terminate"})
 				if err != nil {
@@ -86,7 +85,7 @@ func (m *busStartProcessor) AuxStart (
 			if err != nil {
 				err := os.MkdirAll(sockDir, 0700)
 				if err != nil {
-					fmt.Println("Could not create directory for stream: " + err.Error())
+					warn.Println("Could not create directory for stream: " + err.Error())
 					notif.notif["body"] = dbus.MakeVariant("Could not create directory for stream: " + err.Error())
 					err := addNotif(notif, []string{"terminate"})
 					if err != nil {
@@ -105,7 +104,7 @@ func (m *busStartProcessor) AuxStart (
 
 		inAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdin"))
 		if err != nil {
-			fmt.Println("Could not resolve address: " + err.Error())
+			warn.Println("Could not resolve address: " + err.Error())
 			notif.notif["body"] = dbus.MakeVariant("Could not resolve address: " + err.Error())
 			err := addNotif(notif, []string{"terminate"})
 			if err != nil {
@@ -116,7 +115,7 @@ func (m *busStartProcessor) AuxStart (
 		}
 		stdinListen, err := net.ListenUnix("unix", inAddr)
 		if err != nil {
-			fmt.Println("Could not stream command:", err)
+			warn.Println("Could not stream command:", err)
 			notif.notif["body"] = dbus.MakeVariant("Could not stream command: " + err.Error())
 			err := addNotif(notif, []string{"terminate"})
 			if err != nil {
@@ -127,7 +126,7 @@ func (m *busStartProcessor) AuxStart (
 		}
 		outAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stdout"))
 		if err != nil {
-			fmt.Println("Could not resolve address: " + err.Error())
+			warn.Println("Could not resolve address: " + err.Error())
 			notif.notif["body"] = dbus.MakeVariant("Could not resolve address: " + err.Error())
 			err := addNotif(notif, []string{"terminate"})
 			if err != nil {
@@ -138,7 +137,7 @@ func (m *busStartProcessor) AuxStart (
 		}
 		stdoutListen, err := net.ListenUnix("unix", outAddr)
 		if err != nil {
-			fmt.Println("Could not stream command:", err)
+			warn.Println("Could not stream command:", err)
 			notif.notif["body"] = dbus.MakeVariant("Could not stream command: " + err.Error())
 			err := addNotif(notif, []string{"terminate"})
 			if err != nil {
@@ -149,7 +148,7 @@ func (m *busStartProcessor) AuxStart (
 		}
 		errAddr, err := net.ResolveUnixAddr("unix", filepath.Join(sockDir, "stderr"))
 		if err != nil {
-			fmt.Println("Could not resolve address: " + err.Error())
+			warn.Println("Could not resolve address: " + err.Error())
 			notif.notif["body"] = dbus.MakeVariant("Could not resolve address: " + err.Error())
 			err := addNotif(notif, []string{"terminate"})
 			if err != nil {
@@ -160,7 +159,7 @@ func (m *busStartProcessor) AuxStart (
 		}
 		stderrListen, err := net.ListenUnix("unix", errAddr)
 		if err != nil {
-			fmt.Println("Could not stream command:", err)
+			warn.Println("Could not stream command:", err)
 			notif.notif["body"] = dbus.MakeVariant("Could not stream command: " + err.Error())
 			err := addNotif(notif, []string{"terminate"})
 			if err != nil {
@@ -176,7 +175,7 @@ func (m *busStartProcessor) AuxStart (
 		for _, cmd := range cmdline {
 			cmdlineFinal = append(cmdlineFinal, replacer.Replace(cmd))
 		}
-		fmt.Println("Received start request from D-Bus:", cmdline)
+		debug.Println("Received start request from D-Bus:", cmdline)
 		cmd := exec.Command(cmdlineFinal[0], cmdlineFinal[1:]...)
 		cmd.SysProcAttr = procAttr
 		isStream = true
@@ -254,9 +253,7 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 	}
 	switch reply {
 		case dbus.RequestNameReplyPrimaryOwner:
-			fmt.Println("Successfully owned bus name")
 		default:
-			fmt.Println("Could not own bus name: " + reply.String())
-			os.Exit(1)
+			warn.Fatalln("Could not own bus name: " + reply.String())
 	}
 }
