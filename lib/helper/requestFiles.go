@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -77,7 +78,61 @@ func requestFiles(directory bool) error {
 		"Import files to sandbox",
 		options,
 	)
-
+	if call.Err != nil {
+		return call.Err
+	}
+	status := <- statChan
+	result := <- resChan
+	switch status {
+		case 0:
+		case 1:
+			warn.Println("File sharing cancelled by user")
+			return nil
+		case 2:
+			warn.Println("The user interaction was ended in some other way")
+			return errors.New("The user interaction was ended in some other way")
+		default:
+			warn.Println("Unknown response status:", status)
+			return errors.New("Unknown response status " + strconv.Itoa(int(status)))
+	}
+	var uris []string
+	val, ok := result["uris"]
+	if ok {
+		err := val.Store(&uris)
+		if err != nil {
+			return err
+		}
+		if len(uris) == 0 {
+			warn.Println("Did not receive any URI to share")
+			return nil
+		}
+	} else {
+		return errors.New("Did not receive any URI to share")
+	}
+	for idx, val := range uris {
+		uris[idx], _ = strings.CutPrefix(val, "file://")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(home, "Shared"), 0700)
+	if err != nil {
+		return err
+	}
+	for _, file := range uris {
+		err := os.Symlink(
+			file,
+			filepath.Join(
+				home,
+				"Shared",
+				filepath.Base(file),
+			),
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	for sig := range errChan {
 		if sig != nil {
