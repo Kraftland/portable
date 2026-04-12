@@ -1,15 +1,15 @@
 package main
 
 import (
+	"math/rand"
+	"net"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"sync"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
-	"os"
-	"math/rand"
-	"strconv"
-	"path/filepath"
-	"net"
-	"os/exec"
-	"strings"
 )
 
 type AuxStartMsg struct {
@@ -30,6 +30,20 @@ func (m *busStartProcessor) AuxStart (
 	baseDir	string,
 	busErr *dbus.Error,
 	) {
+		var wg sync.WaitGroup
+		wg.Go(func() {
+			if len(filesExpose) % 2 != 0 && len(filesExpose) != 0 {
+				warn.Println("Unable to start auxiliary instance: uneven expose map")
+			}
+			var skip bool
+			for idx := range filesExpose {
+				if skip {
+					continue
+				}
+				filemapAdd(filesExpose[idx], filesExpose[idx + 1])
+				skip = true
+			}
+		})
 		var notif = notification{
 			notif:	make(map[string]dbus.Variant),
 		}
@@ -168,14 +182,10 @@ func (m *busStartProcessor) AuxStart (
 			terminateNotify <- 1
 			return
 		}
-
+		wg.Wait()
 		cmdline = append(cmdline, args...)
-		replacer := strings.NewReplacer(filesExpose...)
-		cmdlineFinal := []string{}
-		for _, cmd := range cmdline {
-			cmdlineFinal = append(cmdlineFinal, replacer.Replace(cmd))
-		}
-		debug.Println("Received start request from D-Bus:", cmdline)
+		cmdlineFinal := cmdlineReplacer(cmdline)
+		debug.Println("Received start request from D-Bus:", cmdline, "translated to", cmdlineFinal)
 		cmd := exec.Command(cmdlineFinal[0], cmdlineFinal[1:]...)
 		cmd.SysProcAttr = procAttr
 		isStream = true

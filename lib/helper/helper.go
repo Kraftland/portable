@@ -108,36 +108,13 @@ type StartRequest struct {
 	Files		PassFiles
 }
 
-func cmdlineReplacer(origin []string, files map[string]string) []string {
-	if len(files) == 0 {
-		return origin
-	}
-	replacerPairs := make([]string, 0 , len(files) * 2)
-	for key, val := range files {
-		replacerPairs = append(replacerPairs, key, val)
-	}
-	replacer := strings.NewReplacer(replacerPairs...)
-	var result = make([]string, 0, len(origin))
-	for _, val := range origin {
-		result = append(result, replacer.Replace(val))
-	}
-	return result
-}
-
 func startMaster(targetExec []string, targetArgs []string) {
 	var startReq StartNofifyMsg
 	rawEnv := os.Getenv("_portableHelperExtraFiles")
 	var args []string
 	if len(rawEnv) > 0 {
-		var decoded PassFiles
-		err := json.Unmarshal([]byte(rawEnv), &decoded)
-		if err != nil {
-			panic("Could not decode JSON from environment variable: " + err.Error())
-		}
-		debug.Println("Replacing cmdline using file map:", decoded)
-
-		targetExec = cmdlineReplacer(targetExec, decoded.FileMap)
-		targetArgs = cmdlineReplacer(targetArgs, decoded.FileMap)
+		targetExec = cmdlineReplacer(targetExec)
+		targetArgs = cmdlineReplacer(targetArgs)
 	}
 	args = append(targetExec, targetArgs...)
 
@@ -204,6 +181,18 @@ func main () {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		engageLandlock()
+	})
+	wg.Go(func() {
+		rawEnv := os.Getenv("_portableHelperExtraFiles")
+		if len(rawEnv) > 0 {
+			var decoded PassFiles
+			err := json.Unmarshal([]byte(rawEnv), &decoded)
+			if err != nil {
+				warn.Println("Could not decode JSON from environment variable: " + err.Error())
+				return
+			}
+			filemapAddMap(decoded.FileMap)
+		}
 	})
 	var bus *dbus.Conn
 	wg.Go(func() {
