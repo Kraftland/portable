@@ -252,6 +252,16 @@ func busAuxStart(conn *dbus.Conn, cmdPfx []string) {
 							},
 						},
 					},
+					{
+						Name:		"RequestFSAccess",
+						Args:		[]introspect.Arg{
+							{
+								Name:		"Directory",
+								Type:		"b",
+								Direction:	"in",
+							},
+						},
+					},
 				},
 			},
 		},
