@@ -22,7 +22,8 @@ Command line arguments (optional):
 	--actions <action>
 		debug-shell	-> Enter the sandbox via a bash shell
 		opendir	-	-> Open the sandbox's home directory
-		share-files	-> Place files in sandbox's "Shared" directory
+		share-file	-> Place files in sandbox's "Shared" directory
+		share-directory	-> Share a directory using the same way
 		reset-documents	-> Revoke granted file access permissions
 		stats	-	-> Show basic status of the sandbox (if running)
 		quit	-	-> Terminate running sandbox

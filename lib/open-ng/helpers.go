@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -156,7 +157,8 @@ func saveFile(path string) error {
 	logger.Println("Got URIs:", uris)
 	dirPaths := []string{}
 	for _, val := range uris {
-		dirPaths = append(dirPaths, strings.TrimPrefix(val, "file://"))
+		escPath, _ := url.PathUnescape(val)
+		dirPaths = append(dirPaths, strings.TrimPrefix(escPath, "file://"))
 	}
 
 	for idx := range dirPaths {
