@@ -12,7 +12,23 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-func requestFiles(directory bool) error {
+func (m *busStartProcessor) RequestFSAccess (directory bool) (*dbus.Error) {
+	readyChan := make(chan bool, 2)
+	errChan := make(chan error, 1)
+	go func () {
+		errChan <- requestFiles(directory, readyChan)
+	} ()
+	ready := <- readyChan
+	if ! ready {
+		err := <- errChan
+		warn.Println("Could not request access:", err)
+		return dbus.MakeFailedError(err)
+	}
+	return nil
+
+}
+
+func requestFiles(directory bool, ready chan bool) error {
 	var errChan = make(chan error, 5)
 	var statChan = make(chan uint, 1)
 	var resChan = make(chan map[string]dbus.Variant, 1)
@@ -20,6 +36,7 @@ func requestFiles(directory bool) error {
 	id := "portableHelper" + strconv.Itoa(rand.Int())
 	conn, err := dbus.SessionBus()
 	if err != nil {
+		ready <- false
 		return err
 	}
 	wg.Add(1)
@@ -79,20 +96,25 @@ func requestFiles(directory bool) error {
 		options,
 	)
 	if call.Err != nil {
+		ready <- false
 		return call.Err
 	}
+	ready <- true
 	status := <- statChan
 	result := <- resChan
 	switch status {
 		case 0:
+			debug.Println("Access granted by user")
 		case 1:
 			warn.Println("File sharing cancelled by user")
 			return nil
 		case 2:
 			warn.Println("The user interaction was ended in some other way")
+			ready <- false
 			return errors.New("The user interaction was ended in some other way")
 		default:
 			warn.Println("Unknown response status:", status)
+			ready <- false
 			return errors.New("Unknown response status " + strconv.Itoa(int(status)))
 	}
 	var uris []string
@@ -100,6 +122,7 @@ func requestFiles(directory bool) error {
 	if ok {
 		err := val.Store(&uris)
 		if err != nil {
+			ready <- false
 			return err
 		}
 		if len(uris) == 0 {
@@ -107,6 +130,7 @@ func requestFiles(directory bool) error {
 			return nil
 		}
 	} else {
+		ready <- false
 		return errors.New("Did not receive any URI to share")
 	}
 	for idx, val := range uris {
@@ -114,10 +138,12 @@ func requestFiles(directory bool) error {
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
+		ready <- false
 		return err
 	}
 	err = os.MkdirAll(filepath.Join(home, "Shared"), 0700)
 	if err != nil {
+		ready <- false
 		return err
 	}
 	for _, file := range uris {
@@ -130,12 +156,14 @@ func requestFiles(directory bool) error {
 			),
 		)
 		if err != nil {
+			ready <- false
 			return err
 		}
 	}
 
 	for sig := range errChan {
 		if sig != nil {
+			ready <- false
 			return errors.New("Unable to request files: " + sig.Error())
 		}
 	}
