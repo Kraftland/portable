@@ -92,6 +92,12 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 						pecho("warn", "Unable to request file sharing via IPC, falling back:", err)
 						shareFile(config)
 					}
+				case "share-directories", "share-directory":
+					startAct = "abort"
+					err := shareFileNG(config, true)
+					if err != nil {
+						pecho("warn", "Unable to request directory sharing via IPC:", err)
+					}
 				case "opendir", "home", "openhome":
 					startAct = "abort"
 					openHome(config)
