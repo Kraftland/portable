@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"net/url"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -134,7 +135,8 @@ func requestFiles(directory bool, ready chan bool) error {
 		return errors.New("Did not receive any URI to share")
 	}
 	for idx, val := range uris {
-		uris[idx], _ = strings.CutPrefix(val, "file://")
+		valTmp, _ := strings.CutPrefix(val, "file://")
+		uris[idx], _ = url.PathUnescape(valTmp)
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
