@@ -147,19 +147,29 @@ func requestFiles(directory bool, ready chan bool) error {
 		return err
 	}
 	for _, file := range uris {
-		err := os.Symlink(
-			file,
-			filepath.Join(
+		pth := file
+		wg.Go(func() {
+			destPath := filepath.Join(
 				home,
 				"Shared",
-				filepath.Base(file),
-			),
-		)
-		if err != nil {
-			ready <- false
-			return err
-		}
+				filepath.Base(pth),
+			)
+			err := os.Symlink(
+				pth,
+				destPath,
+			)
+			if err != nil {
+				warn.Println("Could not link", pth, "to", destPath, ":", err)
+				ready <- false
+				return
+			} else {
+				filemapAdd(destPath, pth)
+				debug.Println("Linked", pth, "to", destPath)
+			}
+		})
 	}
+
+	wg.Wait()
 
 	for sig := range errChan {
 		if sig != nil {
