@@ -87,7 +87,11 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 					runtimeOpt.isDebug = true
 				case "share-file", "share-files":
 					startAct = "abort"
-					shareFile(config)
+					err := shareFileNG(config, false)
+					if err != nil {
+						pecho("warn", "Unable to request file sharing via IPC, falling back:", err)
+						shareFile(config)
+					}
 				case "opendir", "home", "openhome":
 					startAct = "abort"
 					openHome(config)
@@ -135,6 +139,26 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 	fullCmdline := strings.Join(cmdlineArray, ", ")
 	pecho("debug", "Full command line: " + fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
+}
+
+func shareFileNG(config Config, directory bool) error {
+	conn, err := godbus.SessionBus()
+	if err != nil {
+		return err
+	}
+	busObj := conn.Object(
+		config.Metadata.AppID + ".Portable.Helper",
+		"/top/kimiblock/portable/init",
+	)
+	call := busObj.Call(
+		"top.kimiblock.Portable.Init.RequestFSAccess",
+		godbus.FlagAllowInteractiveAuthorization,
+		directory,
+	)
+	if call.Err != nil {
+		return call.Err
+	}
+	return nil
 }
 
 func shareFile(config Config) {
