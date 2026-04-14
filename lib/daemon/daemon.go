@@ -50,7 +50,7 @@ func sanityChecks(config Config) {
 		appIDValid = false
 	}
 	if appIDValid == false {
-		startAct = "abort"
+		abortChan <- true
 		pecho("crit", "Invalid appID: " + config.Metadata.AppID)
 	}
 	if len(config.Metadata.FriendlyName) == 0 {
@@ -80,7 +80,7 @@ func sanityChecks(config Config) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "/usr/bin/") {
-			startAct = "abort"
+			abortChan <- true
 			pecho("crit", "Found mount points inside /usr/bin")
 		}
 	}
@@ -1071,7 +1071,7 @@ func startApp(config Config) {
 	<- envsFlushReady
 	// Profiler
 	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
-	if startAct == "abort" {
+	if false {
 		stopApp()
 	} else {
 		sdExecErr := sdExec.Run()
@@ -2782,7 +2782,6 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 			}
 			os.Exit(0)
 		}
-		startAct = "aux"
 	}
 	if config.Advanced.TrayWake {
 		err := trayWakeNG(config, conn)
@@ -3066,13 +3065,10 @@ func main() {
 	<- cmdChan
 	go miscBinds(miscChan, pwSecContextChan, busConn, config)
 
-
-	if startAct == "abort" {
-		pecho("warn", "Aborting start")
-		//stopApp()
-		return
+	abortChan <- false
+	if abort := <- abortChan; abort {
+		pecho("warn", "Aborting start sequence")
 	}
-
 
 	miChan := make(chan bool, 1)
 
@@ -3085,9 +3081,6 @@ func main() {
 	})
 
 	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
-		startAct = "aux"
-		//time.Sleep(1 * time.Hour)
-		//os.Exit(0)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
