@@ -107,6 +107,9 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 				case "stat", "stats":
 					startAct = "abort"
 					showStats(config)
+				case "f5aaebc6-0014-4d30-beba-72bce57e0650":
+					startAct = "abort"
+					pecho("warn", "Portable has removed the ability to start in unsafe mode, please use the legacy version instead")
 				default:
 					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
 			}
