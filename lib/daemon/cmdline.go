@@ -126,7 +126,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 	}
 	if hasExpose {
 		exposeList := []string{}
-		for key, _ := range exposeMap {
+		for key := range exposeMap {
 			exposeList = append(exposeList, key)
 		}
 		res := questionExpose(exposeList, config)
@@ -134,7 +134,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 			runtimeOpt.userExpose <- exposeMap
 		}
 	}
-	for index, _ := range runtimeOpt.applicationArgs {
+	for index := range runtimeOpt.applicationArgs {
 		runtimeOpt.applicationArgs[index] = strings.TrimSuffix(
 			runtimeOpt.applicationArgs[index],
 			"\n")
