@@ -39,7 +39,8 @@ var (
 	runtimeOpt		RUNTIME_OPT
 	envsChan		= make(chan string, 512)
 	envsFlushReady		= make(chan int8, 1)
-	startAct		string
+	// When true and present, aborts start before multiinstance detection
+	abortChan		= make(chan bool, 10)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
 	socketStop		= make(chan int8, 10)
