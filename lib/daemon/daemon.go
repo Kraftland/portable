@@ -254,11 +254,9 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 		}
 	})
 
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
+	wg.Go(func() {
 		mkdirPool(dirs)
-	} ()
+	})
 
 	<- proceed
 	wg.Go(func() {
