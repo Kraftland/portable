@@ -3,7 +3,6 @@ package main
 type RUNTIME_OPT struct {
 	argStop		bool
 	applicationArgs	[]string
-	userExpose	chan map[string]string
 	userLang	string
 	miTerminate	bool
 	writtenDesktop	bool
@@ -53,5 +52,4 @@ var (
 					"/sys/module/nvidia_uvm",
 					"/sys/module/nvidia_wmi_ec_backlight",
 				}
-	filesInfo		= make(chan PassFiles, 1)
 )

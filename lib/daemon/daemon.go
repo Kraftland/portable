@@ -95,7 +95,7 @@ func bytesToMb(bytes int) float64 {
 	return float64(bytes) / div
 }
 
-func getVariables(config Config) {
+func getVariables(config Config, exposeChan chan map[string]string) {
 	runtimeOpt.userLang = os.Getenv("LANG")
 	bindVar := os.Getenv("bwBindPar")
 	if len(bindVar) > 0 {
@@ -107,13 +107,11 @@ func getVariables(config Config) {
 		pecho("warn",
 		"The legacy bwBindPar has been deprecated! Please read documents about --expose flags",
 		)
-		res := questionExpose([]string{bindVar}, config)
-		if res {
-			bwBindParMap := map[string]string{
-				bindVar:		bindVar,
-			}
-			runtimeOpt.userExpose <- bwBindParMap
+
+		bwBindParMap := map[string]string{
+			bindVar:		bindVar,
 		}
+		exposeChan <- bwBindParMap
 	}
 }
 
@@ -1771,9 +1769,13 @@ func maskDir(path string) (maskArgs []string) {
 	return
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn, config Config) {
+func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn, config Config, exposeChan chan map[string]string, docMap chan PassFiles) {
+	defer close(docMap)
 	var wg sync.WaitGroup
-	var miscArgs = []string{}
+
+	wg.Go(func() {
+		miscChan <- engageExpose(exposeChan, config, docMap)
+	})
 
 	wg.Go(func() {
 		miscChan <- maskDir("/proc/bus")
@@ -1860,52 +1862,8 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 		}
 	})
 
-	var validBwBindArgs = make(chan []string, 64)
-	var exposedPaths = make(chan string, 16)
-
-	close(runtimeOpt.userExpose)
-
-	var hasValidExpose bool
-
-	for pathMap := range runtimeOpt.userExpose {
-		for ori, dest := range pathMap {
-			pecho("debug", "Checking " + ori + ", " + dest)
-			wg.Go(func() {
-				_, err := os.Stat(ori)
-				if err != nil {
-					pecho("warn", "Could not select origin " + ori + ": " + err.Error())
-					return
-				}
-				hasValidExpose = true
-				exposedPaths <- ori
-				if strings.HasPrefix(dest, "ro:") {
-					validBwBindArgs <- []string{
-						"--ro-bind",
-						ori,
-						strings.TrimPrefix(dest, "ro:"),
-					}
-				} else if strings.HasPrefix(dest, "dev:") {
-					validBwBindArgs <- []string{
-						"--dev-bind",
-						ori,
-						strings.TrimPrefix(dest, "dev:"),
-					}
-				} else if dest == "null" {
-					return
-				} else {
-					validBwBindArgs <- []string{
-						"--bind",
-						ori,
-						dest,
-					}
-				}
-
-			})
-		}
-	}
 	if config.Advanced.FlatpakInfo {
-		miscArgs = append(
-			miscArgs,
+		miscChan <- []string{
 			"--ro-bind",
 				"/dev/null",
 				xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID + "-private/run-environ",
@@ -1931,121 +1889,14 @@ func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Con
 				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var/app/" + config.Metadata.AppID,
 			"--tmpfs",
 				xdgDir.dataDir + "/" + config.Metadata.StateDirectory + "/.var/app/" + config.Metadata.AppID + "/options",
-		)
+		}
 	}
-
-	miscChan <- miscArgs
 
 	wg.Wait()
-	if hasValidExpose {
-		close(validBwBindArgs)
-		close(exposedPaths)
-		var pathList []string
-
-		for path := range exposedPaths {
-			pathList = append(pathList, path)
-		}
-
-		for arg := range validBwBindArgs {
-			miscChan <- arg
-		}
-
-
-		// var requestID = "portable-" + strconv.Itoa(rand.Intn(114514))
-		// var busName = connBus.Names()[0]
-		// pathResponse := "/org/freedesktop/portal/desktop/request/" + busName + "/" + requestID
-		// var responseObjPath = godbus.ObjectPath(pathResponse)
-
-
-		// connBus.AddMatchSignal(
-		// 	godbus.WithMatchObjectPath(
-		// 		responseObjPath,
-		// 	),
-		// 	godbus.WithMatchInterface(
-		// 		"org.freedesktop.portal.Request",
-		// 	),
-		// 	godbus.WithMatchMember(
-		// 		"Response",
-		// 	),
-		// )
-		//busSigChan := make(chan *godbus.Signal, 20)
-		//connBus.Signal(busSigChan)
-		//var respRes = make(chan bool, 1)
-		//go watchResult(busSigChan, respRes)
-		addFilesToPortal(connBus, pathList, filesInfo, config)
-	}
-	pecho("debug", "Send files info")
-	close(filesInfo)
 	for pw := range pwChan {
 		miscChan <- pw
 	}
 	close(miscChan)
-}
-
-// This portal does not need Request?
-func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles, config Config) {
-	var filesInfoTmp PassFiles
-	filesInfoTmp.FileMap = map[string]string{}
-	var busFdList []godbus.UnixFD
-	for _, path := range pathList {
-		fileObj, err := os.Open(path)
-		if err != nil {
-			pecho("warn", "Could not open file: " + err.Error())
-			continue
-		}
-		filesInfoTmp.FileMap[path] = "unknown"
-		fd := fileObj.Fd()
-		busFdList = append(busFdList, godbus.UnixFD(fd))
-	}
-	type AddDocumentFullData struct {
-		PathFDs		[]godbus.UnixFD
-		Flags		uint32
-		AppID		string
-		Permissions	[]string
-	}
-	var busData	AddDocumentFullData
-	busData.AppID = config.Metadata.AppID
-	busData.Flags = 1
-	busData.PathFDs = busFdList
-	busData.Permissions = []string{"read", "write", "grant-permissions"}
-
-	path := "/org/freedesktop/portal/documents"
-	pathBus := godbus.ObjectPath(path)
-
-	obj := connBus.Object("org.freedesktop.portal.Documents", pathBus)
-	pecho("debug", "Requesting Documents portal for IDs...")
-	call := obj.Call("org.freedesktop.portal.Documents.AddFull", 0,
-		busData.PathFDs,
-		busData.Flags,
-		busData.AppID,
-		busData.Permissions,
-	)
-	//<- call.Done
-	pecho("debug", "AddFull call done")
-	if call.Err != nil {
-		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
-	}
-	type PortalResponse struct {
-		DocIDs		[]string
-		ExtraInfo	map[string]godbus.Variant
-	}
-	var resp PortalResponse
-	err := godbus.Store(call.Body, &resp.DocIDs, &resp.ExtraInfo)
-	if err != nil {
-		pecho("warn", "Could not decode portal response: " + err.Error())
-	}
-	for idx, docid := range resp.DocIDs {
-		filesInfoTmp.FileMap[pathList[idx]] = filepath.Join(
-			xdgDir.runtimeDir,
-			"/doc/",
-			docid,
-			filepath.Base(pathList[idx]),
-		)
-	}
-	jsonObj, _ := json.Marshal(filesInfoTmp)
-	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
-	pecho("debug", "Passed files info: " + string(jsonObj))
-	filesInfo <- filesInfoTmp
 }
 
 func bindXAuth(xauthChan chan []string, config Config) {
@@ -2568,7 +2419,6 @@ func auxStartNg(config Config) bool {
 	var reqbody StartRequest
 	reqbody.Exec = runtimeOpt.applicationArgs
 	reqbody.CustomTarget = false
-	reqbody.Files = <- filesInfo
 	jsonObj, err := json.Marshal(reqbody)
 	if err != nil {
 		panic(err)
@@ -2692,7 +2542,7 @@ func processStream(resp *http.Response, socketPath string) {
 	//} ()
 }
 
-func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
+func multiInstance(miChan chan bool, conn *godbus.Conn, config Config, docMap chan PassFiles) {
 	var hasRunningInstance bool
 	var usingDBus bool
 
@@ -2789,10 +2639,11 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config) {
 	} else {
 		// TODO: remove legacy start, and do concurrent req
 		if usingDBus {
-			busAuxStartReq(conn, false, runtimeOpt.applicationArgs, config)
+			busAuxStartReq(conn, false, runtimeOpt.applicationArgs, config, docMap)
 			miChan <- true
 			return
 		} else {
+			pecho("warn", "The legacy HTTP IPC is deprecated and does not support new features")
 			res := auxStartNg(config)
 			if res {
 				miChan <- true
@@ -2809,14 +2660,14 @@ type startReply struct {
 	baseDir		string
 }
 
-func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config) {
+func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, docMap chan PassFiles) {
 	//oldIn := os.Stdin
 	//oldOut := os.Stdout
 	//oldErr := os.Stderr
 
 	var files PassFiles
 
-	files = <- filesInfo
+	files = <- docMap
 
 	var fileSlice []string
 
@@ -2983,7 +2834,7 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 	atSpiProxyCmd.Start()
 }
 func main() {
-	runtimeOpt.userExpose = make(chan map[string]string, 2048)
+	exposeChan := make(chan map[string]string, 16)
 	var wg sync.WaitGroup
 	var config Config
 	wg.Go(func() {
@@ -3031,11 +2882,11 @@ func main() {
 	go waylandDisplay(wayDisplayChan)
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
-		getVariables(config)
+		getVariables(config, exposeChan)
 	})
 	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
 
-	go cmdlineDispatcher(cmdChan, config)
+	go cmdlineDispatcher(cmdChan, config, exposeChan)
 	go gpuBind(gpuChan, config)
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
@@ -3061,7 +2912,8 @@ func main() {
 	go tryBindCam(camChan, config)
 
 	<- cmdChan
-	go miscBinds(miscChan, pwSecContextChan, busConn, config)
+	docsMap := make(chan PassFiles, 1)
+	go miscBinds(miscChan, pwSecContextChan, busConn, config, exposeChan, docsMap)
 
 	abortChan <- false
 	if abort := <- abortChan; abort {
@@ -3071,7 +2923,7 @@ func main() {
 	miChan := make(chan bool, 1)
 
 	// MI
-	go multiInstance(miChan, busConn, config)
+	go multiInstance(miChan, busConn, config, docsMap)
 
 
 	wg.Go(func() {
