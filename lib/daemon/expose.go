@@ -117,8 +117,6 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 }
 
 func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan PassFiles, config Config) {
-	pecho("debug", "Passing", pathList, "via file descriptor")
-	//pecho("warn", "Calling Portal to add files:", pathList)
 	var filesInfoTmp PassFiles
 	filesInfoTmp.FileMap = map[string]string{}
 	var busFdList []godbus.UnixFD
@@ -156,8 +154,6 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 		busData.AppID,
 		busData.Permissions,
 	)
-	//<- call.Done
-	pecho("debug", "AddFull call done")
 	if call.Err != nil {
 		pecho("warn", "Could not contact Documents portal: " + call.Err.Error())
 	}
@@ -180,6 +176,5 @@ func addFilesToPortal(connBus *godbus.Conn, pathList []string, filesInfo chan Pa
 	}
 	jsonObj, _ := json.Marshal(filesInfoTmp)
 	addEnv("_portableHelperExtraFiles=" + string(jsonObj))
-	pecho("debug", "Passed files info: " + string(jsonObj))
 	filesInfo <- filesInfoTmp
 }
