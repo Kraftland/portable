@@ -75,7 +75,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 			case "--actions" :
 			skipCount++
 			if len(cmdlineArray) <= index + 1 {
-				pecho("warn", "--actions require an argument")
+				pecho("warn", "--actions requires an argument")
 				break
 			}
 			switch cmdlineArray[index + 1] {
