@@ -20,6 +20,7 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 
 	var pathsChan = make(chan string, 512)
 	var consentChan = make(chan bool, 5)
+	defer close(consentChan)
 	go func () {
 		var paths []string
 		for sig := range pathsChan {
