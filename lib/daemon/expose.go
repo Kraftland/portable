@@ -19,7 +19,7 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 	var writeWg sync.WaitGroup
 
 	var pathsChan = make(chan string, 512)
-	var consentChan = make(chan bool, 1)
+	var consentChan = make(chan bool, 5)
 	go func () {
 		var paths []string
 		for sig := range pathsChan {
