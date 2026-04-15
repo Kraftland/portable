@@ -2597,8 +2597,8 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config, docMap ch
 		}
 	}
 
-	if hasRunningInstance == false {
-		if runtimeOpt.miTerminate == true {
+	if ! hasRunningInstance {
+		if runtimeOpt.miTerminate {
 			pecho("warn", "Could not find running instance")
 			os.Exit(2)
 		}
@@ -2606,7 +2606,7 @@ func multiInstance(miChan chan bool, conn *godbus.Conn, config Config, docMap ch
 		return
 	} else {
 		pecho("debug", "Another instance running, using D-Bus: " + strconv.FormatBool(usingDBus))
-		if runtimeOpt.miTerminate == true {
+		if runtimeOpt.miTerminate {
 			if usingDBus {
 				busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
 				call := busObj.Call("top.kimiblock.Portable.Controller.Stop", godbus.FlagNoReplyExpected)

@@ -26,6 +26,7 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 			paths = append(paths, sig)
 		}
 		if len(paths) == 0 {
+			consentChan <- false
 			return
 		}
 		consentChan <- questionExpose(paths, conf)
@@ -40,16 +41,18 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 	})
 	writeWg.Go(func() {
 		consent := <- consentChan
+		consentChan <- consent
 		if ! consent {
+			docsChan <- PassFiles{}
 			return
 		}
-		consentChan <- consent
 
 		files := []string{}
 		for sig := range portalFiles {
 			files = append(files, sig)
 		}
 		if len(files) == 0 {
+			docsChan <- PassFiles{}
 			return
 		}
 		conn, err := godbus.SessionBus()
