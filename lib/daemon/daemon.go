@@ -93,7 +93,7 @@ func bytesToMb(bytes int) float64 {
 	return float64(bytes) / div
 }
 
-func getVariables(config Config, exposeChan chan map[string]string) {
+func getVariables(exposeChan chan map[string]string) {
 	runtimeOpt.userLang = os.Getenv("LANG")
 	bindVar := os.Getenv("bwBindPar")
 	if len(bindVar) > 0 {
