@@ -84,7 +84,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 	var call *godbus.Call
 
 	for {
-		if counter > 10 {
+		if counter > 5 {
 			pecho("crit", "Failed to wake existing instance")
 			break
 		}
