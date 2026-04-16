@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,7 +25,6 @@ import (
 	godbus "github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	udev "github.com/jochenvg/go-udev"
-	"golang.org/x/net/http2"
 )
 
 func sanityChecks(config Config) {
@@ -1037,19 +1035,6 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 	if err != nil {
 		pecho("crit", "Could not export bus method: " + err.Error())
 		return
-	}
-	reply, err := conn.RequestName("top.kimiblock.portable." + config.Metadata.AppID, godbus.NameFlagDoNotQueue)
-	if err != nil {
-		pecho("crit", "Could not request bus name: " + err.Error())
-		return
-	}
-
-	switch reply {
-		case godbus.RequestNameReplyPrimaryOwner:
-			pecho("debug", "Successfully requested ownership of bus name")
-		default:
-			pecho("crit", "Could not obtain D-Bus name: " + reply.String())
-			return
 	}
 
 	ready <- 1
@@ -2401,370 +2386,6 @@ func inputBind(inputBindChan chan []string) {
 	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
 
-type StartRequest struct {
-	Exec		[]string
-	CustomTarget	bool
-	Files		PassFiles
-}
-
-func auxStartNg(config Config) bool {
-	socketPath := filepath.Join(
-		xdgDir.runtimeDir,
-		"/portable/",
-		config.Metadata.AppID,
-		"/portable-control/helper",
-	)
-	conn, err := net.Dial("unix", socketPath)
-	if err != nil {
-		pecho("warn", "Could not do auxiliary start using HTTP IPC")
-		return false
-	}
-	var reqbody StartRequest
-	reqbody.Exec = runtimeOpt.applicationArgs
-	reqbody.CustomTarget = false
-	jsonObj, err := json.Marshal(reqbody)
-	if err != nil {
-		panic(err)
-	}
-
-	roundTripper := http2.Transport{
-		AllowHTTP:		true,
-		DisableCompression:	true,
-		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-					return conn, nil
-		},
-	}
-	pecho("debug", "Requesting start")
-	ipcClient := http.Client{
-		Transport:	&roundTripper,
-	}
-	// TODO: use multi reader to pipe stdin
-	reader := strings.NewReader(string(jsonObj))
-
-	var resp *http.Response
-	resp, err = ipcClient.Post("http://127.0.0.1/start", "application/json", reader)
-	if err != nil {
-		panic("Could not post data via IPC" + err.Error())
-	}
-	processStream(resp, socketPath)
-	pecho("info", "Started auxiliary application, connection protocol: " + resp.Proto)
-	return true
-}
-
-type HelperResponseField struct {
-	Success			bool
-	ID			int
-}
-
-func processStream(resp *http.Response, socketPath string) {
-	fmt.Println("Piping stdout/stdin...")
-	pipeR, pipeW := io.Pipe()
-	scanner := bufio.NewScanner(resp.Body)
-	var helperResp HelperResponseField
-	for scanner.Scan() {
-		line := scanner.Text()
-		err := json.Unmarshal([]byte(line), &helperResp)
-		if err != nil {
-			pecho("warn", "Unable to read garbled stream: " + err.Error())
-		} else {
-			break
-		}
-	}
-	id := helperResp.ID
-	roundTripper := http2.Transport{
-		DialTLS:	func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-					return net.Dial("unix", socketPath)
-		},
-		AllowHTTP:		true,
-		DisableCompression:	true,
-	}
-	ipcClient := http.Client{
-		Transport:	&roundTripper,
-	}
-	reqIn, err := http.NewRequest(
-		http.MethodPost,
-		"http://127.0.0.1/stream/stdin",
-		pipeR,
-	)
-	reqIn.Header.Set("Content-Type", "application/octet-stream")
-	if err != nil {
-		pecho("crit", "Could not create request: " + err.Error())
-		return
-	}
-	reqOut, err := http.NewRequest(
-		http.MethodPost,
-		"http://127.0.0.1/stream/stdout",
-		nil,
-	)
-	if err != nil {
-		pecho("crit", "Could not create request: " + err.Error())
-		return
-	}
-	reqErr, err := http.NewRequest(
-		http.MethodPost,
-		"http://127.0.0.1/stream/stderr",
-		nil,
-	)
-	if err != nil {
-		pecho("crit", "Could not create request: " + err.Error())
-		return
-	}
-
-	go func () {
-		reqOut.Header.Set("Portable", strconv.Itoa(id))
-		respOut, err := ipcClient.Do(reqOut)
-		if err != nil {
-			pecho("warn", "Could not pipe terminal: " + err.Error())
-		} else {
-			fmt.Println("Started piping stdout")
-			io.Copy(os.Stdout, respOut.Body)
-		}
-	} ()
-
-
-	go func () {
-		reqIn.Header.Set("Portable", strconv.Itoa(id))
-		_, err := ipcClient.Do(reqIn)
-		if err != nil {
-			pecho("warn", "Could not pipe terminal: " + err.Error())
-		} else {
-			fmt.Println("Started piping stdin")
-			io.Copy(pipeW, os.Stdin)
-		}
-	} ()
-
-	//go func () {
-		reqErr.Header.Set("Portable", strconv.Itoa(id))
-		respOut, err := ipcClient.Do(reqErr)
-		if err != nil {
-			pecho("warn", "Could not pipe terminal: " + err.Error())
-		} else {
-			fmt.Println("Started piping stderr")
-			io.Copy(os.Stderr, respOut.Body)
-		}
-	//} ()
-}
-
-func multiInstance(miChan chan bool, conn *godbus.Conn, config Config, docMap chan PassFiles) {
-	var hasRunningInstance bool
-	var usingDBus bool
-
-	busName := "top.kimiblock.portable." + config.Metadata.AppID
-
-
-	var dialWg sync.WaitGroup
-	var dialChan = make(chan bool, 2)
-	dialWg.Go(func() {
-		var ipcObj = conn.Object(busName, "/top/kimiblock/portable/daemon")
-		call := ipcObj.Call(busName + ".Ping", godbus.FlagNoAutoStart)
-		if call.Err == nil {
-			pecho("debug", "Detected a D-Bus instance")
-			usingDBus = true
-			dialChan <- true
-		} else {
-			dialChan <- false
-		}
-
-
-	})
-	dialWg.Go(func() {
-		var socketPath string = filepath.Join(
-			xdgDir.runtimeDir,
-			"portable",
-			config.Metadata.AppID,
-			"portable-control",
-			"daemon",
-		)
-		_, errStat := os.Stat(socketPath)
-		if errStat != nil && os.IsNotExist(errStat) {
-			dialChan <- false
-		}
-		pecho("debug", "Dialing daemon socket...")
-		_, err := net.Dial("unix", socketPath)
-		if err != nil {
-			dialChan <- false
-		} else {
-			dialChan <- true
-		}
-	})
-
-
-	go func () {
-		dialWg.Wait()
-		close(dialChan)
-	} ()
-	for res := range dialChan {
-		if res {
-			hasRunningInstance = true
-			break
-		}
-	}
-
-	if ! hasRunningInstance {
-		if runtimeOpt.miTerminate {
-			pecho("warn", "Could not find running instance")
-			os.Exit(2)
-		}
-		miChan <- false
-		return
-	} else {
-		pecho("debug", "Another instance running, using D-Bus: " + strconv.FormatBool(usingDBus))
-		if runtimeOpt.miTerminate {
-			if usingDBus {
-				busObj := conn.Object(busName, "/top/kimiblock/portable/daemon")
-				call := busObj.Call("top.kimiblock.Portable.Controller.Stop", godbus.FlagNoReplyExpected)
-				if call.Err != nil {
-					pecho("warn", "Could not terminate instance: " + call.Err.Error())
-				} else {
-					pecho("debug", "Requested termination via D-Bus")
-				}
-			} else {
-				var daemonPath string = xdgDir.runtimeDir + "/portable/"
-				daemonPath = daemonPath + config.Metadata.AppID + "/portable-control/daemon"
-				const signal = "terminate-now" + "\n"
-				controlSock, dialErr := net.Dial("unix", daemonPath)
-				if dialErr != nil {
-					pecho("crit", "Could not dial control daemon: " + dialErr.Error())
-				}
-				_, errWrite := controlSock.Write([]byte(signal))
-				if errWrite != nil {
-					pecho("crit", "Could not send termination signal: " + errWrite.Error())
-				}
-			}
-			os.Exit(0)
-		}
-	}
-	if config.Advanced.TrayWake {
-		err := trayWakeNG(config, conn)
-		if err != nil {
-			pecho("crit", "Could not wake remote: " + err.Error())
-		}
-	} else {
-		// TODO: remove legacy start, and do concurrent req
-		if usingDBus {
-			busAuxStartReq(conn, false, runtimeOpt.applicationArgs, config, docMap)
-			miChan <- true
-			return
-		} else {
-			pecho("warn", "The legacy HTTP IPC is deprecated and does not support new features")
-			res := auxStartNg(config)
-			if res {
-				miChan <- true
-				return
-			}
-		}
-	}
-	miChan <- true
-}
-
-
-type startReply struct {
-	hasDescriptors	bool
-	baseDir		string
-}
-
-func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, docMap chan PassFiles) {
-	//oldIn := os.Stdin
-	//oldOut := os.Stdout
-	//oldErr := os.Stderr
-
-	var files PassFiles
-
-	files = <- docMap
-
-	var fileSlice []string
-
-	for key, val := range files.FileMap {
-		fileSlice = append(fileSlice, key, val)
-	}
-
-	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
-	var sl []string
-	var customTgt bool
-	if runtimeOpt.isDebug {
-		sl = []string{
-			"/usr/bin/bash",
-			"--noprofile",
-			"--rcfile", "/run/bashrc",
-			"-i",
-		}
-		args = []string{}
-		customTgt = true
-	}
-	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
-		customTgt,
-		tray,
-		sl,
-		args,
-		fileSlice,
-	)
-	if call.Err != nil {
-		pecho("crit", "Could not emit start signal: " + call.Err.Error())
-		select {}
-	}
-	var reply startReply
-	err := call.Store(&reply.hasDescriptors, &reply.baseDir)
-	if err != nil {
-		pecho("crit", "Could not decode bus reply: " + err.Error())
-	}
-	if reply.hasDescriptors == false {
-		pecho("debug", "Remote has no descriptors, returning...")
-		return
-	}
-	fmt.Println("Streaming console from sandbox, press Control-D to detach")
-	baseDir := reply.baseDir
-	inFile := filepath.Join(baseDir, "stdin")
-	outFile := filepath.Join(baseDir, "stdout")
-	errFile := filepath.Join(baseDir, "stderr")
-
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		conn, err := net.Dial("unix", outFile)
-		if err != nil {
-			pecho("warn", "Could not stream standard output: " + err.Error())
-			return
-		} else {
-			defer conn.Close()
-			pecho("debug", "Streaming standard output")
-		}
-		n, err := io.Copy(os.Stdout, conn)
-		if err != nil {
-			pecho("warn", "Stream finished with error: " + err.Error())
-		}
-		pecho("debug", "Streamed stdout: " + strconv.Itoa(int(n)) + " bytes")
-	})
-	wg.Go(func() {
-		conn, err := net.Dial("unix", errFile)
-		if err != nil {
-			pecho("warn", "Could not stream standard error: " + err.Error())
-			return
-		} else {
-			defer conn.Close()
-		}
-		n, err := io.Copy(os.Stderr, conn)
-		if err != nil {
-			pecho("warn", "Stream finished with error: " + err.Error())
-		}
-		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)) + " bytes")
-	})
-	go func() {
-		conn, err := net.Dial("unix", inFile)
-		if err != nil {
-			pecho("warn", "Could not stream standard input: " + err.Error())
-			return
-		} else {
-			defer conn.Close()
-		}
-		n, err := io.Copy(conn, os.Stdin)
-		if err != nil {
-			pecho("warn", "Stream finished with error: " + err.Error())
-		}
-		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)) + " bytes")
-	} ()
-	wg.Wait()
-
-}
-
 func atSpiProxy(conn *godbus.Conn, config Config) {
 	a11yBusObj := conn.Object(
 		"org.a11y.Bus",
@@ -2838,6 +2459,7 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 }
 func main() {
 	exposeChan := make(chan map[string]string, 16)
+	miChan := make(chan bool, 1)
 	var wg sync.WaitGroup
 	var config Config
 	wg.Go(func() {
@@ -2859,6 +2481,22 @@ func main() {
 		if busConn.SupportsUnixFDs() == false {
 			panic("D-Bus has no support for passing File Descriptors")
 		}
+		reply, err := busConn.RequestName("top.kimiblock.portable." + config.Metadata.AppID, godbus.NameFlagDoNotQueue)
+		if err != nil {
+			pecho("crit", "Could not request bus name: " + err.Error())
+			return
+		}
+		switch reply {
+			case godbus.RequestNameReplyPrimaryOwner:
+				pecho("debug", "Successfully requested ownership of bus name")
+			case godbus.RequestNameReplyExists:
+				pecho("info", "Another instance is currently running")
+				miChan <- true
+				return
+			default:
+				pecho("crit", "Could not obtain D-Bus name: " + reply.String())
+		}
+		miChan <- false
 	})
 
 	var sdContext context.Context
@@ -2923,17 +2561,12 @@ func main() {
 		pecho("warn", "Aborting start sequence")
 	}
 
-	miChan := make(chan bool, 1)
-
-	// MI
-	go multiInstance(miChan, busConn, config, docsMap)
-
-
 	wg.Go(func() {
 		prepareEnvs(config)
 	})
 
-	if multiInstanceDetected := <- miChan; multiInstanceDetected == true {
+	if multiInstanceDetected := <- miChan; multiInstanceDetected {
+		wakeInstance(config, docsMap)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	wg.Go(func() {
