@@ -38,8 +38,10 @@ func resetDocs (config Config) {
 
 
 func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[string]string) {
-	var skipCount int
-	var hasExpose bool
+	var skipCount	int
+	var hasExpose	bool
+	var fileFwd	bool
+	var wg		sync.WaitGroup
 	var exposeMap = map[string]string{}
 	cmdlineArray := os.Args
 	runtimeOpt.applicationArgs = config.Exec.Arguments
@@ -58,6 +60,9 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 			continue
 		}
 		switch value {
+			case "--file-forwarding", "--forward-file":
+				pecho("debug", "File forwarding enabled via:", value)
+				fileFwd = true
 			case "--expose":
 				if len(cmdlineArray) <= index + 2 {
 					pecho("warn", "--expose requires 2 arguments")
@@ -136,6 +141,16 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 			runtimeOpt.applicationArgs[index],
 			"\n")
 	}
+	wg.Go(func() {
+		var mp = make(map[string]string)
+		if ! fileFwd {
+			return
+		}
+		for _, val := range runtimeOpt.applicationArgs {
+			mp[val] = "null"
+		}
+		exposeChan <- mp
+	})
 	encodedArg, errEncode := json.Marshal(runtimeOpt.applicationArgs)
 	if errEncode != nil {
 		pecho("warn", "Could not encode arguments as json")
@@ -143,6 +158,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 	addEnv("targetArgs=" + string(encodedArg))
 	cmdChan <- 1
 	fullCmdline := strings.Join(cmdlineArray, ", ")
+	wg.Wait()
 	pecho("debug", "Full command line: " + fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 }
