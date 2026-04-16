@@ -129,13 +129,16 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 				pecho("warn", "Unrecognised option: " + value)
 		}
 	}
-	if hasExpose {
+	wg.Go(func() {
+		if ! hasExpose {
+			return
+		}
 		exposeList := []string{}
 		for key := range exposeMap {
 			exposeList = append(exposeList, key)
 		}
 		exposeChan <- exposeMap
-	}
+	})
 	for index := range runtimeOpt.applicationArgs {
 		runtimeOpt.applicationArgs[index] = strings.TrimSuffix(
 			runtimeOpt.applicationArgs[index],
