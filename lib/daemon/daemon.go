@@ -2407,7 +2407,10 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 		pecho("warn", "Could not decode accessibility bus address: " + err.Error())
 		return
 	}
-	err = os.MkdirAll(xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/a11y", 0700)
+	err = os.MkdirAll(
+		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "a11y"),
+		0700,
+	)
 	if err != nil {
 		pecho("warn", "Could not create directory for accessibility bus: " + err.Error())
 		return
@@ -2469,7 +2472,6 @@ func main() {
 	var busConn *godbus.Conn
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
-	timeNow := time.Now()
 	wayDisplayChan := make(chan[]string, 1)
 
 	wg.Go(func() {
@@ -2600,7 +2602,6 @@ func main() {
 	go pwSecContext(pwSecContextChan, config)
 	wg.Wait()
 	close(envsChan)
-	pecho("debug", "Started Portable in " + time.Since(timeNow).String())
 	startApp(config)
 	if busConn != nil {
 		busConn.Close()
