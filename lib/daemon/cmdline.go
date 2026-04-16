@@ -151,14 +151,17 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 		}
 		exposeChan <- mp
 	})
-	encodedArg, errEncode := json.Marshal(runtimeOpt.applicationArgs)
-	if errEncode != nil {
-		pecho("warn", "Could not encode arguments as json")
-	}
-	addEnv("targetArgs=" + string(encodedArg))
+	wg.Go(func() {
+		encodedArg, errEncode := json.Marshal(runtimeOpt.applicationArgs)
+		if errEncode != nil {
+			pecho("warn", "Could not encode arguments as json:", errEncode)
+			return
+		}
+		addEnv("targetArgs=" + string(encodedArg))
+	})
+	wg.Wait()
 	cmdChan <- 1
 	fullCmdline := strings.Join(cmdlineArray, ", ")
-	wg.Wait()
 	pecho("debug", "Full command line: " + fullCmdline)
 	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
 }
