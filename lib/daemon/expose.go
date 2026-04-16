@@ -95,6 +95,10 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 					}
 				}
 				if filepath.IsAbs(ori) && ! stat.IsDir() {
+					if strings.Contains(ori, filepath.Join(xdgDir.dataDir, conf.Metadata.StateDirectory)) {
+						pecho("debug", "Skipping Portal passthrough for sandbox files")
+						return
+					}
 					portalFiles <- ori
 				} else {
 					pecho("warn", "Skipping descriptor passing: either the path is not absolute, or is a directory")
