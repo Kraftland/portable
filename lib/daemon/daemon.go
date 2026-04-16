@@ -2523,7 +2523,7 @@ func main() {
 	go waylandDisplay(wayDisplayChan)
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
-		getVariables(config, exposeChan)
+		getVariables(exposeChan)
 	})
 	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
 
