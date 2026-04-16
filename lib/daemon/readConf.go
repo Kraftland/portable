@@ -128,13 +128,13 @@ func getConf() Config {
 		configPath := determineModernConfPath(os.Getenv("PORTABLE_CONF"))
 		file, err := os.OpenFile(configPath, os.O_RDONLY, 0700)
 		if err != nil {
-			panic("Could not open configuration: " + err.Error())
+			pecho("crit", "Could not open configuration:", err)
 		}
 		reader := bufio.NewReader(file)
 		decoder := toml.NewDecoder(reader)
 		md ,err := decoder.Decode(&config)
 		if err != nil {
-			panic("Could not decode configuration: " + err.Error())
+			pecho("crit", "Could not decode configuration:", err)
 		}
 		config.Path = configPath
 		switch len(md.Undecoded()) {
