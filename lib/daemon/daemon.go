@@ -361,6 +361,9 @@ func cleanDirs(config Config) {
 	pathChan := make(chan string, 8)
 	wg.Go(func() {removeWrapChan(pathChan)})
 	pecho("info", "Cleaning leftovers")
+	if len(config.Metadata.AppID) == 0 {
+		return
+	}
 	pathChan <- filepath.Join(
 		xdgDir.runtimeDir,
 		"/portable/",
