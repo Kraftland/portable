@@ -37,7 +37,7 @@ func resetDocs (config Config) {
 }
 
 
-func cmdlineDispatcher(cmdChan chan int8, config Config) {
+func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[string]string) {
 	var skipCount int
 	var hasExpose bool
 	var exposeMap = map[string]string{}
@@ -129,10 +129,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config) {
 		for key := range exposeMap {
 			exposeList = append(exposeList, key)
 		}
-		res := questionExpose(exposeList, config)
-		if res {
-			runtimeOpt.userExpose <- exposeMap
-		}
+		exposeChan <- exposeMap
 	}
 	for index := range runtimeOpt.applicationArgs {
 		runtimeOpt.applicationArgs[index] = strings.TrimSuffix(
