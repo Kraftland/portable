@@ -1,16 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"net"
 	"os"
+	godbus "github.com/godbus/dbus/v5"
+	"fmt"
 	"path/filepath"
 	"strconv"
+	"net"
+	"io"
 	"sync"
-	"time"
-
-	godbus "github.com/godbus/dbus/v5"
 )
 
 func terminateInstance(config Config) {
@@ -79,32 +77,17 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 		args = []string{}
 		customTgt = true
 	}
-
-	var counter int
-	var call *godbus.Call
-
-	for {
-		if counter > 5 {
-			pecho("crit", "Failed to wake existing instance")
-			break
-		}
-		counter++
-		call = busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagNoAutoStart,
-			customTgt,
-			tray,
-			sl,
-			args,
-			fileSlice,
-		)
-		if call.Err != nil {
-			pecho("warn", "Could not emit start signal: " + call.Err.Error())
-		} else {
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
+	call := busObj.Call("top.kimiblock.Portable.Init.AuxStart", godbus.FlagAllowInteractiveAuthorization,
+		customTgt,
+		tray,
+		sl,
+		args,
+		fileSlice,
+	)
+	if call.Err != nil {
+		pecho("crit", "Could not emit start signal: " + call.Err.Error())
+		select {}
 	}
-
-
 	var reply startReply
 	err := call.Store(&reply.hasDescriptors, &reply.baseDir)
 	if err != nil {
