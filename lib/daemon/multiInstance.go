@@ -85,8 +85,8 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 		fileSlice,
 	)
 	if call.Err != nil {
-		pecho("crit", "Could not emit start signal: " + call.Err.Error())
-		select {}
+		pecho("warn", "Could not emit start signal: " + call.Err.Error())
+		os.Exit(1)
 	}
 	var reply startReply
 	err := call.Store(&reply.hasDescriptors, &reply.baseDir)
