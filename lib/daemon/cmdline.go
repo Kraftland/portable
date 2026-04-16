@@ -139,11 +139,6 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 		}
 		exposeChan <- exposeMap
 	})
-	for index := range runtimeOpt.applicationArgs {
-		runtimeOpt.applicationArgs[index] = strings.TrimSuffix(
-			runtimeOpt.applicationArgs[index],
-			"\n")
-	}
 	wg.Go(func() {
 		var mp = make(map[string]string)
 		if ! fileFwd {
@@ -164,9 +159,8 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 	})
 	wg.Wait()
 	cmdChan <- 1
-	fullCmdline := strings.Join(cmdlineArray, ", ")
-	pecho("debug", "Full command line: " + fullCmdline)
-	pecho("info", "Application arguments: " + strings.Join(runtimeOpt.applicationArgs, ", "))
+	pecho("debug", "Full command line:", cmdlineArray)
+	pecho("info", "Application arguments:", runtimeOpt.applicationArgs)
 }
 
 func shareFileNG(config Config, directory bool) error {
