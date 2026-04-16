@@ -85,8 +85,9 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 			}
 			switch cmdlineArray[index + 1] {
 				case "quit":
-					runtimeOpt.miTerminate = true
 					pecho("debug", "Received quit request from user")
+					terminateInstance(config)
+					os.Exit(0)
 				case "debug-shell":
 					addEnv("_portableDebug=1")
 					runtimeOpt.isDebug = true

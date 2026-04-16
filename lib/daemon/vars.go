@@ -4,7 +4,6 @@ type RUNTIME_OPT struct {
 	argStop		bool
 	applicationArgs	[]string
 	userLang	string
-	miTerminate	bool
 	writtenDesktop	bool
 	isDebug		bool
 }
