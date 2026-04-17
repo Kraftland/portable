@@ -1786,7 +1786,7 @@ func miscBinds(miscChan chan []string, pwChan chan []string, config Config, expo
 			miscChan <- []string{
 				"--ro-bind",
 				"/usr/lib/portable/overlay-usr/flatpak-spawn",
-				"/host/usr/lib/flatpak-xdg-utils/flatpak-spawn",
+				"/usr/lib/flatpak-xdg-utils/flatpak-spawn",
 			}
 		}
 	})
