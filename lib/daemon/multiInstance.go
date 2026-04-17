@@ -1,14 +1,16 @@
 package main
 
 import (
-	"os"
-	godbus "github.com/godbus/dbus/v5"
 	"fmt"
+	"io"
+	"net"
+	"os"
 	"path/filepath"
 	"strconv"
-	"net"
-	"io"
 	"sync"
+	"time"
+
+	godbus "github.com/godbus/dbus/v5"
 )
 
 func terminateInstance(config Config) {
@@ -86,7 +88,8 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 	)
 	if call.Err != nil {
 		pecho("warn", "Could not emit start signal: " + call.Err.Error())
-		os.Exit(1)
+		time.Sleep(2 * time.Second)
+		return
 	}
 	var reply startReply
 	err := call.Store(&reply.hasDescriptors, &reply.baseDir)
