@@ -1757,7 +1757,8 @@ func maskDir(path string) (maskArgs []string) {
 	return
 }
 
-func miscBinds(miscChan chan []string, pwChan chan []string, connBus *godbus.Conn, config Config, exposeChan chan map[string]string, docMap chan PassFiles) {
+func miscBinds(miscChan chan []string, pwChan chan []string, config Config, exposeChan chan map[string]string, docMap chan PassFiles) {
+
 	defer close(docMap)
 	var wg sync.WaitGroup
 
@@ -2474,33 +2475,6 @@ func main() {
 	go pechoWorker()
 	wayDisplayChan := make(chan[]string, 1)
 
-	wg.Go(func() {
-		var err error
-		busConn, err = godbus.SessionBus()
-		if err != nil {
-			panic("Could not connect to session bus: " + err.Error())
-		}
-		if busConn.SupportsUnixFDs() == false {
-			panic("D-Bus has no support for passing File Descriptors")
-		}
-		reply, err := busConn.RequestName("top.kimiblock.portable." + config.Metadata.AppID, godbus.NameFlagDoNotQueue)
-		if err != nil {
-			pecho("crit", "Could not request bus name: " + err.Error())
-			return
-		}
-		switch reply {
-			case godbus.RequestNameReplyPrimaryOwner:
-				pecho("debug", "Successfully requested ownership of bus name")
-			case godbus.RequestNameReplyExists:
-				pecho("info", "Another instance is currently running")
-				miChan <- true
-				return
-			default:
-				pecho("crit", "Could not obtain D-Bus name: " + reply.String())
-		}
-		miChan <- false
-	})
-
 	var sdContext context.Context
 	var sdCancelFunc context.CancelFunc
 	var conn *dbus.Conn
@@ -2522,12 +2496,40 @@ func main() {
 	pecho("info", "Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
+	wg.Go(func() {
+		var err error
+		busConn, err = godbus.SessionBus()
+		if err != nil {
+			panic("Could not connect to session bus: " + err.Error())
+		}
+		if busConn.SupportsUnixFDs() == false {
+			panic("D-Bus has no support for passing File Descriptors")
+		}
+		reply, err := busConn.RequestName("top.kimiblock.portable." + config.Metadata.AppID, godbus.NameFlagDoNotQueue)
+		if err != nil {
+			pecho("crit", "Could not request bus name: " + err.Error())
+			return
+		}
+		switch reply {
+			case godbus.RequestNameReplyPrimaryOwner:
+				pecho("debug", "Successfully requested ownership of bus name")
+				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
+			case godbus.RequestNameReplyExists:
+				pecho("info", "Another instance is currently running")
+				miChan <- true
+				return
+			default:
+				pecho("crit", "Could not obtain D-Bus name: " + reply.String())
+		}
+		miChan <- false
+
+	})
 	go waylandDisplay(wayDisplayChan)
 	// This is fine to do concurrently, since miscBind runs later and we have wg.Wait in middle
 	wg.Go(func() {
 		getVariables(exposeChan)
 	})
-	go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
+
 
 	go cmdlineDispatcher(cmdChan, config, exposeChan)
 	go gpuBind(gpuChan, config)
@@ -2556,7 +2558,7 @@ func main() {
 
 	<- cmdChan
 	docsMap := make(chan PassFiles, 1)
-	go miscBinds(miscChan, pwSecContextChan, busConn, config, exposeChan, docsMap)
+	go miscBinds(miscChan, pwSecContextChan, config, exposeChan, docsMap)
 
 	abortChan <- false
 	if abort := <- abortChan; abort {
