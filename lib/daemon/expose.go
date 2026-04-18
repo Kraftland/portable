@@ -72,6 +72,7 @@ func engageExpose(chann chan map[string]string, conf Config, docsChan chan PassF
 				stat, err := os.Stat(ori)
 				if err != nil {
 					pecho("warn", "Could not stat path:", err)
+					return
 				}
 				pathsChan <- ori
 				if strings.HasPrefix(dest, "ro:") {
