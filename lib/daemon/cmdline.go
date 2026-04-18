@@ -92,30 +92,30 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 					addEnv("_portableDebug=1")
 					runtimeOpt.isDebug = true
 				case "share-file", "share-files":
-					abortChan <- true
 					err := shareFileNG(config, false)
 					if err != nil {
 						pecho("warn", "Unable to request file sharing via IPC, falling back:", err)
 						shareFile(config)
 					}
-				case "share-directories", "share-directory":
 					abortChan <- true
+				case "share-directories", "share-directory":
 					err := shareFileNG(config, true)
 					if err != nil {
 						pecho("warn", "Unable to request directory sharing via IPC:", err)
 					}
+					abortChan <- true
 				case "opendir", "home", "openhome":
-					abortChan <- true
 					openHome(config)
+					abortChan <- true
 				case "reset-document", "reset-documents":
-					abortChan <- true
 					resetDocs(config)
+					abortChan <- true
 				case "stat", "stats":
-					abortChan <- true
 					showStats(config)
-				case "f5aaebc6-0014-4d30-beba-72bce57e0650":
 					abortChan <- true
+				case "f5aaebc6-0014-4d30-beba-72bce57e0650":
 					pecho("warn", "Portable has removed the ability to start in unsafe mode, please use the legacy version instead")
+					abortChan <- true
 				default:
 					pecho("warn", "Unrecognised action: " + cmdlineArray[index + 1])
 			}
