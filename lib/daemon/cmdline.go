@@ -148,7 +148,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 		for _, val := range runtimeOpt.applicationArgs {
 			if ! filepath.IsAbs(val) {
 				pecho("warn", "Rejecting non-absolute forwarding option:", val)
-				return
+				continue
 			}
 			mp[val] = "null"
 		}
