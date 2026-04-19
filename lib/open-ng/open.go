@@ -34,6 +34,11 @@ func openPath(path string, showItem bool) {
 		return
 	}
 
+	succ = openPathPortal(modPath, true)
+	if succ == true {
+		return
+	}
+
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		log.Fatalln("Could not connect to session bus: " + err.Error())
