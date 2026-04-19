@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"math/rand"
 	"os"
 
@@ -42,11 +40,11 @@ func openPath(path string, showItem bool) {
 
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
-		log.Fatalln("Could not connect to session bus: " + err.Error())
+		warn.Fatalln("Could not connect to session bus: " + err.Error())
 		return
 	}
 	defer conn.Close()
-	log.Println("Calling FileManager1 for path: " + modPath)
+	logger.Println("Calling FileManager1 for path: " + modPath)
 	pathSlice := []string{"file://" + modPath}
 	fileManager1Obj := conn.Object("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1")
 	fileManager1Obj.Call(
@@ -70,7 +68,7 @@ func openPathPortal(path string, showItem bool) (success bool) {
 
 	fd, err := os.Open(path)
 	if err != nil {
-		log.Fatalln("Could not open path:", err)
+		warn.Fatalln("Could not open path:", err)
 	}
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -89,13 +87,13 @@ func openPathPortal(path string, showItem bool) (success bool) {
 		busConn.Signal(sigChan)
 		wg.Done()
 		for sig := range sigChan {
-			log.Println("Incoming signal")
+			logger.Println("Incoming signal")
 			var v dbus.Variant
 			var stat uint32
 			if sig.Path == dbus.ObjectPath(objPath) && sig.Name == "org.freedesktop.portal.Request.Response" {
 				err := dbus.Store(sig.Body, &stat, &v)
 				if err != nil {
-					log.Fatalln("Could not store bus reply:", err)
+					warn.Fatalln("Could not store bus reply:", err)
 				}
 				resp <- stat
 				break
@@ -131,13 +129,13 @@ func openPathPortal(path string, showItem bool) (success bool) {
 		optMap,
 	)
 	if call.Err != nil {
-		log.Println("Call to Portal failed:", call.Err)
+		logger.Println("Call to Portal failed:", call.Err)
 		return false
 	} else {
-		log.Println("Called Portal:", call.Body)
+		logger.Println("Called Portal:", call.Body)
 	}
 	res := <- resp
-	log.Println("Got response from Portal:", res)
+	logger.Println("Got response from Portal:", res)
 	switch res {
 		case 0:
 			os.Exit(0)
@@ -157,19 +155,19 @@ func openPathPortal(path string, showItem bool) (success bool) {
 
 func main () {
 	rawCmdArgs := os.Args
-	fmt.Println("Received command line open request: " + strings.Join(rawCmdArgs, ", "))
+	logger.Println("Received command line open request:", rawCmdArgs)
 	if os.Args[1] == "--show-item" {
-		fmt.Println("Activating legacy dde-file-manager mode")
+		logger.Println("Enabled compatibility mode for --show-item")
 		totalLength := len(os.Args)
 		var loopCounter uint = 2
 		for {
 			if loopCounter > uint(totalLength) {
-				fmt.Println("Could not resolve path")
+				logger.Println("Could not resolve path")
 				break
 			}
 			_, err := os.Stat(os.Args[loopCounter])
 			if err != nil {
-				fmt.Println("Invalid argument: " + os.Args[loopCounter])
+				logger.Println("Invalid argument: " + os.Args[loopCounter])
 			} else {
 				openPath(os.Args[loopCounter], true)
 				break
@@ -177,7 +175,7 @@ func main () {
 			loopCounter++
 		}
 	} else if strings.Contains(os.Args[1], "file://") == false && linkRegexp.Match([]byte(os.Args[1])) {
-		fmt.Println("Got a link")
+		logger.Println("Got a link")
 		err := OpenURI(os.Args[1])
 		if err != nil {
 			warn.Fatalln("Could not open link:", err)
