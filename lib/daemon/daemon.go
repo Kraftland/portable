@@ -2563,6 +2563,7 @@ func main() {
 	abortChan <- false
 	if abort := <- abortChan; abort {
 		pecho("warn", "Aborting start sequence")
+		return
 	}
 
 	wg.Go(func() {
