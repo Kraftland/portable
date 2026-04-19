@@ -207,15 +207,12 @@ func evalPath(path string) (finalPath string) {
 	}
 
 
-	if ! strings.HasPrefix(path, home) && ! strings.HasPrefix(path, docMount) {
+	if ! strings.HasPrefix(finalPath, home) && ! strings.HasPrefix(finalPath, docMount) {
 		logger.Println("Calling SaveFile")
-		finalPath, err = saveFile(path)
+		finalPath, err = saveFile(finalPath)
 		if err != nil {
 			warn.Fatalln("Could not call SaveFile:", err)
 		}
 	}
-
-
-	logger.Println("Resolved absolute path", finalPath)
 	return
 }
