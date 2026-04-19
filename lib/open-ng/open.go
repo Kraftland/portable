@@ -17,6 +17,7 @@ import (
 
 var (
 	linkRegexp	=	regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/$.?#].[^\s]*`);
+	docMount	=	filepath.Join("/run/user", strconv.Itoa(os.Getuid()), "doc")
 )
 
 func openPath(path string, showItem bool) {
@@ -57,19 +58,6 @@ func openPath(path string, showItem bool) {
 }
 
 func openPathPortal(path string, showItem bool) (success bool) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		warn.Println("Could not get home path:", err)
-		return false
-	}
-	if ! strings.HasPrefix(path, home) {
-		err := saveFile(path)
-		if err != nil {
-			warn.Println("Could not call SaveFile:", err)
-			return false
-		}
-		return true
-	}
 	busConn, err := dbus.SessionBus()
 	if err != nil {
 		panic(err)

@@ -14,11 +14,11 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-func saveFile(path string) error {
+func saveFile(path string) (string, error) {
 	var isDir bool
 	stat, err := os.Stat(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	isDir = stat.IsDir()
 	type pattern struct {
@@ -64,7 +64,7 @@ func saveFile(path string) error {
 	responseChan := make(chan portalResp, 1)
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
-		return err
+		return "", err
 	}
 	obj := conn.Object(
 		"org.freedesktop.portal.Desktop",
@@ -131,17 +131,17 @@ func saveFile(path string) error {
 	)
 	logger.Println(call)
 	if call.Err != nil {
-		return call.Err
+		return "", call.Err
 	}
 	resp := <- responseChan
 	switch resp.response {
 		case 0:
 		case 1:
-			return nil
+			return "", errors.New("Interaction cancelled")
 		case 2:
-			return errors.New("User interaction was ended in some other way")
+			return "", errors.New("User interaction was ended in some other way")
 		default:
-			return errors.New("Unexpected Response signal: " + strconv.Itoa(int(resp.response)))
+			return "", errors.New("Unexpected Response signal: " + strconv.Itoa(int(resp.response)))
 	}
 
 	var uris []string
@@ -149,10 +149,10 @@ func saveFile(path string) error {
 	if ok {
 		err := val.Store(&uris)
 		if err != nil {
-			return errors.New("Could not decode uris: " + err.Error())
+			return "", errors.New("Could not decode uris: " + err.Error())
 		}
 	} else {
-		return errors.New("Could not find uris in response")
+		return "", errors.New("Could not find uris in response")
 	}
 	logger.Println("Got URIs:", uris)
 	dirPaths := []string{}
@@ -191,8 +191,7 @@ func saveFile(path string) error {
 	}
 
 	wg.Wait()
-
-	return nil
+	return dirPaths[0], nil
 }
 
 func evalPath(path string) (finalPath string) {
@@ -202,7 +201,19 @@ func evalPath(path string) (finalPath string) {
 		warn.Fatalln("Could not get absolute path: " + err.Error())
 		return
 	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		warn.Fatalln("Could not get home path:", err)
+	}
 
+
+	if ! strings.HasPrefix(path, home) && ! strings.HasPrefix(path, docMount) {
+		logger.Println("Calling SaveFile")
+		finalPath, err = saveFile(path)
+		if err != nil {
+			warn.Fatalln("Could not call SaveFile:", err)
+		}
+	}
 
 
 	logger.Println("Resolved absolute path", finalPath)
