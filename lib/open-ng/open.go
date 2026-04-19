@@ -17,6 +17,7 @@ import (
 
 var (
 	linkRegexp	=	regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/$.?#].[^\s]*`);
+	docMount	=	filepath.Join("/run/user", strconv.Itoa(os.Getuid()), "doc")
 )
 
 func openPath(path string, showItem bool) {
@@ -29,19 +30,14 @@ func openPath(path string, showItem bool) {
 		return
 	}
 
-	stat, err := os.Stat(modPath)
-	if err != nil {
-		warn.Fatalln("Could not stat path: " + err.Error())
+	succ := openPathPortal(modPath, showItem)
+	if succ == true {
 		return
 	}
 
-	isDir := stat.IsDir()
-
-	if showItem == false {
-		succ := openPathPortal(modPath, isDir)
-		if succ == true {
-			return
-		}
+	succ = openPathPortal(modPath, true)
+	if succ == true {
+		return
 	}
 
 	conn, err := dbus.ConnectSessionBus()
@@ -61,20 +57,7 @@ func openPath(path string, showItem bool) {
 	)
 }
 
-func openPathPortal(path string, dir bool) (success bool) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		warn.Println("Could not get home path:", err)
-		return false
-	}
-	if ! strings.HasPrefix(path, home) {
-		err := saveFile(path)
-		if err != nil {
-			warn.Println("Could not call SaveFile:", err)
-			return false
-		}
-		return true
-	}
+func openPathPortal(path string, showItem bool) (success bool) {
 	busConn, err := dbus.SessionBus()
 	if err != nil {
 		panic(err)
@@ -133,7 +116,7 @@ func openPathPortal(path string, dir bool) (success bool) {
 		"/org/freedesktop/portal/desktop",
 	)
 	var busMethod string
-	switch dir {
+	switch showItem {
 		case true:
 			busMethod = "OpenDirectory"
 		case false:
