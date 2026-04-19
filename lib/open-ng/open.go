@@ -29,19 +29,9 @@ func openPath(path string, showItem bool) {
 		return
 	}
 
-	stat, err := os.Stat(modPath)
-	if err != nil {
-		warn.Fatalln("Could not stat path: " + err.Error())
+	succ := openPathPortal(modPath, showItem)
+	if succ == true {
 		return
-	}
-
-	isDir := stat.IsDir()
-
-	if showItem == false {
-		succ := openPathPortal(modPath, isDir)
-		if succ == true {
-			return
-		}
 	}
 
 	conn, err := dbus.ConnectSessionBus()
@@ -61,7 +51,7 @@ func openPath(path string, showItem bool) {
 	)
 }
 
-func openPathPortal(path string, dir bool) (success bool) {
+func openPathPortal(path string, showItem bool) (success bool) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		warn.Println("Could not get home path:", err)
@@ -133,7 +123,7 @@ func openPathPortal(path string, dir bool) (success bool) {
 		"/org/freedesktop/portal/desktop",
 	)
 	var busMethod string
-	switch dir {
+	switch showItem {
 		case true:
 			busMethod = "OpenDirectory"
 		case false:
