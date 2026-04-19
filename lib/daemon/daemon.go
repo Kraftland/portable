@@ -2566,14 +2566,13 @@ func main() {
 		return
 	}
 
-	wg.Go(func() {
-		prepareEnvs(config)
-	})
-
 	if multiInstanceDetected := <- miChan; multiInstanceDetected {
 		wakeInstance(config, docsMap)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+	wg.Go(func() {
+		prepareEnvs(config)
+	})
 	wg.Go(func() {
 		setFirewall(config)
 	})
