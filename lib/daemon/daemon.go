@@ -2590,16 +2590,13 @@ func main() {
 	})
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan, config)
-	wg.Add(2)
 	<- genChan // Stage 2, ensures that info file is ready
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		startProxy(conn, sdContext, config)
-	} ()
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		atSpiProxy(busConn, config)
-	} ()
+	})
 
 	go pwSecContext(pwSecContextChan, config)
 	wg.Wait()
