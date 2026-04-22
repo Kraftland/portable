@@ -37,6 +37,9 @@ arguments = ["--gapplication-service"]
 # Watch for spawned commands. When all of them exits, automatically terminate the sandbox. Defaults to true.
 track = true
 
+# Allows the app to run in the background. Use with caution because broken implementations may terminate the app even if it's in foreground.
+background = true
+
 # The system section controls general permission.
 [system]
 # Whether or not an application can call Inhibit Portal to prevent automatic suspend. Defaults to false.
