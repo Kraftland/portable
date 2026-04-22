@@ -31,6 +31,7 @@ type BusLaunch struct {
 
 type ProcMgmt struct {
 	Track		bool
+	Background	bool
 }
 
 type SysMgmt struct {
