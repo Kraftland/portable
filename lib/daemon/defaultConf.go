@@ -21,7 +21,7 @@ func setDefaultConfOpts() Config {
 		default:
 			config.Privacy.X11 = true
 	}
-
+	config.Processes.Background = true
 	config.Network.Enable = true
 	config.Processes.Track = true
 	config.Privacy.ClassicNotifications = true
