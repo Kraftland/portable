@@ -1068,12 +1068,20 @@ func startApp(config Config) {
 }
 
 func forceBackgroundPerm(config Config) {
-	pecho("debug", "Unrestricting background limits")
 	conn, err := godbus.SessionBus()
+	var perms bool
 	if err != nil {
-		pecho("warn", "Could not unrestrict background limits:", err)
+		pecho("warn", "Could not set background limits:", err)
 		return
 	}
+	if ! config.Processes.Background {
+		pecho("debug", "Restricting background for", config.Metadata.AppID)
+		perms = false
+	} else {
+		pecho("debug", "Unrestricting background limits")
+		perms = true
+	}
+
 	obj := conn.Object(
 		"org.freedesktop.impl.portal.PermissionStore",
 		"/org/freedesktop/impl/portal/PermissionStore",
@@ -1082,13 +1090,13 @@ func forceBackgroundPerm(config Config) {
 		"org.freedesktop.impl.portal.PermissionStore.SetPermission",
 		0,
 		"background",
-		true,
+		perms,
 		"background",
 		config.Metadata.AppID,
 		[]string{"yes"},
 	)
 	if call.Err != nil {
-		pecho("warn", "Could not unrestrict background limits:", call.Err)
+		pecho("warn", "Could not set background limits:", call.Err)
 		return
 	}
 }
