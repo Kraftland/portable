@@ -501,7 +501,6 @@ func lookUpXDG() {
 }
 
 func pwSecContext(pwChan chan []string, config Config) {
-	var pwSecArg = []string{}
 	var pwProxySocket string
 	if config.Privacy.PipeWire == false {
 		close(pwChan)
@@ -538,11 +537,11 @@ func pwSecContext(pwChan chan []string, config Config) {
 			break
 		}
 	}
-	pwSecArg = append(
-		pwSecArg,
-		"--bind", pwProxySocket, filepath.Join(xdgDir.runtimeDir, "pipewire-0"),
-	)
-	pwChan <- pwSecArg
+	pwChan <- []string{
+		"--bind",
+		pwProxySocket,
+		filepath.Join(xdgDir.runtimeDir, "pipewire-0"),
+	}
 	close(pwChan)
 	pecho("debug", "pw-container available at " + pwProxySocket)
 	err = pwSecRun.Wait()
