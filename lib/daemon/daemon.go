@@ -530,10 +530,11 @@ func pwSecContext(pwChan chan []string, config Config) {
 		return
 	}
 	for scanner.Scan() {
-		stringObj := scanner.Text()
-		if strings.HasPrefix(stringObj, "new socket: ") {
-			pwProxySocket = strings.TrimPrefix(stringObj, "new socket: ")
-			pecho("debug", "Got PipeWire socket: " + pwProxySocket)
+		stringObj, found := strings.CutPrefix(scanner.Text(), "new socket: ")
+		if ! found {
+			continue
+		} else {
+			pwProxySocket = stringObj
 			break
 		}
 	}
