@@ -58,7 +58,6 @@ func readLegacyConf() Config {
 		bindPipewire		bool
 		bindInputDevices	bool
 		allowInhibit		bool
-		allowGlobalShortcuts	bool
 		allowKDEStatus		bool
 		dbusWake		bool
 		mountInfo		bool
@@ -92,7 +91,6 @@ func readLegacyConf() Config {
 		"bindPipewire":		{b: &legacyConf.bindPipewire},
 		"bindInputDevices":	{b: &legacyConf.bindInputDevices},
 		"allowInhibit":		{b: &legacyConf.allowInhibit},
-		"allowGlobalShortcuts":	{b: &legacyConf.allowGlobalShortcuts},
 		"allowKDEStatus":	{b: &legacyConf.allowKDEStatus},
 		"dbusWake":		{b: &legacyConf.dbusWake},
 		"mountInfo":		{b: &legacyConf.mountInfo},
@@ -117,7 +115,6 @@ func readLegacyConf() Config {
 		"bindPipewire":		"bool",
 		"bindInputDevices":	"bool",
 		"allowInhibit":		"bool",
-		"allowGlobalShortcuts":	"bool",
 		"allowKDEStatus":	"bool",
 		"dbusWake":		"bool",
 		"mountInfo":		"bool",
@@ -215,9 +212,6 @@ func readLegacyConf() Config {
 
 	if legacyConf.gameMode {
 		config.System.GameMode = true
-	}
-	if legacyConf.allowGlobalShortcuts {
-		config.System.GlobalShortcuts = true
 	}
 	if legacyConf.allowInhibit {
 		config.System.InhibitSuspend = true
