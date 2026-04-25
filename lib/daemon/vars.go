@@ -12,6 +12,11 @@ const (
 	version		float32	=	15.99
 )
 
+type GPUInfo struct {
+	cardName	string
+	cardPath	string
+}
+
 type RUNTIME_PARAMS struct {
 	instanceID		string
 	bwCmd			[]string

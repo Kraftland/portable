@@ -35,11 +35,12 @@ func gpuBind(gpuChan chan []string, config Config) {
 	}
 
 
+
+
 	// SHOULD contain strings like card0, card1 etc
-	var totalGpus = []string{}
-	var activeGpus = []string{}
-	var cardList = make(chan []string, 512)
-	var cardPaths []string
+	var totalGpus []GPUInfo
+
+	var activeGpus []GPUInfo
 
 	wg.Go(func() {
 		var workers sync.WaitGroup
@@ -60,17 +61,16 @@ func gpuBind(gpuChan chan []string, config Config) {
 		if len(cardName) == 0 || len(cardPath) == 0 {
 			pecho("warn", "Udev returned an empty sysname!")
 			continue
-		} else if strings.Contains(cardName, "card") == false || devType == "drm_connector" {
+		} else if ! strings.Contains(cardName, "card") || devType == "drm_connector" {
 			pecho("debug", "Udev returned " + cardName + ", which is not a GPU")
 			continue
 		}
 		totalGpus = append(
 			totalGpus,
-			cardName,
-		)
-		cardPaths = append(
-			cardPaths,
-			card.Syspath(),
+			GPUInfo{
+				cardName:	cardName,
+				cardPath:	cardPath,
+			},
 		)
 	}
 	wg.Wait()
@@ -83,38 +83,41 @@ func gpuBind(gpuChan chan []string, config Config) {
 				wg.Go(func() {
 					setOffloadEnvs()
 				})
-				for _, cardName := range totalGpus {
-					card := cardName
+				for _, cardInfo := range totalGpus {
+					card := cardInfo.cardName
 					wg.Go(func() {
 						bindCard(card, argChan, config)
 					})
 				}
 			} else {
-				for idx, cardName := range totalGpus {
-					wg.Add(1)
-					go func (idx int, card string) {
-						defer wg.Done()
-						cardPath := cardPaths[idx]
-						detectCardStatus(cardList, cardPath, card)
-					} (idx, cardName)
+				var activeGpuChan = make(chan GPUInfo, 5)
+				var appendWg sync.WaitGroup
+				appendWg.Go(func() {
+					for sig := range activeGpuChan {
+						activeGpus = append(activeGpus, sig)
+					}
+				})
+				for _, cardInfo := range totalGpus {
+					card := cardInfo
+					wg.Go(func() {
+						if detectCardStatus(card.cardPath, card.cardName) {
+							activeGpuChan <- card
+						}
+					})
 				}
-				go func () {
-					wg.Wait()
-					close (cardList)
-				} ()
-				for card := range cardList {
-					activeGpus = append(
-						activeGpus,
-						card...,
-					)
-				}
+				wg.Wait()
+				close(activeGpuChan)
+				appendWg.Wait()
 
-				for _, cardName := range activeGpus {
-					wg.Add(1)
-					go func (card string) {
-						defer wg.Done()
-						bindCard(card, argChan, config)
-					} (cardName)
+				for _, cardInfo := range activeGpus {
+					card := cardInfo
+					wg.Go(func() {
+						bindCard(
+							card.cardName,
+							argChan,
+							config,
+						)
+					})
 				}
 			}
 	}
@@ -124,6 +127,49 @@ func gpuBind(gpuChan chan []string, config Config) {
 	pecho(
 	"debug",
 	"Total GPU count", len(totalGpus), "with active count:", activeGpus)
+}
+
+// Detects a card's status, true means connected
+func detectCardStatus(cardPath string, cardNamed string) bool {
+	connectors, err := os.ReadDir(cardPath)
+	if err != nil {
+		pecho(
+			"warn",
+			"Failed to read GPU connector status: " + err.Error(),
+		)
+		return false
+	}
+	for _, connectorName := range connectors {
+		if strings.HasPrefix(connectorName.Name(), "card") == false {
+			continue
+		}
+		conStatFd, err := os.OpenFile(
+			cardPath + "/" + connectorName.Name() + "/status",
+			os.O_RDONLY,
+			0700,
+		)
+		if err != nil {
+			pecho(
+				"warn",
+				"Failed to open GPU status: " + err.Error(),
+			)
+		} else {
+			defer conStatFd.Close()
+		}
+		scanner := bufio.NewScanner(conStatFd)
+		for scanner.Scan() {
+			line := scanner.Text()
+			switch line {
+				case "disconnected":
+					continue
+				case "connected":
+					return true
+				default:
+					pecho("warn", "Could not determine status of GPU: " + cardNamed)
+			}
+		}
+	}
+	return false
 }
 
 // Set required envs for PRIME render offloading

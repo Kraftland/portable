@@ -1940,50 +1940,6 @@ func bindXAuth(xauthChan chan []string, config Config) {
 	xauthChan <- xArg
 }
 
-func detectCardStatus(cardList chan []string, cardPath string, cardNamed string) {
-	connectors, err := os.ReadDir(cardPath)
-	if err != nil {
-		pecho(
-			"warn",
-			"Failed to read GPU connector status: " + err.Error(),
-		)
-		return
-	}
-	for _, connectorName := range connectors {
-		if strings.HasPrefix(connectorName.Name(), "card") == false {
-			continue
-		}
-		conStatFd, err := os.OpenFile(
-			cardPath + "/" + connectorName.Name() + "/status",
-			os.O_RDONLY,
-			0700,
-		)
-		if err != nil {
-			pecho(
-				"warn",
-				"Failed to open GPU status: " + err.Error(),
-			)
-		} else {
-			defer conStatFd.Close()
-		}
-		scanner := bufio.NewScanner(conStatFd)
-		for scanner.Scan() {
-			line := scanner.Text()
-			switch line {
-				case "disconnected":
-					continue
-				case "connected":
-					var activeGpus = []string{cardNamed}
-					cardList <- activeGpus
-					pecho("debug", "Found active GPU: " + cardNamed)
-					return
-				default:
-					pecho("warn", "Could not determine status of GPU: " + cardNamed)
-			}
-		}
-	}
-}
-
 func tryBindCam(camChan chan []string, config Config) {
 	camArg := []string{}
 	if config.Privacy.Cameras {
