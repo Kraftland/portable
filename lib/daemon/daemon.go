@@ -1985,6 +1985,22 @@ func detectCardStatus(cardList chan []string, cardPath string, cardNamed string)
 }
 
 func gpuBind(gpuChan chan []string, config Config) {
+	var chanWg sync.WaitGroup
+	var wg sync.WaitGroup
+	var argChan = make(chan []string, 128)
+	var gpuArg = []string{"--tmpfs", "/dev/dri", "--tmpfs", "/sys/class/drm"}
+	chanWg.Go(func() {
+		for arg := range argChan {
+			gpuArg = append(gpuArg, arg...)
+		}
+		gpuChan <- gpuArg
+	})
+	defer func () {
+		wg.Wait()
+		close(argChan)
+		chanWg.Wait()
+		close(gpuChan)
+	} ()
 	u := udev.Udev{}
 	e := u.NewEnumerate()
 	e.AddMatchIsInitialized()
@@ -1993,30 +2009,22 @@ func gpuBind(gpuChan chan []string, config Config) {
 	if errUdev != nil {
 		pecho("warn", "Failed to query udev for GPU info")
 	}
-	var wg sync.WaitGroup
-	var gpuArg = []string{}
+
+
 	// SHOULD contain strings like card0, card1 etc
 	var totalGpus = []string{}
 	var activeGpus = []string{}
-	var cardSums int = 0
 	var cardList = make(chan []string, 512)
 	var cardPaths []string
 
-	wg.Add(1)
-	go func () {
-		defer wg.Done()
-		gpuArg = append(
-			gpuArg,
-			"--tmpfs", "/dev/dri",
-			"--tmpfs", "/sys/class/drm",
-		)
+	wg.Go(func() {
 		for _, path := range nvKernelModulePath {
 			gpuArg = append(
 				gpuArg,
 				maskDir(path)...
 			)
 		}
-	} ()
+	})
 
 
 	for _, card := range devs {
@@ -2030,7 +2038,6 @@ func gpuBind(gpuChan chan []string, config Config) {
 			pecho("debug", "Udev returned " + cardName + ", which is not a GPU")
 			continue
 		}
-		cardSums++
 		totalGpus = append(
 			totalGpus,
 			cardName,
@@ -2041,8 +2048,8 @@ func gpuBind(gpuChan chan []string, config Config) {
 		)
 	}
 	wg.Wait()
-	var argChan = make(chan []string, 128)
-	switch cardSums {
+
+	switch len(totalGpus) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		default:
@@ -2085,25 +2092,12 @@ func gpuBind(gpuChan chan []string, config Config) {
 				}
 			}
 	}
-	go func () {
-		wg.Wait()
-		close(argChan)
-	} ()
-	for arg := range argChan {
-		gpuArg = append(
-			gpuArg,
-			arg...
-		)
-	}
-	gpuChan <- gpuArg
-	close(gpuChan)
-	var activeGPUList string = strings.Join(activeGpus, ", ")
 
 	// TODO: Drop the debug output below
-	pecho("debug", "Generated GPU bind parameters: " + strings.Join(gpuArg, ", "))
+	//pecho("debug", "Generated GPU bind parameters:", gpuArg)
 	pecho(
 	"debug",
-	"Total GPU count " + strconv.Itoa(cardSums) + ", active: " + activeGPUList)
+	"Total GPU count", len(totalGpus), "with active count:", activeGpus)
 }
 
 func tryBindCam(camChan chan []string, config Config) {
