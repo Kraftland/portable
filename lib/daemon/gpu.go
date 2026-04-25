@@ -64,9 +64,7 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 	pecho("debug", "Got ID_PATH: " + cardID, "for card", cardName)
 
 	// Detect NVIDIA now, because they do not expose ID_VENDOR properly
-	wg.Add(1)
-	go func (arg chan []string) {
-		defer wg.Done()
+	wg.Go(func() {
 		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 		if openErr != nil {
 			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
@@ -87,11 +85,11 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 				addEnv("LIBGL_KOPPER_DRI2=1")
 				addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
 			}
-			arg <- tryBindNv()
+			argComb <- tryBindNv()
 			for _, path := range nvKernelModulePath {
 				stat, err := os.Stat(path)
 				if err == nil && stat.IsDir() {
-					arg <- []string{
+					argComb <- []string{
 						"--ro-bind",
 						path, path,
 					}
@@ -101,7 +99,7 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 				}
 			}
 		}
-	} (argComb)
+	})
 
 
 	// Map card* to renderD*
