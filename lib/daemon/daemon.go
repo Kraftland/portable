@@ -2112,24 +2112,6 @@ func gpuBind(gpuChan chan []string, config Config) {
 	"Total GPU count " + strconv.Itoa(cardSums) + ", active: " + activeGPUList)
 }
 
-func setOffloadEnvs() () {
-	var nvExist bool = false
-	addEnv("VK_LOADER_DRIVERS_DISABLE=none")
-	_, err := os.Stat("/dev/nvidia0")
-	if err == nil {
-		nvExist = true
-	}
-
-	if nvExist == true {
-		addEnv("__NV_PRIME_RENDER_OFFLOAD=1")
-		addEnv("__VK_LAYER_NV_optimus=NVIDIA_only")
-		addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
-		addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
-	} else {
-		addEnv("DRI_PRIME=1")
-	}
-}
-
 func tryBindCam(camChan chan []string, config Config) {
 	camArg := []string{}
 	if config.Privacy.Cameras {
