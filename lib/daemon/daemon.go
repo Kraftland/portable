@@ -1634,11 +1634,18 @@ func genBwArg(
 		xArgs...
 	)
 
-	wayArgs := <- wayDisplayChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		wayArgs...
-	)
+	select {
+		case wayArgs := <- wayDisplayChan:
+			runtimeInfo.bwCmd = append(
+				runtimeInfo.bwCmd,
+				wayArgs...
+			)
+		default:
+			pecho("warn", "Could not find a working Wayland socket: either the compositor is not started, or WAYLAND_DISPLAY is pointed to a wrong address")
+	}
+
+
+
 
 	for arg := range miscChan {
 		runtimeInfo.bwCmd = append(
