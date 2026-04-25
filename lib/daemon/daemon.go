@@ -2047,11 +2047,9 @@ func gpuBind(gpuChan chan []string, config Config) {
 			pecho("warn", "Found no GPU")
 		default:
 			if config.System.GameMode {
-				wg.Add(1)
-				go func () {
-					defer wg.Done()
+				wg.Go(func() {
 					setOffloadEnvs()
-				} ()
+				})
 				for _, cardName := range totalGpus {
 					wg.Add(1)
 					go func (card string, arg chan []string) {
