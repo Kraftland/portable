@@ -687,8 +687,8 @@ func calcDbusArg(argChan chan []string, config Config) {
 	if config.Privacy.ClassicNotifications {
 		argList = append(
 			argList,
-			"--talk=org.freedesktop.Notifications",
-			"--call=org.freedesktop.Notifications.*=*",
+			"--broadcast=org.freedesktop.Notifications=org.freedesktop.Notifications.*@/org/freedesktop/Notification",
+			"--call=org.freedesktop.Notifications=org.freedesktop.Notifications.*@/org/freedesktop/Notifications",
 		)
 	}
 
