@@ -2051,11 +2051,10 @@ func gpuBind(gpuChan chan []string, config Config) {
 					setOffloadEnvs()
 				})
 				for _, cardName := range totalGpus {
-					wg.Add(1)
-					go func (card string, arg chan []string) {
-						defer wg.Done()
-						bindCard(card, arg, config)
-					} (cardName, argChan)
+					card := cardName
+					wg.Go(func() {
+						bindCard(card, argChan, config)
+					})
 				}
 				wg.Go(
 					func() {argChan <- tryBindNv()},
