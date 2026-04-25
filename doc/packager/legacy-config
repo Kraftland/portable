@@ -64,9 +64,6 @@ bindInputDevices="false"
 # If true, allows the sandboxed application to use the org.freedesktop.portal.Inhibit interface to inhibit certain actions, like suspend and logout
 allowInhibit="false"
 
-# If true, allow apps to register Global Shortcuts via the Portal.
-allowGlobalShortcuts="false"
-
 ########## Section: Miscellaneous ##########
 
 # Wake the application using D-Bus calls towards StatusNotifiers. Deprecated.
