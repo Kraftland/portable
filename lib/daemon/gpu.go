@@ -8,6 +8,124 @@ import (
 	"bufio"
 )
 
+func gpuBind(gpuChan chan []string, config Config) {
+	var chanWg sync.WaitGroup
+	var wg sync.WaitGroup
+	var argChan = make(chan []string, 128)
+	var gpuArg = []string{"--tmpfs", "/dev/dri", "--tmpfs", "/sys/class/drm"}
+	chanWg.Go(func() {
+		for arg := range argChan {
+			gpuArg = append(gpuArg, arg...)
+		}
+		gpuChan <- gpuArg
+	})
+	defer func () {
+		wg.Wait()
+		close(argChan)
+		chanWg.Wait()
+		close(gpuChan)
+	} ()
+	u := udev.Udev{}
+	e := u.NewEnumerate()
+	e.AddMatchIsInitialized()
+	e.AddMatchSubsystem("drm")
+	devs, errUdev := e.Devices()
+	if errUdev != nil {
+		pecho("warn", "Failed to query udev for GPU info")
+	}
+
+
+	// SHOULD contain strings like card0, card1 etc
+	var totalGpus = []string{}
+	var activeGpus = []string{}
+	var cardList = make(chan []string, 512)
+	var cardPaths []string
+
+	wg.Go(func() {
+		var workers sync.WaitGroup
+		defer workers.Wait()
+		for _, path := range nvKernelModulePath {
+			pth := path
+			workers.Go(func() {
+				argChan <- maskDir(pth)
+			})
+		}
+	})
+
+
+	for _, card := range devs {
+		cardName := card.Sysname()
+		cardPath := card.Syspath()
+		devType := card.Devtype()
+		if len(cardName) == 0 || len(cardPath) == 0 {
+			pecho("warn", "Udev returned an empty sysname!")
+			continue
+		} else if strings.Contains(cardName, "card") == false || devType == "drm_connector" {
+			pecho("debug", "Udev returned " + cardName + ", which is not a GPU")
+			continue
+		}
+		totalGpus = append(
+			totalGpus,
+			cardName,
+		)
+		cardPaths = append(
+			cardPaths,
+			card.Syspath(),
+		)
+	}
+	wg.Wait()
+
+	switch len(totalGpus) {
+		case 0:
+			pecho("warn", "Found no GPU")
+		default:
+			if config.System.GameMode {
+				wg.Go(func() {
+					setOffloadEnvs()
+				})
+				for _, cardName := range totalGpus {
+					card := cardName
+					wg.Go(func() {
+						bindCard(card, argChan, config)
+					})
+				}
+			} else {
+				for idx, cardName := range totalGpus {
+					wg.Add(1)
+					go func (idx int, card string) {
+						defer wg.Done()
+						cardPath := cardPaths[idx]
+						detectCardStatus(cardList, cardPath, card)
+					} (idx, cardName)
+				}
+				go func () {
+					wg.Wait()
+					close (cardList)
+				} ()
+				for card := range cardList {
+					activeGpus = append(
+						activeGpus,
+						card...,
+					)
+				}
+
+				for _, cardName := range activeGpus {
+					wg.Add(1)
+					go func (card string) {
+						defer wg.Done()
+						bindCard(card, argChan, config)
+					} (cardName)
+				}
+			}
+	}
+
+	// TODO: Drop the debug output below
+	//pecho("debug", "Generated GPU bind parameters:", gpuArg)
+	pecho(
+	"debug",
+	"Total GPU count", len(totalGpus), "with active count:", activeGpus)
+}
+
 // Set required envs for PRIME render offloading
 func setOffloadEnvs() {
 	addEnv("VK_LOADER_DRIVERS_DISABLE=none")
