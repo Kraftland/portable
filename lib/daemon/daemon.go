@@ -2018,11 +2018,13 @@ func gpuBind(gpuChan chan []string, config Config) {
 	var cardPaths []string
 
 	wg.Go(func() {
+		var workers sync.WaitGroup
+		defer workers.Wait()
 		for _, path := range nvKernelModulePath {
-			gpuArg = append(
-				gpuArg,
-				maskDir(path)...
-			)
+			pth := path
+			workers.Go(func() {
+				argChan <- maskDir(pth)
+			})
 		}
 	})
 
