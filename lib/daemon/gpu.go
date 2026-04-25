@@ -10,7 +10,6 @@ import (
 
 func bindCard(cardName string, argChanFin chan []string, config Config) {
 	var sendWg sync.WaitGroup
-	defer sendWg.Wait()
 	var argComb = make(chan []string, 5)
 	sendWg.Go(func() {
 		var args []string
@@ -21,6 +20,13 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 	})
 
 	var wg sync.WaitGroup
+
+	defer func () {
+		wg.Wait()
+		close(argComb)
+		sendWg.Wait()
+	} ()
+
 	u := udev.Udev{}
 	var cardID string
 	var cardRoot string
@@ -121,17 +127,19 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 	if errUdev != nil {
 		pecho("warn", "Could not query udev for render node" + errUdev.Error())
 	}
-	devProc := false
+	switch devsCnt := len(devs); devsCnt {
+		case 0:
+			pecho("warn", "Could not translate", cardName, "to render node: did not receive any result from udev")
+			return
+		case 1:
+		default:
+			pecho("warn", "Udev returned more devices than required:", devsCnt)
+	}
+
 	var renderNodeName string
 	var renderDevPath string
 	for _, dev := range devs {
 		if strings.Contains(dev.Sysname(), "card") {
-			continue
-		} else if devProc == true {
-			pecho(
-				"warn",
-				"Mapping card to renderer: surplus device ID: " + dev.PropertyValue("ID_PATH") + ", sysname: " + dev.Sysname(),
-				)
 			continue
 		} else if dev.PropertyValue("ID_PATH") != cardID {
 			pecho("debug", "Udev returned unknown card to us! ID: " + dev.PropertyValue("ID_PATH"))
@@ -140,9 +148,8 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 		renderNodeName = dev.Sysname()
 		pecho("debug", "Got sysname: " + renderNodeName + ", with ID: " + dev.PropertyValue("ID_PATH"))
 		renderDevPath = dev.Devnode()
-		devProc = true
+		break
 	}
-
 	argComb <- []string{
 		"--dev-bind",
 			renderDevPath,
@@ -151,6 +158,5 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 			"/sys/class/drm/" + renderNodeName,
 			"/sys/class/drm/" + renderNodeName,
 	}
-	wg.Wait()
-	close(argComb)
+
 }
