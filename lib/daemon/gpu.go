@@ -5,11 +5,12 @@ import (
 	udev "github.com/jochenvg/go-udev"
 	"strings"
 	"os"
-	"io"
+	"bufio"
 )
 
 func bindCard(cardName string, argChanFin chan []string, config Config) {
 	var sendWg sync.WaitGroup
+	defer sendWg.Wait()
 	var argComb = make(chan []string, 5)
 	sendWg.Go(func() {
 		var args []string
@@ -65,37 +66,45 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 
 	// Detect NVIDIA now, because they do not expose ID_VENDOR properly
 	wg.Go(func() {
-		cardVendorFd, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
+		var bindWg sync.WaitGroup
+		defer bindWg.Wait()
+		vendorFile, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
 		if openErr != nil {
 			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
 			return
-		} else {
-			defer cardVendorFd.Close()
 		}
-		cardVendor, err := io.ReadAll(cardVendorFd)
-		if err != nil {
-			pecho("warn", "Failed to parse GPU vendor: " + err.Error())
-		}
-		if strings.Contains(string(cardVendor), "0x10de") == true {
-			pecho("debug", "Found NVIDIA device")
-			if config.Advanced.Zink {
-				addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
-				addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
-				addEnv("GALLIUM_DRIVER=zink")
-				addEnv("LIBGL_KOPPER_DRI2=1")
-				addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
-			}
-			argComb <- tryBindNv()
-			for _, path := range nvKernelModulePath {
-				stat, err := os.Stat(path)
-				if err == nil && stat.IsDir() {
-					argComb <- []string{
-						"--ro-bind",
-						path, path,
+		defer vendorFile.Close()
+		scanner := bufio.NewScanner(vendorFile)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "0x10de" {
+				bindWg.Go(func() {
+					argComb <- tryBindNv()
+				})
+				bindWg.Go(func() {
+					pecho("debug", "Detected NVIDIA device:", cardName)
+					if config.Advanced.Zink {
+						addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
+						addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
+						addEnv("GALLIUM_DRIVER=zink")
+						addEnv("LIBGL_KOPPER_DRI2=1")
+						addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
 					}
-				} else {
-					pecho("debug", "Skipping non-existent path: " + path)
-					continue
+				})
+				for _, pth := range nvKernelModulePath {
+					path := pth
+					bindWg.Go(func() {
+						stat, err := os.Stat(path)
+						if err == nil && stat.IsDir() {
+							argComb <- []string{
+								"--ro-bind",
+								path, path,
+							}
+						} else {
+							pecho("debug", "Skipping non-existent path:", path)
+							return
+						}
+					})
 				}
 			}
 		}
@@ -142,9 +151,6 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 			"/sys/class/drm/" + renderNodeName,
 			"/sys/class/drm/" + renderNodeName,
 	}
-
-	close(argComb)
-	sendWg.Wait()
-
 	wg.Wait()
+	close(argComb)
 }
