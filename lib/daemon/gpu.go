@@ -8,7 +8,17 @@ import (
 	"io"
 )
 
-func bindCard(cardName string, argChan chan []string, config Config) {
+func bindCard(cardName string, argChanFin chan []string, config Config) {
+	var sendWg sync.WaitGroup
+	var argComb = make(chan []string, 5)
+	sendWg.Go(func() {
+		var args []string
+		for arg := range argComb {
+			args = append(args, arg...)
+		}
+		argChanFin <- args
+	})
+
 	var wg sync.WaitGroup
 	u := udev.Udev{}
 	var cardID string
@@ -39,7 +49,7 @@ func bindCard(cardName string, argChan chan []string, config Config) {
 	devNode = devs[0].Devnode()
 	sysPath = devs[0].Syspath()
 	cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
-	argChan <- []string{
+	argComb <- []string{
 		"--dev-bind",
 		"/sys/class/drm/" + cardName,
 		"/sys/class/drm/" + cardName,
@@ -91,7 +101,7 @@ func bindCard(cardName string, argChan chan []string, config Config) {
 				}
 			}
 		}
-	} (argChan)
+	} (argComb)
 
 
 	// Map card* to renderD*
@@ -126,7 +136,7 @@ func bindCard(cardName string, argChan chan []string, config Config) {
 		devProc = true
 	}
 
-	argChan <- []string{
+	argComb <- []string{
 		"--dev-bind",
 			renderDevPath,
 			renderDevPath,
@@ -134,6 +144,9 @@ func bindCard(cardName string, argChan chan []string, config Config) {
 			"/sys/class/drm/" + renderNodeName,
 			"/sys/class/drm/" + renderNodeName,
 	}
+
+	close(argComb)
+	sendWg.Wait()
 
 	wg.Wait()
 }
