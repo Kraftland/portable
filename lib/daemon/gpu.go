@@ -21,32 +21,37 @@ func bindCard(cardName string, argChan chan []string, config Config) {
 	devs, errUdev := e.Devices()
 	if errUdev != nil {
 		pecho("warn", "Failed to query udev for GPU info" + errUdev.Error())
+		return
 	}
 
-	var devProc bool = false
-	for _, dev := range devs {
-		if devProc == true {
-			pecho("warn", "bindCard found more than one candidates")
-			continue
-		}
-		devNode := dev.Devnode()
-		sysPath := dev.Syspath()
-		cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
-		argChan <- []string{
-			"--dev-bind",
-			"/sys/class/drm/" + cardName,
-			"/sys/class/drm/" + cardName,
-			"--dev-bind",
-			devNode,
-			devNode,
-			"--dev-bind",
-			cardRoot,
-			cardRoot,
-		}
-		cardID = dev.PropertyValue("ID_PATH")
-		pecho("debug", "Got ID_PATH: " + cardID)
-		devProc = true
+	switch devsCnt := len(devs); devsCnt {
+		case 0:
+			pecho("warn", "Udev did not return any matching device for", cardName, "oh no")
+			return
+		case 1:
+		default:
+			pecho("warn", "Udev returned", devsCnt, "devices, of which should only be one")
 	}
+
+	var devNode string
+	var sysPath string
+
+	devNode = devs[0].Devnode()
+	sysPath = devs[0].Syspath()
+	cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
+	argChan <- []string{
+		"--dev-bind",
+		"/sys/class/drm/" + cardName,
+		"/sys/class/drm/" + cardName,
+		"--dev-bind",
+		devNode,
+		devNode,
+		"--dev-bind",
+		cardRoot,
+		cardRoot,
+	}
+	cardID = devs[0].PropertyValue("ID_PATH")
+	pecho("debug", "Got ID_PATH: " + cardID, "for card", cardName)
 
 	// Detect NVIDIA now, because they do not expose ID_VENDOR properly
 	wg.Add(1)
@@ -99,7 +104,7 @@ func bindCard(cardName string, argChan chan []string, config Config) {
 	if errUdev != nil {
 		pecho("warn", "Could not query udev for render node" + errUdev.Error())
 	}
-	devProc = false
+	devProc := false
 	var renderNodeName string
 	var renderDevPath string
 	for _, dev := range devs {
