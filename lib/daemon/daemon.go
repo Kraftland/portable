@@ -605,6 +605,7 @@ func calcDbusArg(argChan chan []string, config Config) {
 		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Trash.*@/org/freedesktop/portal/desktop",
 		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Usb.*@/org/freedesktop/portal/desktop",
 		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Wallpaper.*@/org/freedesktop/portal/desktop",
+		"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*@/org/freedesktop/portal/desktop",
 
 		"--call=org.freedesktop.portal.Desktop=org.freedesktop.DBus.Properties.*@/org/freedesktop/portal/desktop/*",
 
@@ -696,13 +697,6 @@ func calcDbusArg(argChan chan []string, config Config) {
 		argList = append(
 			argList,
 			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.Inhibit.*@/org/freedesktop/portal/desktop",
-		)
-	}
-
-	if config.System.GlobalShortcuts {
-		argList = append(
-			argList,
-			"--call=org.freedesktop.portal.Desktop=org.freedesktop.portal.GlobalShortcuts.*@/org/freedesktop/portal/desktop",
 		)
 	}
 
