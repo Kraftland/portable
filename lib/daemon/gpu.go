@@ -8,6 +8,20 @@ import (
 	"bufio"
 )
 
+// Set required envs for PRIME render offloading
+func setOffloadEnvs() {
+	addEnv("VK_LOADER_DRIVERS_DISABLE=none")
+	_, err := os.Stat("/dev/nvidia0")
+	if err == nil {
+		addEnv("__NV_PRIME_RENDER_OFFLOAD=1")
+		addEnv("__VK_LAYER_NV_optimus=NVIDIA_only")
+		addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
+		addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
+	} else {
+		addEnv("DRI_PRIME=1")
+	}
+}
+
 func bindCard(cardName string, argChanFin chan []string, config Config) {
 	var sendWg sync.WaitGroup
 	var argComb = make(chan []string, 5)
