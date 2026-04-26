@@ -1035,10 +1035,10 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 	select {}
 }
 
-func startApp(config Config) {
+func startApp(config Config, argChan chan bwArgs) {
 	go forceBackgroundPerm(config)
 	sdArgs := append(
-		runtimeInfo.bwCmd,
+		<-argChan,
 		runtimeOpt.applicationArgs...,
 	)
 	pecho("debug", "Calculated arguments for systemd-run: " + strings.Join(sdArgs, ", "))
@@ -1394,15 +1394,24 @@ func genBwArg(
 	wayDisplayChan chan []string,
 	miscChan	chan []string,
 	config Config,
-	) {
+	) (bwArgs) {
+	var wg sync.WaitGroup
+	// Don't touch these manually
+	var arg bwArgs
+	var argChan = make(chan []string, 10)
+	var argWg sync.WaitGroup
+	argWg.Go(func() {
+		for sig := range argChan {
+			arg = append(arg, sig...)
+		}
+	})
 
 	if internalLoggingLevel > 1 {
-		runtimeInfo.bwCmd = append(runtimeInfo.bwCmd, "--quiet")
+		argChan <- []string{"--quiet"}
 	}
 
 	// Define global systemd args first
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
+	argChan <- []string{
 		"--user",
 		"--service-type=notify",
 		"--wait",
@@ -1467,26 +1476,17 @@ func genBwArg(
 		"-p", "SystemCallFilter=~@reboot",
 		"-p", "SystemCallFilter=~@swap",
 		"-p", "SystemCallErrorNumber=EAGAIN",
-	)
+	}
 
 	if ! config.Network.Enable {
 		pecho("info", "Network Access disabled")
-		runtimeInfo.bwCmd = append(
-			runtimeInfo.bwCmd,
-			"-p", "PrivateNetwork=yes",
-		)
+		argChan <- []string{"-p", "PrivateNetwork=yes"}
 	} else {
 		pecho("info", "Network Access allowed")
-		runtimeInfo.bwCmd = append(
-			runtimeInfo.bwCmd,
-			"-p", "PrivateNetwork=no",
-		)
+		argChan <- []string{"-p", "PrivateNetwork=no"}
 	}
 
-	pecho("debug", "Built systemd-run arguments")
-
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
+	argChan <- []string{
 		"--",
 		"bwrap",
 		// Unshares
@@ -1616,64 +1616,55 @@ func genBwArg(
 		"--tmpfs",		"/usr/share/applications",
 		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
-
-	)
-
-
-	xArgs := <- xChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		xArgs...
-	)
+	}
+	wg.Go(func() {
+		for arg := range gpuChan {
+			argChan <- arg
+		}
+	})
+	wg.Go(func() {
+		for arg := range xChan {
+			argChan <- arg
+		}
+	})
+	wg.Go(func() {
+		for arg := range miscChan {
+			argChan <- arg
+		}
+	})
+	wg.Go(func() {
+		if config.Privacy.Input {
+			for inputArg := range inputChan {
+				argChan <- inputArg
+			}
+		}
+	})
+	wg.Go(func() {
+		if config.Privacy.Cameras {
+			for arg := range camChan {
+				argChan <- arg
+			}
+		}
+	})
 
 	select {
 		case wayArgs := <- wayDisplayChan:
-			runtimeInfo.bwCmd = append(
-				runtimeInfo.bwCmd,
-				wayArgs...
-			)
+			argChan <- wayArgs
 		default:
 			pecho("warn", "Could not find a working Wayland socket: either the compositor is not started, or WAYLAND_DISPLAY is pointed to a wrong address")
 	}
+	wg.Wait()
 
-
-
-
-	for arg := range miscChan {
-		runtimeInfo.bwCmd = append(
-			runtimeInfo.bwCmd,
-			arg...
-		)
-	}
-
-	if config.Privacy.Input {
-		for inputArg := range inputChan {
-			runtimeInfo.bwCmd = append(
-				runtimeInfo.bwCmd,
-				inputArg...
-			)
-		}
-	}
-
-
-	camArgs := <- camChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		camArgs...
-	)
-
-	gpuArgs := <- gpuChan
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
-		gpuArgs...
-	)
-
-	// NO arg should be added below this point
-	runtimeInfo.bwCmd = append(
-		runtimeInfo.bwCmd,
+	argChan <- []string{
 		"--",
 		"/usr/lib/portable/helper/helper",
-	)
+	}
+
+	// NO arg should be added below this point
+
+	close(argChan)
+	argWg.Wait()
+	return arg
 }
 
 func flushEnvs(config Config) {
@@ -2277,8 +2268,9 @@ func main() {
 	go flushEnvs(config)
 
 	<- genChan // Stage one, ensures that IDs are actually present
+	var bwArgChan = make(chan bwArgs, 1)
 	wg.Go(func() {
-		genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan, config)
+		bwArgChan <- genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan, config)
 	})
 	genChanProceed <- 1
 	go calcDbusArg(busArgChan, config)
@@ -2293,7 +2285,7 @@ func main() {
 	go pwSecContext(pwSecContextChan, config)
 	wg.Wait()
 	close(envsChan)
-	startApp(config)
+	startApp(config, bwArgChan)
 	if busConn != nil {
 		busConn.Close()
 	}

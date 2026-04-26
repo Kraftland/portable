@@ -17,9 +17,10 @@ type GPUInfo struct {
 	cardPath	string
 }
 
+type bwArgs []string
+
 type RUNTIME_PARAMS struct {
 	instanceID		string
-	bwCmd			[]string
 }
 
 type XDG_DIRS struct {
