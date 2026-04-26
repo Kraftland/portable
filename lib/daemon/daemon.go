@@ -1953,6 +1953,7 @@ func tryBindCam(camChan chan []string, config Config) {
 		}
 	}
 	camChan <- camArg
+	close(camChan)
 }
 
 func tryBindNv() []string {
