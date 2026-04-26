@@ -13,8 +13,14 @@ const (
 )
 
 type GPUInfo struct {
+	// Sysname(), usually card0
 	cardName	string
+	// Syspath()
 	cardPath	string
+	// Devnode()
+	devNode		string
+	// PropertyValue("ID_PATH")
+	idPath		string
 }
 
 type RUNTIME_PARAMS struct {
