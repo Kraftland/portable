@@ -1890,47 +1890,49 @@ func miscBinds(miscChan chan []string, pwChan chan []string, config Config, expo
 }
 
 func bindXAuth(xauthChan chan []string, config Config) {
-	var xArg = []string{}
+	defer close(xauthChan)
 	if config.Privacy.X11 {
-		xArg = append(
-			xArg,
+		xauthChan <- []string{
 			"--bind-try",		"/tmp/.X11-unix", "/tmp/.X11-unix",
 			"--bind-try",		"/tmp/.XIM-unix", "/tmp/.XIM-unix",
-		)
+		}
 		osAuth := os.Getenv("XAUTHORITY")
-		_, err := os.Stat(osAuth)
-		if err == nil {
-			pecho("debug", "XAUTHORITY specified as absolute path: " + osAuth)
-			xArg = append(
-				xArg,
-				"--ro-bind",
+		osAuth, err := filepath.Abs(osAuth)
+		if err != nil {
+			pecho("warn", "Could not translate", osAuth, "to absolute path")
+		} else {
+			_, err := os.Stat(osAuth)
+			if err == nil {
+				pecho("debug", "XAUTHORITY specified as absolute path: " + osAuth)
+				xauthChan <- []string {
+					"--ro-bind",
 					osAuth,
 					"/run/.Xauthority",
-			)
-			addEnv("XAUTHORITY=/run/.Xauthority")
-		} else {
-			osAuth = xdgDir.home + "/.Xauthority"
-			_, err = os.Stat(osAuth)
-			if err == nil {
-				pecho(
-					"warn",
-					"Implied XAUTHORITY " + osAuth + ", this is not recommended",
-				)
-				xArg = append(
-					xArg,
-					"--ro-bind",
-						osAuth,
-						"/run/.Xauthority",
-				)
+				}
 				addEnv("XAUTHORITY=/run/.Xauthority")
-			} else {
-				pecho("warn", "Could not locate XAUTHORITY file")
+				addEnv("DISPLAY=" + os.Getenv("DISPLAY"))
+				return
 			}
 		}
-		addEnv("DISPLAY=" + os.Getenv("DISPLAY"))
+		osAuth = filepath.Join(xdgDir.home, ".Xauthority")
+		_, err = os.Stat(osAuth)
+		if err == nil {
+			pecho(
+				"warn",
+				"Implied XAUTHORITY " + osAuth + ", this is not recommended",
+			)
+			xauthChan <- []string{
+				"--ro-bind",
+				osAuth,
+				"/run/.Xauthority",
+			}
+			addEnv("XAUTHORITY=/run/.Xauthority")
+			addEnv("DISPLAY=" + os.Getenv("DISPLAY"))
+			return
+		} else {
+			pecho("warn", "Could not locate XAUTHORITY file")
+		}
 	}
-	xauthChan <- xArg
-	close(xauthChan)
 }
 
 func tryBindCam(camChan chan []string, config Config) {
