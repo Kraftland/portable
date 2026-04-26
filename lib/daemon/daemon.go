@@ -863,6 +863,7 @@ type DBusInfoRequest struct {
 	Conn		*godbus.Conn
 	SdConn		*dbus.Conn
 	Config		Config
+	TimeStart	time.Time
 }
 
 func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
@@ -870,6 +871,7 @@ func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 		"Daemon version: " + strconv.FormatFloat(float64(version), 'f', 0, 64),
 		"Instance ID: " + runtimeInfo.instanceID,
 		"Unit name: " + "app-portable-" + m.Config.Metadata.AppID + "-" + runtimeInfo.instanceID,
+		"Started since: " + m.TimeStart.GoString(),
 	}
 	if runtimeInfo.instanceID == "" {
 		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
@@ -965,6 +967,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 	info.SdConn = sdConn
 	info.Config = config
 	info.Conn = conn
+	info.TimeStart = time.Now()
 	controller.Conn = conn
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
@@ -1927,6 +1930,7 @@ func bindXAuth(xauthChan chan []string, config Config) {
 		addEnv("DISPLAY=" + os.Getenv("DISPLAY"))
 	}
 	xauthChan <- xArg
+	close(xauthChan)
 }
 
 func tryBindCam(camChan chan []string, config Config) {
