@@ -1831,6 +1831,17 @@ func miscBinds(miscChan chan []string, pwChan chan []string, config Config, expo
 	wg.Go(func() {
 		miscChan <- []string{
 			"--ro-bind-try",
+			filepath.Join(xdgDir.confDir, "kdeglobals"),
+			translatePath(
+				filepath.Join(xdgDir.confDir, "kdeglobals"),
+				config,
+			),
+		}
+	})
+
+	wg.Go(func() {
+		miscChan <- []string{
+			"--ro-bind-try",
 			xdgDir.confDir + "/qt6ct",
 			translatePath(xdgDir.confDir + "/qt6ct", config),
 		}
