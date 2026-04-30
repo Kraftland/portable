@@ -21,6 +21,7 @@ type Metadata struct {
 type Exec struct {
 	Target		string
 	Arguments	[]string
+	Overlay		bool
 }
 
 type BusLaunch struct {
