@@ -871,7 +871,7 @@ func (m *DBusInfoRequest) GetInfo() ([]string, *godbus.Error) {
 		"Daemon version: " + strconv.FormatFloat(float64(version), 'f', 0, 64),
 		"Instance ID: " + runtimeInfo.instanceID,
 		"Unit name: " + "app-portable-" + m.Config.Metadata.AppID + "-" + runtimeInfo.instanceID,
-		"Started since: " + m.TimeStart.GoString(),
+		"Started since: " + m.TimeStart.String(),
 	}
 	if runtimeInfo.instanceID == "" {
 		return []string{}, godbus.MakeFailedError(errors.New("Instance ID unknown"))
