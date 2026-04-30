@@ -917,7 +917,7 @@ func parseStr(v any) (string) {
 	}
 }
 
-func appendProps(m map[string]interface{}) []string {
+func appendProps(m map[string]any) []string {
 	var ret = []string{}
 
 	cpuTime, ok := m["CPUUsageNSec"]
