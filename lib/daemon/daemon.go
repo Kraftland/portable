@@ -28,6 +28,19 @@ import (
 )
 
 func sanityChecks(config Config) {
+	if config.Exec.Overlay {
+		stat, err := os.Stat(filepath.Join(
+			"/usr/lib/portable/info",
+			config.Metadata.AppID,
+			"bin",
+		))
+		if err != nil {
+			pecho("crit", "Invalid overlay directory:", err)
+		}
+		if ! stat.IsDir() {
+			pecho("crit", "Invalid overlay directory:", "not a directory")
+		}
+	}
 	if sdutil.IsRunningSystemd() == false {
 		pecho("crit", "Portable requires the systemd service manager")
 	}
