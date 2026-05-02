@@ -1454,6 +1454,9 @@ func genBwArg(
 		"-p", "SystemCallLog=~@sandbox",
 		"-p", "PrivateIPC=yes",
 		"-p", "ProtectClock=yes",
+		// Required for --proc to work
+		"-p", "ProtectKernelLogs=no",
+		"-p", "RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6",
 		"-p", "CapabilityBoundingSet=",
 		"-p", "RestrictSUIDSGID=yes",
 		"-p", "LockPersonality=yes",
