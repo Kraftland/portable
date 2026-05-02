@@ -28,6 +28,19 @@ import (
 )
 
 func sanityChecks(config Config) {
+	if config.Exec.Overlay {
+		stat, err := os.Stat(filepath.Join(
+			"/usr/lib/portable/info",
+			config.Metadata.AppID,
+			"bin",
+		))
+		if err != nil {
+			pecho("crit", "Invalid overlay directory:", err)
+		}
+		if ! stat.IsDir() {
+			pecho("crit", "Invalid overlay directory:", "not a directory")
+		}
+	}
 	if sdutil.IsRunningSystemd() == false {
 		pecho("crit", "Portable requires the systemd service manager")
 	}
@@ -1504,9 +1517,6 @@ func genBwArg(
 		"--dir",		"/host",
 		"--ro-bind-try",	"/opt", "/opt",
 		"--ro-bind",		"/usr", "/usr",
-		"--overlay-src",	"/usr/bin",
-		"--overlay-src",	"/usr/lib/portable/overlay-usr",
-		"--ro-overlay",		"/usr/bin",
 		"--symlink",		"/usr/lib", "/lib",
 		"--symlink",		"/usr/lib", "/lib64",
 		"--symlink",		"/usr/bin", "/bin",
@@ -1620,6 +1630,26 @@ func genBwArg(
 		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 	}
+	wg.Go(func() {
+		if config.Exec.Overlay {
+			argChan <- []string{
+				"--overlay-src",	"/usr/bin",
+				"--overlay-src",	"/usr/lib/portable/overlay-usr",
+				"--overlay-src",	filepath.Join(
+								"/usr/lib/portable/info",
+								config.Metadata.AppID,
+								"/bin",
+							),
+				"--ro-overlay",		"/usr/bin",
+			}
+		} else {
+			argChan <- []string{
+				"--overlay-src",	"/usr/bin",
+				"--overlay-src",	"/usr/lib/portable/overlay-usr",
+				"--ro-overlay",		"/usr/bin",
+			}
+		}
+	})
 	wg.Go(func() {
 		for arg := range gpuChan {
 			argChan <- arg

@@ -21,6 +21,9 @@ target = "env"
 # arguments holds an array of arguments passed to the application, this is also used when starting secondary instances.
 arguments = ["gtk4-demo", "--run=video_player"]
 
+# When enabled, lays the app private binaries on top /usr/bin, see doc/packager/08-binaries.md for more details. Requires the specific overlay directory to exist.
+overlay = false
+
 # D-Bus activation works by installing a service under /usr/share/dbus-1/services. It is used by UnifiedPush to process notifications without showing a window. You should modify the activation cmdline to call portable with "--dbus-activation".
 [busActivation]
 # Whether or not to enable D-Bus activation. Defaults to false.

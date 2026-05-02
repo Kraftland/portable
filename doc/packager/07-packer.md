@@ -27,6 +27,8 @@ Exit codes:
 
 You MUST prepare the .desktop file with modifications, and the configuration file.
 
+Note that Packer automatically filters some known leak points (see holes for a list, and binaries for special workarounds)
+
 # Modes of operation
 
 ## Copy from existing package
