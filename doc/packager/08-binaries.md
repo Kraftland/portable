@@ -10,3 +10,4 @@ While this is a must-have security wise, it can also affect packages whose binar
 		- Bottom layer: real `/usr/bin`
 		- Top layer: `/usr/lib/portable/info/<appID>/bin`
 
+Packer will automatically move binaries in a package when the config option is enabled.
