@@ -80,9 +80,9 @@ func startAux(msg StartNofifyMsg, ch chan bool) {
 			streamWg.Done()
 			if err != nil {
 				warn.Println("Could not accept connection:", err)
-				streamWg.Done()
 				return
 			}
+			defer inP.Close()
 			n, err := io.Copy(inP, conn)
 			debug.Println("Streamed", n, "bytes of stdin")
 		} ()
@@ -95,7 +95,6 @@ func startAux(msg StartNofifyMsg, ch chan bool) {
 			conn, err := msg.UDS[1].Accept()
 			if err != nil {
 				warn.Println("Could not accept connection:", err)
-				streamWg.Done()
 				return
 			}
 			defer conn.Close()
@@ -103,9 +102,9 @@ func startAux(msg StartNofifyMsg, ch chan bool) {
 			streamWg.Done()
 			if err != nil {
 				warn.Println("Could not accept connection:", err)
-				streamWg.Done()
 				return
 			}
+			defer pipe.Close()
 			n, err := io.Copy(conn, pipe)
 			debug.Println("Streamed", n, "bytes of stdout")
 		} ()
@@ -129,6 +128,7 @@ func startAux(msg StartNofifyMsg, ch chan bool) {
 				streamWg.Done()
 				return
 			}
+			defer pipe.Close()
 			n, err := io.Copy(conn, pipe)
 			debug.Println("Streamed", n, "bytes of stderr")
 		} ()
