@@ -1636,7 +1636,7 @@ func genBwArg(
 				"--overlay-src",	"/usr/bin",
 				"--overlay-src",	"/usr/lib/portable/overlay-usr",
 				"--overlay-src",	filepath.Join(
-								"/usr/lib/portable/",
+								"/usr/lib/portable/info",
 								config.Metadata.AppID,
 								"/bin",
 							),
