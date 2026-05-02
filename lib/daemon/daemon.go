@@ -1504,9 +1504,6 @@ func genBwArg(
 		"--dir",		"/host",
 		"--ro-bind-try",	"/opt", "/opt",
 		"--ro-bind",		"/usr", "/usr",
-		"--overlay-src",	"/usr/bin",
-		"--overlay-src",	"/usr/lib/portable/overlay-usr",
-		"--ro-overlay",		"/usr/bin",
 		"--symlink",		"/usr/lib", "/lib",
 		"--symlink",		"/usr/lib", "/lib64",
 		"--symlink",		"/usr/bin", "/bin",
@@ -1620,6 +1617,26 @@ func genBwArg(
 		"--tmpfs",		filepath.Join(xdgDir.home, "options"),
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 	}
+	wg.Go(func() {
+		if config.Exec.Overlay {
+			argChan <- []string{
+				"--overlay-src",	"/usr/bin",
+				"--overlay-src",	"/usr/lib/portable/overlay-usr",
+				"--overlay-src",	filepath.Join(
+								"/usr/lib/portable/",
+								config.Metadata.AppID,
+								"/bin",
+							),
+				"--ro-overlay",		"/usr/bin",
+			}
+		} else {
+			argChan <- []string{
+				"--overlay-src",	"/usr/bin",
+				"--overlay-src",	"/usr/lib/portable/overlay-usr",
+				"--ro-overlay",		"/usr/bin",
+			}
+		}
+	})
 	wg.Go(func() {
 		for arg := range gpuChan {
 			argChan <- arg
