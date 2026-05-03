@@ -8,6 +8,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/jochenvg/go-udev v0.0.0-20240801134859-b65ed646224b
+	golang.org/x/term v0.42.0
 )
 
 require (
