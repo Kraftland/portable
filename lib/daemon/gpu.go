@@ -1,16 +1,66 @@
 package main
 
 import (
-	"sync"
-	udev "github.com/jochenvg/go-udev"
-	"strings"
-	"os"
 	"bufio"
+	"context"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	dbus "github.com/godbus/dbus/v5"
+	udev "github.com/jochenvg/go-udev"
 )
 
 func gpuBind(gpuChan chan []string, config Config) {
+	var gameModeEnabledChan = make(chan bool, 1)
 	var chanWg sync.WaitGroup
 	var wg sync.WaitGroup
+	wg.Go(func() {
+		if ! config.System.GameMode {
+			gameModeEnabledChan <- false
+			return
+		}
+		conn, err := dbus.SessionBus()
+		if err != nil {
+			gameModeEnabledChan <- config.System.GameMode
+			pecho("warn", "Could not retrieve Low Power Mode status:", err)
+			return
+		}
+		busObj := conn.Object(
+			"org.freedesktop.portal.Desktop",
+			"/org/freedesktop/portal/desktop",
+		)
+		ctx := context.TODO()
+		ctxNew, cancelFunc := context.WithTimeout(ctx, 10 * time.Millisecond)
+
+		call := busObj.CallWithContext(
+			ctxNew,
+			"org.freedesktop.DBus.Properties.Get",
+			dbus.FlagNoAutoStart,
+			"org.freedesktop.portal.PowerProfileMonitor",
+			"power-saver-enabled",
+		)
+		cancelFunc()
+		if call.Err != nil {
+			pecho("warn", "Could not retrieve Low Power Mode status:", call.Err)
+			gameModeEnabledChan <- config.System.GameMode
+		}
+		var powerSave bool
+		err = call.Store(&powerSave)
+		if err != nil {
+			gameModeEnabledChan <- config.System.GameMode
+			pecho("warn", "Could not retrieve Low Power Mode status:", err)
+			return
+		}
+		switch powerSave {
+			case true:
+				pecho("warn", "Rejecting gameMode with Low Power Mode")
+				gameModeEnabledChan <- false
+			default:
+				gameModeEnabledChan <- config.System.GameMode
+		}
+	})
 	var argChan = make(chan []string, 128)
 	var gpuArg = []string{"--tmpfs", "/dev/dri", "--tmpfs", "/sys/class/drm"}
 	chanWg.Go(func() {
@@ -79,7 +129,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 		case 0:
 			pecho("warn", "Found no GPU")
 		default:
-			if config.System.GameMode {
+			if <- gameModeEnabledChan {
 				wg.Go(func() {
 					setOffloadEnvs()
 				})
