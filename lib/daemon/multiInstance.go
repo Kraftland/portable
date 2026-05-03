@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
 	godbus "github.com/godbus/dbus/v5"
 )
 
@@ -52,10 +51,6 @@ type startReply struct {
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, docMap chan PassFiles) {
-	//oldIn := os.Stdin
-	//oldOut := os.Stdout
-	//oldErr := os.Stderr
-
 	var files PassFiles
 
 	files = <- docMap

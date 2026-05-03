@@ -1330,6 +1330,7 @@ func miscEnvs (config Config) {
 func prepareEnvs(config Config) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
+		addEnv("TERM=xterm")
 		if config.Advanced.Landlock {
 			addEnv("_portableEnableLandlock=1")
 		}
