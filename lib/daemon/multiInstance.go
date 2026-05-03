@@ -154,8 +154,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 	go func() {
 		restoreTerm, err := setCBreak(os.Stdin)
 		if err != nil {
-			pecho("warn", "Could not stream standard input: " + err.Error())
-			return
+			pecho("warn", "Could not set standard input mode: " + err.Error())
 		}
 		defer restoreTerm()
 		conn, err := net.Dial("unix", inFile)
