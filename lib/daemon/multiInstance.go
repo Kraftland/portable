@@ -10,7 +10,27 @@ import (
 	"sync"
 	"time"
 	godbus "github.com/godbus/dbus/v5"
+	"golang.org/x/sys/unix"
 )
+
+func setCBreak(file *os.File) (func () (), error) {
+	termios, err := unix.IoctlGetTermios(int(file.Fd()), unix.TCGETS)
+	if err != nil {
+		return nil, err
+	}
+	oldState := termios
+	termios.Lflag &^= unix.ICANON
+	termios.Lflag &^= unix.ECHO
+
+	err = unix.IoctlSetTermios(int(file.Fd()), unix.TCSETS, termios)
+	if err != nil {
+		return nil, err
+	}
+	cancelFunc := func () {
+		unix.IoctlSetTermios(int(file.Fd()), unix.TCSETS, oldState)
+	}
+	return cancelFunc, nil
+}
 
 func terminateInstance(config Config) {
 	conn, err := godbus.SessionBus()
@@ -132,6 +152,12 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)) + " bytes")
 	})
 	go func() {
+		restoreTerm, err := setCBreak(os.Stdin)
+		if err != nil {
+			pecho("warn", "Could not stream standard input: " + err.Error())
+			return
+		}
+		defer restoreTerm()
 		conn, err := net.Dial("unix", inFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard input: " + err.Error())
