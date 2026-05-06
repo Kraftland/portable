@@ -1655,6 +1655,20 @@ func genBwArg(
 		}
 	})
 	wg.Go(func() {
+		if config.System.Virtualization {
+			_, err := os.Stat("/dev/kvm")
+			if err != nil {
+				pecho("warn", "Could not expose virtualisation node:", err)
+			} else {
+				argChan <- []string{
+					"--dev-bind",
+						"/dev/kvm",
+						"/dev/kvm",
+				}
+			}
+		}
+	})
+	wg.Go(func() {
 		for arg := range gpuChan {
 			argChan <- arg
 		}
