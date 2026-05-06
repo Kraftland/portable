@@ -39,6 +39,7 @@ type SysMgmt struct {
 	InhibitSuspend	bool
 	InhibitOnBehalf	bool
 	GameMode	bool
+	Virtualization	bool
 }
 
 type NetworkOpts struct {
