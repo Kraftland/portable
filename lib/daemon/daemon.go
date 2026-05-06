@@ -2067,7 +2067,7 @@ func inputBind(inputBindChan chan []string) {
 			if len(path) == 0 {
 				return
 			}
-			sysSl := strings.SplitN(path, "/", -1)
+			sysSl := strings.Split(path, "/")
 			sliceLen := len(sysSl)
 			if strings.HasPrefix(sysSl[sliceLen - 1], "event") {
 				if strings.HasPrefix(sysSl[sliceLen - 2], "input") {
