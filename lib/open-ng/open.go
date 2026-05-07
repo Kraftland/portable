@@ -57,7 +57,11 @@ func openPath(path string, showItem bool) {
 
 func openPathPortal(path string, showItem bool) (success bool) {
 	var wg sync.WaitGroup
-	fd, err := os.Open(path)
+	fd, err := os.OpenFile(
+		path,
+		os.O_RDWR,
+		0700,
+	)
 	if err != nil {
 		warn.Fatalln("Could not open path:", err)
 	}
@@ -91,6 +95,16 @@ func openPathPortal(path string, showItem bool) (success bool) {
 		warn.Fatalln("Could not store Document Portal reply:", err)
 	} else {
 		logger.Println("Got Document ID:", docId)
+	}
+	call = docObj.Call(
+		"org.freedesktop.portal.Documents.GrantPermissions",
+		0,
+		docId,
+		os.Getenv("appID"),
+		[]string{"read", "write", "delete"},
+	)
+	if call.Err != nil {
+		warn.Println("Could not grant permissions:", call.Err)
 	}
 	wg.Go(func() {
 		err := fd.Close()
@@ -138,7 +152,7 @@ func openPathPortal(path string, showItem bool) (success bool) {
 	const parentWindow string = ""
 	var optMap = make(map[string]dbus.Variant)
 	optMap["handle_token"] = dbus.MakeVariant(inId)
-	optMap["writable"] = dbus.MakeVariant(true)
+	//optMap["writable"] = dbus.MakeVariant(true)
 	optMap["ask"] = dbus.MakeVariant(true)
 	var busMethod string
 	switch showItem {
