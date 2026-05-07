@@ -56,21 +56,68 @@ func openPath(path string, showItem bool) {
 }
 
 func openPathPortal(path string, showItem bool) (success bool) {
+	var wg sync.WaitGroup
+	fd, err := os.OpenFile(
+		path,
+		os.O_RDWR,
+		0700,
+	)
+	if err != nil {
+		warn.Fatalln("Could not open path:", err)
+	}
 	busConn, err := dbus.SessionBus()
 	if err != nil {
 		panic(err)
 	}
+	portalObj := busConn.Object(
+		"org.freedesktop.portal.Desktop",
+		"/org/freedesktop/portal/desktop",
+	)
+	docObj := busConn.Object(
+		"org.freedesktop.portal.Documents",
+		"/org/freedesktop/portal/documents",
+	)
+	call := docObj.Call(
+		"org.freedesktop.portal.Documents.Add",
+		0,
+		dbus.UnixFD(fd.Fd()),
+		true, // reuse_existing
+		false, // persistent
+	)
+	if call.Err != nil {
+		warn.Fatalln("Could not add document to Portal Store:", call.Err)
+	}
+	var docId string
+	err = call.Store(
+		&docId,
+	)
+	if err != nil {
+		warn.Fatalln("Could not store Document Portal reply:", err)
+	} else {
+		logger.Println("Got Document ID:", docId)
+	}
+	call = docObj.Call(
+		"org.freedesktop.portal.Documents.GrantPermissions",
+		0,
+		docId,
+		os.Getenv("appID"),
+		[]string{"read", "write", "delete"},
+	)
+	if call.Err != nil {
+		warn.Println("Could not grant permissions:", call.Err)
+	}
+	wg.Go(func() {
+		err := fd.Close()
+		if err != nil {
+			warn.Println("Could not close file descriptor:", err)
+		}
+	})
 	busname := busConn.Names()[0]
 	absName := strings.ReplaceAll(strings.TrimPrefix(busname, ":"), ".", "_")
 	var resp = make(chan uint32, 1)
 	inId := "portableOpen" + strconv.Itoa(rand.Int())
 	var objPath string = filepath.Join("/org/freedesktop/portal/desktop/request", absName, inId)
 
-	fd, err := os.Open(path)
-	if err != nil {
-		warn.Fatalln("Could not open path:", err)
-	}
-	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func () {
@@ -103,16 +150,10 @@ func openPathPortal(path string, showItem bool) (success bool) {
 	} ()
 
 	const parentWindow string = ""
-	fdBus := dbus.UnixFD(fd.Fd())
 	var optMap = make(map[string]dbus.Variant)
 	optMap["handle_token"] = dbus.MakeVariant(inId)
-	optMap["writable"] = dbus.MakeVariant(true)
+	//optMap["writable"] = dbus.MakeVariant(true)
 	optMap["ask"] = dbus.MakeVariant(true)
-	var portalObj dbus.BusObject
-	portalObj = busConn.Object(
-		"org.freedesktop.portal.Desktop",
-		"/org/freedesktop/portal/desktop",
-	)
 	var busMethod string
 	switch showItem {
 		case true:
@@ -121,11 +162,40 @@ func openPathPortal(path string, showItem bool) (success bool) {
 			busMethod = "OpenFile"
 	}
 	wg.Wait()
-	call := portalObj.Call(
+	call = docObj.Call(
+		"org.freedesktop.portal.Documents.GetMountPoint",
+		0,
+	)
+	if call.Err != nil {
+		warn.Fatalln("Call to Document Portal failed:", call.Err)
+	}
+	var mntRaw []byte
+	var mnt string
+	err = call.Store(&mntRaw)
+	if err != nil {
+		warn.Fatalln("Could not store Document Portal reply:", err)
+	} else {
+		mnt = strings.TrimRight(
+			string(mntRaw),
+			"\x00",
+		)
+		logger.Println("Got document mount point:", mnt)
+	}
+	fd, err = os.Open(
+		filepath.Join(
+			mnt,
+			docId,
+			filepath.Base(path),
+		),
+	)
+	if err != nil {
+		warn.Fatalln("Could not open file:", err)
+	}
+	call = portalObj.Call(
 		"org.freedesktop.portal.OpenURI."+ busMethod,
 		0,
 		parentWindow,
-		fdBus,
+		dbus.UnixFD(fd.Fd()),
 		optMap,
 	)
 	if call.Err != nil {
@@ -136,6 +206,7 @@ func openPathPortal(path string, showItem bool) (success bool) {
 	}
 	res := <- resp
 	logger.Println("Got response from Portal:", res)
+	wg.Wait()
 	switch res {
 		case 0:
 			os.Exit(0)
