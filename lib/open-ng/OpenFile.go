@@ -89,10 +89,10 @@ func openFilePortal(path string) (success bool) {
 		busConn.Signal(sigChan)
 		wg.Done()
 		for sig := range sigChan {
-			logger.Println("Incoming signal")
 			var v dbus.Variant
 			var stat uint32
 			if sig.Path == dbus.ObjectPath(objPath) && sig.Name == "org.freedesktop.portal.Request.Response" {
+				logger.Println("Incoming signal from", sig.Path)
 				err := dbus.Store(sig.Body, &stat, &v)
 				if err != nil {
 					warn.Fatalln("Could not store bus reply:", err)
@@ -157,11 +157,9 @@ func openFilePortal(path string) (success bool) {
 	wg.Wait()
 	switch res {
 		case 0:
-			os.Exit(0)
 			return true
 		case 1:
-			logger.Println("Interaction cancelled")
-			os.Exit(0)
+			warn.Println("Interaction cancelled")
 			return true
 		case 2:
 			logger.Println("User interaction was ended in some other way")
