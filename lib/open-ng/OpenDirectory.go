@@ -54,6 +54,7 @@ func openDirectoryPortal(path string) error {
 			var v dbus.Variant
 			var stat uint32
 			if sig.Path == dbus.ObjectPath(objPath) && sig.Name == "org.freedesktop.portal.Request.Response" {
+				logger.Println("Incoming signal from", sig.Path)
 				err := dbus.Store(sig.Body, &stat, &v)
 				if err != nil {
 					warn.Fatalln("Could not store bus reply:", err)
@@ -87,7 +88,6 @@ func openDirectoryPortal(path string) error {
 	wg.Wait()
 	switch res {
 		case 0:
-			os.Exit(0)
 			return nil
 		case 1:
 			warn.Println("Interaction cancelled")

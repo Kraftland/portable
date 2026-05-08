@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 var (
@@ -58,36 +57,5 @@ func openPath(path string, showItem bool) {
 	err = openPathFileManager1(modPath)
 	if err != nil {
 		warn.Println("Could not open path using the FileManager1 interface:", err)
-	}
-}
-
-func main () {
-	rawCmdArgs := os.Args
-	logger.Println("Received command line open request:", rawCmdArgs)
-	if os.Args[1] == "--show-item" {
-		totalLength := len(os.Args)
-		var loopCounter uint = 2
-		for {
-			if loopCounter > uint(totalLength) {
-				logger.Println("Could not resolve path")
-				break
-			}
-			_, err := os.Stat(os.Args[loopCounter])
-			if err != nil {
-				logger.Println("Invalid argument: " + os.Args[loopCounter])
-			} else {
-				openPath(os.Args[loopCounter], true)
-				break
-			}
-			loopCounter++
-		}
-	} else if strings.Contains(os.Args[1], "file://") == false && linkRegexp.Match([]byte(os.Args[1])) {
-		logger.Println("Got a link")
-		err := OpenURI(os.Args[1])
-		if err != nil {
-			warn.Fatalln("Could not open link:", err)
-		}
-	} else {
-		openPath(os.Args[1], false)
 	}
 }
