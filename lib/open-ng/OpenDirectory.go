@@ -51,7 +51,6 @@ func openDirectoryPortal(path string) error {
 		busConn.Signal(sigChan)
 		wg.Done()
 		for sig := range sigChan {
-			logger.Println("Incoming signal")
 			var v dbus.Variant
 			var stat uint32
 			if sig.Path == dbus.ObjectPath(objPath) && sig.Name == "org.freedesktop.portal.Request.Response" {
@@ -73,7 +72,7 @@ func openDirectoryPortal(path string) error {
 	optMap["ask"] = dbus.MakeVariant(true)
 	wg.Wait()
 	call := portalObj.Call(
-		"org.freedesktop.portal.OpenURI.OpenFile",
+		"org.freedesktop.portal.OpenURI.OpenDirectory",
 		0,
 		parentWindow,
 		dbus.UnixFD(fd.Fd()),

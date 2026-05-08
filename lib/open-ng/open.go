@@ -38,6 +38,8 @@ func openPath(path string, showItem bool) {
 			}
 		case false:
 			switch showItem {
+				case true:
+					logger.Println("Enabled compatibility mode for --show-item")
 				case false:
 					succ := openFilePortal(modPath)
 					if ! succ {
@@ -49,6 +51,8 @@ func openPath(path string, showItem bool) {
 			err := openDirectoryPortal(modPath)
 			if err != nil {
 				warn.Println("Could not call Portal to open a directory:", err)
+			} else {
+				return
 			}
 	}
 
@@ -72,7 +76,6 @@ func main () {
 	rawCmdArgs := os.Args
 	logger.Println("Received command line open request:", rawCmdArgs)
 	if os.Args[1] == "--show-item" {
-		logger.Println("Enabled compatibility mode for --show-item")
 		totalLength := len(os.Args)
 		var loopCounter uint = 2
 		for {
