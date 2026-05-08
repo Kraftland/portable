@@ -59,7 +59,7 @@ func openPathPortal(path string, showItem bool) (success bool) {
 	var wg sync.WaitGroup
 	fd, err := os.OpenFile(
 		path,
-		os.O_RDWR,
+		os.O_RDONLY,
 		0700,
 	)
 	if err != nil {
