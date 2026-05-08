@@ -15,15 +15,13 @@ arch=x86_64
 flatpak-version=1.16.0
 session-bus-proxy=true
 system-bus-proxy=true
-extra-args=--usb-list=;--usb-list=;
+extra-args=--usb-list=;
 
 [Context]
 shared=network;ipc;
 sockets=x11;wayland;
 devices=dri;
-
-[Environment]
-IBUS_USE_PORTAL=1
+filesystems=placeholderPath
 
 [USB Devices]
 enumerable-devices=all;
