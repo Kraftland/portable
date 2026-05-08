@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"github.com/godbus/dbus/v5"
 )
 
 var (
@@ -56,20 +55,10 @@ func openPath(path string, showItem bool) {
 			}
 	}
 
-	conn, err := dbus.SessionBus()
+	err = openPathFileManager1(modPath)
 	if err != nil {
-		warn.Fatalln("Could not connect to session bus: " + err.Error())
-		return
+		warn.Println("Could not open path using the FileManager1 interface:", err)
 	}
-	logger.Println("Calling FileManager1 for path: " + modPath)
-	pathSlice := []string{"file://" + modPath}
-	fileManager1Obj := conn.Object("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1")
-	fileManager1Obj.Call(
-		"org.freedesktop.FileManager1.ShowItems",
-		0,
-		pathSlice,
-		os.Getenv("appID"),
-	)
 }
 
 func main () {
