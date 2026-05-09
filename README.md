@@ -85,13 +85,8 @@ Options:
 See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
 
 # FAQ / Troubleshooting
-1. Portable fails with something like _no such device_
-	- Try reboot your system
-	- Portable 11.2 should address this by loading the kernel module in advance
-2. Portable fails with something like _invalid argument_
+1. Portable fails with something like _invalid argument_
 	- BcacheFS is not supported, or you have mountpoints under `/usr/bin` and `/usr/lib`
-3. Portable eats a full CPU core!
-	- Try updating your microcode first, if not fixed then report an issue with `PORTABLE_LOGGING=debug` environment variable.
 
 ## Starting portable
 
