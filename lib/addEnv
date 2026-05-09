@@ -1,4 +1,0 @@
-#!/usr/bin/bash
-
-echo $@ >> "${XDG_RUNTIME_DIR}/portable/${appID}/portable-generated.env"
-#echo "Adding env $@"
