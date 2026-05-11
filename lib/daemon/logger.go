@@ -23,7 +23,7 @@ func pecho(level string, message ...any) {
 }
 
 
-func pechoWorker() {
+func pechoWorker(stopSig chan int) {
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
 		case "debug":
@@ -53,7 +53,7 @@ func pechoWorker() {
 				warnLogger.Println(chanRes.msg)
 			case "crit":
 				critLogger.Println(chanRes.msg)
-				stopApp()
+				stopSig <- 1
 				critLogger.Fatalln("A critical error has happened")
 			default:
 				panic("Unknown logging level")

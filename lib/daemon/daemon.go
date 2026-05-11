@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"math/rand"
 	"net"
@@ -414,50 +413,15 @@ func cleanDirs(config Config) {
 	wg.Wait()
 }
 
-func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Context, busconn *godbus.Conn, config Config) {
-	<- stopAppChan
-	pecho("debug", "Received a quit request from channel")
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		if busconn == nil {
-			pecho("warn", "Race detected: bus already terminated")
-			return
-		}
-		reply, err := busconn.ReleaseName("top.kimiblock.portable." + config.Metadata.AppID)
-		if err != nil {
-			pecho("warn", "Could not request bus to release name: " + err.Error())
-			switch reply {
-				case godbus.ReleaseNameReplyReleased:
-					pecho("debug", "Successfully released bus name")
-				default:
-					pecho("warn", "Could not release D-Bus name: " + reply.String())
-			}
-		}
-	})
-	wg.Go(func() {
-		doCleanUnit(conn, sdCancelFunc, sdContext, config)
-	})
-	wg.Go(func() {
-		cleanDirs(config)
-	})
-	close(socketStop)
-	//socketStop <- 1
-	wg.Wait()
-	stopAppDone <- 1
-	os.Exit(0)
-}
-
-func signalRecvWorker(sigChan chan os.Signal) {
+func signalRecvWorker(sigChan chan os.Signal, stopChan chan int) {
 	sig := <- sigChan
 	pecho("debug", "Got signal: " + sig.String())
-	pecho("info", "Calling stopApp")
-	stopApp()
+	if sig == syscall.SIGTERM {
+		stopChan <- 0
+	} else {
+		stopChan <- 1
+	}
 
-}
-
-func stopApp() {
-	stopAppChan <- 1
-	<- stopAppDone
 }
 
 func lookUpXDG() {
@@ -853,12 +817,13 @@ func startProxy(conn *dbus.Conn, ctx context.Context, config Config) {
 type DBusPingRequest struct {}
 type DBusControlRequest struct {
 	Conn		*godbus.Conn
+	stopSig		chan int
 }
 
 func (m *DBusControlRequest) Stop() (*godbus.Error) {
 	if len(runtimeInfo.instanceID) > 0 {
 		pecho("debug", "Stopping on Bus request")
-		stopApp()
+		m.stopSig <- 0
 		return nil
 	} else {
 		pecho("warn", "Could not obtain runtime ID")
@@ -966,14 +931,14 @@ func appendProps(m map[string]any) []string {
 	return ret
 }
 
-func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn, config Config) {
+func listenBusStub(conn *godbus.Conn, sdConn *dbus.Conn, config Config, stopSig chan int) {
 	ready := make(chan int8, 1)
-	go busListener(conn, ready, sdConn, config)
+	go busListener(conn, ready, sdConn, stopSig, config)
 	<- ready
 
 }
 
-func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config Config) {
+func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, stopSig chan int, config Config) {
 	req := new(DBusPingRequest)
 	controller := new(DBusControlRequest)
 	info := new(DBusInfoRequest)
@@ -982,6 +947,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 	info.Conn = conn
 	info.TimeStart = time.Now()
 	controller.Conn = conn
+	controller.stopSig = stopSig
 	objPath := godbus.ObjectPath("/top/kimiblock/portable/daemon")
 	node := &introspect.Node{
 		//Name:		"top.kimiblock.portable." + confOpts.appID,
@@ -1051,7 +1017,7 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, config C
 	select {}
 }
 
-func startApp(config Config, argChan chan bwArgs) {
+func startApp(config Config, argChan chan bwArgs, stopSig chan int) {
 	go forceBackgroundPerm(config)
 	sdArgs := append(
 		<-argChan,
@@ -1065,16 +1031,11 @@ func startApp(config Config, argChan chan bwArgs) {
 	<- envsFlushReady
 	// Profiler
 	//pprof.Lookup("block").WriteTo(os.Stdout, 1)
-	if false {
-		stopApp()
-	} else {
-		sdExecErr := sdExec.Run()
-		if sdExecErr != nil {
-			fmt.Println(sdExecErr)
-			pecho("warn", "systemd-run returned non 0 exit code")
-		}
-		stopApp()
+	sdExecErr := sdExec.Run()
+	if sdExecErr != nil {
+		pecho("warn", "systemd-run exited with non-zero code:", sdExecErr)
 	}
+	stopSig <- 0
 }
 
 func forceBackgroundPerm(config Config) {
@@ -2212,6 +2173,7 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 	atSpiProxyCmd.Start()
 }
 func main() {
+	var stopSignal = make(chan int, 1)
 	exposeChan := make(chan map[string]string, 16)
 	miChan := make(chan bool, 1)
 	var busConn *godbus.Conn
@@ -2229,8 +2191,8 @@ func main() {
 	})
 	sigChan := make(chan os.Signal, 1)
 
-	go signalRecvWorker(sigChan)
-	go pechoWorker()
+	go signalRecvWorker(sigChan, stopSignal)
+	go pechoWorker(stopSignal)
 	wayDisplayChan := make(chan[]string, 1)
 
 	var sdContext context.Context
@@ -2281,7 +2243,7 @@ func main() {
 		switch reply {
 			case godbus.RequestNameReplyPrimaryOwner:
 				pecho("debug", "Successfully requested ownership of bus name")
-				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, config)
+				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, stopSignal, config)
 			case godbus.RequestNameReplyExists:
 				pecho("info", "Another instance is currently running")
 				miChan <- true
@@ -2348,7 +2310,7 @@ func main() {
 		sanityChecks(config)
 	})
 	wg.Go(func() {
-		listenBusStub(busConn, conn, config)
+		listenBusStub(busConn, conn, config, stopSignal)
 	})
 	go flushEnvs(config)
 
@@ -2379,7 +2341,7 @@ func main() {
 	go pwSecContext(pwSecContextChan, config)
 	wg.Wait()
 	close(envsChan)
-	startApp(config, bwArgChan)
+	startApp(config, bwArgChan, stopSignal)
 	if busConn != nil {
 		busConn.Close()
 	}
