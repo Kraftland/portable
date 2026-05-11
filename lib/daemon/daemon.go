@@ -1689,9 +1689,14 @@ func flushEnvs(config Config) {
 	}
 
 	fd, err := os.OpenFile(
-		xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID + "/generated.env",
-			os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
-			0700,
+		filepath.Join(
+			xdgDir.runtimeDir,
+			"portable",
+			config.Metadata.AppID,
+			"generated.env",
+		),
+		os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
+		0700,
 	)
 	if err != nil {
 		pecho(
