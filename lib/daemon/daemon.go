@@ -2173,7 +2173,7 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 	atSpiProxyCmd.Start()
 }
 func main() {
-	var stopSignal = make(chan int, 1)
+	var stopSignal = make(chan int)
 	exposeChan := make(chan map[string]string, 16)
 	miChan := make(chan bool, 1)
 	var busConn *godbus.Conn
