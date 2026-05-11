@@ -563,7 +563,7 @@ func pwSecContext(pwChan chan []string, config Config) {
 	}
 }
 
-func calcDbusArg(argChan chan []string, config Config) {
+func calcDbusArg(argChan chan []string, docMnt string, config Config) {
 	argList := []string{
 		"bwrap",
 		"--json-status-fd", "2",
@@ -663,7 +663,7 @@ func calcDbusArg(argChan chan []string, config Config) {
 	if internalLoggingLevel <= 1 {
 		argList = append(argList, "--log")
 	}
-	err := os.MkdirAll(xdgDir.runtimeDir + "/doc/by-app/" + config.Metadata.AppID, 0700)
+	err := os.MkdirAll(docMnt, 0700)
 	if err != nil {
 		pecho("crit", "Could not create documents path: " + err.Error())
 	}
@@ -1410,6 +1410,7 @@ func genBwArg(
 	inputChan chan []string,
 	wayDisplayChan chan []string,
 	miscChan	chan []string,
+	docMnt		string,
 	config Config,
 	) (bwArgs) {
 	var wg sync.WaitGroup
@@ -1604,8 +1605,8 @@ func genBwArg(
 			filepath.Join(xdgDir.runtimeDir, "at-spi"),
 		"--dir",		"/run/host",
 		"--bind",
-			filepath.Join(xdgDir.runtimeDir, "doc/by-app", config.Metadata.AppID),
-			filepath.Join(xdgDir.runtimeDir, "doc"),
+			filepath.Join(docMnt, "by-app", config.Metadata.AppID),
+			filepath.Join(docMnt),
 		"--ro-bind-try",
 			"/run/systemd/resolve/stub-resolv.conf",
 			"/run/systemd/resolve/stub-resolv.conf",
@@ -2213,13 +2214,21 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 func main() {
 	exposeChan := make(chan map[string]string, 16)
 	miChan := make(chan bool, 1)
+	var busConn *godbus.Conn
 	var wg sync.WaitGroup
+
+	// Get the document portal mount point and connect to session bus
+	var docMnt string
+	wg.Go(func() {
+
+	})
+
 	var config Config
 	wg.Go(func() {
 		config = getConf()
 	})
 	sigChan := make(chan os.Signal, 1)
-	var busConn *godbus.Conn
+
 	go signalRecvWorker(sigChan)
 	go pechoWorker()
 	wayDisplayChan := make(chan[]string, 1)
@@ -2245,12 +2254,22 @@ func main() {
 	pecho("info", "Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
+	var mntWg sync.WaitGroup
 	wg.Go(func() {
 		var err error
 		busConn, err = godbus.SessionBus()
 		if err != nil {
-			panic("Could not connect to session bus: " + err.Error())
+			pecho("crit", "Could not connect to session bus:", err)
+			return
 		}
+		mntWg.Go(func() {
+			mnt, err := GetMountPoint(busConn)
+			if err != nil {
+				pecho("crit", "Could not query Document Portal mount point:", err)
+			}
+			docMnt = mnt
+			pecho("debug", "Got document mount point:", mnt)
+		})
 		if busConn.SupportsUnixFDs() == false {
 			panic("D-Bus has no support for passing File Descriptors")
 		}
@@ -2335,11 +2354,20 @@ func main() {
 
 	<- genChan // Stage one, ensures that IDs are actually present
 	var bwArgChan = make(chan bwArgs, 1)
+	mntWg.Wait()
 	wg.Go(func() {
-		bwArgChan <- genBwArg(xChan, camChan, inputChan, wayDisplayChan, miscChan, config)
+		bwArgChan <- genBwArg(
+			xChan,
+			camChan,
+			inputChan,
+			wayDisplayChan,
+			miscChan,
+			docMnt,
+			config,
+		)
 	})
 	genChanProceed <- 1
-	go calcDbusArg(busArgChan, config)
+	go calcDbusArg(busArgChan, docMnt, config)
 	<- genChan // Stage 2, ensures that info file is ready
 	wg.Go(func() {
 		startProxy(conn, sdContext, config)
