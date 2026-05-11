@@ -47,9 +47,6 @@ var (
 	abortChan		= make(chan bool, 10)
 	gpuChan 		= make(chan []string, 1)
 	busArgChan		= make(chan []string, 1)
-	socketStop		= make(chan int8, 10)
-	stopAppChan		= make(chan int8, 512)
-	stopAppDone		= make(chan int8)
 	nvKernelModulePath 	= []string{
 					"/sys/module/nvidia",
 					"/sys/module/nvidia_drm",
@@ -57,4 +54,7 @@ var (
 					"/sys/module/nvidia_uvm",
 					"/sys/module/nvidia_wmi_ec_backlight",
 				}
+
+	// Executes when the stopApp() function is called
+	stopFuncChan		= make(chan func()(), 16)
 )
