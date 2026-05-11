@@ -2342,8 +2342,6 @@ func main() {
 	wg.Wait()
 	close(envsChan)
 	startApp(config, bwArgChan, stopSignal)
-	if busConn != nil {
-		busConn.Close()
-	}
+	select {}
 	}
 }
