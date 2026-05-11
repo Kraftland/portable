@@ -53,10 +53,15 @@ func pechoWorker(stopSig chan int) {
 				warnLogger.Println(chanRes.msg)
 			case "crit":
 				critLogger.Println(chanRes.msg)
-				stopSig <- 1
-				critLogger.Fatalln("A critical error has happened")
+				select {
+					case stopSig <- 1:
+					default:
+						critLogger.Fatalln(
+							"This critical error happened before stopper has initialised",
+						)
+				}
 			default:
-				panic("Unknown logging level")
+				pecho("crit", "Unknown message level for", chanRes.msg)
 		}
 	}
 }
