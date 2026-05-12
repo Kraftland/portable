@@ -15,7 +15,7 @@ arch=x86_64
 flatpak-version=1.16.0
 session-bus-proxy=true
 system-bus-proxy=true
-extra-args=--usb-list=;
+extra-args=--usb-list=;--filesystem=placeholderPath;
 
 [Context]
 shared=network;ipc;
