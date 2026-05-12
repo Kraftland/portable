@@ -249,16 +249,6 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 			pecho("warn", "Unable to use instance ID " + strconv.Itoa(idCandidate))
 		}
 	}
-	dirs := []string {
-		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
-		filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID, "xdg-run"),
-		filepath.Join(xdgDir.runtimeDir, "/.flatpak/", config.Metadata.AppID, "tmp"),
-	}
-
-	wg.Go(func() {
-		mkdirPool(dirs)
-	})
-
 	<- proceed
 	wg.Go(func() {
 		generatePasswdFile(config)
@@ -280,7 +270,6 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 
 func writeFlatpakRef(config Config) {
 	var flatpakRef string = ""
-	os.MkdirAll(filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID), 0700)
 	os.WriteFile(
 		filepath.Join(xdgDir.runtimeDir, ".flatpak", config.Metadata.AppID, ".ref"),
 		[]byte(flatpakRef),
@@ -305,10 +294,6 @@ func writeInfoFile(ready chan int8, config Config) {
 		"placeholderPath",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
 	)
 	stringObj = replacer.Replace(stringObj)
-	err = os.MkdirAll(filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID), 0700)
-	if err != nil {
-		pecho("crit", "Could not create .flatpak path: " + err.Error())
-	}
 	err = os.WriteFile(
 		filepath.Join(xdgDir.runtimeDir, ".flatpak", runtimeInfo.instanceID, "info.tmp"),
 		[]byte(stringObj),
@@ -737,24 +722,9 @@ func startProxy(conn *dbus.Conn, ctx context.Context, config Config) {
 	var exit exitStruct
 	exit.SIGKILL = []int32{9}
 	exit.SIGTERM = []int32{15}
-	wg.Add(2)
-	go func () {
-		defer wg.Done()
-		dbusArgs = <- busArgChan
-	} ()
 	wg.Go(func() {
-		os.MkdirAll(
-			xdgDir.runtimeDir + "/.flatpak/" + runtimeInfo.instanceID,
-			0700,
-		)
+		dbusArgs = <- busArgChan
 	})
-	go func () {
-		defer wg.Done()
-		os.MkdirAll(
-			xdgDir.runtimeDir + "/app/" + config.Metadata.AppID,
-			0700,
-		)
-	} ()
 	var unitWants = []string{
 		"xdg-document-portal.service",
 		"xdg-desktop-portal.service",
@@ -2177,12 +2147,6 @@ func main() {
 	var busConn *godbus.Conn
 	var wg sync.WaitGroup
 
-	// Get the document portal mount point and connect to session bus
-	var docMnt string
-	wg.Go(func() {
-
-	})
-
 	var config Config
 	wg.Go(func() {
 		config = getConf()
@@ -2214,7 +2178,11 @@ func main() {
 	pecho("info", "Portable daemon", version)
 	cmdChan := make(chan int8, 1)
 	wg.Wait()
+
+	var mkdirWg sync.WaitGroup
 	var mntWg sync.WaitGroup
+	// Get the document portal mount point and connect to session bus
+	var docMnt string
 	wg.Go(func() {
 		var err error
 		busConn, err = godbus.SessionBus()
@@ -2242,6 +2210,58 @@ func main() {
 			case godbus.RequestNameReplyPrimaryOwner:
 				pecho("debug", "Successfully requested ownership of bus name")
 				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, stopSignal, config)
+				mkdirWg.Go(func() {
+					var dirs = []string{
+						filepath.Join(
+							xdgDir.runtimeDir,
+							".flatpak",
+							config.Metadata.AppID,
+							"tmp",
+						),
+						filepath.Join(
+							xdgDir.runtimeDir,
+							".flatpak",
+							config.Metadata.AppID,
+						),
+						filepath.Join(
+							xdgDir.runtimeDir,
+							".flatpak",
+							runtimeInfo.instanceID,
+						),
+						filepath.Join(
+							xdgDir.runtimeDir,
+							"app",
+							config.Metadata.AppID,
+						),
+					}
+
+					for _, dir := range dirs {
+						pth := dir
+						mkdirWg.Go(func() {
+							err := os.MkdirAll(pth, 0700)
+							if err != nil {
+								pecho("crit", "Could not create directory:", err)
+								return
+							}
+							stopFuncChan <- func() {
+								err := os.RemoveAll(pth)
+								if err != nil {
+									pecho("warn", "Could not remove directory:", err)
+								}
+							}
+						})
+					}
+					err = os.MkdirAll(
+						filepath.Join(
+						xdgDir.dataDir,
+						config.Metadata.StateDirectory,
+						),
+						0700,
+					)
+					if err != nil {
+						pecho("crit", "Could not create state directory:", err)
+					}
+				})
 			case godbus.RequestNameReplyExists:
 				pecho("info", "Another instance is currently running")
 				miChan <- true
@@ -2298,6 +2318,7 @@ func main() {
 		wakeInstance(config, docsMap)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+	mkdirWg.Wait()
 	wg.Go(func() {
 		prepareEnvs(config)
 	})
