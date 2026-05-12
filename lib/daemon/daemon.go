@@ -316,69 +316,6 @@ func writeInfoFile(ready chan int8, config Config) {
 	pecho("debug", "Wrote info file")
 }
 
-func removeWrapChan(pathChan chan string) {
-	var wg sync.WaitGroup
-	for path := range pathChan {
-		wg.Go(func() {
-			err := os.RemoveAll(path)
-			if err != nil {
-				pecho(
-					"warn",
-					"Unable to remove " + path + ": " + err.Error(),
-				)
-			}
-		})
-	}
-	wg.Wait()
-}
-
-func cleanDirs(config Config) {
-	var wg sync.WaitGroup
-	pathChan := make(chan string, 8)
-	wg.Go(func() {removeWrapChan(pathChan)})
-	pecho("info", "Cleaning leftovers")
-	if len(config.Metadata.AppID) == 0 {
-		return
-	}
-	pathChan <- filepath.Join(
-		xdgDir.runtimeDir,
-		"/portable/",
-		config.Metadata.AppID,
-	)
-	pathChan <- filepath.Join(
-		xdgDir.runtimeDir,
-		"app",
-		config.Metadata.AppID,
-	)
-	if runtimeOpt.writtenDesktop {
-		pathChan <- filepath.Join(
-			xdgDir.dataDir,
-			"applications",
-			config.Metadata.AppID + ".desktop",
-		)
-	}
-	localID := runtimeInfo.instanceID
-	if len(localID) == 0 {
-		localID = runtimeInfo.instanceID
-	}
-	if len(localID) > 0 {
-		pathChan <- filepath.Join(
-			xdgDir.runtimeDir,
-			".flatpak",
-			config.Metadata.AppID,
-		)
-		pathChan <- filepath.Join(
-			xdgDir.runtimeDir,
-			".flatpak",
-			localID,
-		)
-	} else {
-		pecho("warn", "Skipped cleaning Flatpak entries")
-	}
-	close(pathChan)
-	wg.Wait()
-}
-
 func signalRecvWorker(sigChan chan os.Signal, stopChan chan int) {
 	sig := <- sigChan
 	pecho("debug", "Got signal: " + sig.String())

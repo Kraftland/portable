@@ -45,9 +45,6 @@ func stopAppWorker(conn *dbus.Conn, sdCancelFunc func(), sdContext context.Conte
 	wg.Go(func() {
 		doCleanUnit(conn, sdCancelFunc, sdContext, config)
 	})
-	wg.Go(func() {
-		cleanDirs(config)
-	})
 	wg.Wait()
 	os.Exit(sig)
 }
