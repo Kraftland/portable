@@ -28,6 +28,7 @@ Command line arguments (optional):
 	--	-	-	-> Any argument after this double dash will be passed to the application
 	--expose <orig> <dest>	-> See further doc below
 	--forward-file		-> See file forwarding documents under General/
+	--help			-> Print Help
 ```
 
 

@@ -128,6 +128,9 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 				}
 			case "--":
 				runtimeOpt.argStop = true
+			case "--help":
+				printHelp()
+				pecho("crit", "Aborted start to print help")
 			default:
 				pecho("warn", "Unrecognised option: " + value)
 		}

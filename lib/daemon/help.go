@@ -27,6 +27,6 @@ func printHelp() {
 		}
 	}
 
-	builder.WriteString("This Portable install comes with super golden power\n")
+	builder.WriteString("This Portable install comes with golden power\n")
 	fmt.Println(builder.String())
 }
