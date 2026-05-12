@@ -220,18 +220,6 @@ func dialNetsock(rules chan string) {
 	}
 }
 
-func mkdirPool(dirs []string) {
-	var wg sync.WaitGroup
-	for _, dir := range dirs {
-		wg.Go(
-			func() {
-				os.MkdirAll(dir, 0700)
-			},
-		)
-	}
-	wg.Wait()
-}
-
 func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 	var wg sync.WaitGroup
 	pecho("debug", "Generating instance ID")
@@ -1226,10 +1214,6 @@ func setupSharedDir (config Config) {
 func miscEnvs (config Config) {
 	if config.Advanced.Qt5Compat {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
-	}
-	err := os.MkdirAll(xdgDir.runtimeDir + "/portable/" + config.Metadata.AppID, 0700)
-	if err != nil {
-		pecho("crit", "Could not create runtime directory: " + err.Error())
 	}
 	var file string = "source " + filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "generated.env") + "\n"
 	wrErr := os.WriteFile(
