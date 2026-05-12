@@ -2087,14 +2087,6 @@ func atSpiProxy(conn *godbus.Conn, config Config) {
 		pecho("warn", "Could not decode accessibility bus address: " + err.Error())
 		return
 	}
-	err = os.MkdirAll(
-		filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "a11y"),
-		0700,
-	)
-	if err != nil {
-		pecho("warn", "Could not create directory for accessibility bus: " + err.Error())
-		return
-	}
 	atspiArgs := []string{
 		"--die-with-parent",
 		"--symlink", "/usr/lib64", "/lib64",
@@ -2212,6 +2204,12 @@ func main() {
 				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, stopSignal, config)
 				mkdirWg.Go(func() {
 					var dirs = []string{
+						filepath.Join(
+							xdgDir.runtimeDir,
+							"portable",
+							config.Metadata.AppID,
+							"a11y",
+						),
 						filepath.Join(
 							xdgDir.runtimeDir,
 							".flatpak",
