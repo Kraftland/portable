@@ -2123,6 +2123,34 @@ func main() {
 			case godbus.RequestNameReplyPrimaryOwner:
 				pecho("debug", "Successfully requested ownership of bus name")
 				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, stopSignal, config)
+				stopFuncChan <- func() {
+					if busConn == nil {
+						pecho(
+							"warn",
+							"Race detected: bus already terminated",
+						)
+						return
+					}
+					reply, err := busConn.ReleaseName(
+						"top.kimiblock.portable." + config.Metadata.AppID,
+					)
+					if err != nil {
+						pecho("warn", "Could not request bus to release name:", err)
+						return
+					}
+					switch reply {
+					case godbus.ReleaseNameReplyReleased:
+						pecho(
+							"debug",
+							"Successfully released bus name",
+						)
+					default:
+						pecho(
+							"warn",
+							"Could not release D-Bus name:", reply,
+						)
+					}
+				}
 				mkdirWg.Go(func() {
 					var dirs = []string{
 						filepath.Join(
