@@ -18,6 +18,7 @@ func determineConfType () (legacy bool) {
 	if len(os.Getenv("_portableConfig")) > 0 || len(os.Getenv("_portalConfig")) > 0 {
 		return true
 	}
+	printHelp()
 	pecho("crit", "Please specify the PORTABLE_CONF variable for configuration")
 	return false
 }

@@ -1,6 +1,4 @@
-### CLI arguments
-
-Useful to include in .desktop entries as actions
+# CLI arguments
 
 ---
 
