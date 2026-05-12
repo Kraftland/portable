@@ -256,13 +256,6 @@ func genInstanceID(genInfo chan int8, proceed chan int8, config Config) {
 	}
 
 	wg.Go(func() {
-		err := os.MkdirAll(filepath.Join(xdgDir.runtimeDir, "portable", config.Metadata.AppID, "portable-control"), 0700)
-		if err != nil {
-			pecho("crit", "Could not create control directory: " + err.Error())
-		}
-	})
-
-	wg.Go(func() {
 		mkdirPool(dirs)
 	})
 
