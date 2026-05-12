@@ -10,3 +10,5 @@ install -t "${installPrefix}/usr/share/portable" -Dm755 "share"/*
 install -vDm755 portable-pools "${installPrefix}/usr/bin/portable-pools"
 cp -r lib/modules-load.d "${installPrefix}/usr/lib"
 ln -sf /usr/lib/portable/daemon/portable-daemon "${installPrefix}/usr/bin/portable"
+install -d "${installPrefix}/usr/share/doc"
+cp -r "doc" "${installPrefix}/usr/share/doc/portable"
