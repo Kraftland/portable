@@ -20,6 +20,8 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version-file: 'lib/daemon/go.mod'
+    - name: Install udev
+      run: apt install -y udev
 
     - name: Build
       run: go build -v ./...
