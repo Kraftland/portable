@@ -13,56 +13,54 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    container:
+      image: jrei/systemd-ubuntu:26.04
         
     steps:
     - uses: actions/checkout@v4
-    - name: Install systemd
-      run: docker run --name builder -v "$(pwd):/build" ubuntu:latest bash -c 'apt update && apt install -y systemd' && docker stop builder
-    - name: Commit Container
-      run: docker commit builder builder-image && docker rm builder
-    - name: Start Container
-      run: docker run --name builder --privileged -v /sys/fs/cgroup:/sys/fs/cgroup -v "$(pwd):/build" builder-image /usr/lib/systemd/systemd
-    - name: Install Go
-      run: docker start builder && docker exec builder apt install golang-go
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'lib/daemon/go.mod'
     - name: Install Dependencies
-      run: docker exec builder apt install -y build-essential libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
+      run: apt install -y build-essential libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
 
     - name: Build Daemon
-      run: docker exec builder bash -c "cd /build && bash lib/build.sh"
+      run: bash lib/build.sh
 
     - name: Install Portable
-      run: docker exec builder bash -c "cd /build && bash lib/package.sh"
+      run: bash lib/package.sh
 
     - name: Install Compositor
-      run: docker exec builder apt install -y weston
+      run: apt install -y weston
 
     - name: Start Compositor and test
       run: |
-          export XDG_RUNTIME_DIR="/tmp/portable_runtime_dir"
-          docker exec builder mkdir "/tmp/portable_runtime_dir"
-          docker exec builder chmod 0700 "$XDG_RUNTIME_DIR"
-          echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
-          docker exec builder env XDG_RUNTIME_DIR="/tmp/portable_runtime_dir" weston -B headless --socket=wayland-0 &
+          #export XDG_RUNTIME_DIR="/tmp/portable_runtime_dir"
+          #docker exec builder mkdir "/tmp/portable_runtime_dir"
+          #docker exec builder chmod 0700 "$XDG_RUNTIME_DIR"
+          #echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
+          weston -B headless --socket=wayland-0 &
           sleep 5s
-          docker exec builder env XDG_RUNTIME_DIR="/tmp/portable_runtime_dir" bash -c "cd lib/daemon && go test -v ./..."
+          go test -v ./...
 
     - name: Test helper
       run: |
-          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/helper'
     - name: Test open
       run: |
-          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/open-ng'
     - name: Test flatpak-spawn
       run: |
-          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/flatpak-spawn-stub'
     - name: Test prlimit
       run: |
-          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/prlimit-stub'
