@@ -34,6 +34,10 @@ jobs:
 
     - name: Start Compositor
       run: |
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          chmod 0700 "$XDG_RUNTIME_DIR"
+          echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           weston -B headless &
           for i in {1..20}; do
             sleep 0.5
@@ -44,17 +48,27 @@ jobs:
           done
 
     - name: Test daemon
-      run: go test -v ./...
+      run: |
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          go test -v ./...
       working-directory: 'lib/daemon'
     - name: Test helper
-      run: go test -v ./...
+      run: |
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          go test -v ./...
       working-directory: 'lib/helper'
     - name: Test open
-      run: go test -v ./...
+      run: |
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          go test -v ./...
       working-directory: 'lib/open-ng'
     - name: Test flatpak-spawn
-      run: go test -v ./...
+      run: |
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          go test -v ./...
       working-directory: 'lib/flatpak-spawn-stub'
     - name: Test prlimit
-      run: go test -v ./...
+      run: |
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          go test -v ./...
       working-directory: 'lib/prlimit-stub'
