@@ -38,7 +38,7 @@ jobs:
           chmod 0700 "$XDG_RUNTIME_DIR"
           echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
           export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
-          weston -B headless &
+          weston -B headless --socket=wayland-0 &
           for i in {1..20}; do
             sleep 0.5
             if [ -S "$XDG_RUNTIME_DIR/wayland-0" ]; then
