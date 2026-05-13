@@ -38,31 +38,32 @@ jobs:
 
     - name: Start Compositor and test
       run: |
-          #export XDG_RUNTIME_DIR="/tmp/portable_runtime_dir"
+          export XDG_RUNTIME_DIR="/tmp/portable_runtime_dir"
+          mkdir /tmp/portable_runtime_dir
           #docker exec builder mkdir "/tmp/portable_runtime_dir"
           #docker exec builder chmod 0700 "$XDG_RUNTIME_DIR"
-          #echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
+          echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
           weston -B headless --socket=wayland-0 &
           sleep 5s
           go test -v ./...
 
     - name: Test helper
       run: |
-          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/helper'
     - name: Test open
       run: |
-          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/open-ng'
     - name: Test flatpak-spawn
       run: |
-          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/flatpak-spawn-stub'
     - name: Test prlimit
       run: |
-          #export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
           go test -v ./...
       working-directory: 'lib/prlimit-stub'
