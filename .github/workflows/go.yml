@@ -21,7 +21,7 @@ jobs:
       with:
         go-version-file: 'lib/daemon/go.mod'
     - name: Install udev
-      run: sudo apt update && sudo apt upgrade -y && sudo apt install -y udev
+      run: sudo apt update && sudo apt install -y udev libudev-dev
 
     - name: Build
       run: go build -v ./...
