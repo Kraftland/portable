@@ -18,6 +18,8 @@ jobs:
         
     steps:
     - uses: actions/checkout@v4
+    - name: Update apt
+      run: apt update
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
