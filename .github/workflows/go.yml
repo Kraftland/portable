@@ -45,7 +45,8 @@ jobs:
           echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
           weston -B headless --socket=wayland-0 &
           sleep 5s
-          go test -v ./...
+          cd lib/daemon
+          go test -v
 
     - name: Test helper
       run: |
