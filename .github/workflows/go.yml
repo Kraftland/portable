@@ -18,38 +18,29 @@ jobs:
     - uses: actions/checkout@v4
     - name: Start Container
       run: docker run -d --name builder --init --entrypoint /usr/lib/systemd/systemd -v "$(pwd):/build" ubuntu:latest
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version-file: 'lib/daemon/go.mod'
+    - name: Install Go
+      run: docker exec builder apt install golang-go
     - name: Install Dependencies
-      run: apt update && apt install -y build-essential libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
+      run: docker exec builder apt install -y build-essential libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
 
     - name: Build Daemon
-      run: bash lib/build.sh
+      run: docker exec builder bash -c "cd /build && bash lib/build.sh"
 
     - name: Install Portable
-      run: bash lib/package.sh
+      run: docker exec builder bash -c "cd /build && bash lib/package.sh"
 
     - name: Install Compositor
-      run: apt install -y weston
+      run: docker exec builder apt install -y weston
 
     - name: Start Compositor and test
       run: |
-          export XDG_RUNTIME_DIR="$(mktemp -d)"
-          chmod 0700 "$XDG_RUNTIME_DIR"
+          export XDG_RUNTIME_DIR="/tmp/portable_runtime_dir"
+          docker exec builder mkdir "/tmp/portable_runtime_dir"
+          docker exec builder chmod 0700 "$XDG_RUNTIME_DIR"
           echo "$XDG_RUNTIME_DIR" > $GITHUB_WORKSPACE/.xdg_runtime_dir
-          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
-          weston -B headless --socket=wayland-0 &
-          for i in {1..20}; do
-            sleep 0.5
-            if [ -S "$XDG_RUNTIME_DIR/wayland-0" ]; then
-              echo "Weston ready"
-              break
-            fi
-          done
-          cd lib/daemon
-          go test -v ./...
+          docker exec builder env XDG_RUNTIME_DIR="/tmp/portable_runtime_dir" weston -B headless --socket=wayland-0 &
+          sleep 5s
+          docker exec builder env XDG_RUNTIME_DIR="/tmp/portable_runtime_dir" bash -c "cd lib/daemon && go test -v ./..."
 
     - name: Test helper
       run: |
