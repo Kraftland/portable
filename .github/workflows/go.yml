@@ -13,15 +13,11 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:latest
-      options: >-
-        --init
-        --entrypoint "/usr/lib/systemd/systemd"
         
     steps:
     - uses: actions/checkout@v4
-
+    - name: Start Container
+      run: docker run -d --name builder --init --entrypoint /usr/lib/systemd/systemd -v "$(pwd):/build" ubuntu:latest
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
