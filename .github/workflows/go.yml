@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Start Container
-      run: docker run -d --name builder --init --entrypoint /usr/lib/systemd/systemd -v "$(pwd):/build" ubuntu:latest
+      run: docker run -d --name builder -v "$(pwd):/build" ubuntu:latest /usr/lib/systemd/systemd
     - name: Install Go
       run: docker exec builder apt install golang-go
     - name: Install Dependencies
