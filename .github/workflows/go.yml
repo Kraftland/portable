@@ -29,6 +29,12 @@ jobs:
     - name: Install Portable
       run: sudo bash lib/package.sh
 
+    - name: Install Compositor
+      run: sudo apt install -y weston
+
+    - name: Start Compositor
+      run: weston -B headless
+
     - name: Test daemon
       run: go test -v ./...
       working-directory: 'lib/daemon'
