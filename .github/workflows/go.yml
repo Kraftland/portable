@@ -18,10 +18,10 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install systemd
       run: docker run --name builder -v "$(pwd):/build" ubuntu:latest bash -c 'apt update && apt install -y systemd'
-    - name: Stop Container
+    - name: Commit Container
       run : docker commit builder builder-image && docker rm builder
     - name: Start Container
-      run: docker run -d --name builder -v "$(pwd):/build" builder-image /usr/lib/systemd/systemd
+      run: docker run -d --name builder --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v "$(pwd):/build" builder-image /usr/lib/systemd/systemd
     - name: Install Go
       run: docker exec builder apt install golang-go
     - name: Install Dependencies
