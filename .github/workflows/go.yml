@@ -21,7 +21,7 @@ jobs:
     - name: Commit Container
       run: docker commit builder builder-image && docker rm builder
     - name: Start Container
-      run: docker run -a --name builder --privileged -v /sys/fs/cgroup:/sys/fs/cgroup -v "$(pwd):/build" builder-image /usr/lib/systemd/systemd &
+      run: docker run --attach=[STDOUT,STDERR] --name builder --privileged -v /sys/fs/cgroup:/sys/fs/cgroup -v "$(pwd):/build" builder-image /usr/lib/systemd/systemd &
     - name: Install Go
       run: docker start builder && docker exec builder apt install golang-go
     - name: Install Dependencies
