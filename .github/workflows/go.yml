@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install systemd
-      run: docker run --name builder -v "$(pwd):/build" ubuntu:latest apt install -y systemd
+      run: docker run --name builder -v "$(pwd):/build" ubuntu:latest bash -c 'apt update && apt install -y systemd'
     - name: Start Container
       run: docker run -d --name builder -v "$(pwd):/build" ubuntu:latest /usr/lib/systemd/systemd
     - name: Install Go
