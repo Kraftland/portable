@@ -19,7 +19,7 @@ jobs:
     - name: Install systemd
       run: docker run --name builder -v "$(pwd):/build" ubuntu:latest bash -c 'apt update && apt install -y systemd'
     - name: Stop Container
-      run : docker commit builder builder-image && docker rm builder && 
+      run : docker commit builder builder-image && docker rm builder
     - name: Start Container
       run: docker run -d --name builder -v "$(pwd):/build" builder-image /usr/lib/systemd/systemd
     - name: Install Go
