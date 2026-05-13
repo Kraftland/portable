@@ -32,7 +32,7 @@ jobs:
     - name: Install Compositor
       run: sudo apt install -y weston
 
-    - name: Start Compositor
+    - name: Start Compositor and test
       run: |
           export XDG_RUNTIME_DIR="$(mktemp -d)"
           chmod 0700 "$XDG_RUNTIME_DIR"
@@ -46,12 +46,9 @@ jobs:
               break
             fi
           done
-
-    - name: Test daemon
-      run: |
-          export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
+          cd lib/daemon
           go test -v ./...
-      working-directory: 'lib/daemon'
+
     - name: Test helper
       run: |
           export XDG_RUNTIME_DIR="$(cat $GITHUB_WORKSPACE/.xdg_runtime_dir)"
