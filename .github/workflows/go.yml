@@ -27,7 +27,7 @@ jobs:
       with:
         go-version-file: 'lib/daemon/go.mod'
     - name: Install Dependencies
-      run: apt update && apt install -y libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
+      run: apt update && apt install -y build-essential libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
 
     - name: Build Daemon
       run: bash lib/build.sh
