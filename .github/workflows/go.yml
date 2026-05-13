@@ -33,7 +33,15 @@ jobs:
       run: sudo apt install -y weston
 
     - name: Start Compositor
-      run: weston -B headless
+      run: |
+          weston -B headless
+          for i in {1..20}; do
+            sleep 0.5
+            if [ -S "$XDG_RUNTIME_DIR/wayland-0" ]; then
+              echo "Weston ready"
+              break
+            fi
+          done
 
     - name: Test daemon
       run: go test -v ./...
