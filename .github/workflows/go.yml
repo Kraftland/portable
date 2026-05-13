@@ -21,7 +21,7 @@ jobs:
       with:
         go-version-file: 'lib/daemon/go.mod'
     - name: Install Dependencies
-      run: sudo apt update && sudo apt install -y libnotify4 libudev-dev coreutils-from-gnu zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
+      run: sudo apt update && sudo apt install -y libnotify4 libudev-dev zenity xdg-dbus-proxy systemd dbus grep xdg-desktop-portal xdg-desktop-portal-gtk bubblewrap
 
     - name: Build Daemon
       run: bash lib/build.sh
@@ -29,18 +29,18 @@ jobs:
     - name: Install Portable
       run: sudo bash lib/package.sh
 
-    - name: Test
+    - name: Test daemon
       run: go test -v ./...
       working-directory: 'lib/daemon'
-    - name: Test
+    - name: Test helper
       run: go test -v ./...
       working-directory: 'lib/helper'
-    - name: Test
+    - name: Test open
       run: go test -v ./...
       working-directory: 'lib/open-ng'
-    - name: Test
+    - name: Test flatpak-spawn
       run: go test -v ./...
       working-directory: 'lib/flatpak-spawn-stub'
-    - name: Test
+    - name: Test prlimit
       run: go test -v ./...
       working-directory: 'lib/prlimit-stub'
