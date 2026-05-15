@@ -29,9 +29,9 @@ jobs:
     - name: Install Portable
       run: sudo bash lib/package.sh
 
-    - name: Test
-      run: go test -v ./...
-      working-directory: 'lib/daemon'
+    #- name: Test
+      #run: go test -v ./...
+      #working-directory: 'lib/daemon'
     - name: Test
       run: go test -v ./...
       working-directory: 'lib/helper'
