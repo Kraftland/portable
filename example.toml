@@ -96,3 +96,6 @@ flatpakInfo = true
 
 # Enables landlock for additional protection, breaks many apps.
 landlock = true
+
+# Allows debugging syscalls to be made inside the sandbox. This has the potential to be exploited.
+debugging = false
