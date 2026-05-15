@@ -64,5 +64,6 @@ type AdvancedOpts struct {
 	KDEStatus		bool
 	FlatpakInfo		bool
 	Landlock		bool
+	Debugging		bool
 }
 
