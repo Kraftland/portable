@@ -1344,7 +1344,7 @@ func genBwArg(
 		"-p", "SystemCallErrorNumber=EAGAIN",
 	}
 	wg.Go(func() {
-		if config.Advanced.Debugging {
+		if ! config.Advanced.Debugging {
 			argChan <- []string{
 				"-p",
 				"SystemCallFilter=~@debug",
