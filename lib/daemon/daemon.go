@@ -1343,14 +1343,25 @@ func genBwArg(
 		"-p", "SystemCallFilter=~@swap",
 		"-p", "SystemCallErrorNumber=EAGAIN",
 	}
+	wg.Go(func() {
+		if config.Advanced.Debugging {
+			argChan <- []string{
+				"-p",
+				"SystemCallFilter=~@debug",
+			}
+		}
+	})
+	wg.Go(func() {
+		if ! config.Network.Enable {
+			pecho("info", "Network Access disabled")
+			argChan <- []string{"-p", "PrivateNetwork=yes"}
+		} else {
+			pecho("info", "Network Access allowed")
+			argChan <- []string{"-p", "PrivateNetwork=no"}
+		}
+	})
 
-	if ! config.Network.Enable {
-		pecho("info", "Network Access disabled")
-		argChan <- []string{"-p", "PrivateNetwork=yes"}
-	} else {
-		pecho("info", "Network Access allowed")
-		argChan <- []string{"-p", "PrivateNetwork=no"}
-	}
+	wg.Wait()
 
 	argChan <- []string{
 		"--",
