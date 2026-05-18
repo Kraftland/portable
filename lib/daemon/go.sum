@@ -12,3 +12,5 @@ github.com/jochenvg/go-udev v0.0.0-20240801134859-b65ed646224b h1:Pzf7tldbCVqwl3
 github.com/jochenvg/go-udev v0.0.0-20240801134859-b65ed646224b/go.mod h1:IBDUGq30U56w969YNPomhMbRje1GrhUsCh7tHdwgLXA=
 golang.org/x/sys v0.44.0 h1:ildZl3J4uzeKP07r2F++Op7E9B29JRUy+a27EibtBTQ=
 golang.org/x/sys v0.44.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
+golang.org/x/term v0.43.0 h1:S4RLU2sB31O/NCl+zFN9Aru9A/Cq2aqKpTZJ6B+DwT4=
+golang.org/x/term v0.43.0/go.mod h1:lrhlHNdQJHO+1qVYiHfFKVuVioJIheAc3fBSMFYEIsk=
