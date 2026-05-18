@@ -180,9 +180,6 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 func main () {
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		setRawConsole()
-	})
-	wg.Go(func() {
 		engageLandlock()
 	})
 	wg.Go(func() {

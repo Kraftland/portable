@@ -2283,6 +2283,7 @@ func main() {
 	wg.Go(func() {
 		setFirewall(config)
 	})
+	wg.Go(setRawConsole)
 	wg.Go(func() {
 		sanityChecks(config)
 	})
