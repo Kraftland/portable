@@ -2225,7 +2225,7 @@ func main() {
 				miChan <- true
 				return
 			default:
-				pecho("crit", "Could not obtain D-Bus name: " + reply.String())
+				pecho("crit", "Could not obtain D-Bus name:", reply)
 		}
 		miChan <- false
 
