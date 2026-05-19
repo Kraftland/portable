@@ -49,6 +49,7 @@ background = true
 inhibitSuspend = false
 
 # Whether or not to expose all GPUs and prefer discrete graphics card. By default, Portable blocks any GPU except the integrated one to improve user experience and power consumption on hybrid systems.
+# This mode is not available when Power Profile is set to Power Saver
 gameMode = false
 
 # Enables access to the Kernel-based Virtual Machine.
