@@ -2118,6 +2118,7 @@ func main() {
 			mnt, err := GetMountPoint(busConn)
 			if err != nil {
 				pecho("crit", "Could not query Document Portal mount point:", err)
+				select {}
 			}
 			docMnt = mnt
 			pecho("debug", "Got document mount point:", mnt)
