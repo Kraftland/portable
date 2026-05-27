@@ -8,7 +8,7 @@ type RUNTIME_OPT struct {
 }
 
 const (
-	version		float32	=	15.99
+	version		float32	=	16.99
 )
 
 type GPUInfo struct {
