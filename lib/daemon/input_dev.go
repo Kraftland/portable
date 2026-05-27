@@ -1,14 +1,15 @@
 package main
 
 import (
-	"sync"
-	udev "github.com/jochenvg/go-udev"
+	"path/filepath"
 	"strings"
+	"sync"
+
+	udev "github.com/jochenvg/go-udev"
 )
 
 func inputBind(inputBindChan chan []string) {
 	var wg sync.WaitGroup
-	inputBindArg := []string{}
 	inputBindChan <- []string{
 		"--dev-bind-try",	"/sys/class/leds", "/sys/class/leds",
 		"--dev-bind-try",	"/sys/class/input", "/sys/class/input",
@@ -19,8 +20,6 @@ func inputBind(inputBindChan chan []string) {
 
 	u := udev.Udev{}
 	e := u.NewEnumerate()
-
-	var devArgChan = make(chan []string, 512)
 
 	e.AddMatchSubsystem("input") // Later hidraw
 	e.AddMatchIsInitialized()
@@ -43,7 +42,7 @@ func inputBind(inputBindChan chan []string) {
 					path = strings.Join(sysSl[0:sliceLen - 3], "/")
 				}
 			}
-			devArgChan <- []string{
+			inputBindChan <- []string{
 			"--dev-bind",
 				path,
 				path,
@@ -65,42 +64,26 @@ func inputBind(inputBindChan chan []string) {
 			path := device.Syspath()
 			devPath := strings.TrimSpace(dev.PropertyValue("DEVNAME"))
 			if len(devPath) > 0 {
-				devArgChan <- []string{
+				inputBindChan <- []string{
 					"--dev-bind",
 					devPath,
 					devPath,
 				}
 			}
 			if len(path) > 0 {
-				sysPathSlice := strings.SplitN(path, "/", -1)
-				sysPathSliceLen := len(sysPathSlice)
-				if strings.Contains(sysPathSlice[sysPathSliceLen - 2], "hidraw") {
-					path = strings.Join(sysPathSlice[0:sysPathSliceLen - 3], "/")
-				}
-				devArgChan <- []string{
-					"--dev-bind",
-					path,
-					path,
+				dirPth := filepath.Dir(path)
+				if strings.HasPrefix(filepath.Base(dirPth), "hidraw") {
+					inputBindChan <- []string {
+						"--dev-bind",
+						dirPth,
+						dirPth,
+					}
 				}
 			}
 
 		} (dev)
 	}
 
-	go func () {
-		wg.Wait()
-		close(devArgChan)
-	} ()
-
-
-	for content := range devArgChan {
-		inputBindArg = append(
-			inputBindArg,
-			content...
-		)
-	}
-
-	inputBindChan <- inputBindArg
+	wg.Wait()
 	close(inputBindChan)
-	pecho("debug", "Finished calculating input arguments: " + strings.Join(inputBindArg, " "))
 }
