@@ -1549,9 +1549,13 @@ func genBwArg(
 	})
 	wg.Go(func() {
 		if config.Privacy.Input {
+			var inputArgs []string
 			for inputArg := range inputChan {
-				argChan <- inputArg
+				inputArgs = append(inputArgs, inputArg...)
+
 			}
+			go pecho("debug", "Generated Input Bind arguments:", inputArgs)
+			argChan <- inputArgs
 		}
 	})
 	wg.Go(func() {
