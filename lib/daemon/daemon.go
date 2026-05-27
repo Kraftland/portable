@@ -1011,12 +1011,15 @@ func instDesktopFile(config Config) {
 		"placeholderConfig",		config.Path,
 	)
 	wg.Wait()
-	file, err := os.OpenFile(
-		filepath.Join(
+
+	filePath := filepath.Join(
 			xdgDir.dataDir,
 			"applications",
 			config.Metadata.AppID + ".desktop",
-		),
+	)
+
+	file, err := os.OpenFile(
+		filePath,
 		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 		0700,
 	)
@@ -1032,7 +1035,12 @@ func instDesktopFile(config Config) {
 		pecho("warn", "Non-existent .desktop file may result in Portals crashing")
 		return
 	}
-	runtimeOpt.writtenDesktop = true
+	stopFuncChan <- func() {
+		err := os.Remove(filePath)
+		if err != nil {
+			pecho("debug", "Could not remove .desktop file:", err)
+		}
+	}
 	pecho("debug", "Done installing stub file")
 	pecho("warn", "You should supply your own .desktop file")
 }
