@@ -207,6 +207,10 @@ func shareFile(config Config) {
 		pecho("crit", "Unable to pipe zenity's output" + err.Error())
 	}
 	scanner := bufio.NewScanner(zenityOut)
+	if scanner.Err() != nil {
+		pecho("crit", "Could not scan Zenity output:", scanner.Err())
+		return
+	}
 	for scanner.Scan() {
 		text := scanner.Text()
 		paths = append(
