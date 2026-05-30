@@ -51,7 +51,7 @@ func pechoWorker(stopSig chan int) {
 	if trueColor {
 		debugLogger = log.New(
 			os.Stdout,
-			"\033[0m" + "\033[38;2;85;255;83m" + "[Debug] " + "\033[0m",
+			"\033[0m" + "\033[38;2;125;241;118m" + "[Debug] " + "\033[0m",
 			0,
 		)
 		critLogger = log.New(
@@ -61,7 +61,7 @@ func pechoWorker(stopSig chan int) {
 		)
 		warnLogger = log.New(
 			os.Stderr,
-			"\033[0m" + "\033[38;2;255;198;0m" + "[Warn] " + "\033[0m",
+			"\033[0m" + "\033[38;2;255;209;59m" + "[Warn] " + "\033[0m",
 			0,
 		)
 		infoLogger = log.New(
