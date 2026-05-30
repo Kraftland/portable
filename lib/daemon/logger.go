@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 )
@@ -47,6 +46,7 @@ func pechoWorker(stopSig chan int) {
 	var debugLogger *log.Logger
 	var critLogger *log.Logger
 	var warnLogger *log.Logger
+	var infoLogger *log.Logger
 
 	if trueColor {
 		debugLogger = log.New(
@@ -62,6 +62,11 @@ func pechoWorker(stopSig chan int) {
 		warnLogger = log.New(
 			os.Stderr,
 			"\033[0m" + "\033[38;2;255;198;0m" + "[Warn] " + "\033[0m",
+			0,
+		)
+		infoLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "\033[38;2;119;222;250m" + "[Info] " + "\033[0m",
 			0,
 		)
 	} else {
@@ -80,6 +85,11 @@ func pechoWorker(stopSig chan int) {
 			"\033[0m" + "[Warn] " + "\033[0m",
 			0,
 		)
+		infoLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "[Info] " + "\033[0m",
+			0,
+		)
 	}
 
 	for {
@@ -91,7 +101,7 @@ func pechoWorker(stopSig chan int) {
 				}
 			case "info":
 				if internalLoggingLevel <= 2 {
-					fmt.Println("[Info] ", chanRes.msg)
+					infoLogger.Println(chanRes.msg)
 				}
 			case "warn":
 				warnLogger.Println(chanRes.msg)
