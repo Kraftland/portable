@@ -24,6 +24,15 @@ func pecho(level string, message ...any) {
 
 
 func pechoWorker(stopSig chan int) {
+	var trueColor bool
+	if os.Getenv("COLORTERM") == "truecolor" {
+		// See https://en.wikipedia.org/wiki/ANSI_escape_code#Unix_environment_variables_relating_to_color_support
+		trueColor = true
+	}
+	if len(os.Getenv("NO_COLOR")) > 0 {
+		trueColor = false
+		pecho("debug", "Disabled coloured output in response to NO_COLOR")
+	}
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
 		case "debug":
@@ -35,9 +44,44 @@ func pechoWorker(stopSig chan int) {
 		default:
 			internalLoggingLevel = 3
 	}
-	var debugLogger = log.New(os.Stdout, "[Debug] ", 0)
-	var critLogger = log.New(os.Stderr, "[Critical] ", 0)
-	var warnLogger = log.New(os.Stderr, "[Warn] ", 0)
+	var debugLogger *log.Logger
+	var critLogger *log.Logger
+	var warnLogger *log.Logger
+
+	if trueColor {
+		debugLogger = log.New(
+			os.Stdout,
+			"\033[0m" + "\033[38;2;85;255;83m" + "[Debug] " + "\033[0m",
+			0,
+		)
+		critLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "\033[38;2;255;0;0m" + "[Critical] " + "\033[0m",
+			0,
+		)
+		warnLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "\033[38;2;255;198;0m" + "[Warn] " + "\033[0m",
+			0,
+		)
+	} else {
+		debugLogger = log.New(
+			os.Stdout,
+			"\033[0m" + "[Debug] " + "\033[0m",
+			0,
+		)
+		critLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "[Critical] " + "\033[0m",
+			0,
+		)
+		warnLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "[Warn] " + "\033[0m",
+			0,
+		)
+	}
+
 	for {
 		chanRes := <- pechoChan
 		switch chanRes.level {
