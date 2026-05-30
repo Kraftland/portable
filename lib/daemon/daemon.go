@@ -1351,6 +1351,15 @@ func genBwArg(
 		"-p", "SystemCallErrorNumber=EAGAIN",
 	}
 	wg.Go(func() {
+		if len(os.Getenv("NO_COLOR")) == 0 {
+			return
+		}
+		argChan <- []string{
+			"-p",
+			"Environment=NO_COLOR=" + os.Getenv("NO_COLOR"),
+		}
+	})
+	wg.Go(func() {
 		if ! config.Advanced.Debugging {
 			argChan <- []string{
 				"-p",
