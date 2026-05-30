@@ -101,7 +101,7 @@ func pechoWorker(stopSig chan int) {
 					case stopSig <- 1:
 					default:
 						critLogger.Fatalln(
-							"This critical error happened before stopper has initialised",
+							"This critical error happened before stopper initialisation",
 						)
 				}
 			default:
