@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"golang.org/x/term"
 )
 
 var (
@@ -31,6 +32,9 @@ func pechoWorker(stopSig chan int) {
 	if len(os.Getenv("NO_COLOR")) > 0 {
 		trueColor = false
 		pecho("debug", "Disabled coloured output in response to NO_COLOR")
+	} else if ! term.IsTerminal(int(os.Stdout.Fd())) {
+		trueColor = false
+		pecho("debug", "Disabled coloured output for non-terminal")
 	}
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
