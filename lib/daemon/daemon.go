@@ -846,8 +846,8 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, stopSig 
 						Name:	"GetInfo",
 						Args:	[]introspect.Arg{
 							{
-								Name:	"Info",
-								Type:	"as",
+								Name:		"Info",
+								Type:		"as",
 								Direction:	"out",
 							},
 						},
