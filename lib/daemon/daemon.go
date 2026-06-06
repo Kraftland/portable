@@ -981,9 +981,9 @@ func instDesktopFile(config Config) {
 	if len(dataDirEnv) == 0 {
 		pecho("warn", "Could not determine XDG_DATA_DIRS, see https://specifications.freedesktop.org/basedir/latest for specification about this variable")
 		pecho("warn", "Please fix this issue because it affects desktop file searching")
-	} else {
-		dataDirEnv = dataDirEnv + ":" + xdgDir.dataDir
+		dataDirEnv = "/usr/local/share/:/usr/share/"
 	}
+	dataDirEnv = dataDirEnv + ":" + xdgDir.dataDir
 
 	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(dataDirEnv), ":")
 
