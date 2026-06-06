@@ -973,7 +973,20 @@ func instDesktopFile(config Config) {
 			pecho("crit", "Could not create directory:", err)
 		}
 	})
-	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(os.Getenv("XDG_DATA_DIRS")), ":")
+	if len(xdgDir.dataDir) == 0 {
+		pecho("crit", "Invalid XDG_DATA_HOME: empty string")
+		return
+	}
+	dataDirEnv := os.Getenv("XDG_DATA_DIRS")
+	if len(dataDirEnv) == 0 {
+		pecho("warn", "Could not determine XDG_DATA_DIRS, see https://specifications.freedesktop.org/basedir/latest for specification about this variable")
+		pecho("warn", "Please fix this issue because it affects desktop file searching")
+	} else {
+		dataDirEnv = dataDirEnv + ":" + xdgDir.dataDir
+	}
+
+	xdgDataDirs := strings.SplitSeq(strings.TrimSpace(dataDirEnv), ":")
+
 	for val := range xdgDataDirs {
 		if strings.Contains(val, "/var/lib/flatpak") {
 			continue
