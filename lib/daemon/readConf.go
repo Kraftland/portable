@@ -126,6 +126,7 @@ func getConf() Config {
 		config = readLegacyConf()
 	} else {
 		pecho("debug", "Using modern TOML configuration")
+		config.isModern = true
 		configPath := determineModernConfPath(os.Getenv("PORTABLE_CONF"))
 		file, err := os.OpenFile(configPath, os.O_RDONLY, 0700)
 		if err != nil {

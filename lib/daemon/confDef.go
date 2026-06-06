@@ -10,6 +10,7 @@ type Config struct {
 	Privacy		PrivacyOpts
 	Advanced	AdvancedOpts
 	Path		string
+	isModern	bool
 }
 
 type Metadata struct {
