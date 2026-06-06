@@ -1003,24 +1003,18 @@ func instDesktopFile(config Config) {
 		}
 	}
 
-	var hardcodedDesktopPath = []string{filepath.Join(xdgDir.dataDir, "applications")}
+	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env placeholderVar=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
 
-	for _, path := range hardcodedDesktopPath {
-		statPath := filepath.Join(
-			path,
-			config.Metadata.AppID + ".desktop",
-		)
-		_, err := os.Stat(statPath)
-		if err == nil {
-			pecho("debug", "Found desktop file: " + statPath)
-			return
-		}
+	var placeholderVar string
+	if config.isModern {
+		placeholderVar = "PORTABLE_CONF"
+	} else {
+		placeholderVar = "_portableConfig"
 	}
-
-	const templateDesktopFile string = "[Desktop Entry]\nName=placeholderName\nExec=env _portableConfig=placeholderConfig portable\nTerminal=false\nType=Application\nIcon=image-missing\nComment=Application info missing\n"
 	replacer := strings.NewReplacer(
-		"placeholderName",		"Portable sandbox: " + config.Metadata.AppID,
+		"placeholderName",		"Portable app: " + config.Metadata.AppID,
 		"placeholderConfig",		config.Path,
+		"placeholderVar",		placeholderVar,
 	)
 	wg.Wait()
 
