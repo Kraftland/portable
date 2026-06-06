@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"time"
+
 	"golang.org/x/term"
 )
 
@@ -34,7 +36,10 @@ func pechoWorker(stopSig chan int) {
 		pecho("debug", "Disabled coloured output in response to NO_COLOR")
 	} else if ! term.IsTerminal(int(os.Stdout.Fd())) {
 		trueColor = false
-		pecho("debug", "Disabled coloured output for non-terminal")
+		pecho("debug", "Disabled coloured output for non-terminal stdout")
+	} else if ! term.IsTerminal(int(os.Stderr.Fd())) {
+		trueColor = false
+		pecho("debug", "Disabled coloured output for non-terminal stderr")
 	}
 	var externalLoggingLevel = os.Getenv("PORTABLE_LOGGING")
 	switch externalLoggingLevel {
@@ -92,6 +97,30 @@ func pechoWorker(stopSig chan int) {
 		infoLogger = log.New(
 			os.Stderr,
 			"\033[0m" + "[Info]	" + "\033[0m",
+			0,
+		)
+	}
+
+	_, month, day := time.Now().Date()
+	if trueColor && month == time.December && day == 25 {
+		debugLogger = log.New(
+			os.Stdout,
+			"\033[0m" + "\033[38;2;213;161;115m" + "[Debug]	" + "\033[0m",
+			0,
+		)
+		critLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "\033[38;2;255;0;0m" + "[Critical]	" + "\033[0m",
+			0,
+		)
+		warnLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "\033[38;2;213;161;115m" + "[Warn]	" + "\033[0m",
+			0,
+		)
+		infoLogger = log.New(
+			os.Stderr,
+			"\033[0m" + "\033[38;2;213;161;115m" + "[Info]	" + "\033[0m",
 			0,
 		)
 	}
