@@ -1310,6 +1310,7 @@ func genBwArg(
 		"-p", "MemoryHigh=90%",
 		"-p", "IPAccounting=yes",
 		"-p", "MemoryPressureWatch=yes",
+		"-p", "OOMPolicy=kill",
 		"-p", "SyslogIdentifier=portable-" + config.Metadata.AppID,
 		"-p", "SystemCallLog=@privileged @debug @cpu-emulation @obsolete io_uring_enter io_uring_register io_uring_setup @resources",
 		"-p", "SystemCallLog=~@sandbox",
