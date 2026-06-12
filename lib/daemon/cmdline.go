@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -13,7 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KarpelesLab/reflink"
+	//"github.com/Kraftland/portable/lib/portals"
+	"github.com/godbus/dbus/v5"
 	godbus "github.com/godbus/dbus/v5"
 )
 
@@ -94,16 +94,31 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 					addEnv("_portableDebug=1")
 					runtimeOpt.isDebug = true
 				case "share-file", "share-files":
-					err := shareFileNG(config, false)
+					err := shareFileViaHelper(config, false)
 					if err != nil {
 						pecho("warn", "Unable to request file sharing via IPC, falling back:", err)
-						shareFile(config)
+						err := alertHelperNotRunning(config)
+						if err != nil {
+							pecho(
+								"warn",
+								"Could not send notification:",
+								err,
+							)
+						}
 					}
 					abortChan <- true
 				case "share-directories", "share-directory":
-					err := shareFileNG(config, true)
+					err := shareFileViaHelper(config, true)
 					if err != nil {
 						pecho("warn", "Unable to request directory sharing via IPC:", err)
+						err := alertHelperNotRunning(config)
+						if err != nil {
+							pecho(
+								"warn",
+								"Could not send notification:",
+								err,
+							)
+						}
 					}
 					abortChan <- true
 				case "opendir", "home", "openhome":
@@ -177,7 +192,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 	pecho("info", "Application arguments:", runtimeOpt.applicationArgs)
 }
 
-func shareFileNG(config Config, directory bool) error {
+func shareFileViaHelper(config Config, directory bool) error {
 	conn, err := godbus.SessionBus()
 	if err != nil {
 		return err
@@ -197,46 +212,33 @@ func shareFileNG(config Config, directory bool) error {
 	return nil
 }
 
-func shareFile(config Config) {
-	var paths []string
-	zenityCmd := exec.Command("/usr/bin/zenity", "--file-selection", "--multiple")
-	zenityCmd.Stderr = os.Stderr
-	zenityOut, err := zenityCmd.StdoutPipe()
-	zenityCmd.Start()
+func alertHelperNotRunning(config Config) error {
+	conn, err := godbus.SessionBus()
 	if err != nil {
-		pecho("crit", "Unable to pipe zenity's output" + err.Error())
+		return err
 	}
-	scanner := bufio.NewScanner(zenityOut)
-	if scanner.Err() != nil {
-		pecho("crit", "Could not scan Zenity output:", scanner.Err())
-		return
-	}
-	for scanner.Scan() {
-		text := scanner.Text()
-		paths = append(
-			paths,
-			strings.Split(text, "|")...
-		)
-	}
-	if len(paths) == 0 {
-		pecho("warn", "Did not get any path from zenity")
-		os.Exit(2)
-	} else {
-		pecho("debug", "Got paths from zenity: " + strings.Join(paths, ", "))
-	}
-	for _, path := range paths {
-		// stdlib doesn't seem to do reflink
-		pathSp := strings.Split(path, "/")
-		pathslices := len(pathSp)
-		basename := pathSp[pathslices - 1]
-		dest := filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Shared", basename)
-		reflinkErr := reflink.Auto(path, dest)
-		if reflinkErr != nil {
-			pecho("crit", "I/O error copying shared file: " + reflinkErr.Error())
-		}
-	}
-}
+	obj := conn.Object(
+		"org.freedesktop.Notifications",
+		"/org/freedesktop/Notifications",
+	)
 
+	call := obj.Call(
+		"org.freedesktop.Notifications.Notify",
+		0,
+		"Portable Daemon",
+		uint32(0),
+		"dialog-warning-symbolic",
+		config.Metadata.FriendlyName + " not running or responding",
+		"Sharing objects needs the app to be running.",
+		[]string{},
+		make(map[string]dbus.Variant),
+		int32(7),
+	)
+	if call.Err != nil {
+		return call.Err
+	}
+	return nil
+}
 
 func showStats(config Config) {
 	conn, err := godbus.ConnectSessionBus()
