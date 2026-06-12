@@ -315,6 +315,14 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 			return
 		}
 		switch vendor {
+			case "amd":
+				if _, err := os.Stat("/dev/kfd"); err == nil {
+					argComb <- []string{
+						"--dev-bind",
+						"/dev/kfd",
+						"/dev/kfd",
+					}
+				}
 			case "nvidia":
 				wg.Go(func() {
 					argComb <- tryBindNv()
