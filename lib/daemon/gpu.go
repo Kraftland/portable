@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +13,29 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 	udev "github.com/jochenvg/go-udev"
 )
+
+type gpuBrand string // Could be intel, amd, nvidia or unknown
+
+func detectCardBrand(dev *udev.Device) (gpuBrand, error) {
+	var device *udev.Device
+	driver := dev.Driver()
+	if len(driver) == 0 {
+		// Lookup for parent first
+		device = dev.Parent()
+	} else {
+		device = dev
+	}
+
+	// TODO: what about AMD?
+	switch vendor := device.SysattrValue("vendor"); vendor {
+		case "0x8086":
+			return "intel", nil
+		case "0x10de":
+			return "nvidia", nil
+		default:
+			return "unknown", errors.New("Unrecognised vendor " + strconv.Quote(vendor))
+	}
+}
 
 func gpuBind(gpuChan chan []string, config Config) {
 	var gameModeEnabledChan = make(chan bool, 1)
