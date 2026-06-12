@@ -32,6 +32,8 @@ func detectCardBrand(dev *udev.Device) (gpuBrand, error) {
 			return "intel", nil
 		case "0x10de":
 			return "nvidia", nil
+		case "0x1022":
+			return "amd", nil
 		default:
 			return "unknown", errors.New("Unrecognised vendor " + strconv.Quote(vendor))
 	}
