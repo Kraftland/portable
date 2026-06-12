@@ -6,4 +6,5 @@ use (
 	./lib/helper
 	./lib/open-ng
 	./lib/prlimit-stub
+	./lib/portals
 )
