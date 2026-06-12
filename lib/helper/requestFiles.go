@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Kraftland/portable/portals"
+	"github.com/Kraftland/portable/lib/portals"
 	"github.com/godbus/dbus/v5"
 )
 
