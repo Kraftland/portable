@@ -14,8 +14,6 @@ import (
 	udev "github.com/jochenvg/go-udev"
 )
 
-type gpuBrand string // Could be intel, amd, nvidia or unknown
-
 func detectCardBrand(dev *udev.Device) (gpuBrand, error) {
 	var device *udev.Device
 	driver := dev.Driver()
@@ -305,6 +303,51 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 			pecho("warn", "Udev returned", devsCnt, "devices, of which should only be one")
 	}
 
+	wg.Go(func() {
+		vendor, err := detectCardBrand(devs[0])
+		if err != nil {
+			pecho("warn",
+				"Could not detect GPU vendor for device",
+				cardName,
+				":",
+				err,
+			)
+			return
+		}
+		switch vendor {
+			case "nvidia":
+				wg.Go(func() {
+					argComb <- tryBindNv()
+				})
+				wg.Go(func() {
+					pecho("debug", "Detected NVIDIA device:", cardName)
+					if config.Advanced.Zink {
+						addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
+						addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
+						addEnv("GALLIUM_DRIVER=zink")
+						addEnv("LIBGL_KOPPER_DRI2=1")
+						addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+					}
+				})
+				for _, pth := range nvKernelModulePath {
+					path := pth
+					wg.Go(func() {
+						stat, err := os.Stat(path)
+						if err == nil && stat.IsDir() {
+							argComb <- []string{
+								"--ro-bind",
+								path, path,
+							}
+						} else {
+							pecho("debug", "Skipping non-existent path:", path)
+							return
+						}
+					})
+				}
+			default:
+		}
+	})
+
 	var devNode string
 	var sysPath string
 
@@ -324,53 +367,6 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 	}
 	cardID = devs[0].PropertyValue("ID_PATH")
 	pecho("debug", "Got ID_PATH: " + cardID, "for card", cardName)
-
-	// Detect NVIDIA now, because they do not expose ID_VENDOR properly
-	wg.Go(func() {
-		var bindWg sync.WaitGroup
-		defer bindWg.Wait()
-		vendorFile, openErr := os.OpenFile(cardRoot + "/vendor", os.O_RDONLY, 0700)
-		if openErr != nil {
-			pecho("warn", "Failed to open GPU vendor info " + openErr.Error())
-			return
-		}
-		defer vendorFile.Close()
-		scanner := bufio.NewScanner(vendorFile)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			if line == "0x10de" {
-				bindWg.Go(func() {
-					argComb <- tryBindNv()
-				})
-				bindWg.Go(func() {
-					pecho("debug", "Detected NVIDIA device:", cardName)
-					if config.Advanced.Zink {
-						addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
-						addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
-						addEnv("GALLIUM_DRIVER=zink")
-						addEnv("LIBGL_KOPPER_DRI2=1")
-						addEnv("__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json")
-					}
-				})
-				for _, pth := range nvKernelModulePath {
-					path := pth
-					bindWg.Go(func() {
-						stat, err := os.Stat(path)
-						if err == nil && stat.IsDir() {
-							argComb <- []string{
-								"--ro-bind",
-								path, path,
-							}
-						} else {
-							pecho("debug", "Skipping non-existent path:", path)
-							return
-						}
-					})
-				}
-			}
-		}
-	})
-
 
 	// Map card* to renderD*
 	eR := u.NewEnumerate()

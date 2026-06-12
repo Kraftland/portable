@@ -11,6 +11,8 @@ const (
 	version		float32	=	16.99
 )
 
+type gpuBrand string // Could be intel, amd, nvidia or unknown
+
 type GPUInfo struct {
 	cardName	string
 	cardPath	string
