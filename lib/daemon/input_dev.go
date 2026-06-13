@@ -1,12 +1,54 @@
 package main
 
 import (
-	"path/filepath"
-	"strings"
 	"sync"
 
 	udev "github.com/jochenvg/go-udev"
 )
+
+func enumerateDevices(subsystem string) ([]*udev.Device, error) {
+	u := udev.Udev{}
+	e := u.NewEnumerate()
+	e.AddMatchSubsystem(subsystem)
+	devs, err := e.Devices()
+	if err != nil {
+		return nil, err
+	}
+	return devs, nil
+}
+
+func collectDevices(devs []*udev.Device, inputBindChan chan []string) {
+	var wg sync.WaitGroup
+	defer wg.Wait()
+	for _, dev := range devs {
+		device := dev
+		wg.Go(func() {
+			if path := device.Syspath(); len(path) > 0 {
+				inputBindChan <- []string{
+					"--dev-bind",
+					path,
+					path,
+				}
+			}
+
+			if devName := device.PropertyValue("DEVNAME"); len(devName) > 0 {
+				inputBindChan <- []string{
+					"--dev-bind",
+					devName,
+					devName,
+				}
+			}
+			devlinks := device.Devlinks()
+			for k := range devlinks {
+				inputBindChan <- []string{
+					"--dev-bind",
+					k,
+					k,
+				}
+			}
+		})
+	}
+}
 
 func inputBind(inputBindChan chan []string) {
 	var wg sync.WaitGroup
@@ -18,71 +60,30 @@ func inputBind(inputBindChan chan []string) {
 		"--dev-bind-try",	"/dev/uinput", "/dev/uinput",
 	}
 
-	u := udev.Udev{}
-	e := u.NewEnumerate()
-
-	e.AddMatchSubsystem("input") // Later hidraw
-	e.AddMatchIsInitialized()
-	devs, errUdev := e.Devices()
-	if errUdev != nil {
-		pecho("warn", "Could not query udev for device info: " + errUdev.Error())
-	}
-	for _, dev := range devs {
-		wg.Add(1)
-		go func (device *udev.Device) {
-			defer wg.Done()
-			path := device.Syspath()
-			if len(path) == 0 {
-				return
-			}
-			sysSl := strings.Split(path, "/")
-			sliceLen := len(sysSl)
-			if strings.HasPrefix(sysSl[sliceLen - 1], "event") {
-				if strings.HasPrefix(sysSl[sliceLen - 2], "input") {
-					path = strings.Join(sysSl[0:sliceLen - 3], "/")
-				}
-			}
-			inputBindChan <- []string{
-			"--dev-bind",
-				path,
-				path,
-			}
-		} (dev)
-	}
-
-	hidrawE := u.NewEnumerate()
-	hidrawE.AddMatchSubsystem("hidraw")
-	rawDevs, errRawd := hidrawE.Devices()
-	if errRawd != nil {
-		pecho("warn", "Could not query udev for hidraw devices: " + errRawd.Error())
-	}
-
-	for _, dev := range rawDevs {
-		wg.Add(1)
-		go func (device *udev.Device) {
-			defer wg.Done()
-			path := device.Syspath()
-			devPath := strings.TrimSpace(dev.PropertyValue("DEVNAME"))
-			if len(devPath) > 0 {
-				inputBindChan <- []string{
-					"--dev-bind",
-					devPath,
-					devPath,
-				}
-			}
-			if len(path) > 0 {
-				dirPth := filepath.Dir(path)
-				if strings.HasPrefix(filepath.Base(dirPth), "hidraw") {
-					inputBindChan <- []string {
-						"--dev-bind",
-						dirPth,
-						dirPth,
-					}
-				}
-			}
-
-		} (dev)
-	}
+	wg.Go(func() {
+		devs, err := enumerateDevices("input")
+		if err != nil {
+			pecho("warn", "Could not query udev for device info:", err)
+			return
+		}
+		collectDevices(devs, inputBindChan)
+	})
+	wg.Go(func() {
+		devs, err := enumerateDevices("hid")
+		if err != nil {
+			pecho("warn", "Could not query udev for device info:", err)
+			return
+		}
+		collectDevices(devs, inputBindChan)
+	})
+	wg.Go(func() {
+		devs, err := enumerateDevices("hidraw")
+		if err != nil {
+			pecho("warn", "Could not query udev for device info:", err)
+			return
+		}
+		collectDevices(devs, inputBindChan)
+	})
 
 	wg.Wait()
 	close(inputBindChan)
