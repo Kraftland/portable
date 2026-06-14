@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 
 	"github.com/BurntSushi/toml"
@@ -142,9 +141,9 @@ func getConf() Config {
 		switch len(md.Undecoded()) {
 			case 0:
 			case 1:
-				pecho("warn", "Could not decode 1 key in configuration")
+				pecho("warn", "Could not decode option:", md.Undecoded())
 			default:
-				pecho("warn", "Could not decode " + strconv.Itoa(len(md.Undecoded())) + " keys in configuration")
+				pecho("warn", "Could not decode options:", md.Undecoded())
 		}
 	}
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
