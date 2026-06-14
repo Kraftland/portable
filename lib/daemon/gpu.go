@@ -12,6 +12,7 @@ import (
 
 	dbus "github.com/godbus/dbus/v5"
 	udev "github.com/jochenvg/go-udev"
+	"github.com/Kraftland/portable/lib/gpu"
 )
 
 func detectCardBrand(dev *udev.Device) (gpuBrand, error) {
@@ -100,6 +101,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 		chanWg.Wait()
 		close(gpuChan)
 	} ()
+
 	u := udev.Udev{}
 	e := u.NewEnumerate()
 	e.AddMatchIsInitialized()
