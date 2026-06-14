@@ -1345,6 +1345,7 @@ func genBwArg(
 		"-p", "UnsetEnvironment=INVOCATION_ID",
 		"-p", "UnsetEnvironment=MANAGERPIDFDID",
 		"-p", "UnsetEnvironment=SSH_AUTH_SOCK",
+		"-p", "UnsetEnvironment=VK_LOADER_DRIVERS_DISABLE",
 		"-p", "UnsetEnvironment=MAIL",
 		"-p", "UnsetEnvironment=SYSTEMD_EXEC_PID",
 		"-p", "WorkingDirectory=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory),
