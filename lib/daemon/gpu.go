@@ -158,6 +158,27 @@ func bindCard(cardDevice *udev.Device, argChanFin chan []string, config Config) 
 		sendWg.Wait()
 	} ()
 
+	// Bind parent device so lutris is happy
+	wg.Go(func() {
+		if len(cardDevice.Driver()) == 0 {
+			parent := cardDevice.Parent()
+
+			// Ensure that the parent device has a driver, and is a PCI device
+			if parent.Subsystem() != "pci" {
+				return
+			}
+			if len(parent.Driver()) == 0 {
+				return
+			}
+			pecho("debug", "Binding parent device for GPU:", parent.Syspath())
+			argComb <- []string{
+				"--dev-bind",
+					parent.Syspath(),
+					parent.Syspath(),
+			}
+		}
+	})
+
 	wg.Go(func() {
 		vendor, err := detectCardBrand(cardDevice)
 		if err != nil {
