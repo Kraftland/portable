@@ -1,12 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/Kraftland/portable/lib/gpu"
 	"github.com/Kraftland/portable/lib/portals"
 	udev "github.com/jochenvg/go-udev"
 )
@@ -38,7 +40,8 @@ func gpuBind(gpuChan chan []string, config Config) {
 	var gameModeEnabledChan = make(chan bool, 1)
 	var chanWg sync.WaitGroup
 	var wg sync.WaitGroup
-	wg.Go(func() {
+
+	go func () {
 		if ! config.System.GameMode {
 			gameModeEnabledChan <- false
 			return
@@ -56,7 +59,8 @@ func gpuBind(gpuChan chan []string, config Config) {
 			default:
 				gameModeEnabledChan <- config.System.GameMode
 		}
-	})
+	} ()
+
 	var argChan = make(chan []string, 128)
 	var gpuArg = []string{"--tmpfs", "/dev/dri", "--tmpfs", "/sys/class/drm"}
 	chanWg.Go(func() {
@@ -72,22 +76,25 @@ func gpuBind(gpuChan chan []string, config Config) {
 		close(gpuChan)
 	} ()
 
-	u := udev.Udev{}
-	e := u.NewEnumerate()
-	e.AddMatchIsInitialized()
-	e.AddMatchSubsystem("drm")
-	devs, errUdev := e.Devices()
-	if errUdev != nil {
-		pecho("warn", "Failed to query udev for GPU info")
+	var cardsToBind []*udev.Device
+
+	switch gameMode := <- gameModeEnabledChan; gameMode {
+		case true:
+			var err error
+			cardsToBind, err = gpu.ListGraphicsCard()
+			if err != nil {
+				pecho("warn", "Could not list GPUs:", err)
+				return
+			}
+		case false:
+			var err error
+			cardsToBind, err = gpu.ListGraphicsCard()
+			if err != nil {
+				pecho("warn", "Could not list active GPUs:", err)
+				return
+			}
 	}
 
-
-
-
-	// SHOULD contain strings like card0, card1 etc
-	var totalGpus []GPUInfo
-
-	var activeGpus []GPUInfo
 
 	wg.Go(func() {
 		var workers sync.WaitGroup
@@ -99,124 +106,23 @@ func gpuBind(gpuChan chan []string, config Config) {
 			})
 		}
 	})
-
-
-	for _, card := range devs {
-		cardName := card.Sysname()
-		cardPath := card.Syspath()
-		devType := card.Devtype()
-		if len(cardName) == 0 || len(cardPath) == 0 {
-			pecho("warn", "Udev returned an empty sysname!")
-			continue
-		} else if ! strings.Contains(cardName, "card") || devType == "drm_connector" {
-			pecho("debug", "Udev returned " + cardName + ", which is not a GPU")
-			continue
-		}
-		totalGpus = append(
-			totalGpus,
-			GPUInfo{
-				cardName:	cardName,
-				cardPath:	cardPath,
-			},
-		)
-	}
 	wg.Wait()
 
-	switch len(totalGpus) {
+	switch len(cardsToBind) {
 		case 0:
-			pecho("warn", "Found no GPU")
+			pecho("warn", "Found no GPU to expose, possible headless configuration")
 		default:
-			if <- gameModeEnabledChan {
+			for idx := range cardsToBind {
+				card := cardsToBind[idx]
 				wg.Go(func() {
-					setOffloadEnvs()
+					bindCard(
+						card,
+						argChan,
+						config,
+					)
 				})
-				for _, cardInfo := range totalGpus {
-					card := cardInfo.cardName
-					wg.Go(func() {
-						bindCard(card, argChan, config)
-					})
-				}
-			} else {
-				var activeGpuChan = make(chan GPUInfo, 5)
-				var appendWg sync.WaitGroup
-				appendWg.Go(func() {
-					for sig := range activeGpuChan {
-						activeGpus = append(activeGpus, sig)
-					}
-				})
-				for _, cardInfo := range totalGpus {
-					card := cardInfo
-					wg.Go(func() {
-						if detectCardStatus(card.cardPath, card.cardName) {
-							activeGpuChan <- card
-						}
-					})
-				}
-				wg.Wait()
-				close(activeGpuChan)
-				appendWg.Wait()
-
-				for _, cardInfo := range activeGpus {
-					card := cardInfo
-					wg.Go(func() {
-						bindCard(
-							card.cardName,
-							argChan,
-							config,
-						)
-					})
-				}
 			}
 	}
-
-	// TODO: Drop the debug output below
-	//pecho("debug", "Generated GPU bind parameters:", gpuArg)
-	pecho(
-	"debug",
-	"Total GPU count", len(totalGpus), "with active count:", activeGpus)
-}
-
-// Detects a card's status, true means connected
-func detectCardStatus(cardPath string, cardNamed string) bool {
-	connectors, err := os.ReadDir(cardPath)
-	if err != nil {
-		pecho(
-			"warn",
-			"Failed to read GPU connector status: " + err.Error(),
-		)
-		return false
-	}
-	for _, connectorName := range connectors {
-		if strings.HasPrefix(connectorName.Name(), "card") == false {
-			continue
-		}
-		conStatFd, err := os.OpenFile(
-			cardPath + "/" + connectorName.Name() + "/status",
-			os.O_RDONLY,
-			0700,
-		)
-		if err != nil {
-			pecho(
-				"warn",
-				"Failed to open GPU status: " + err.Error(),
-			)
-		} else {
-			defer conStatFd.Close()
-		}
-		scanner := bufio.NewScanner(conStatFd)
-		for scanner.Scan() {
-			line := scanner.Text()
-			switch line {
-				case "disconnected":
-					continue
-				case "connected":
-					return true
-				default:
-					pecho("warn", "Could not determine status of GPU: " + cardNamed)
-			}
-		}
-	}
-	return false
 }
 
 // Set required envs for PRIME render offloading
@@ -233,7 +139,7 @@ func setOffloadEnvs() {
 	}
 }
 
-func bindCard(cardName string, argChanFin chan []string, config Config) {
+func bindCard(cardDevice *udev.Device, argChanFin chan []string, config Config) {
 	var sendWg sync.WaitGroup
 	var argComb = make(chan []string, 5)
 	sendWg.Go(func() {
@@ -252,35 +158,33 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 		sendWg.Wait()
 	} ()
 
-	u := udev.Udev{}
-	var cardID string
-	var cardRoot string
-	e := u.NewEnumerate()
-	e.AddMatchSysname(cardName)
-	e.AddMatchIsInitialized()
-	e.AddMatchSubsystem("drm")
+	// Bind parent device so lutris is happy
+	wg.Go(func() {
+		if len(cardDevice.Driver()) == 0 {
+			parent := cardDevice.Parent()
 
-	devs, errUdev := e.Devices()
-	if errUdev != nil {
-		pecho("warn", "Failed to query udev for GPU info" + errUdev.Error())
-		return
-	}
-
-	switch devsCnt := len(devs); devsCnt {
-		case 0:
-			pecho("warn", "Udev did not return any matching device for", cardName, "oh no")
-			return
-		case 1:
-		default:
-			pecho("warn", "Udev returned", devsCnt, "devices, of which should only be one")
-	}
+			// Ensure that the parent device has a driver, and is a PCI device
+			if parent.Subsystem() != "pci" {
+				return
+			}
+			if len(parent.Driver()) == 0 {
+				return
+			}
+			pecho("debug", "Binding parent device for GPU:", parent.Syspath())
+			argComb <- []string{
+				"--dev-bind",
+					parent.Syspath(),
+					parent.Syspath(),
+			}
+		}
+	})
 
 	wg.Go(func() {
-		vendor, err := detectCardBrand(devs[0])
+		vendor, err := detectCardBrand(cardDevice)
 		if err != nil {
 			pecho("warn",
 				"Could not detect GPU vendor for device",
-				cardName,
+				cardDevice.Devpath(),
 				":",
 				err,
 			)
@@ -300,7 +204,10 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 					argComb <- tryBindNv()
 				})
 				wg.Go(func() {
-					pecho("debug", "Detected NVIDIA device:", cardName)
+					pecho("debug",
+						"Detected NVIDIA device:",
+						cardDevice.Devpath(),
+					)
 					if config.Advanced.Zink {
 						addEnv("__GLX_VENDOR_LIBRARY_NAME=mesa")
 						addEnv("MESA_LOADER_DRIVER_OVERRIDE=zink")
@@ -328,59 +235,52 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 		}
 	})
 
-	var devNode string
-	var sysPath string
-
-	devNode = devs[0].Devnode()
-	sysPath = devs[0].Syspath()
-	cardRoot = strings.TrimSuffix(sysPath, "/drm/" + cardName)
+	devNode := cardDevice.Devnode()
+	nodeName := filepath.Base(devNode)
+	sysPath := cardDevice.Syspath()
+	//cardRoot := strings.TrimSuffix(sysPath, "/drm/" + cardName)
 	argComb <- []string{
 		"--dev-bind",
-		"/sys/class/drm/" + cardName,
-		"/sys/class/drm/" + cardName,
+			"/sys/class/drm/" + nodeName,
+			"/sys/class/drm/" + nodeName,
 		"--dev-bind",
-		devNode,
-		devNode,
+			devNode,
+			devNode,
 		"--dev-bind",
-		cardRoot,
-		cardRoot,
+			sysPath,
+			sysPath,
 	}
-	cardID = devs[0].PropertyValue("ID_PATH")
-	pecho("debug", "Got ID_PATH: " + cardID, "for card", cardName)
-
+	cardID := cardDevice.PropertyValue("ID_PATH")
+	u := udev.Udev{}
 	// Map card* to renderD*
 	eR := u.NewEnumerate()
 	eR.AddMatchIsInitialized()
 	eR.AddMatchSubsystem("drm")
 	eR.AddMatchProperty("DEVTYPE", "drm_minor")
 	//eR.AddMatchProperty("ID_PATH", cardID)
-	devs, errUdev = eR.Devices()
-	if errUdev != nil {
-		pecho("warn", "Could not query udev for render node" + errUdev.Error())
+	devs, err := eR.Devices()
+	if err != nil {
+		pecho("warn", "Could not query udev for render node:", err)
 	}
-	switch devsCnt := len(devs); devsCnt {
+	var rendererSlice []*udev.Device
+	for _, device := range devs {
+		nodeName := filepath.Base(device.Devnode())
+		if strings.HasPrefix(nodeName, "renderD") && device.PropertyValue("ID_PATH") == cardID {
+			rendererSlice = append(rendererSlice, device)
+		}
+	}
+	switch devsCnt := len(rendererSlice); devsCnt {
 		case 0:
-			pecho("warn", "Could not translate", cardName, "to render node: did not receive any result from udev")
+			pecho("warn", "Could not translate GPU to render node: did not receive any result from udev")
 			return
 		case 1:
 		default:
 			pecho("warn", "Udev returned more devices than required:", devsCnt)
 	}
 
-	var renderNodeName string
-	var renderDevPath string
-	for _, dev := range devs {
-		if strings.Contains(dev.Sysname(), "card") {
-			continue
-		} else if dev.PropertyValue("ID_PATH") != cardID {
-			pecho("debug", "Udev returned unknown card to us! ID: " + dev.PropertyValue("ID_PATH"))
-			continue
-		}
-		renderNodeName = dev.Sysname()
-		pecho("debug", "Got sysname: " + renderNodeName + ", with ID: " + dev.PropertyValue("ID_PATH"))
-		renderDevPath = dev.Devnode()
-		break
-	}
+	var renderNodeName string = rendererSlice[0].Sysname()
+	var renderDevPath string = rendererSlice[0].Devnode()
+
 	argComb <- []string{
 		"--dev-bind",
 			renderDevPath,
@@ -389,5 +289,4 @@ func bindCard(cardName string, argChanFin chan []string, config Config) {
 			"/sys/class/drm/" + renderNodeName,
 			"/sys/class/drm/" + renderNodeName,
 	}
-
 }

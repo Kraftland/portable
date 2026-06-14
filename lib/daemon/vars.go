@@ -13,11 +13,6 @@ const (
 
 type gpuBrand string // Could be intel, amd, nvidia or unknown
 
-type GPUInfo struct {
-	cardName	string
-	cardPath	string
-}
-
 type bwArgs []string
 
 type RUNTIME_PARAMS struct {
