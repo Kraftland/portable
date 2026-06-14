@@ -147,6 +147,7 @@ func bindCard(cardDevice *udev.Device, argChanFin chan []string, config Config) 
 		for arg := range argComb {
 			args = append(args, arg...)
 		}
+		pecho("debug", "Generated bwrap argument for", cardDevice.Sysname(), args)
 		argChanFin <- args
 	})
 
@@ -236,13 +237,20 @@ func bindCard(cardDevice *udev.Device, argChanFin chan []string, config Config) 
 	})
 
 	devNode := cardDevice.Devnode()
-	nodeName := filepath.Base(devNode)
+	//nodeName := filepath.Base(devNode)
 	sysPath := cardDevice.Syspath()
+	for k := range cardDevice.Devlinks() {
+		argComb <- []string{
+			"--symlink",
+				sysPath,
+				k,
+		}
+	}
 	//cardRoot := strings.TrimSuffix(sysPath, "/drm/" + cardName)
 	argComb <- []string{
-		"--dev-bind",
-			"/sys/class/drm/" + nodeName,
-			"/sys/class/drm/" + nodeName,
+		"--symlink",
+			sysPath,
+			"/sys/class/drm/" + cardDevice.Sysname(),
 		"--dev-bind",
 			devNode,
 			devNode,
@@ -278,15 +286,24 @@ func bindCard(cardDevice *udev.Device, argChanFin chan []string, config Config) 
 			pecho("warn", "Udev returned more devices than required:", devsCnt)
 	}
 
-	var renderNodeName string = rendererSlice[0].Sysname()
+	// var renderNodeName string = rendererSlice[0].Sysname()
 	var renderDevPath string = rendererSlice[0].Devnode()
+	sysPath = rendererSlice[0].Syspath()
+
+	for k := range rendererSlice[0].Devlinks() {
+		argComb <- []string{
+			"--symlink",
+				sysPath,
+				k,
+		}
+	}
 
 	argComb <- []string{
 		"--dev-bind",
 			renderDevPath,
 			renderDevPath,
-		"--dev-bind",
-			"/sys/class/drm/" + renderNodeName,
-			"/sys/class/drm/" + renderNodeName,
+		"--symlink",
+			sysPath,
+			"/sys/class/drm/" + rendererSlice[0].Sysname(),
 	}
 }
