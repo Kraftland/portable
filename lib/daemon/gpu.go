@@ -86,6 +86,17 @@ func gpuBind(gpuChan chan []string, config Config) {
 				pecho("warn", "Could not list GPUs:", err)
 				return
 			}
+			wg.Go(func() {
+				for idx := range cardsToBind {
+					nvDev := cardsToBind[idx].Driver() == "nvidia"
+					nvParent := cardsToBind[idx].Parent().Driver() == "nvidia"
+					if nvDev || nvParent {
+						setOffloadEnvs(true)
+						return
+					}
+				}
+				setOffloadEnvs(false)
+			})
 		case false:
 			var err error
 			cardsToBind, err = gpu.ListGraphicsCard()
@@ -126,14 +137,13 @@ func gpuBind(gpuChan chan []string, config Config) {
 }
 
 // Set required envs for PRIME render offloading
-func setOffloadEnvs() {
-	addEnv("VK_LOADER_DRIVERS_DISABLE=none")
-	_, err := os.Stat("/dev/nvidia0")
-	if err == nil {
+func setOffloadEnvs(hasNvidia bool) {
+	//addEnv("VK_LOADER_DRIVERS_DISABLE=none")
+	if hasNvidia {
 		addEnv("__NV_PRIME_RENDER_OFFLOAD=1")
 		addEnv("__VK_LAYER_NV_optimus=NVIDIA_only")
-		addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
-		addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
+		//addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
+		//addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
 	} else {
 		addEnv("DRI_PRIME=1")
 	}
