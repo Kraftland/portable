@@ -2,15 +2,12 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
-
-	dbus "github.com/godbus/dbus/v5"
+	"github.com/Kraftland/portable/lib/portals"
 	udev "github.com/jochenvg/go-udev"
 )
 
@@ -46,39 +43,13 @@ func gpuBind(gpuChan chan []string, config Config) {
 			gameModeEnabledChan <- false
 			return
 		}
-		conn, err := dbus.SessionBus()
+		object := portals.PowerProfileMonitor{}
+		lowPower, err := object.PowerSaverEnabled()
 		if err != nil {
-			gameModeEnabledChan <- config.System.GameMode
-			pecho("warn", "Could not retrieve Low Power Mode status:", err)
-			return
+			pecho("warn", "Could not detect power profiles status:", err)
+			gameModeEnabledChan <- true
 		}
-		busObj := conn.Object(
-			"org.freedesktop.portal.Desktop",
-			"/org/freedesktop/portal/desktop",
-		)
-		ctx := context.TODO()
-		ctxNew, cancelFunc := context.WithTimeout(ctx, 10 * time.Millisecond)
-
-		call := busObj.CallWithContext(
-			ctxNew,
-			"org.freedesktop.DBus.Properties.Get",
-			dbus.FlagNoAutoStart,
-			"org.freedesktop.portal.PowerProfileMonitor",
-			"power-saver-enabled",
-		)
-		cancelFunc()
-		if call.Err != nil {
-			pecho("warn", "Could not retrieve Low Power Mode status:", call.Err)
-			gameModeEnabledChan <- config.System.GameMode
-		}
-		var powerSave bool
-		err = call.Store(&powerSave)
-		if err != nil {
-			gameModeEnabledChan <- config.System.GameMode
-			pecho("warn", "Could not retrieve Low Power Mode status:", err)
-			return
-		}
-		switch powerSave {
+		switch lowPower {
 			case true:
 				pecho("warn", "Rejecting gameMode with Low Power Mode")
 				gameModeEnabledChan <- false
