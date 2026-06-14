@@ -12,7 +12,6 @@ import (
 
 	dbus "github.com/godbus/dbus/v5"
 	udev "github.com/jochenvg/go-udev"
-	"github.com/Kraftland/portable/lib/gpu"
 )
 
 func detectCardBrand(dev *udev.Device) (gpuBrand, error) {
