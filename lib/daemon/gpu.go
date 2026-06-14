@@ -142,8 +142,8 @@ func setOffloadEnvs(hasNvidia bool) {
 	if hasNvidia {
 		addEnv("__NV_PRIME_RENDER_OFFLOAD=1")
 		addEnv("__VK_LAYER_NV_optimus=NVIDIA_only")
-		//addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
-		//addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
+		addEnv("__GLX_VENDOR_LIBRARY_NAME=nvidia")
+		addEnv("VK_LOADER_DRIVERS_SELECT=nvidia_icd.json")
 	} else {
 		addEnv("DRI_PRIME=1")
 	}
