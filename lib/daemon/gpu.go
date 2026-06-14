@@ -100,6 +100,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 		chanWg.Wait()
 		close(gpuChan)
 	} ()
+
 	u := udev.Udev{}
 	e := u.NewEnumerate()
 	e.AddMatchIsInitialized()

@@ -7,4 +7,5 @@ use (
 	./lib/open-ng
 	./lib/prlimit-stub
 	./lib/portals
+	./lib/gpu
 )
