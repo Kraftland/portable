@@ -1581,10 +1581,8 @@ func genBwArg(
 		}
 	})
 	wg.Go(func() {
-		if config.Privacy.Cameras {
-			for arg := range camChan {
-				argChan <- arg
-			}
+		for arg := range camChan {
+			argChan <- arg
 		}
 	})
 
@@ -1893,8 +1891,9 @@ func bindXAuth(xauthChan chan []string, config Config) {
 }
 
 func tryBindCam(camChan chan []string, config Config) {
-	camArg := []string{}
-	if config.Privacy.Cameras {
+	defer close(camChan)
+	if slices.Contains(config.System.DeviceAllow, "camera") {
+		camArg := []string{}
 		camEntries, err := os.ReadDir("/dev")
 		if err != nil {
 			pecho("warn", "Failed to parse camera entries")
@@ -1910,9 +1909,8 @@ func tryBindCam(camChan chan []string, config Config) {
 				)
 			}
 		}
+		camChan <- camArg
 	}
-	camChan <- camArg
-	close(camChan)
 }
 
 func tryBindNv() []string {
