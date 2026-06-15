@@ -211,7 +211,10 @@ func readLegacyConf() Config {
 	// Terminate immediately is not defined
 
 	if legacyConf.gameMode {
-		config.System.GameMode = true
+		config.System.DeviceAllow = append(
+			config.System.DeviceAllow,
+			"dgpu",
+		)
 	}
 	if legacyConf.allowInhibit {
 		config.System.InhibitSuspend = true
@@ -228,13 +231,19 @@ func readLegacyConf() Config {
 		config.Privacy.ClassicNotifications = false
 	}
 	if legacyConf.bindCameras {
-		config.Privacy.Cameras = true
+		config.System.DeviceAllow = append(
+			config.System.DeviceAllow,
+			"input",
+		)
 	}
 	if legacyConf.bindPipewire {
 		config.Privacy.PipeWire = true
 	}
 	if legacyConf.bindInputDevices {
-		config.Privacy.Input = true
+		config.System.DeviceAllow = append(
+			config.System.DeviceAllow,
+			"camera",
+		)
 	}
 	if legacyConf.useZink {
 		config.Advanced.Zink = true
