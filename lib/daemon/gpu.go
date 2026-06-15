@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,7 +43,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 	var wg sync.WaitGroup
 
 	go func () {
-		if ! config.System.GameMode {
+		if ! slices.Contains(config.System.DeviceAllow, "dgpu") {
 			gameModeEnabledChan <- false
 			return
 		}
@@ -54,10 +55,11 @@ func gpuBind(gpuChan chan []string, config Config) {
 		}
 		switch lowPower {
 			case true:
-				pecho("warn", "Rejecting gameMode with Low Power Mode")
+				pecho("warn", "Rejecting dgpu with Low Power Mode")
 				gameModeEnabledChan <- false
 			default:
-				gameModeEnabledChan <- config.System.GameMode
+				pecho("debug", "Exposing all GPUs")
+				gameModeEnabledChan <- true
 		}
 	} ()
 

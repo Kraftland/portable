@@ -14,19 +14,33 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/Kraftland/portable/lib/portals"
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
-	"github.com/Kraftland/portable/lib/portals"
 )
 
 func sanityChecks(config Config) {
+	if config.Privacy.Cameras {
+		pecho("warn", "Unsupported legacy configuration key: cameras")
+	}
+	if config.Privacy.Input {
+		pecho("warn", "Unsupported legacy configuration key: input")
+	}
+	if config.System.Virtualization {
+		pecho("warn", "Unsupported legacy configuration key: virtualization")
+	}
+	if config.System.GameMode {
+		pecho("warn", "Unsupported legacy configuration key: gameMode")
+	}
 	if config.Exec.Overlay {
 		stat, err := os.Stat(filepath.Join(
 			"/usr/lib/portable/info",
@@ -1539,7 +1553,7 @@ func genBwArg(
 		}
 	})
 	wg.Go(func() {
-		if config.System.Virtualization {
+		if slices.Contains(config.System.DeviceAllow, "kvm") {
 			_, err := os.Stat("/dev/kvm")
 			if err != nil {
 				pecho("warn", "Could not expose virtualisation node:", err)
@@ -1568,21 +1582,18 @@ func genBwArg(
 		}
 	})
 	wg.Go(func() {
-		if config.Privacy.Input {
+		if slices.Contains(config.System.DeviceAllow, "input") {
 			var inputArgs []string
 			for inputArg := range inputChan {
 				inputArgs = append(inputArgs, inputArg...)
-
 			}
 			go pecho("debug", "Generated Input Bind arguments:", inputArgs)
 			argChan <- inputArgs
 		}
 	})
 	wg.Go(func() {
-		if config.Privacy.Cameras {
-			for arg := range camChan {
-				argChan <- arg
-			}
+		for arg := range camChan {
+			argChan <- arg
 		}
 	})
 
@@ -1891,8 +1902,9 @@ func bindXAuth(xauthChan chan []string, config Config) {
 }
 
 func tryBindCam(camChan chan []string, config Config) {
-	camArg := []string{}
-	if config.Privacy.Cameras {
+	defer close(camChan)
+	if slices.Contains(config.System.DeviceAllow, "camera") {
+		camArg := []string{}
 		camEntries, err := os.ReadDir("/dev")
 		if err != nil {
 			pecho("warn", "Failed to parse camera entries")
@@ -1908,9 +1920,8 @@ func tryBindCam(camChan chan []string, config Config) {
 				)
 			}
 		}
+		camChan <- camArg
 	}
-	camChan <- camArg
-	close(camChan)
 }
 
 func tryBindNv() []string {

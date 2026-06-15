@@ -39,7 +39,14 @@ type ProcMgmt struct {
 type SysMgmt struct {
 	InhibitSuspend	bool
 	InhibitOnBehalf	bool
+
+	// New-style device allow slice, possible values: (dgpu, input, camera, kvm)
+	DeviceAllow	[]string
+
+	// Deprecated: do not use
 	GameMode	bool
+
+	// Deprecated: do not use
 	Virtualization	bool
 }
 
@@ -52,8 +59,11 @@ type NetworkOpts struct {
 type PrivacyOpts struct {
 	X11			bool
 	ClassicNotifications	bool
-	Cameras			bool
+
 	PipeWire		bool
+
+	// Deprecated: do not use
+	Cameras			bool
 	Input			bool
 }
 

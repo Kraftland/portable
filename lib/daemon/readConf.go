@@ -133,7 +133,7 @@ func getConf() Config {
 		}
 		reader := bufio.NewReader(file)
 		decoder := toml.NewDecoder(reader)
-		md ,err := decoder.Decode(&config)
+		md, err := decoder.Decode(&config)
 		if err != nil {
 			pecho("crit", "Could not decode configuration:", err)
 		}
@@ -144,6 +144,30 @@ func getConf() Config {
 				pecho("warn", "Could not decode option:", md.Undecoded())
 			default:
 				pecho("warn", "Could not decode options:", md.Undecoded())
+		}
+		if config.System.GameMode {
+			config.System.DeviceAllow = append(
+				config.System.DeviceAllow,
+				"dgpu",
+			)
+		}
+		if config.System.Virtualization {
+			config.System.DeviceAllow = append(
+				config.System.DeviceAllow,
+				"kvm",
+			)
+		}
+		if config.Privacy.Cameras {
+			config.System.DeviceAllow = append(
+				config.System.DeviceAllow,
+				"camera",
+			)
+		}
+		if config.Privacy.Input {
+			config.System.DeviceAllow = append(
+				config.System.DeviceAllow,
+				"input",
+			)
 		}
 	}
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
