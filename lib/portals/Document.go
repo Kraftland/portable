@@ -31,7 +31,7 @@ func (m *Document) GetMountPoint () (string, error) {
 	if call.Err != nil {
 		return "", call.Err
 	}
-	err := call.Store(&mntRaw)
+	err = call.Store(&mntRaw)
 	if err != nil {
 		return "", err
 	} else {
