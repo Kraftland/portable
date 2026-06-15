@@ -29,6 +29,18 @@ import (
 )
 
 func sanityChecks(config Config) {
+	if config.Privacy.Cameras {
+		pecho("warn", "Unsupported legacy configuration key: cameras")
+	}
+	if config.Privacy.Input {
+		pecho("warn", "Unsupported legacy configuration key: input")
+	}
+	if config.System.Virtualization {
+		pecho("warn", "Unsupported legacy configuration key: virtualization")
+	}
+	if config.System.GameMode {
+		pecho("warn", "Unsupported legacy configuration key: gameMode")
+	}
 	if config.Exec.Overlay {
 		stat, err := os.Stat(filepath.Join(
 			"/usr/lib/portable/info",
@@ -1574,7 +1586,6 @@ func genBwArg(
 			var inputArgs []string
 			for inputArg := range inputChan {
 				inputArgs = append(inputArgs, inputArg...)
-
 			}
 			go pecho("debug", "Generated Input Bind arguments:", inputArgs)
 			argChan <- inputArgs

@@ -242,7 +242,7 @@ func readLegacyConf() Config {
 	if legacyConf.bindInputDevices {
 		config.System.DeviceAllow = append(
 			config.System.DeviceAllow,
-			"camera",
+			"input",
 		)
 	}
 	if legacyConf.useZink {
