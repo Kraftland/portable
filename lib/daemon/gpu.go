@@ -55,9 +55,10 @@ func gpuBind(gpuChan chan []string, config Config) {
 		}
 		switch lowPower {
 			case true:
-				pecho("warn", "Rejecting gameMode with Low Power Mode")
+				pecho("warn", "Rejecting dgpu with Low Power Mode")
 				gameModeEnabledChan <- false
 			default:
+				pecho("debug", "Exposing all GPUs")
 				gameModeEnabledChan <- true
 		}
 	} ()
