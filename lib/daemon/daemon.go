@@ -1299,6 +1299,7 @@ func genBwArg(
 		"-p", "DelegateSubgroup=portable-cgroup",
 		"-p", "BindsTo=" + config.Metadata.FriendlyName + "-" + runtimeInfo.instanceID + "-dbus.service",
 		"-p", "Description=Portable Sandbox for " + config.Metadata.FriendlyName + " (" + config.Metadata.AppID + ")",
+		"-p", "After=pipewire.service pipewire-pulse.service xdg-desktop-portal.service",
 		"-p", "Documentation=https://github.com/Kraftland/portable",
 		"-p", "ExitType=cgroup",
 		"-p", "SuccessExitStatus=SIGKILL",
