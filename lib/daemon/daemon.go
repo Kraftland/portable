@@ -1749,6 +1749,9 @@ func miscBinds(miscChan chan []string, pwChan chan []string, config Config, expo
 			"--ro-bind-try",
 			xdgDir.confDir + "/gtk-3.0/gtk.css",
 			translatePath(xdgDir.confDir + "/gtk-3.0/gtk.css", config),
+			"--ro-bind-try",
+			xdgDir.confDir + "/gtk-3.0/noctalia.css",
+			translatePath(xdgDir.confDir + "/gtk-3.0/noctalia.css", config),
 		}
 	})
 
