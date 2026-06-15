@@ -23,6 +23,7 @@ import (
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
+	"github.com/Kraftland/portable/lib/portals"
 )
 
 func sanityChecks(config Config) {
@@ -2049,7 +2050,8 @@ func main() {
 			return
 		}
 		mntWg.Go(func() {
-			mnt, err := GetMountPoint(busConn)
+			object := portals.Document{}
+			mnt, err := object.GetMountPoint()
 			if err != nil {
 				pecho("crit", "Could not query Document Portal mount point:", err)
 				select {}
