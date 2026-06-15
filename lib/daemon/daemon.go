@@ -1570,7 +1570,7 @@ func genBwArg(
 		}
 	})
 	wg.Go(func() {
-		if config.Privacy.Input {
+		if slices.Contains(config.System.DeviceAllow, "input") {
 			var inputArgs []string
 			for inputArg := range inputChan {
 				inputArgs = append(inputArgs, inputArg...)
