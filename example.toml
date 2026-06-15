@@ -48,31 +48,15 @@ background = true
 # Whether or not an application can call Inhibit Portal to prevent automatic suspend. Defaults to false.
 inhibitSuspend = false
 
+# Whether or not to expose all GPUs and prefer discrete graphics card. By default, Portable blocks any GPU except the integrated one to improve user experience and power consumption on hybrid systems.
+# This mode is not available when Power Profile is set to Power Saver
+gameMode = false
+
+# Enables access to the Kernel-based Virtual Machine.
+virtualization = false
+
 # Inhibit suspend and idle on behalf of applications. Requires system.inhibitSuspend being true
 inhibitOnBehalf = false
-
-# A TOML slice that accepts string values.
-# Current possible values are: (dgpu, input, camera, kvm).
-#------------------------------------------------------------------------------#
-## dgpu (or gamemode): Expose all GPUs and prefer discrete graphics card.
-## By default,
-## 	Portable blocks any GPU except the integrated one
-## 	to improve user experience and power consumption on hybrid systems.
-## This is not available when Power Profile is set to Power Saver.
-#------------------------------------------------------------------------------#
-## kvm: Enables access to the Kernel-based Virtual Machine (/dev/kvm), if any.
-#------------------------------------------------------------------------------#
-## camera: Enables access to physical camera devices. Modern applications should
-## 	talk with Portals instead, while legacy ones may still need device node
-## 	access.
-#------------------------------------------------------------------------------#
-## input: Allows applications to receive Input events.
-## In addition, the kernel uinput device is made available for Steam Input.
-## It is intended for Games to make use of Controllers,
-## 	but said permission might introduce input snooping if the device node
-## 	for keyboards and mouses are messed up.
-#------------------------------------------------------------------------------#
-deviceAllow = []
 
 # The network section defines behaviour of Portable's network firewall. Requires netsock for filtering.
 [network]
@@ -93,10 +77,13 @@ x11 = true
 # When false, prevents application from connecting to legacy notifications endpoint. Defaults to true.
 classicNotifications = true
 
+# When true, exposes camera devices in the sandbox. Defaults to false.
+cameras = false
+
 # When true, allows application to connect to PipeWire server. Note that a proxy is set up to prevent privileged actions. Defaults to false.
 pipeWire = false
 
-#
+# When true, allows application to receive Input events, particularly useful for Games. Defaults to false.
 input = false
 
 # Do not use. May break apps.
