@@ -1904,23 +1904,12 @@ func bindXAuth(xauthChan chan []string, config Config) {
 func tryBindCam(camChan chan []string, config Config) {
 	defer close(camChan)
 	if slices.Contains(config.System.DeviceAllow, "camera") {
-		camArg := []string{}
-		camEntries, err := os.ReadDir("/dev")
+		camArg, err := GenerateCameraBindArgs()
 		if err != nil {
-			pecho("warn", "Failed to parse camera entries")
-			return
+			pecho("warn", "Could not generate camera bindings:", err)
+		} else {
+			camChan <- camArg
 		}
-		for _, file := range camEntries {
-			if strings.HasPrefix(file.Name(), "video") && file.IsDir() == false {
-				camArg = append(
-					camArg,
-					"--dev-bind",
-						"/dev/" + file.Name(),
-						"/dev/" + file.Name(),
-				)
-			}
-		}
-		camChan <- camArg
 	}
 }
 
