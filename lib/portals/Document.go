@@ -1,4 +1,4 @@
-package main
+package portals
 
 import (
 	"context"
@@ -7,8 +7,14 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
-// Gets the document portal mount point, times out after 5 milliseconds, and returns the path as a string
-func GetMountPoint(conn *dbus.Conn) (string, error) {
+type Document struct {}
+
+// Gets the document portal mount point, times out after 50 milliseconds, and returns the path as a string
+func (m *Document) GetMountPoint () (string, error) {
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		return "", err
+	}
 	docObj := conn.Object(
 		"org.freedesktop.portal.Documents",
 		"/org/freedesktop/portal/documents",
@@ -25,7 +31,7 @@ func GetMountPoint(conn *dbus.Conn) (string, error) {
 	if call.Err != nil {
 		return "", call.Err
 	}
-	err := call.Store(&mntRaw)
+	err = call.Store(&mntRaw)
 	if err != nil {
 		return "", err
 	} else {
