@@ -14,16 +14,18 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/Kraftland/portable/lib/portals"
 	"github.com/coreos/go-systemd/v22/dbus"
 	sdutil "github.com/coreos/go-systemd/v22/util"
 	godbus "github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
-	"github.com/Kraftland/portable/lib/portals"
 )
 
 func sanityChecks(config Config) {
@@ -1539,7 +1541,7 @@ func genBwArg(
 		}
 	})
 	wg.Go(func() {
-		if config.System.Virtualization {
+		if slices.Contains(config.System.DeviceAllow, "kvm") {
 			_, err := os.Stat("/dev/kvm")
 			if err != nil {
 				pecho("warn", "Could not expose virtualisation node:", err)
