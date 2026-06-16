@@ -1458,9 +1458,7 @@ func genBwArg(
 		"--ro-bind-try",	"/dev/null", "/proc/diskstats",
 		"--ro-bind-try",	"/dev/null", "/proc/devices",
 		"--ro-bind-try",	"/dev/null", "/proc/config.gz",
-		"--ro-bind-try",	"/dev/null", "/proc/mounts",
 		"--ro-bind-try",	"/dev/null", "/proc/loadavg",
-		"--ro-bind-try",	"/dev/null", "/proc/filesystems",
 
 		// FHS dir
 		"--perms",		"0000",
