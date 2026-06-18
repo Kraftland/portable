@@ -90,6 +90,15 @@ func handleExecveCalls(notif *seccomp.ScmpNotifReq, fd seccomp.ScmpFd) error {
 	return err
 }
 
+/*
+	This is not a security boundary!
+	Specifically, it is very vulnerable to TOCTOU attacks and requires
+		manually reading memory.
+	See https://lore.kernel.org/all/20260504011207.539408-1-xiyou.wangcong@gmail.com/
+		for an upcoming proposal which introduces
+		SECCOMP_IOCTL_NOTIF_PIN_ARGS for race-free unotify
+
+*/
 func superviseSeccompNotif(fd seccomp.ScmpFd) {
 	var wg sync.WaitGroup
 	for {
