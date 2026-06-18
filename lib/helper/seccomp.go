@@ -132,7 +132,7 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 			}
 
 			warn.Println(
-				"System call triggered:", notif.Pid,
+				"System call triggered: PID", notif.Pid,
 				"requested", callName,
 				"using architecture", notif.Data.Arch.String(),
 				"with", notif.Data.Args,
@@ -143,7 +143,7 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 			var resp = seccomp.ScmpNotifResp{
 				ID:	notif.ID,
 				Error:	0,
-				Val:	0,
+				//Val:	0,
 				Flags:	seccomp.NotifRespFlagContinue,
 			}
 
@@ -176,19 +176,44 @@ func createSeccompFilter() (err error) {
 	}
 	defer filter.Release()
 
-	var notifyRules = []seccomp.ScmpSyscall{
-		syscall.SYS_IOPERM,
-		syscall.SYS_REBOOT,
-		syscall.SYS_SETUID,
-		syscall.SYS_SETGID,
-		syscall.SYS_PTRACE,
-		syscall.SYS_CHROOT,
-		syscall.SYS_MOUNT,
-		syscall.SYS_EXECVE,
+	err = filter.SetBadArchAction(seccomp.ActAllow)
+	if err != nil {
+		return
+	}
+
+	var rejectRules = []string{
+		"reboot",
+		"setuid",
+		"setgid",
+	}
+
+	for _, rule := range rejectRules {
+		callID, err := seccomp.GetSyscallFromName(rule)
+		if err != nil {
+			panic(err)
+		}
+		addRuleToFilter(filter, callID, seccomp.ActKillThread)
+	}
+
+	var notifyRules = []string{
+		"ioperm",
+		"ptrace",
+		"chroot",
+		"mount",
+		"execve",
 	}
 
 	for _, rule := range notifyRules {
-		addRuleToFilter(filter, rule, seccomp.ActNotify)
+		callID, err := seccomp.GetSyscallFromName(rule)
+		if err != nil {
+			panic(err)
+		}
+		addRuleToFilter(filter, callID, seccomp.ActNotify)
+	}
+
+	err = filter.SetNoNewPrivsBit(true)
+	if err != nil {
+		return
 	}
 
 	err = filter.Precompute()
