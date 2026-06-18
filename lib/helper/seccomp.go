@@ -35,6 +35,7 @@ func readArgFromMemory(pid int, addr uint64) (string, error) {
 	switch err {
 		case nil:
 		case io.EOF:
+			return "", err
 		default:
 			return "", err
 	}
@@ -61,7 +62,13 @@ func handleExecveCalls(notif *seccomp.ScmpNotifReq, fd seccomp.ScmpFd) error {
 		case "chrome-sandbox":
 			debug.Println("PID", notif.Pid, "spawned a chrome sandbox")
 		default:
-			debug.Println("Got execve() with arguments:", args)
+			debug.Println(
+				"Got execve() from PID",
+				notif.Pid,
+				"with arguments:",
+				args,
+				"Deciphered from memory address:",
+				argsAddr)
 	}
 	// Do nothing now
 	var resp = seccomp.ScmpNotifResp{
@@ -110,10 +117,10 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 			}
 
 			warn.Println(
-				"System call triggered:", callName,
-				"from PID", notif.Pid,
+				"System call triggered:", notif.Pid,
+				"requested", callName,
 				"using architecture", notif.Data.Arch.String(),
-				"calling", notif.Data.Args,
+				"with", notif.Data.Args,
 				"which may be problematic",
 			)
 
@@ -155,7 +162,6 @@ func createSeccompFilter() (err error) {
 	defer filter.Release()
 
 	var notifyRules = []seccomp.ScmpSyscall{
-		syscall.SYS_KILL,
 		syscall.SYS_IOPERM,
 		syscall.SYS_REBOOT,
 		syscall.SYS_SETUID,
@@ -163,7 +169,6 @@ func createSeccompFilter() (err error) {
 		syscall.SYS_PTRACE,
 		syscall.SYS_CHROOT,
 		syscall.SYS_MOUNT,
-		syscall.SYS_BIND,
 		syscall.SYS_EXECVE,
 	}
 
