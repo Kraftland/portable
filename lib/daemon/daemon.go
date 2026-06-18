@@ -1531,6 +1531,11 @@ func genBwArg(
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 	}
 	wg.Go(func() {
+		if config.Advanced.Landlock {
+			argChan <- []string{
+				"--disable-userns",
+			}
+		}
 		if config.Exec.Overlay {
 			argChan <- []string{
 				"--overlay-src",	"/usr/bin",
