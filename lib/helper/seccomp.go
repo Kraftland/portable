@@ -77,6 +77,9 @@ func createSeccompFilter() (err error) {
 		syscall.SYS_SETUID,
 		syscall.SYS_SETGID,
 		syscall.SYS_PTRACE,
+		syscall.SYS_CHROOT,
+		syscall.SYS_MOUNT,
+		syscall.SYS_BIND,
 	}
 
 	for _, rule := range notifyRules {
