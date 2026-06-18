@@ -21,6 +21,11 @@ func createSeccompFilter() error {
 		return err
 	}
 
+	err = filter.Precompute()
+	if err != nil {
+		return err
+	}
+
 	err = filter.Load()
 	if err != nil {
 		return err
