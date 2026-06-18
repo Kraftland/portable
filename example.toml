@@ -24,7 +24,7 @@ arguments = ["gtk4-demo", "--run=video_player"]
 # When enabled, lays the app private binaries on top /usr/bin, see doc/packager/08-binaries.md for more details. Requires the specific overlay directory to exist.
 overlay = false
 
-# D-Bus activation works by installing a service under /usr/share/dbus-1/services. It is used by UnifiedPush to process notifications without showing a window. You should modify the activation cmdline to call portable with "--dbus-activation".
+# D-Bus activation works by installing a service under /usr/share/dbus-1/services. It is used by UnifiedPush to process notifications without showing a window. You should modify the activation cmdline to call portable with "--dbus-activation" or use packer.
 [busActivation]
 # Whether or not to enable D-Bus activation. Defaults to false.
 enable = false
@@ -87,7 +87,14 @@ filterDest = ["private"]
 
 # The privacy section defines several device exposure preference. By default, Portable does not allow apps to see physical devices. This includes discrete GPUs when gameMode is off, input devices, cameras, and all other PCI devices.
 [privacy]
-# Enables additional protection (landlock, extra seccomp filters, user namespaces)
+# Lockdown is a set of rules
+# 	that aims to reduce the attack surface within a sandbox.
+# It enables many additional protections, including:
+# 	landlock as another layer of filesystem security,
+# 	blocks reparent of /, effectively prevents manipulation of mount points
+# 	extra seccomp filters
+# 	blocks user namespaces
+# 	prevents non-native system calls to be made
 lockdown = true
 
 # When false, prevents application from connecting to X server on Wayland. Defaults to true.
@@ -98,9 +105,6 @@ classicNotifications = true
 
 # When true, allows application to connect to PipeWire server. Note that a proxy is set up to prevent privileged actions. Defaults to false.
 pipeWire = false
-
-#
-input = false
 
 # Do not use. May break apps.
 [advanced]
