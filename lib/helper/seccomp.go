@@ -44,19 +44,25 @@ func readArgFromMemory(pid int, addr uint64) (string, error) {
 }
 
 func handleExecveCalls(notif *seccomp.ScmpNotifReq, fd seccomp.ScmpFd) error {
-	var args []string
-	argsAddr := notif.Data.Args
-	for _, addr := range argsAddr {
-		arg, _ := readArgFromMemory(
-			int(notif.Pid),
-			addr,
-		)
-		args = append(args, arg)
+	// var args []string
+	// argsAddr := notif.Data.Args
+	// for _, addr := range argsAddr {
+	// 	arg, _ := readArgFromMemory(
+	// 		int(notif.Pid),
+	// 		addr,
+	// 	)
+	// 	args = append(args, arg)
+	// }
+
+	arg, err := readArgFromMemory(int(notif.Pid), notif.Data.Args[0])
+	if err != nil {
+		warn.Println("Could not read argv0 from memory:", err)
 	}
-	if len(args) == 0 {
-		return errors.New("Could not read syscall arguments: empty")
-	}
-	switch filepath.Base(args[0]) {
+
+	// if len(args) == 0 {
+	// 	return errors.New("Could not read syscall arguments: empty")
+	// }
+	switch filepath.Base(arg) {
 		case "bash":
 			debug.Println("PID", notif.Pid, "spawned a bash shell")
 		case "chrome-sandbox":
@@ -65,10 +71,10 @@ func handleExecveCalls(notif *seccomp.ScmpNotifReq, fd seccomp.ScmpFd) error {
 			debug.Println(
 				"Got execve() from PID",
 				notif.Pid,
-				"with arguments:",
-				args,
+				"with argument:",
+				arg,
 				"Deciphered from memory address:",
-				argsAddr)
+				notif.Data.Args[0])
 	}
 	// Do nothing now
 	var resp = seccomp.ScmpNotifResp{
@@ -77,7 +83,7 @@ func handleExecveCalls(notif *seccomp.ScmpNotifReq, fd seccomp.ScmpFd) error {
 		Val:	0,
 		Flags:	seccomp.NotifRespFlagContinue,
 	}
-	err := seccomp.NotifRespond(
+	err = seccomp.NotifRespond(
 		fd,
 		&resp,
 	)
