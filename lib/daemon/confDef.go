@@ -57,6 +57,7 @@ type NetworkOpts struct {
 }
 
 type PrivacyOpts struct {
+	Lockdown		bool
 	X11			bool
 	ClassicNotifications	bool
 

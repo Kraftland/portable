@@ -99,7 +99,7 @@ func handleExecveCalls(notif *seccomp.ScmpNotifReq, fd seccomp.ScmpFd) error {
 		SECCOMP_IOCTL_NOTIF_PIN_ARGS for race-free unotify
 
 */
-func superviseSeccompNotif(fd seccomp.ScmpFd) {
+func superviseSeccompNotif(fd seccomp.ScmpFd, lockdown bool) {
 	var wg sync.WaitGroup
 	for {
 		notif, err := seccomp.NotifReceive(fd)
@@ -138,13 +138,22 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 				"with", notif.Data.Args,
 				"which may be problematic",
 			)
-
-			// Do nothing now
-			var resp = seccomp.ScmpNotifResp{
-				ID:	notif.ID,
-				Error:	0,
-				//Val:	0,
-				Flags:	seccomp.NotifRespFlagContinue,
+			var resp seccomp.ScmpNotifResp
+			if lockdown {
+				debug.Println("Rejecting syscall due to lockdown")
+				resp = seccomp.ScmpNotifResp{
+					ID:	notif.ID,
+					//Error:	int32(syscall.EPERM),
+					Error:	0,
+				}
+			} else {
+				// Do nothing now
+				resp = seccomp.ScmpNotifResp{
+					ID:	notif.ID,
+					Error:	0,
+					//Val:	0,
+					Flags:	seccomp.NotifRespFlagContinue,
+				}
 			}
 
 			err = seccomp.NotifRespond(
@@ -170,6 +179,11 @@ func addRuleToFilter(f *seccomp.ScmpFilter, call seccomp.ScmpSyscall, act seccom
 }
 
 func createSeccompFilter() (err error) {
+	var lockdown bool
+	switch os.Getenv("_portableLockdown") {
+		case "1":
+			lockdown = true
+	}
 	filter, err := seccomp.NewFilter(seccomp.ActAllow)
 	if err != nil {
 		return
@@ -198,10 +212,30 @@ func createSeccompFilter() (err error) {
 	var notifyRules = []string{
 		"ioperm",
 		"ptrace",
-		"chroot",
+		// "chroot",
 		"mount",
+		"umount2",
+		"umount",
+		"fsmount",
+		"fsconfig",
+		"fsopen",
+		"pivot_root",
+		"move_mount",
+		"fspick",
+
+		"mount_setattr",
+		// "unshare", // TODO: wait for kernel feature SECCOMP_IOCTL_NOTIF_PIN_ARGS
+		"setns",
 		"execve",
 	}
+
+	/* Note that future iterations will include support for
+		zypak-like hijacking
+	 That is, hijack stat() and Access()
+	 	to return st_uid=0, st_mode=S_ISUID|S_IXOTH and 4755
+	 And redirect execvp() calls
+	 But it may not be necessary because the kernel will act as a security boundary
+	*/
 
 	for _, rule := range notifyRules {
 		callID, err := seccomp.GetSyscallFromName(rule)
@@ -228,7 +262,7 @@ func createSeccompFilter() (err error) {
 	if err != nil {
 		return
 	}
-	go superviseSeccompNotif(fd)
+	go superviseSeccompNotif(fd, lockdown)
 
 	return
 }
