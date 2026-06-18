@@ -87,6 +87,9 @@ filterDest = ["private"]
 
 # The privacy section defines several device exposure preference. By default, Portable does not allow apps to see physical devices. This includes discrete GPUs when gameMode is off, input devices, cameras, and all other PCI devices.
 [privacy]
+# Enables additional protection (landlock, extra seccomp filters, user namespaces)
+lockdown = true
+
 # When false, prevents application from connecting to X server on Wayland. Defaults to true.
 x11 = true
 
@@ -107,9 +110,6 @@ mprisName = []
 trayWake = false
 kDEStatus = true
 flatpakInfo = true
-
-# Enables landlock for additional protection, breaks apps that require namespaces.
-landlock = true
 
 # Allows debugging syscalls to be made inside the sandbox. This has the potential to be exploited.
 debugging = false

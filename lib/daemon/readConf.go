@@ -169,6 +169,9 @@ func getConf() Config {
 				"input",
 			)
 		}
+		if config.Privacy.Lockdown {
+			config.Advanced.Landlock = true
+		}
 	}
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
 	switch sessionType {
