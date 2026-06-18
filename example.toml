@@ -108,7 +108,7 @@ trayWake = false
 kDEStatus = true
 flatpakInfo = true
 
-# Enables landlock for additional protection, breaks many apps.
+# Enables landlock for additional protection, breaks apps that require namespaces.
 landlock = true
 
 # Allows debugging syscalls to be made inside the sandbox. This has the potential to be exploited.
