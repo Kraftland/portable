@@ -1,7 +1,10 @@
 package main
 
 import (
+	"strconv"
 	"sync"
+	"syscall"
+
 	"github.com/seccomp/libseccomp-golang"
 )
 
@@ -18,11 +21,16 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 			return
 		}
 		wg.Go(func() {
-			debug.Println(
-				"Got syscall", notif.Data.Syscall,
+			callName, err := notif.Data.Syscall.GetName()
+			if err != nil {
+				callName = strconv.Itoa(int(notif.Data.Syscall))
+			}
+			warn.Println(
+				"System call triggered:", callName,
 				"from PID", notif.Pid,
 				"using architecture", notif.Data.Arch.String(),
 				"calling", notif.Data.Args,
+				"which may be problematic",
 			)
 
 			// Do nothing now
@@ -33,7 +41,7 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 				Flags:	seccomp.NotifRespFlagContinue,
 			}
 
-			err := seccomp.NotifRespond(
+			err = seccomp.NotifRespond(
 				fd,
 				&resp,
 			)
@@ -47,12 +55,33 @@ func superviseSeccompNotif(fd seccomp.ScmpFd) {
 	}
 }
 
+// Panics on err
+func addRuleToFilter(f *seccomp.ScmpFilter, call seccomp.ScmpSyscall, act seccomp.ScmpAction) {
+	err := f.AddRule(call, act)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func createSeccompFilter() (err error) {
 	filter, err := seccomp.NewFilter(seccomp.ActAllow)
 	if err != nil {
 		return
 	}
 	defer filter.Release()
+
+	var notifyRules = []seccomp.ScmpSyscall{
+		syscall.SYS_KILL,
+		syscall.SYS_IOPERM,
+		syscall.SYS_REBOOT,
+		syscall.SYS_SETUID,
+		syscall.SYS_SETGID,
+		syscall.SYS_PTRACE,
+	}
+
+	for _, rule := range notifyRules {
+		addRuleToFilter(filter, rule, seccomp.ActNotify)
+	}
 
 	err = filter.Precompute()
 	if err != nil {
