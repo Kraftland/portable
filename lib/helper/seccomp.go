@@ -2,8 +2,6 @@ package main
 
 import (
 	"sync"
-	"syscall"
-
 	"github.com/seccomp/libseccomp-golang"
 )
 
@@ -55,14 +53,6 @@ func createSeccompFilter() (err error) {
 		return
 	}
 	defer filter.Release()
-
-	err = filter.AddRule(
-		syscall.SYS_EXECVE,
-		seccomp.ActNotify,
-	)
-	if err != nil {
-		return
-	}
 
 	err = filter.Precompute()
 	if err != nil {
