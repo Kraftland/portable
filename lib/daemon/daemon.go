@@ -1178,6 +1178,11 @@ func setupSharedDir (config Config) {
 }
 
 func miscEnvs (config Config) {
+	if config.Privacy.Lockdown {
+		addEnv("_portableLockdown=1")
+	} else {
+		pecho("warn", "Lockdown is not enabled for this sandbox")
+	}
 	if config.Advanced.Qt5Compat {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
@@ -1189,6 +1194,8 @@ func miscEnvs (config Config) {
 	if wrErr != nil {
 		pecho("warn", "Unable to write bashrc: " + wrErr.Error())
 	}
+
+
 	addEnv("GDK_DEBUG=portals")
 	addEnv("GTK_USE_PORTAL=1")
 	addEnv("QT_AUTO_SCREEN_SCALE_FACTOR=1")
@@ -1531,11 +1538,6 @@ func genBwArg(
 		"--tmpfs",		filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "options"),
 	}
 	wg.Go(func() {
-		if config.Advanced.Landlock {
-			argChan <- []string{
-				"--disable-userns",
-			}
-		}
 		if config.Exec.Overlay {
 			argChan <- []string{
 				"--overlay-src",	"/usr/bin",
