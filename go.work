@@ -3,9 +3,9 @@ go 1.26.4
 use (
 	./lib/daemon
 	./lib/flatpak-spawn-stub
+	./lib/gpu
 	./lib/helper
 	./lib/open-ng
-	./lib/prlimit-stub
 	./lib/portals
-	./lib/gpu
+	./lib/prlimit-stub
 )
