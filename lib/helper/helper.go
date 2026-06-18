@@ -180,6 +180,14 @@ func terminateWatcher(blocker chan int, conn *dbus.Conn) {
 func main () {
 	var wg sync.WaitGroup
 	wg.Go(func() {
+		err := createSeccompFilter()
+		if err != nil {
+			warn.Fatalln("Could not load seccomp filter:", err)
+		} else {
+			debug.Println("Loaded seccomp filter")
+		}
+	})
+	wg.Go(func() {
 		engageLandlock()
 	})
 	wg.Go(func() {
@@ -218,7 +226,6 @@ func main () {
 		rawTarget,
 	}
 	targetArgs := os.Args[1:]
-	debug.Println("Got raw command line arguments:", targetArgs)
 	exposedEnvs := os.Getenv("_portableHelperExtraFiles")
 	if len(exposedEnvs) > 0 {
 		var exposeList PassFiles

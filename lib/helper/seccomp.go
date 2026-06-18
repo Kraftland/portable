@@ -10,5 +10,9 @@ func createSeccompFilter() error {
 		return err
 	}
 	defer filter.Release()
+	err = filter.Load()
+	if err != nil {
+		return err
+	}
 	return nil
 }

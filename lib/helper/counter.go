@@ -57,7 +57,7 @@ func startAux(msg StartNofifyMsg, ch chan bool) {
 	ch <- true
 	var streamWg sync.WaitGroup
 	if len(msg.UDS) != 3 {
-		warn.Println("UDS count mismatch: got", len(msg.UDS))
+		//warn.Println("UDS count mismatch: got", len(msg.UDS))
 		msg.cmd.Stdin = os.Stdin
 		msg.cmd.Stdout = os.Stdout
 		msg.cmd.Stderr = os.Stderr
