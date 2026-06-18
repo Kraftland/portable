@@ -10,4 +10,7 @@ require (
 	golang.org/x/term v0.43.0
 )
 
-require kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 // indirect
+require (
+	github.com/seccomp/libseccomp-golang v0.11.1 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 // indirect
+)
