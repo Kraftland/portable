@@ -101,7 +101,7 @@ func gpuBind(gpuChan chan []string, config Config) {
 			})
 		case false:
 			var err error
-			cardsToBind, err = gpu.ListGraphicsCard()
+			cardsToBind, err = gpu.ListActiveGraphicsCards()
 			if err != nil {
 				pecho("warn", "Could not list active GPUs:", err)
 				return
