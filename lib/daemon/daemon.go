@@ -2076,6 +2076,20 @@ func main() {
 			case godbus.RequestNameReplyPrimaryOwner:
 				pecho("debug", "Successfully requested ownership of bus name")
 				go stopAppWorker(conn, sdCancelFunc, sdContext, busConn, stopSignal, config)
+				wg.Go(func() {
+					errs := startRequiredUnits(conn)
+					if len(errs) > 0 {
+						pecho(
+							"Could not start wanted units:",
+							errs,
+						)
+					} else {
+						pecho(
+							"debug",
+							"Started dependencies",
+						)
+					}
+				})
 				stopFuncChan <- func() {
 					if busConn == nil {
 						pecho(
