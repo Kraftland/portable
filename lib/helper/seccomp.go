@@ -190,9 +190,18 @@ func createSeccompFilter() (err error) {
 	}
 	defer filter.Release()
 
-	err = filter.SetBadArchAction(seccomp.ActAllow)
-	if err != nil {
-		return
+	if lockdown {
+		err = filter.SetBadArchAction(
+			seccomp.ActErrno.SetReturnCode(int16(syscall.EPERM)),
+		)
+		if err != nil {
+			return
+		}
+	} else {
+		err = filter.SetBadArchAction(seccomp.ActAllow)
+		if err != nil {
+			return
+		}
 	}
 
 	var rejectRules = []string{
@@ -206,7 +215,11 @@ func createSeccompFilter() (err error) {
 		if err != nil {
 			panic(err)
 		}
-		addRuleToFilter(filter, callID, seccomp.ActKillThread)
+		addRuleToFilter(
+			filter,
+			callID,
+			seccomp.ActErrno.SetReturnCode(int16(syscall.EPERM)),
+		)
 	}
 
 	var notifyRules = []string{
