@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+
+echo "The portable-pools CLI has been dropped in favour of bawn"
+
+if [ ! -f /usr/bin/bawn ]; then
+	echo "Could not invoke bawn: no such file or directory"
+	exit 1
+fi
+
+exec /usr/bin/bawn $@
