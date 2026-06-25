@@ -18,6 +18,7 @@ Portable has companion projects for packaging and sandboxing:
 | [StashPak](https://github.com/Kimiblock/stashpak) | Build a Portable package for Arch Linux |
 | [Packer](https://github.com/Kimiblock/portable-packer) | Packaging utility for Portable on Arch Linux |
 | [Netsock](https://github.com/Kimiblock/netsock) | Network firewall |
+| [bawn](https://github.com/Kimiblock/bawn) | CLI for transient sandbox |
 
 # Why Portable?
 
