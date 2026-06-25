@@ -145,6 +145,9 @@ func getConf() Config {
 			default:
 				pecho("warn", "Could not decode options:", md.Undecoded())
 		}
+		if ! md.IsDefined("network", "enable") {
+			config.Network.Enable = true
+		}
 		if config.System.GameMode {
 			config.System.DeviceAllow = append(
 				config.System.DeviceAllow,
