@@ -47,6 +47,10 @@ func engageLandlock () {
 	switch os.Getenv("_portableLockdown") {
 		case "with-info":
 			hasFlatpakInfo = true
+		case "without-info":
+			hasFlatpakInfo = false
+		default:
+			return
 	}
 
 	config, err := landlock.NewConfig(landlock.ScopedSet(landlockSyscall.ScopeSignal))

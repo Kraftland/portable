@@ -148,6 +148,10 @@ func getConf() Config {
 		if ! md.IsDefined("network", "enable") {
 			config.Network.Enable = true
 		}
+		if md.IsDefined("advanced", "landlock") {
+			pecho("warn", "Landlock is deprecated, use lockdown instead")
+			config.Privacy.Lockdown = true
+		}
 		if config.System.GameMode {
 			config.System.DeviceAllow = append(
 				config.System.DeviceAllow,
