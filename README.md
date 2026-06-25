@@ -59,26 +59,9 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
 
 ---
 
-# Pools
+# Transient sandbox
 
-Pools is a user friendly sandbox generator. To create and enter a user sandbox, simply execute portable-pools with your sandbox name.
-
-Example: Create a test sandbox:
-
-```bash
-portable-pools test
-
-╰─>Portable Sandbox·top.kimiblock.test·🧐⤔
-```
-
-Usage:
-
-```
-portable-pools [Options] <Sandbox Name>
-
-Options:
-	--quit: Terminates the sandbox
-```
+See [bawn](https://github.com/Kimiblock/bawn) for the successor of Portable Pools.
 
 ---
 
