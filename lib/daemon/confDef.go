@@ -42,6 +42,8 @@ type SysMgmt struct {
 
 	// New-style device allow slice, possible values: (dgpu, input, camera, kvm)
 	DeviceAllow	[]string
+	// Utilisation clamping, see https://docs.kernel.org/scheduler/sched-util-clamp.html
+	Uclamp		string
 
 	// Deprecated: do not use
 	GameMode	bool
