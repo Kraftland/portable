@@ -77,6 +77,7 @@ landlockSyscall.AccessFSReadDir)
 			landlock.PathAccess(fullAccRule, "/dev"),
 			landlock.PathAccess(fullAccRule, "/proc"),
 			landlock.PathAccess(fullAccRule, "/sys"),
+			landlock.PathAccess(dirRoRule, "/sys/fs/cgroup"),
 			landlock.PathAccess(dirRoRule, "/etc"),
 			landlock.PathAccess(dirRoRule, "/lib"),
 			landlock.PathAccess(dirRoRule, "/lib64"),

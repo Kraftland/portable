@@ -1457,7 +1457,7 @@ func genBwArg(
 		"--tmpfs",		"/sys/devices",
 		"--tmpfs",		"/sys/block",
 		"--tmpfs",		"/sys/bus",
-		"--ro-bind-try",	"/sys/fs/cgroup", "/sys/fs/cgroup",
+		"--bind-try",	"/sys/fs/cgroup", "/sys/fs/cgroup",
 		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
 		"--ro-bind",		"/sys/kernel", "/sys/kernel",
 		"--ro-bind",		"/sys/devices/virtual", "/sys/devices/virtual",
