@@ -199,6 +199,10 @@ func main () {
 		}
 	})
 	wg.Go(func() {
+		err := writeUclampVal()
+		if err != nil {
+			warn.Println("Could not set uclamp limit:", err)
+		}
 		engageLandlock()
 	})
 	wg.Go(func() {
