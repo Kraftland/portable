@@ -77,6 +77,7 @@ landlockSyscall.AccessFSReadDir)
 			landlock.PathAccess(fullAccRule, "/dev"),
 			landlock.PathAccess(fullAccRule, "/proc"),
 			landlock.PathAccess(fullAccRule, "/sys"),
+			landlock.PathAccess(dirRoRule, "/sys/fs/cgroup"),
 			landlock.PathAccess(dirRoRule, "/etc"),
 			landlock.PathAccess(dirRoRule, "/lib"),
 			landlock.PathAccess(dirRoRule, "/lib64"),
@@ -198,6 +199,10 @@ func main () {
 		}
 	})
 	wg.Go(func() {
+		err := writeUclampVal()
+		if err != nil {
+			warn.Println("Could not set uclamp limit:", err)
+		}
 		engageLandlock()
 	})
 	wg.Go(func() {

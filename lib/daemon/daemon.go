@@ -1178,6 +1178,7 @@ func setupSharedDir (config Config) {
 }
 
 func miscEnvs (config Config) {
+	addEnv("_portableUclampMax=" + config.System.Uclamp)
 	if config.Privacy.Lockdown {
 		switch config.Advanced.FlatpakInfo {
 			case true:
@@ -1185,7 +1186,6 @@ func miscEnvs (config Config) {
 			case false:
 				addEnv("_portableLockdown=without-info")
 		}
-
 	} else {
 		pecho("warn", "Lockdown is not enabled for this sandbox")
 	}
@@ -1457,7 +1457,7 @@ func genBwArg(
 		"--tmpfs",		"/sys/devices",
 		"--tmpfs",		"/sys/block",
 		"--tmpfs",		"/sys/bus",
-		"--ro-bind-try",	"/sys/fs/cgroup", "/sys/fs/cgroup",
+		"--bind-try",		"/sys/fs/cgroup", "/sys/fs/cgroup",
 		"--bind-try",		"/sys/devices/system", "/sys/devices/system",
 		"--ro-bind",		"/sys/kernel", "/sys/kernel",
 		"--ro-bind",		"/sys/devices/virtual", "/sys/devices/virtual",

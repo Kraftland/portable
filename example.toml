@@ -51,6 +51,13 @@ inhibitSuspend = false
 # Inhibit suspend and idle on behalf of applications. Requires system.inhibitSuspend being true
 inhibitOnBehalf = false
 
+# Specifies the "max" value of cgroup's cpu.uclamp property. This influences
+# 	frequency selection of schedutil and Energy / Capacity Aware scheduling.
+# Lower value yields more energy efficiency, while higher trades efficiency
+# 	for performance.
+# Defaults to 100, i.e. unlimited.
+uclamp = ""
+
 # A TOML slice that accepts string values.
 # Current possible values are: (dgpu, input, camera, kvm).
 #------------------------------------------------------------------------------#
