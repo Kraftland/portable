@@ -181,7 +181,9 @@ func addRuleToFilter(f *seccomp.ScmpFilter, call seccomp.ScmpSyscall, act seccom
 func createSeccompFilter() (err error) {
 	var lockdown bool
 	switch os.Getenv("_portableLockdown") {
-		case "1":
+		case "with-info":
+			lockdown = true
+		case "without-info":
 			lockdown = true
 	}
 	filter, err := seccomp.NewFilter(seccomp.ActAllow)

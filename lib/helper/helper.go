@@ -43,6 +43,12 @@ var (
 )
 
 func engageLandlock () {
+	var hasFlatpakInfo bool
+	switch os.Getenv("_portableLockdown") {
+		case "with-info":
+			hasFlatpakInfo = true
+	}
+
 	config, err := landlock.NewConfig(landlock.ScopedSet(landlockSyscall.ScopeSignal))
 	if err != nil {
 		warn.Println("Could not restrict sending signals: " + err.Error())
@@ -77,11 +83,15 @@ landlockSyscall.AccessFSReadDir)
 			landlock.PathAccess(dirRoRule, "/opt"),
 			landlock.PathAccess(dirRoRule, "/sbin"),
 			landlock.PathAccess(dirRoRule, "/usr"),
-			landlock.ROFiles("/.flatpak-info"),
 			landlock.PathAccess(dirAccRule, "/run"),
 			landlock.PathAccess(dirAccRule, "/tmp"),
 			landlock.PathAccess(dirAccRule, homeDir),
 		)
+		if hasFlatpakInfo {
+			landlock.V6.RestrictPaths(
+				landlock.ROFiles("/.flatpak-info"),
+			)
+		}
 		if err != nil {
 			warn.Println("Could not enforce file system landlock: " + err.Error())
 		}

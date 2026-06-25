@@ -1179,7 +1179,13 @@ func setupSharedDir (config Config) {
 
 func miscEnvs (config Config) {
 	if config.Privacy.Lockdown {
-		addEnv("_portableLockdown=1")
+		switch config.Advanced.FlatpakInfo {
+			case true:
+				addEnv("_portableLockdown=with-info")
+			case false:
+				addEnv("_portableLockdown=without-info")
+		}
+
 	} else {
 		pecho("warn", "Lockdown is not enabled for this sandbox")
 	}
