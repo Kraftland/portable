@@ -1,5 +1,10 @@
 package main
 
+import (
+	"slices"
+	"strings"
+)
+
 func GenerateCameraBindArgs() ([]string, error) {
 	var res []string
 
@@ -13,6 +18,13 @@ func GenerateCameraBindArgs() ([]string, error) {
 		devPath := dev.Devnode()
 		sysPath := dev.Syspath()
 		for k := range dev.Devlinks() {
+			if slices.Contains(res, k) {
+				pecho(
+					"warn",
+					"Surplus devlink while binding cameras:", k,
+				)
+				continue
+			}
 			res = append(res,
 				"--symlink",
 				sysPath,
