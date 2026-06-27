@@ -2,7 +2,6 @@ package main
 
 import (
 	"slices"
-	"strings"
 )
 
 func GenerateCameraBindArgs() ([]string, error) {
