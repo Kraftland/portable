@@ -33,7 +33,7 @@ func ListActiveGraphicsCards() ([]*udev.Device, error) {
 				case "disconnected":
 					isConnected = false
 				default:
-					panic("Unknown connector status: " + connectStat + " for connector: " + device.Syspath())
+					isConnected = false
 			}
 			if isConnected {
 				connectorChan <- device
