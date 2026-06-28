@@ -1,6 +1,4 @@
 *.pkg.tar.zst
-src/
-pkg/
 portable/
 *.out
 lib/daemon/portable-daemon
@@ -9,3 +7,4 @@ lib/helper/helper
 lib/open-ng/top.kimiblock.sandboxopen
 lib/flatpak-spawn-stub/top.kimiblock.flatpak-spawn
 lib/prlimit-stub/top.kimiblock.prlimit
+lib/init/target

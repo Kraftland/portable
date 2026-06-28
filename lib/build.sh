@@ -21,6 +21,8 @@ function buildGo() {
 	cd "${currDir}"
 }
 
+git submodule update --init --recursive
+
 buildGo ./lib/daemon
 
 buildGo ./lib/helper
