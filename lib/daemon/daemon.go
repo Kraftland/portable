@@ -1189,6 +1189,11 @@ func miscEnvs (config Config) {
 	} else {
 		pecho("warn", "Lockdown is not enabled for this sandbox")
 	}
+
+	if config.Advanced.Debugging {
+		addEnv("_portableAllowDebugging=1")
+	}
+
 	if config.Advanced.Qt5Compat {
 		addEnv("QT_QPA_PLATFORMTHEME=xdgdesktopportal")
 	}
