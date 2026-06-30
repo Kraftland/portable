@@ -1190,6 +1190,10 @@ func miscEnvs (config Config) {
 		pecho("warn", "Lockdown is not enabled for this sandbox")
 	}
 
+	if config.Advanced.FlatpakInfo {
+		addEnv("_portableHasFlatpakInfo=1")
+	}
+
 	if config.Advanced.Debugging {
 		addEnv("_portableAllowDebugging=1")
 	}
