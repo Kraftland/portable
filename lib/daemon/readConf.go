@@ -151,6 +151,9 @@ func getConf() Config {
 		if md.IsDefined("advanced", "landlock") {
 			pecho("warn", "Landlock is deprecated, use lockdown instead")
 		}
+		if ! md.IsDefined("advanced", "flatpakInfo") {
+			config.Advanced.FlatpakInfo = true
+		}
 		if config.System.GameMode {
 			config.System.DeviceAllow = append(
 				config.System.DeviceAllow,
