@@ -1079,6 +1079,7 @@ func setXDGEnvs(config Config) {
 	addEnv("XDG_MUSIC_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Music"))
 	addEnv("XDG_PICTURES_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Pictures"))
 	addEnv("XDG_VIDEOS_DIR=" + filepath.Join(xdgDir.dataDir, config.Metadata.StateDirectory, "Videos"))
+	addEnv("XDG_RUNTIME_DIR=" + xdgDir.runtimeDir)
 }
 
 func imEnvs (config Config) {
