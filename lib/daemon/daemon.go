@@ -1180,6 +1180,13 @@ func setupSharedDir (config Config) {
 
 func miscEnvs (config Config) {
 	addEnv("_portableUclampMax=" + config.System.Uclamp)
+
+	if config.isModern {
+		addEnv("_portableConfigType=modern")
+	} else {
+		addEnv("_portableConfigType=legacy")
+	}
+
 	if config.Privacy.Lockdown {
 		switch config.Advanced.FlatpakInfo {
 			case true:
