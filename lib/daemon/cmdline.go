@@ -91,8 +91,7 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 					terminateInstance(config)
 					os.Exit(0)
 				case "debug-shell":
-					addEnv("_portableDebug=1")
-					runtimeOpt.isDebug = true
+					config.isDebug = true
 				case "share-file", "share-files":
 					err := shareFileViaHelper(config, false)
 					if err != nil {

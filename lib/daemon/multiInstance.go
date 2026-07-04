@@ -84,7 +84,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	var sl []string
 	var customTgt bool
-	if runtimeOpt.isDebug {
+	if config.isDebug {
 		sl = []string{
 			"/usr/bin/bash",
 			"--noprofile",
