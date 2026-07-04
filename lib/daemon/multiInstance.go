@@ -114,6 +114,7 @@ func getHelperVersion(conn *godbus.Conn, config Config) (uint, error) {
 			helper_name,
 		)
 		if call.Err != nil {
+			pecho("warn", "Could not call messaging bus:", call.Err)
 			return 0, errors.New("Could not query helper state: " + call.Err.Error())
 		}
 		var active bool
@@ -135,7 +136,7 @@ func getHelperVersion(conn *godbus.Conn, config Config) (uint, error) {
 		"/top/kimiblock/portable/init",
 	)
 	call := busObj.Call(
-		"org.freedesktop.DBus.Properties",
+		"org.freedesktop.DBus.Properties.Get",
 		0,
 		"top.kimiblock.Portable.Init",
 		"Version",
@@ -143,8 +144,9 @@ func getHelperVersion(conn *godbus.Conn, config Config) (uint, error) {
 	if call.Err != nil {
 		return 0, call.Err
 	}
+
 	var version uint
-	err := call.Store(version)
+	err := call.Store(&version)
 	if err != nil {
 		return 0, err
 	}
@@ -167,12 +169,6 @@ func busAuxStartV18(
 
 	files = <- docMap
 
-	var fileSlice []string
-
-	for key, val := range files.FileMap {
-		fileSlice = append(fileSlice, key, val)
-	}
-
 	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	var custom_target bool
 	var target string
@@ -189,14 +185,14 @@ func busAuxStartV18(
 		arguments = args
 	}
 	call := busObj.Call(
-		"top.kimiblock.Portable.Init.AuxStart",
+		"top.kimiblock.Portable.Init.AuxStart2",
 		godbus.FlagAllowInteractiveAuthorization,
 		// Bus arguments below
 		custom_target,
 		target,
 		true, // append mode should be on for now
 		arguments,
-		fileSlice,
+		files.FileMap,
 		envs,
 	)
 	if call.Err != nil {
