@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
 	godbus "github.com/godbus/dbus/v5"
 	"golang.org/x/sys/unix"
 )
@@ -54,6 +56,11 @@ func wakeInstance(config Config, docMap chan PassFiles) {
 		pecho("crit", "Could not connect to session bus:", err)
 	}
 
+	var env_map = make(map[string]string)
+	if val := os.Getenv("XDG_ACTIVATION_TOKEN"); len(val) > 0 {
+		env_map["XDG_ACTIVATION_TOKEN"] = val
+	}
+
 	if config.Advanced.TrayWake {
 		err := trayWakeNG(config, conn)
 		if err != nil {
@@ -71,6 +78,7 @@ func wakeInstance(config Config, docMap chan PassFiles) {
 					runtimeOpt.applicationArgs,
 					config,
 					docMap,
+					env_map,
 				)
 			default:
 				busAuxStartReq(
@@ -84,9 +92,46 @@ func wakeInstance(config Config, docMap chan PassFiles) {
 	}
 }
 
+
+// Gets the API version for Helper, and wait for it to come online of not
 func getHelperVersion(conn *godbus.Conn, config Config) (uint, error) {
+	var helper_name = config.Metadata.AppID + ".Portable.Helper"
+
+	var counter uint = 0
+
+	WaitLoop:
+	for {
+		if counter > 100 {
+			return 0, errors.New("Could not call helper: maximum retry reached")
+		}
+		obj := conn.Object(
+			"org.freedesktop.DBus",
+			"/org/freedesktop/DBus",
+		)
+		call := obj.Call(
+			"org.freedesktop.DBus.NameHasOwner",
+			godbus.FlagNoAutoStart,
+			helper_name,
+		)
+		if call.Err != nil {
+			return 0, errors.New("Could not query helper state: " + call.Err.Error())
+		}
+		var active bool
+		err := call.Store(&active)
+		if err != nil {
+			return 0, errors.New("Could not query helper state: " + err.Error())
+		}
+		switch active {
+			case true:
+				break WaitLoop
+			case false:
+				time.Sleep(100 * time.Millisecond)
+				counter++
+		}
+	}
+
 	busObj := conn.Object(
-		config.Metadata.AppID + ".Portable.Helper",
+		helper_name,
 		"/top/kimiblock/portable/init",
 	)
 	call := busObj.Call(
