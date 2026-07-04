@@ -1198,6 +1198,10 @@ func setupSharedDir (config Config) {
 func miscEnvs (config Config) {
 	addEnv("_portableUclampMax=" + config.System.Uclamp)
 
+	if val := os.Getenv("XDG_ACTIVATION_TOKEN"); len(val) > 0 {
+		addEnv("XDG_ACTIVATION_TOKEN=" + val)
+	}
+
 	if config.isModern {
 		addEnv("_portableConfigType=modern")
 	} else {
