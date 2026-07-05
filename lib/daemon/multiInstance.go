@@ -13,6 +13,7 @@ import (
 
 	godbus "github.com/godbus/dbus/v5"
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
 
 func setCBreak(file *os.File) (func () (), error) {
@@ -32,6 +33,17 @@ func setCBreak(file *os.File) (func () (), error) {
 		unix.IoctlSetTermios(int(file.Fd()), unix.TCSETS, oldState)
 	}
 	return cancelFunc, nil
+}
+
+// Converts the current terminal (stdin) into a raw console, caller should call cancelfunc when done
+func rawTerm() (func () (), error) {
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return nil, err
+	}
+	return func() {
+		term.Restore(int(os.Stdin.Fd()), oldState)
+	}, nil
 }
 
 func terminateInstance(config Config) {
