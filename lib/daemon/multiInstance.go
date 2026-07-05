@@ -177,6 +177,13 @@ func busAuxStartV18(
 	docMap chan PassFiles,
 	envs map[string]string,
 ) {
+	restoreTerm, err := rawTerm()
+	if err != nil {
+		pecho("warn", "Could not set console to raw mode:", err)
+	} else {
+		defer restoreTerm()
+	}
+
 	var files PassFiles
 
 	files = <- docMap
@@ -253,13 +260,6 @@ func busAuxStartV18(
 		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)) + " bytes")
 	})
 	go func() {
-		restoreTerm, err := setCBreak(os.Stdin)
-		if err != nil {
-			pecho("warn", "Could not set standard input mode: " + err.Error())
-		} else {
-			defer restoreTerm()
-		}
-
 		conn, err := net.Dial("unix", inFile)
 		if err != nil {
 			pecho("warn", "Could not stream standard input: " + err.Error())
