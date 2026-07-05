@@ -165,11 +165,6 @@ func getHelperVersion(conn *godbus.Conn, config Config) (uint, error) {
 	return version, nil
 }
 
-type startReply struct {
-	hasDescriptors	bool
-	baseDir		string
-}
-
 func busAuxStartV18(
 	conn *godbus.Conn,
 	args []string,
@@ -192,6 +187,9 @@ func busAuxStartV18(
 	var custom_target bool
 	var target string
 	var arguments []string
+
+	var append_mode bool
+
 	if config.isDebug {
 		custom_target = true
 		target = "bash"
@@ -200,16 +198,18 @@ func busAuxStartV18(
 			"--rcfile", "/run/bashrc",
 			"-i",
 		}
+		append_mode = false
 	} else {
 		arguments = args
+		append_mode = true
 	}
 	call := busObj.Call(
 		"top.kimiblock.Portable.Init.AuxStart2",
-		godbus.FlagAllowInteractiveAuthorization,
+		0,
 		// Bus arguments below
 		custom_target,
 		target,
-		true, // append mode should be on for now
+		append_mode, // append mode should be on for now
 		arguments,
 		files.FileMap,
 		envs,
@@ -218,66 +218,39 @@ func busAuxStartV18(
 		pecho("warn", "Could not send start signal:", call.Err)
 		return
 	}
-	var reply startReply
-	err := call.Store(&reply.baseDir)
+	var reply godbus.UnixFD
+	err = call.Store(&reply)
 	if err != nil {
 		pecho("crit", "Could not decode bus reply:", err)
 	}
+
+	var fd *os.File = os.NewFile(uintptr(reply), "pty")
+
 	fmt.Println("Streaming console from sandbox, press Control-D to detach")
-	baseDir := reply.baseDir
-	inFile := filepath.Join(baseDir, "stdin")
-	outFile := filepath.Join(baseDir, "stdout")
-	errFile := filepath.Join(baseDir, "stderr")
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		conn, err := net.Dial("unix", outFile)
+		go func () {
+			_, err := io.Copy(fd, os.Stdin)
+			if err != nil {
+				pecho("warn", "Could not stream stdin:", err)
+			}
+		} ()
+		_, err := io.Copy(os.Stdout, fd)
 		if err != nil {
-			pecho("warn", "Could not stream standard output: " + err.Error())
-			return
-		} else {
-			defer conn.Close()
-			pecho("debug", "Streaming standard output")
+			pecho("warn", "Could not stream stdout:", err)
 		}
-		n, err := io.Copy(os.Stdout, conn)
-		if err != nil {
-			pecho("warn", "Stream finished with error: " + err.Error())
-		}
-		pecho("debug", "Streamed stdout: " + strconv.Itoa(int(n)) + " bytes")
 	})
-	wg.Go(func() {
-		conn, err := net.Dial("unix", errFile)
-		if err != nil {
-			pecho("warn", "Could not stream standard error: " + err.Error())
-			return
-		} else {
-			defer conn.Close()
-		}
-		n, err := io.Copy(os.Stderr, conn)
-		if err != nil {
-			pecho("warn", "Stream finished with error: " + err.Error())
-		}
-		pecho("debug", "Streamed stderr: " + strconv.Itoa(int(n)) + " bytes")
-	})
-	go func() {
-		conn, err := net.Dial("unix", inFile)
-		if err != nil {
-			pecho("warn", "Could not stream standard input: " + err.Error())
-			return
-		} else {
-			defer conn.Close()
-		}
-		n, err := io.Copy(conn, os.Stdin)
-		if err != nil {
-			pecho("warn", "Stream finished with error: " + err.Error())
-		}
-		pecho("debug", "Streamed stdin: " + strconv.Itoa(int(n)) + " bytes")
-	} ()
 	wg.Wait()
 
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, docMap chan PassFiles) {
+	type startReply struct {
+		hasDescriptors	bool
+		baseDir		string
+	}
+
 	var files PassFiles
 
 	files = <- docMap

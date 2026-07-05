@@ -2227,7 +2227,7 @@ func main() {
 	})
 
 
-	go cmdlineDispatcher(cmdChan, config, exposeChan)
+	go cmdlineDispatcher(cmdChan, &config, exposeChan)
 	go gpuBind(gpuChan, config)
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
@@ -2264,6 +2264,7 @@ func main() {
 
 	// This also needs to wait before cmdChan for debug-shell
 	if multiInstanceDetected := <- miChan; multiInstanceDetected {
+		println("Debug shell:", config.isDebug)
 		wakeInstance(config, docsMap)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
