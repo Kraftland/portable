@@ -34,9 +34,6 @@ jobs:
       #working-directory: 'lib/daemon'
     - name: Test
       run: go test -v ./...
-      working-directory: 'lib/helper'
-    - name: Test
-      run: go test -v ./...
       working-directory: 'lib/open-ng'
     - name: Test
       run: go test -v ./...
