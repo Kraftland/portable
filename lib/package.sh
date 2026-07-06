@@ -39,10 +39,11 @@ install -vDm755 \
 	-t \
 	"${installPrefix}/usr/lib/portable/open-ng/"
 
-install -vDm755 \
-	"lib/overlay-usr"/* \
-	-t \
-	"${installPrefix}/usr/lib/portable/overlay-usr/"
+install -d "${installPrefix}/usr/lib/portable"
+
+cp -r \
+	"lib/overlay-usr" \
+	"${installPrefix}/usr/lib/portable/"
 
 install -vDm755 \
 	"lib/portable-pools" \
