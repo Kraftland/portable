@@ -21,11 +21,22 @@ function buildGo() {
 	cd "${currDir}"
 }
 
+function buildRust() {
+	currDir="$(pwd)"
+	cd "$1"
+	export RUSTUP_TOOLCHAIN=stable
+	export CARGO_TARGET_DIR=target
+	cargo fetch --locked --target host-tuple
+	cargo build --frozen --release --all-features
+	cd "${currDir}"
+}
+
 git submodule update --init --recursive
 
 buildGo ./lib/daemon
 
-buildGo ./lib/helper
+buildRust ./lib/init
+
 buildGo ./lib/open-ng
 buildGo ./lib/flatpak-spawn-stub
 buildGo ./lib/prlimit-stub

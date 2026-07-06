@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -9,8 +10,10 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
 	godbus "github.com/godbus/dbus/v5"
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
 
 func setCBreak(file *os.File) (func () (), error) {
@@ -30,6 +33,17 @@ func setCBreak(file *os.File) (func () (), error) {
 		unix.IoctlSetTermios(int(file.Fd()), unix.TCSETS, oldState)
 	}
 	return cancelFunc, nil
+}
+
+// Converts the current terminal (stdin) into a raw console, caller should call cancelfunc when done
+func rawTerm() (func () (), error) {
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return nil, err
+	}
+	return func() {
+		term.Restore(int(os.Stdin.Fd()), oldState)
+	}, nil
 }
 
 func terminateInstance(config Config) {
@@ -54,23 +68,189 @@ func wakeInstance(config Config, docMap chan PassFiles) {
 		pecho("crit", "Could not connect to session bus:", err)
 	}
 
+	var env_map = make(map[string]string)
+	if val := os.Getenv("XDG_ACTIVATION_TOKEN"); len(val) > 0 {
+		env_map["XDG_ACTIVATION_TOKEN"] = val
+	}
+
 	if config.Advanced.TrayWake {
 		err := trayWakeNG(config, conn)
 		if err != nil {
 			pecho("crit", "Could not wake remote: " + err.Error())
 		}
 	} else {
-		busAuxStartReq(conn, false, runtimeOpt.applicationArgs, config, docMap)
+		ver, err := getHelperVersion(conn, config)
+		if err != nil {
+			pecho("warn", "Could not get helper version:", err)
+		}
+		switch ver {
+			case 18:
+				busAuxStartV18(
+					conn,
+					runtimeOpt.applicationArgs,
+					config,
+					docMap,
+					env_map,
+				)
+			default:
+				busAuxStartReq(
+					conn,
+					false,
+					runtimeOpt.applicationArgs,
+					config,
+					docMap,
+				)
+		}
 	}
 }
 
 
-type startReply struct {
-	hasDescriptors	bool
-	baseDir		string
+// Gets the API version for Helper, and wait for it to come online of not
+func getHelperVersion(conn *godbus.Conn, config Config) (uint, error) {
+	var helper_name = config.Metadata.AppID + ".Portable.Helper"
+
+	var counter uint = 0
+
+	WaitLoop:
+	for {
+		if counter > 100 {
+			return 0, errors.New("Could not call helper: maximum retry reached")
+		}
+		obj := conn.Object(
+			"org.freedesktop.DBus",
+			"/org/freedesktop/DBus",
+		)
+		call := obj.Call(
+			"org.freedesktop.DBus.NameHasOwner",
+			godbus.FlagNoAutoStart,
+			helper_name,
+		)
+		if call.Err != nil {
+			pecho("warn", "Could not call messaging bus:", call.Err)
+			return 0, errors.New("Could not query helper state: " + call.Err.Error())
+		}
+		var active bool
+		err := call.Store(&active)
+		if err != nil {
+			return 0, errors.New("Could not query helper state: " + err.Error())
+		}
+		switch active {
+			case true:
+				break WaitLoop
+			case false:
+				time.Sleep(100 * time.Millisecond)
+				counter++
+		}
+	}
+
+	busObj := conn.Object(
+		helper_name,
+		"/top/kimiblock/portable/init",
+	)
+	call := busObj.Call(
+		"org.freedesktop.DBus.Properties.Get",
+		0,
+		"top.kimiblock.Portable.Init",
+		"Version",
+	)
+	if call.Err != nil {
+		return 0, call.Err
+	}
+
+	var version uint
+	err := call.Store(&version)
+	if err != nil {
+		return 0, err
+	}
+	return version, nil
+}
+
+func busAuxStartV18(
+	conn *godbus.Conn,
+	args []string,
+	config Config,
+	docMap chan PassFiles,
+	envs map[string]string,
+) {
+	restoreTerm, err := rawTerm()
+	if err != nil {
+		pecho("warn", "Could not set console to raw mode:", err)
+	} else {
+		defer restoreTerm()
+	}
+
+	var files PassFiles
+
+	files = <- docMap
+
+	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
+	var custom_target bool
+	var target string
+	var arguments []string
+
+	var append_mode bool
+
+	if config.isDebug {
+		custom_target = true
+		target = "bash"
+		arguments = []string{
+			"--noprofile",
+			"--rcfile", "/run/bashrc",
+			"-i",
+		}
+		append_mode = false
+	} else {
+		arguments = args
+		append_mode = true
+	}
+	call := busObj.Call(
+		"top.kimiblock.Portable.Init.AuxStart2",
+		0,
+		// Bus arguments below
+		custom_target,
+		target,
+		append_mode, // append mode should be on for now
+		arguments,
+		files.FileMap,
+		envs,
+	)
+	if call.Err != nil {
+		pecho("warn", "Could not send start signal:", call.Err)
+		return
+	}
+	var reply godbus.UnixFD
+	err = call.Store(&reply)
+	if err != nil {
+		pecho("crit", "Could not decode bus reply:", err)
+	}
+
+	var fd *os.File = os.NewFile(uintptr(reply), "pty")
+
+	fmt.Println("Streaming console from sandbox, press Control-D to detach")
+
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		go func () {
+			_, err := io.Copy(fd, os.Stdin)
+			if err != nil {
+				pecho("warn", "Could not stream stdin:", err)
+			}
+		} ()
+		_, err := io.Copy(os.Stdout, fd)
+		if err != nil {
+			pecho("warn", "Could not stream stdout:", err)
+		}
+	})
+	wg.Wait()
+
 }
 
 func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, docMap chan PassFiles) {
+	type startReply struct {
+		hasDescriptors	bool
+		baseDir		string
+	}
+
 	var files PassFiles
 
 	files = <- docMap
@@ -84,7 +264,7 @@ func busAuxStartReq(conn *godbus.Conn, tray bool, args []string, config Config, 
 	busObj := conn.Object(config.Metadata.AppID + ".Portable.Helper", "/top/kimiblock/portable/init")
 	var sl []string
 	var customTgt bool
-	if runtimeOpt.isDebug {
+	if config.isDebug {
 		sl = []string{
 			"/usr/bin/bash",
 			"--noprofile",

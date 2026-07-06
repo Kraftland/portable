@@ -921,11 +921,28 @@ func busListener(conn *godbus.Conn, ready chan int8, sdConn *dbus.Conn, stopSig 
 
 func startApp(config Config, argChan chan bwArgs, stopSig chan int) {
 	go forceBackgroundPerm(config)
-	sdArgs := append(
-		<-argChan,
-		runtimeOpt.applicationArgs...,
-	)
-	pecho("debug", "Calculated arguments for systemd-run: " + strings.Join(sdArgs, ", "))
+
+	var sdArgs []string
+
+	if config.isDebug {
+		sdArgs = append(
+			<-argChan,
+			[]string{
+				"--noprofile",
+				"--rcfile", "/run/bashrc",
+				"-i",
+			}...,
+		)
+	} else if config.isBusActivate {
+		sdArgs = append(<-argChan, config.BusActivation.Arguments...)
+	} else {
+		sdArgs = append(
+			<-argChan,
+			runtimeOpt.applicationArgs...,
+		)
+	}
+
+	pecho("debug", "Calculated arguments for systemd-run:", sdArgs)
 	sdExec := exec.Command("systemd-run", sdArgs...)
 	sdExec.Stderr = os.Stderr
 	sdExec.Stdout = os.Stdout
@@ -1180,6 +1197,17 @@ func setupSharedDir (config Config) {
 
 func miscEnvs (config Config) {
 	addEnv("_portableUclampMax=" + config.System.Uclamp)
+
+	if val := os.Getenv("XDG_ACTIVATION_TOKEN"); len(val) > 0 {
+		addEnv("XDG_ACTIVATION_TOKEN=" + val)
+	}
+
+	if config.isModern {
+		addEnv("_portableConfigType=modern")
+	} else {
+		addEnv("_portableConfigType=legacy")
+	}
+
 	if config.Privacy.Lockdown {
 		switch config.Advanced.FlatpakInfo {
 			case true:
@@ -1228,23 +1256,16 @@ func prepareEnvs(config Config) {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		addEnv("TERM=xterm")
-		if ! config.Advanced.FlatpakInfo {
-			addEnv("_portableNoFlatpakInfo=1")
-		}
 		if config.System.InhibitOnBehalf {
 			addEnv("_portableInhibit=1")
 		}
 		addEnv("appID=" + config.Metadata.AppID)
-		addEnv("friendlyName=" + config.Metadata.FriendlyName)
-		addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		if config.BusActivation.Enable {
-			actSlice := append([]string{config.BusActivation.Target}, config.BusActivation.Arguments...)
-			jsonObj, err := json.Marshal(actSlice)
-			if err != nil {
-				pecho("warn", "Could not marshal application arguments: " + err.Error())
-			} else {
-				addEnv("_portableBusActivateArgs=" + string(jsonObj))
-			}
+			addEnv("_portableLaunchTarget=" + config.BusActivation.Target)
+		} else if config.isDebug {
+			addEnv("_portableLaunchTarget=bash")
+		} else {
+			addEnv("_portableLaunchTarget=" + config.Exec.Target)
 		}
 
 	})
@@ -2206,7 +2227,7 @@ func main() {
 	})
 
 
-	go cmdlineDispatcher(cmdChan, config, exposeChan)
+	go cmdlineDispatcher(cmdChan, &config, exposeChan)
 	go gpuBind(gpuChan, config)
 	miscChan := make(chan []string, 10240)
 	pwSecContextChan := make(chan []string, 1)
@@ -2241,12 +2262,15 @@ func main() {
 		return
 	}
 
+	// This also needs to wait before cmdChan for debug-shell
 	if multiInstanceDetected := <- miChan; multiInstanceDetected {
+		println("Debug shell:", config.isDebug)
 		wakeInstance(config, docsMap)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 	mkdirWg.Wait()
 	wg.Go(func() {
+		// must run after cmdline dispatcher for debug shell!
 		prepareEnvs(config)
 	})
 	wg.Go(func() {

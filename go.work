@@ -4,7 +4,6 @@ use (
 	./lib/daemon
 	./lib/flatpak-spawn-stub
 	./lib/gpu
-	./lib/helper
 	./lib/open-ng
 	./lib/portals
 	./lib/prlimit-stub

@@ -39,7 +39,7 @@ func resetDocs (config Config) {
 }
 
 
-func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[string]string) {
+func cmdlineDispatcher(cmdChan chan int8, config *Config, exposeChan chan map[string]string) {
 	var skipCount	int
 	var hasExpose	bool
 	var fileFwd	bool
@@ -88,16 +88,15 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 			switch cmdlineArray[index + 1] {
 				case "quit":
 					pecho("debug", "Received quit request from user")
-					terminateInstance(config)
+					terminateInstance(*config)
 					os.Exit(0)
 				case "debug-shell":
-					addEnv("_portableDebug=1")
-					runtimeOpt.isDebug = true
+					config.isDebug = true
 				case "share-file", "share-files":
-					err := shareFileViaHelper(config, false)
+					err := shareFileViaHelper(*config, false)
 					if err != nil {
 						pecho("warn", "Unable to request file sharing via IPC, falling back:", err)
-						err := alertHelperNotRunning(config)
+						err := alertHelperNotRunning(*config)
 						if err != nil {
 							pecho(
 								"warn",
@@ -108,10 +107,10 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 					}
 					abortChan <- true
 				case "share-directories", "share-directory":
-					err := shareFileViaHelper(config, true)
+					err := shareFileViaHelper(*config, true)
 					if err != nil {
 						pecho("warn", "Unable to request directory sharing via IPC:", err)
-						err := alertHelperNotRunning(config)
+						err := alertHelperNotRunning(*config)
 						if err != nil {
 							pecho(
 								"warn",
@@ -122,13 +121,13 @@ func cmdlineDispatcher(cmdChan chan int8, config Config, exposeChan chan map[str
 					}
 					abortChan <- true
 				case "opendir", "home", "openhome":
-					openHome(config)
+					openHome(*config)
 					abortChan <- true
 				case "reset-document", "reset-documents":
-					resetDocs(config)
+					resetDocs(*config)
 					abortChan <- true
 				case "stat", "stats":
-					showStats(config)
+					showStats(*config)
 					abortChan <- true
 				case "f5aaebc6-0014-4d30-beba-72bce57e0650":
 					pecho("warn", "Portable has removed the ability to start in unsafe mode, please use the legacy version instead")

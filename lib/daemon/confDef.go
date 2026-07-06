@@ -11,6 +11,8 @@ type Config struct {
 	Advanced	AdvancedOpts
 	Path		string
 	isModern	bool
+	isDebug		bool
+	isBusActivate	bool
 }
 
 type Metadata struct {
