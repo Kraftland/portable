@@ -6,6 +6,10 @@ if [[ ${pkgdir} ]]; then
 	installPrefix="${pkgdir}"
 fi
 
+install -vDm755 \
+	"lib/init/target/release/init" \
+	"${installPrefix}/usr/lib/portable/helper/helper"
+
 install -d "${installPrefix}/usr/bin/"
 install -d "${installPrefix}/usr/lib/"
 cp -r "lib" "${installPrefix}/usr/lib/portable"
