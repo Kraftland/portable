@@ -1,0 +1,3 @@
+[submodule "lib/init"]
+	path = lib/init
+	url = https://github.com/Kraftland/portable-init.git
