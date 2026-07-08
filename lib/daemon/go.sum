@@ -1,7 +1,9 @@
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/KarpelesLab/reflink v1.0.2 h1:hQ1aM3TmjU2kTNUx5p/HaobDoADYk+a6AuEinG4Cv88=
-github.com/KarpelesLab/reflink v1.0.2/go.mod h1:WGkTOKNjd1FsJKBw3mu4JvrPEDJyJJ+JPtxBkbPoCok=
+github.com/Kraftland/portable/lib/gpu v0.0.0-20260708052037-beb377ebb3ab h1:oRlRzCoM+avjIl5x2vFEvveBXHwHesZwSX4KLIXRm6Q=
+github.com/Kraftland/portable/lib/gpu v0.0.0-20260708052037-beb377ebb3ab/go.mod h1:bGlGBMGVqgxFW+JU0m+qMGTP4mO3rcUyFdKSw9HlDLQ=
+github.com/Kraftland/portable/lib/portals v0.0.0-20260708052037-beb377ebb3ab h1:RC8oUc+F4tEluo35Uz29WXhW/wp0jXM7ncp46dLlLfA=
+github.com/Kraftland/portable/lib/portals v0.0.0-20260708052037-beb377ebb3ab/go.mod h1:uZVGxFFleX+IOYwXINkOBu0LIx3wVtcmEXUUHq/fcFA=
 github.com/coreos/go-systemd/v22 v22.7.0 h1:LAEzFkke61DFROc7zNLX/WA2i5J8gYqe0rSj9KI28KA=
 github.com/coreos/go-systemd/v22 v22.7.0/go.mod h1:xNUYtjHu2EDXbsxz1i41wouACIwT7Ybq9o0BQhMwD0w=
 github.com/godbus/dbus/v5 v5.2.2 h1:TUR3TgtSVDmjiXOgAAyaZbYmIeP3DPkld3jgKGV8mXQ=
@@ -10,7 +12,7 @@ github.com/jkeiser/iter v0.0.0-20200628201005-c8aa0ae784d1 h1:smvLGU3obGU5kny71B
 github.com/jkeiser/iter v0.0.0-20200628201005-c8aa0ae784d1/go.mod h1:fP/NdyhRVOv09PLRbVXrSqHhrfQypdZwgE2L4h2U5C8=
 github.com/jochenvg/go-udev v0.0.0-20240801134859-b65ed646224b h1:Pzf7tldbCVqwl3NnOnTamEWdh/rL41fsoYCn2HdHgRA=
 github.com/jochenvg/go-udev v0.0.0-20240801134859-b65ed646224b/go.mod h1:IBDUGq30U56w969YNPomhMbRje1GrhUsCh7tHdwgLXA=
-golang.org/x/sys v0.46.0 h1:noSf2Fq6F8DBgS+LysIkx7rIExoNHJsxOAtPp4rthXw=
-golang.org/x/sys v0.46.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
+golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
+golang.org/x/sys v0.47.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
 golang.org/x/term v0.44.0 h1:0rLvDRCtNj0gZkyIXhCyOb2OAzEhLVqc4B+hrsBhrmc=
 golang.org/x/term v0.44.0/go.mod h1:7ze4MdzUzLXpSAoFP1H0bOI9aXDqveSvatT5vKcFh2Y=
