@@ -149,8 +149,7 @@ func getConf() Config {
 			config.Network.Enable = true
 		}
 		if md.IsDefined("advanced", "landlock") {
-			pecho("warn", "Landlock is deprecated and alias to privacy.lockdown")
-			config.Privacy.Lockdown = true
+			pecho("warn", "Landlock is renamed to privacy.lockdown")
 		}
 		if ! md.IsDefined("advanced", "flatpakInfo") {
 			config.Advanced.FlatpakInfo = true
