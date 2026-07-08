@@ -79,7 +79,6 @@ type AdvancedOpts struct {
 	TrayWake		bool
 	KDEStatus		bool
 	FlatpakInfo		bool
-	Landlock		bool
 	Debugging		bool
 }
 

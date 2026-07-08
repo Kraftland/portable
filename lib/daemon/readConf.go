@@ -149,7 +149,8 @@ func getConf() Config {
 			config.Network.Enable = true
 		}
 		if md.IsDefined("advanced", "landlock") {
-			pecho("warn", "Landlock is deprecated, use lockdown instead")
+			pecho("warn", "Landlock is deprecated and alias to privacy.lockdown")
+			config.Privacy.Lockdown = true
 		}
 		if ! md.IsDefined("advanced", "flatpakInfo") {
 			config.Advanced.FlatpakInfo = true
@@ -177,9 +178,6 @@ func getConf() Config {
 				config.System.DeviceAllow,
 				"input",
 			)
-		}
-		if config.Privacy.Lockdown {
-			config.Advanced.Landlock = true
 		}
 	}
 	sessionType := os.Getenv("XDG_SESSION_TYPE")
