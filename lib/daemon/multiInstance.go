@@ -200,8 +200,8 @@ func busAuxStartV18(
 		}
 		append_mode = false
 	} else {
-		arguments = args
-		append_mode = true
+		arguments = append(config.Exec.Arguments, args...)
+		append_mode = false
 	}
 	call := busObj.Call(
 		"top.kimiblock.Portable.Init.AuxStart2",
