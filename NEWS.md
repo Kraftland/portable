@@ -1,4 +1,10 @@
 # 18.beta
+## Daemon
+* introduce NEWS entry by @Kimiblock in https://github.com/Kraftland/portable/pull/1018
+* next: remove advanced.landlock config key by @Kimiblock in https://github.com/Kraftland/portable/pull/1019
+* multi-instance: disable append mode because extra arguments apply whi… by @Kimiblock in https://github.com/Kraftland/portable/pull/1022
+* build(deps): bump golang.org/x/sys from 0.46.0 to 0.47.0 in /lib/daemon by @dependabot[bot] in https://github.com/Kraftland/portable/pull/1021
+* init: bump to latest commit by @Kimiblock in https://github.com/Kraftland/portable/pull/1023
 
 ## Init:
 * logger: call unwrap by @Kimiblock in https://github.com/Kraftland/portable-init/pull/23
@@ -6,6 +12,9 @@
 * ipc: resolve Portal responses using URL encoding by @Kimiblock in https://github.com/Kraftland/portable-init/pull/25
 * next: implement idle inhibit by @Kimiblock in https://github.com/Kraftland/portable-init/pull/26
 * seccomp: actually make use of cancel token, don't print mystic errors… by @Kimiblock in https://github.com/Kraftland/portable-init/pull/27
+* feat: remove expired shared files automatically by @Kimiblock in https://github.com/Kraftland/portable-init/pull/28
+* envs: while resolving commandline arguments, start loop with 1 or more items left by @Kimiblock in https://github.com/Kraftland/portable-init/pull/29
+* seccomp: reply 0 to capset calls by @Kimiblock in https://github.com/Kraftland/portable-init/pull/30
 
 # 18.alpha
 ## Daemon
