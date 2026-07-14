@@ -1,3 +1,10 @@
+#18.rc
+
+## Init
+* seccomp: introduce a list of syscalls to fake status by @Kimiblock in https://github.com/Kraftland/portable-init/pull/32
+* seccomp: expand the built-in list of syscall by @Kimiblock in https://github.com/Kraftland/portable-init/pull/33
+* seccomp: deny keyring syscalls by default by @Kimiblock in https://github.com/Kraftland/portable-init/pull/34
+
 # 18.beta
 ## Daemon
 * introduce NEWS entry by @Kimiblock in https://github.com/Kraftland/portable/pull/1018
