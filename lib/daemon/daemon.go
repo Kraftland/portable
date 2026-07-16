@@ -1126,12 +1126,15 @@ func imEnvs (config Config) {
 		pecho("debug", "Determined input method type: " + imKind)
 		switch imKind {
 			case "Fcitx 5":
-				addEnv("GTK_IM_MODULE=fcitx")
+				//addEnv("GTK_IM_MODULE=fcitx")
 				addEnv("QT_IM_MODULE=fcitx")
+				addEnv("QT_IM_MODULES=wayland;fcitx")
 			case "iBus":
+				addEnv("QT_IM_MODULES=wayland;ibus")
 				addEnv("QT_IM_MODULE=ibus")
-				addEnv("GTK_IM_MODULE=ibus")
+				//addEnv("GTK_IM_MODULE=ibus")
 			case "gcin":
+				addEnv("QT_IM_MODULES=wayland;ibus")
 				addEnv("QT_IM_MODULE=ibus")
 				addEnv("GTK_IM_MODULE=gcin")
 			default:
@@ -1158,13 +1161,15 @@ func imEnvs (config Config) {
 								line := scanner.Text()
 								if strings.Contains(line, "fcitx") {
 									pecho("debug", "Guessing IM: Fcitx")
-									addEnv("GTK_IM_MODULE=fcitx")
+									//addEnv("GTK_IM_MODULE=fcitx")
+									addEnv("QT_IM_MODULES=wayland;fcitx")
 									addEnv("QT_IM_MODULE=fcitx")
 									break
 								} else if strings.Contains(line, "ibus") {
 									pecho("debug", "Guessing IM: iBus")
 									addEnv("QT_IM_MODULE=ibus")
-									addEnv("GTK_IM_MODULE=ibus")
+									addEnv("QT_IM_MODULES=wayland;ibus")
+									//addEnv("GTK_IM_MODULE=ibus")
 									break
 								}
 							}
