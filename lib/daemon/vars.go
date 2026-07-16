@@ -7,7 +7,7 @@ type RUNTIME_OPT struct {
 }
 
 const (
-	version		float32	=	16.99
+	version		float32	=	18
 )
 
 type gpuBrand string // Could be intel, amd, nvidia or unknown
