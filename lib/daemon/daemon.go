@@ -2269,7 +2269,6 @@ func main() {
 
 	// This also needs to wait before cmdChan for debug-shell
 	if multiInstanceDetected := <- miChan; multiInstanceDetected {
-		println("Debug shell:", config.isDebug)
 		wakeInstance(config, docsMap)
 	} else {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
