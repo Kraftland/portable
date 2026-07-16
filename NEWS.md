@@ -4,6 +4,10 @@
 * seccomp: introduce a list of syscalls to fake status by @Kimiblock in https://github.com/Kraftland/portable-init/pull/32
 * seccomp: expand the built-in list of syscall by @Kimiblock in https://github.com/Kraftland/portable-init/pull/33
 * seccomp: deny keyring syscalls by default by @Kimiblock in https://github.com/Kraftland/portable-init/pull/34
+* seccomp: allow mincore syscall by @Kimiblock in https://github.com/Kraftland/portable-init/pull/35
+* seccomp: reply with ENOSYS to gracefully fallback application requests by @Kimiblock in https://github.com/Kraftland/portable-init/pull/36
+* seccomp: use negative errors by @Kimiblock in https://github.com/Kraftland/portable-init/pull/37
+* seccomp: add comments for mincore by @Kimiblock in https://github.com/Kraftland/portable-init/pull/38
 
 # 18.beta
 ## Daemon
