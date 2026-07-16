@@ -1,6 +1,6 @@
-#18.rc
+## 18.rc
 
-## Init
+### Init
 * seccomp: introduce a list of syscalls to fake status by @Kimiblock in https://github.com/Kraftland/portable-init/pull/32
 * seccomp: expand the built-in list of syscall by @Kimiblock in https://github.com/Kraftland/portable-init/pull/33
 * seccomp: deny keyring syscalls by default by @Kimiblock in https://github.com/Kraftland/portable-init/pull/34
@@ -9,15 +9,15 @@
 * seccomp: use negative errors by @Kimiblock in https://github.com/Kraftland/portable-init/pull/37
 * seccomp: add comments for mincore by @Kimiblock in https://github.com/Kraftland/portable-init/pull/38
 
-# 18.beta
-## Daemon
+## 18.beta
+### Daemon
 * introduce NEWS entry by @Kimiblock in https://github.com/Kraftland/portable/pull/1018
 * next: remove advanced.landlock config key by @Kimiblock in https://github.com/Kraftland/portable/pull/1019
 * multi-instance: disable append mode because extra arguments apply whi… by @Kimiblock in https://github.com/Kraftland/portable/pull/1022
 * build(deps): bump golang.org/x/sys from 0.46.0 to 0.47.0 in /lib/daemon by @dependabot[bot] in https://github.com/Kraftland/portable/pull/1021
 * init: bump to latest commit by @Kimiblock in https://github.com/Kraftland/portable/pull/1023
 
-## Init:
+### Init:
 * logger: call unwrap by @Kimiblock in https://github.com/Kraftland/portable-init/pull/23
 * ipc: create shared directory only when missing by @Kimiblock in https://github.com/Kraftland/portable-init/pull/24
 * ipc: resolve Portal responses using URL encoding by @Kimiblock in https://github.com/Kraftland/portable-init/pull/25
@@ -27,8 +27,8 @@
 * envs: while resolving commandline arguments, start loop with 1 or more items left by @Kimiblock in https://github.com/Kraftland/portable-init/pull/29
 * seccomp: reply 0 to capset calls by @Kimiblock in https://github.com/Kraftland/portable-init/pull/30
 
-# 18.alpha
-## Daemon
+## 18.alpha
+### Daemon
 * next: prepare for submodules by @Kimiblock in https://github.com/Kraftland/portable/pull/1002
 * daemon: signal helper about debugging status by @Kimiblock in https://github.com/Kraftland/portable/pull/1007
 * specify seccomp >= 2.6 requirement by @Kimiblock in https://github.com/Kraftland/portable/pull/1008
@@ -39,10 +39,7 @@
 * rework packaging by @Kimiblock in https://github.com/Kraftland/portable/pull/1016
 * init: checkout at alpha 2 by @Kimiblock in https://github.com/Kraftland/portable/pull/1017
 
-
-**Full Changelog**: https://github.com/Kraftland/portable/compare/17.0.3...18.alpha
-
-## Changes from Init
+### Changes from Init
 * initial seccomp filtering by @Kimiblock in https://github.com/Kraftland/portable-init/pull/1
 * add actions by @Kimiblock in https://github.com/Kraftland/portable-init/pull/2
 * next: decode has_info by @Kimiblock in https://github.com/Kraftland/portable-init/pull/3
