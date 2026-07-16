@@ -16,6 +16,7 @@ This is the rewrite of the original Portable. For the legacy version, see `legac
 Portable has companion projects for packaging and sandboxing:
 | Project       | Descripton      |
 | ------------- | -------------   |
+| [Init](https://github.com/Kraftland/portable-init) | Sandbox PID 1 supervisor |
 | [StashPak](https://github.com/Kimiblock/stashpak) | Build a Portable package for Arch Linux |
 | [Packer](https://github.com/Kimiblock/portable-packer) | Packaging utility for Portable on Arch Linux |
 | [Netsock](https://github.com/Kimiblock/netsock) | Network firewall |
