@@ -5,7 +5,6 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 - uses systemd >=258
 - has libseccomp >= 2.6
 - has landlock ABI 6 and above (Linux kernel >= 6.12)
-- has kernel.yama.ptrace_scope <= 1
 - Follows the [FHS (Filesystem Hierarchy Standard)](https://specifications.freedesktop.org/fhs/latest/)
 	- Note that `/lib` `/lib64` `/bin` `/sbin` should be symlinks to their respective locations under `/usr`
 

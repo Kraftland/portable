@@ -1,3 +1,13 @@
+# 18.0 - Lawn
+
+This release of Portable brings a prominent rewrite of the sandbox supervisor system, includes support the XDG activation protocol, greatly reduces installed files. It sets a new bar for a secure and performant sandbox.
+
+The new supervisor is carefully and thoughtfully engineered. It represents our vision for the future of sandboxing. It is responsive while feature-packed. In addition to existing security model from the Go version, we also introduced better system call filtering with allow-listing and custom return values for a smaller attack surface and better concealment of secure execution environment to malicious applications. The default error has also been changed from _Permision Denied_ to _ENOSYS_, which represents that kernel lacks support for said system call, allowing well-behaved applications to fall back gracefully.
+
+Among a set of security features, there're also several quality of life changes for the Init and daemon. When launching multiple instances, Portable now streams the entire console rather than standard input, output and error, providing better integration and navigation for terminal applications. The supervisor will now reclaim expired files to avoid cluttering up shared directory, as well as offloading argument calculation to the daemon. The logging infrastructure has also been reworked to feature coloured output.
+
+With all those new features, the average lifetime of supervisor went from 5.9 milliseconds to 5.4 milliseconds, bringing this release in line with the commitment of a fast, private, secure sandbox, for the Linux desktop.
+
 ## 18.rc
 
 ### Init
