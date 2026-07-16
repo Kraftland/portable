@@ -1,6 +1,6 @@
 # 18.0 - Lawn
 
-This release of Portable brings a prominent rewrite of the sandbox supervisor system, includes support the XDG activation protocol, greatly reduces installed files. It sets a new bar for a secure and performant sandbox.
+This release of Portable brings a prominent rewrite of the sandbox supervisor system, includes XDG activation protocol support, greatly reduces installed files, and much more. It sets a new bar for a secure and performant sandbox.
 
 The new supervisor is carefully and thoughtfully engineered. It represents our vision for the future of sandboxing. It is responsive while feature-packed. In addition to existing security model from the Go version, we also introduced better system call filtering with allow-listing and custom return values for a smaller attack surface and better concealment of secure execution environment to malicious applications. The default error has also been changed from _Permision Denied_ to _ENOSYS_, which represents that kernel lacks support for said system call, allowing well-behaved applications to fall back gracefully.
 
