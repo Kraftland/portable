@@ -13,10 +13,8 @@ pub struct Metadata {
 	// Check needed
 	pub sandbox_id:		String,
 	#[serde(alias = "friendlyName")]
-	// If empty, use sandbox_id
 	pub display_name:	String,
 	#[serde(alias = "stateDirectory")]
-	// If empty, use sandbox_id
 	pub state_directory:	String,
 
 	pub config_version:	usize,
@@ -45,7 +43,12 @@ pub struct BusExec {
 
 #[derive(Debug,  Deserialize)]
 pub struct ProcMgmt {
+	#[serde(default = "default_background")]
 	pub background:		bool,
+}
+
+fn default_background() -> bool {
+	true
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,11 +60,16 @@ pub struct SysMgmt {
 	pub conduct_inhibit:	bool,
 
 	#[serde(alias = "uclamp")]
-	pub uclamp_max:		bool,
+	#[serde(default = "default_uclamp")]
+	pub uclamp_max:		u16,
 
 	#[serde(alias = "deviceAllow")]
 	#[serde(deserialize_with = "deserialise_device_allow")]
 	pub device_allow:	Vec<DeviceAllow>,
+}
+
+fn default_uclamp () -> u16 {
+	100
 }
 
 #[derive(Debug)]
@@ -147,6 +155,7 @@ pub struct Advanced {
 	pub use_zink:		bool,
 
 	#[serde(alias = "qt5Compat")]
+	#[serde(default = "default_qt5_compat")]
 	pub qt5_compat:		bool,
 
 	#[serde(alias = "mprisName")]
@@ -159,8 +168,17 @@ pub struct Advanced {
 	pub allow_kde_status:	bool,
 
 	#[serde(alias = "flatpakInfo")]
+	#[serde(default = "default_flatpak_env")]
 	pub flatpak_env:	bool,
 
 	#[serde(alias = "debugging")]
 	pub allow_debug:	bool,
+}
+
+fn default_qt5_compat () -> bool {
+	true
+}
+
+fn default_flatpak_env () -> bool {
+	true
 }

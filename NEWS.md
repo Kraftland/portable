@@ -2,6 +2,11 @@
 
 ## Breaking Changes:
 - Removed deprecated configuration fields, including `privacy.camera`, `privacy.input`, `system.gameMode` and `system.virtualization`. Please migrate to the unified device allow array. [#1034](https://github.com/Kraftland/portable/pull/1034)
+- Removed toggle for process tracking, it is now always enabled. [#1034](https://github.com/Kraftland/portable/pull/1034)
+- Default configuration changes. [#1035](https://github.com/Kraftland/portable/pull/1035)
+	- KDE status indicator	-> `false`
+	- Classic Notifications	-> `false`
+	- Network		-> `false`
 
 ## Improvements:
 - Implemented overlay execution for D-Bus activation
