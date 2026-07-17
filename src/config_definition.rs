@@ -4,7 +4,23 @@ use serde::de::Error;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+	pub metadata:		Metadata,
 
+	pub exec:		Exec,
+
+	#[serde(alias = "busActivation")]
+	pub dbus_activation:	BusExec,
+
+	#[serde(alias = "processes")]
+	pub process:		ProcMgmt,
+
+	pub system:		SysMgmt,
+
+	pub network:		Network,
+
+	pub privacy:		Privacy,
+
+	pub advanced:		Advanced,
 }
 
 #[derive(Debug, Deserialize)]
