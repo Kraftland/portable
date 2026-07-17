@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "legacy_conf"
+version = "0.1.0"
+
+[[package]]
 name = "portable-daemon"
 version = "0.1.0"
 dependencies = [

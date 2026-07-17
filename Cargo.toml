@@ -8,3 +8,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 
 [workspace]
 resolver = "3"
+members = ["legacy_conf"]
