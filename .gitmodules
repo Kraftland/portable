@@ -1,6 +1,6 @@
 [submodule "lib/init"]
 	path = lib/init
 	url = https://github.com/Kraftland/portable-init.git
-[submodule "legacy_conf"]
-	path = legacy_conf
+[submodule "lib/legacy_conf"]
+	path = lib/legacy_conf
 	url = https://github.com/Kimiblock/portable-legacyconf.git
