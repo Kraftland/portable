@@ -599,6 +599,7 @@ func calcDbusArg(argChan chan []string, docMnt string, config Config) {
 		mprisOwnList...
 	)
 
+	// This is not ideal, we should calculate CPU core count in order to figure out the range
 	for i := 2; i < 70; i++ {
 		argList = append(
 			argList,
