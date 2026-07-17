@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -599,7 +600,9 @@ func calcDbusArg(argChan chan []string, docMnt string, config Config) {
 		mprisOwnList...
 	)
 
-	for i := 2; i < 30; i++ {
+	var numCPUs = runtime.NumCPU()
+
+	for i := numCPUs - 2 ; i < numCPUs + 20; i++ {
 		argList = append(
 			argList,
 			"--own=org.kde.StatusNotifierItem-" + strconv.Itoa(i) + "-1",
