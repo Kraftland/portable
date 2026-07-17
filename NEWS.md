@@ -1,3 +1,11 @@
+# 20.0
+
+## Breaking Changes:
+- Removed deprecated fields
+
+## Improvements:
+- Implemented overlay execution for D-Bus activation
+
 # 18.0 - Lawn
 
 This release of Portable brings a prominent rewrite of the sandbox supervisor system, includes XDG activation protocol support, greatly reduces installed files, and much more. It sets a new bar for a secure and performant sandbox.

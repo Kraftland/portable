@@ -1,3 +1,5 @@
+mod config_definition;
+
 fn main() {
-    println!("Hello, world!");
+
 }

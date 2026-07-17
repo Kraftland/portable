@@ -37,9 +37,6 @@ arguments = ["--gapplication-service"]
 
 # The processes section defines how Portable tracks tasks.
 [processes]
-# Watch for spawned commands. When all of them exits, automatically terminate the sandbox. Defaults to true.
-track = true
-
 # Allows the app to run in the background. Use with caution because broken implementations may terminate the app even if it's in foreground.
 background = true
 
