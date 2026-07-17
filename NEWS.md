@@ -1,7 +1,7 @@
 # 20.0
 
 ## Breaking Changes:
-- Removed deprecated fields
+- Removed deprecated configuration fields, including `privacy.camera`, `privacy.input`, `system.gameMode` and `system.virtualization`. Please migrate to the unified device allow array. [#1034](https://github.com/Kraftland/portable/pull/1034)
 
 ## Improvements:
 - Implemented overlay execution for D-Bus activation
