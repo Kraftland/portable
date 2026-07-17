@@ -33,6 +33,8 @@ function buildRust() {
 
 git submodule update --init --recursive
 
+buildRust .
+
 buildGo ./lib/daemon
 
 buildRust ./lib/init
