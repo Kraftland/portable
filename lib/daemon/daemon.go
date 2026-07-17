@@ -599,7 +599,7 @@ func calcDbusArg(argChan chan []string, docMnt string, config Config) {
 		mprisOwnList...
 	)
 
-	for i := 2; i < 30; i++ {
+	for i := 2; i < 70; i++ {
 		argList = append(
 			argList,
 			"--own=org.kde.StatusNotifierItem-" + strconv.Itoa(i) + "-1",
