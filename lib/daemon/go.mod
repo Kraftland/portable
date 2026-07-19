@@ -10,7 +10,7 @@ require (
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/jochenvg/go-udev v0.0.0-20240801134859-b65ed646224b
 	golang.org/x/sys v0.47.0
-	golang.org/x/term v0.44.0
+	golang.org/x/term v0.45.0
 )
 
 require github.com/jkeiser/iter v0.0.0-20200628201005-c8aa0ae784d1 // indirect
