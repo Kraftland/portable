@@ -10,6 +10,14 @@
 
 ## Improvements:
 - Implemented overlay execution for D-Bus activation
+- Made seccomp filter compilation asynchronous to avoid blocking
+- Made seccomp unotify run in an exclusive thread
+- Made seccomp list compiling run in a blocking thread to improve performance on single-core systems
+- Made uclamp writing run in a blocking thread to improve performance
+- Removed deprecated logic in process spawner to improve performance
+- Fixed a possible situation where init may panic but continue running
+- Properly handled channel send error in spawner
+- Properly handled OpenPty errors
 
 # 18.0 - Lawn
 
