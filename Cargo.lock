@@ -490,6 +490,8 @@ dependencies = [
  "legacy_conf",
  "serde",
  "thiserror",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
