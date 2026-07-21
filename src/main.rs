@@ -1,5 +1,9 @@
 mod config_definition;
+mod legacy_config;
+mod logger;
+mod stop;
 
-fn main() {
+#[tokio::main]
+async fn main() {
 
 }
