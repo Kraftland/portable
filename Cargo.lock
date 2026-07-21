@@ -358,6 +358,10 @@ dependencies = [
 [[package]]
 name = "legacy_conf"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "libc"
@@ -485,6 +489,7 @@ version = "0.1.0"
 dependencies = [
  "legacy_conf",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
