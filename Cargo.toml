@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
+legacy_conf = { path = "./lib/legacy_conf" }
 
 [workspace]
 resolver = "3"
