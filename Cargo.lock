@@ -488,6 +488,7 @@ name = "portable-daemon"
 version = "0.1.0"
 dependencies = [
  "legacy_conf",
+ "nix",
  "serde",
  "thiserror",
  "tokio",
