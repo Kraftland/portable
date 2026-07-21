@@ -6,8 +6,8 @@ pub enum LogLevel {
 }
 
 struct LogMessage<T: std::fmt::Display> {
-	Level:		LogLevel,
-	Message:	T,
+	pub level:		LogLevel,
+	pub message:	T,
 }
 
 pub async fn logger<T> (

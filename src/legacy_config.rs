@@ -16,7 +16,7 @@ pub enum LegacyConfigError {
 }
 
 pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyConfigError> {
-	let file = tokio::fs::OpenOptions::new()
+	let mut file = tokio::fs::OpenOptions::new()
 		.read(true)
 		.write(false)
 		.create(false)
@@ -28,14 +28,14 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 	file
 		.read_to_string(&mut config_raw)
 		.await
-		.map_err(LegacyConfigError::ReadConfigError);
+		.map_err(LegacyConfigError::ReadConfigError)?;
 
 	let decoded_legacy_conf: legacy_conf::Config
 		= legacy_conf::from_str(config_raw.as_str())
 			.map_err(LegacyConfigError::DeserializeError)
 			?;
 
-	let dev_allow = vec![];
+	let mut dev_allow = vec![];
 
 	if decoded_legacy_conf.game {
 		dev_allow.push(DeviceAllow::DiscreteGPU);
