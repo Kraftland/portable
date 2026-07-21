@@ -9,6 +9,7 @@ legacy_conf = { path = "./lib/legacy_conf" }
 thiserror = "2.0.19"
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "sync", "signal", "fs", "io-util"] }
 tokio-util = { version = "0.7.18", features = ["rt"] }
+nix = { version = "0.31.3", features = ["term"] }
 
 [workspace]
 resolver = "3"

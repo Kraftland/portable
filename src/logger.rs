@@ -27,4 +27,25 @@ pub async fn logger<T> (
 	};
 }
 
+fn is_terminal() -> (bool, Option<nix::sys::termios::Termios>) {
+	use std::os::fd::AsFd;
+	match nix::sys::termios::tcgetattr(std::io::stdin().as_fd()) {
+		Ok(v)	=> {
+			return (true, Some(v));
+		}
+		Err(_)	=> {
+			return (false, None);
+		}
+	}
+}
 
+fn get_no_color_preference() -> bool {
+	match std::env::var("NO_COLOR") {
+		Ok(_)	=> {
+			true
+		}
+		Err(_)	=> {
+			false
+		}
+	}
+}
