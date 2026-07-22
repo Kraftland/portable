@@ -74,18 +74,31 @@ pub async fn logger (
 		fatal_fmt,
 	) = {
 		if allow_colour && is_terminal {
-			(
-				"\x1b[38;2;125;241;118m[Debug]\x1b[0m:",
-				"\x1b[38;2;119;222;250m[Info]\x1b[0m:",
-				"\x1b[38;2;255;209;59m[Warn]\x1b[0m:",
-				"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
-			)
+			match is_pups_day() {
+				true	=> {
+					(
+						"\x1b[38;2;213;161;115m[Debug]\x1b[0m:",
+						"\x1b[38;2;213;161;115m[Info]\x1b[0m:",
+						"\x1b[38;2;213;161;115m[Warn]\x1b[0m:",
+						"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
+					)
+				}
+				false	=> {
+					(
+						"\x1b[38;2;125;241;118m[Debug]\x1b[0m:",
+						"\x1b[38;2;119;222;250m[Info]\x1b[0m:",
+						"\x1b[38;2;255;209;59m[Warn]\x1b[0m:",
+						"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
+					)
+				}
+			}
+
 		} else {
 			(
 				"[Debug]:",
-				"[Info]",
-				"[Warn]",
-				"[Fatal]",
+				"[Info]:",
+				"[Warn]:",
+				"[Fatal]:",
 			)
 		}
 	};
@@ -102,6 +115,15 @@ pub async fn logger (
 			}
 		}
 	};
+}
+
+fn is_pups_day() -> bool {
+	let time =jiff::Zoned::now();
+	if time.month() == 12 && time.day() == 25 {
+		true
+	} else {
+		false
+	}
 }
 
 fn get_termios() -> Option<nix::sys::termios::Termios> {
