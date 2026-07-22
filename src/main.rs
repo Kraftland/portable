@@ -13,7 +13,8 @@ async fn main() -> std::process::ExitCode {
 		tokio::spawn(stop::stop_worker(stop_rx, token_clone))
 	};
 
-
+	let (log_tx, log_rx) = tokio::sync::mpsc::channel(5);
+	tokio::spawn(logger::logger(log_rx, stop_tx));
 
 
 
