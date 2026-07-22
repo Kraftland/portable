@@ -18,6 +18,11 @@ pub async fn stop_worker(
 	let mut post_funcs = vec![];
 	let pre_tracker = tokio_util::task::TaskTracker::new();
 	let post_tracker = tokio_util::task::TaskTracker::new();
+
+	let mut sigterm = tokio::signal::unix::signal(
+		tokio::signal::unix::SignalKind::terminate(),
+	).expect("Could not setup SIGTERM listener");
+
 	loop {
 		tokio::select! {
 			func	=	rx.recv()			=> {
@@ -45,12 +50,18 @@ pub async fn stop_worker(
 				#[cfg(debug_assertions)]
 				println!("Shutting down on SIGINT...");
 
+				break;
+			}
+			_	=	sigterm.recv()			=> {
+
+				#[cfg(debug_assertions)]
+				println!("Shutting down on SIGTERM...");
 
 				break;
 			}
 		};
 	}
-	
+
 	for func in pre_funcs {
 		pre_tracker.spawn(
 			async move {
