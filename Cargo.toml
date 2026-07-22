@@ -15,3 +15,4 @@ jiff = { version = "0.2.34", features = ["std"], default-features = false }
 [workspace]
 resolver = "3"
 members = ["lib/legacy_conf"]
+exclude = ["lib/init"]
