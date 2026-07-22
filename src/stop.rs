@@ -48,7 +48,7 @@ pub async fn stop_worker(
 	};
 	
 	pre_tracker.close();
-	pre_tracker.wait();
+	pre_tracker.wait().await;
 
 	for func in post_funcs {
 		post_tracker.spawn(
@@ -59,5 +59,5 @@ pub async fn stop_worker(
 	};
 	
 	post_tracker.close();
-	post_tracker.wait();
+	post_tracker.wait().await;
 }
