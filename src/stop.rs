@@ -7,15 +7,15 @@ pub enum FunctionLayer{
 
 pub struct StopFunc {
 	pub layer:	FunctionLayer,
-	pub function:	fn (),
+	pub function:	Box<dyn FnOnce() + Send>,
 }
 
 pub async fn stop_worker(
 	mut rx: tokio::sync::mpsc::Receiver<StopFunc>,
 	cancel_token: tokio_util::sync::CancellationToken,
 ) {
-	let mut pre_funcs: Vec<fn()> = vec![];
-	let mut post_funcs: Vec<fn()> = vec![];
+	let mut pre_funcs = vec![];
+	let mut post_funcs = vec![];
 	let pre_tracker = tokio_util::task::TaskTracker::new();
 	let post_tracker = tokio_util::task::TaskTracker::new();
 	loop {
