@@ -10,14 +10,18 @@ pub struct StopFunc {
 	pub function:	Box<dyn FnOnce() + Send>,
 }
 
+pub enum StopLevel {
+	Error (isize),
+	Normal,
+}
+
 pub async fn stop_worker(
 	mut rx: tokio::sync::mpsc::Receiver<StopFunc>,
-	cancel_token: tokio_util::sync::CancellationToken,
+	mut stop_signal: tokio::sync::mpsc::Receiver<StopLevel>,
 ) {
 	let mut pre_funcs = vec![];
 	let mut post_funcs = vec![];
-	let pre_tracker = tokio_util::task::TaskTracker::new();
-	let post_tracker = tokio_util::task::TaskTracker::new();
+
 
 	let mut sigterm = tokio::signal::unix::signal(
 		tokio::signal::unix::SignalKind::terminate(),
@@ -40,11 +44,20 @@ pub async fn stop_worker(
 					None	=> {break}
 				}
 			}
-			_	=	cancel_token.cancelled()	=> {
+			sig	=	stop_signal.recv()	=> {
 				#[cfg(debug_assertions)]
 				println!("Shutting down on cancel_token...");
 
+				let error = {
+					match sig {
+						Some(StopLevel::Error(_))	=> {true}
+						_				=> {false}
+					}
+				};
+
+				shutdown(pre_funcs, post_funcs, error).await;
 				break;
+				// Some(sig)
 			}
 			_	=	tokio::signal::ctrl_c()		=> {
 				#[cfg(debug_assertions)]
@@ -61,7 +74,15 @@ pub async fn stop_worker(
 			}
 		};
 	}
+}
 
+async fn shutdown(
+	pre_funcs: Vec<Box<dyn FnOnce() + Send>>,
+	post_funcs: Vec<Box<dyn FnOnce() + Send>>,
+	error_code: bool,
+) {
+	let pre_tracker = tokio_util::task::TaskTracker::new();
+	let post_tracker = tokio_util::task::TaskTracker::new();
 	for func in pre_funcs {
 		pre_tracker.spawn(
 			async move {
@@ -83,4 +104,7 @@ pub async fn stop_worker(
 	
 	post_tracker.close();
 	post_tracker.wait().await;
+	if error_code {
+		std::process::exit(1);
+	}
 }
