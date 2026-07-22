@@ -12,7 +12,8 @@ pub struct LogMessage {
 
 pub async fn logger (
 	mut log_rx: tokio::sync::mpsc::Receiver<LogMessage>,
-	stop_tx: tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	stop_func_tx: tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	stop_sig_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 )
 {
 	let is_terminal = {
@@ -46,7 +47,7 @@ pub async fn logger (
 							}
 						});
 
-				stop_tx.send(
+				stop_func_tx.send(
 					crate::stop::StopFunc {
 						layer: crate::stop::FunctionLayer::Pre,
 						function: func,
@@ -103,18 +104,37 @@ pub async fn logger (
 		}
 	};
 
-
-
-	let msg = tokio::select! {
-		log_msg = log_rx.recv()	=> {
-			match log_msg {
-				Some(v)	=> v,
-				None	=> {
-					return;
+	loop {
+		let msg = tokio::select! {
+			log_msg = log_rx.recv()	=> {
+				match log_msg {
+					Some(v)	=> v,
+					None	=> {
+						return;
+					}
 				}
 			}
+		};
+
+		match msg.level {
+			LogLevel::Debug	=> {
+				#[cfg(debug_assertions)]
+				println!("{}\t{}", debug_fmt, msg.message);
+			}
+			LogLevel::Info => {
+				println!("{}\t{}", info_fmt, msg.message);
+			}
+			LogLevel::Warn => {
+				eprintln!("{}\t{}", warn_fmt, msg.message);
+			}
+			LogLevel::Fatal => {
+				eprintln!("{}\t{}", fatal_fmt, msg.message);
+				stop_sig_tx.send(crate::stop::StopLevel::Error(1)).await.unwrap();
+			}
 		}
-	};
+	}
+
+
 }
 
 fn is_pups_day() -> bool {
