@@ -35,7 +35,19 @@ pub async fn stop_worker(
 					None	=> {break}
 				}
 			}
-			_	=	cancel_token.cancelled()	=> {break}
+			_	=	cancel_token.cancelled()	=> {
+				#[cfg(debug_assertions)]
+				println!("Shutting down on cancel_token...");
+
+				break;
+			}
+			_	=	tokio::signal::ctrl_c()		=> {
+				#[cfg(debug_assertions)]
+				println!("Shutting down on SIGINT...");
+
+
+				break;
+			}
 		};
 	}
 	
