@@ -1,5 +1,5 @@
 mod config_definition;
-mod legacy_config;
+mod config_legacy;
 mod logger;
 mod stop;
 mod consts;
