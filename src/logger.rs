@@ -161,10 +161,10 @@ fn get_termios() -> Option<nix::sys::termios::Termios> {
 fn get_no_color_preference() -> bool {
 	match std::env::var("NO_COLOR") {
 		Ok(_)	=> {
-			true
+			false
 		}
 		Err(_)	=> {
-			false
+			true
 		}
 	}
 }

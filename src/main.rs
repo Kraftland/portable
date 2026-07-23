@@ -3,6 +3,7 @@ mod legacy_config;
 mod logger;
 mod stop;
 mod consts;
+mod config_toml;
 
 use thiserror::Error;
 
