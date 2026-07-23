@@ -2,9 +2,21 @@ mod config_definition;
 mod legacy_config;
 mod logger;
 mod stop;
+mod consts;
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+enum StartError {
+	#[error("Could not contact logging thread: {0:#?}")]
+	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
+
+	#[error("Could not wait on stop worker: {0:#?}")]
+	StopWaitError(tokio::task::JoinError),
+}
 
 #[tokio::main]
-async fn main() -> std::process::ExitCode {
+async fn main() -> Result<(), StartError> {
 	let (stop_func_tx, stop_func_rx) = tokio::sync::mpsc::channel(5);
 	let (stop_sig_tx, stop_sig_rx) = tokio::sync::mpsc::channel(1);
 
@@ -19,11 +31,22 @@ async fn main() -> std::process::ExitCode {
 		log_tx
 	};
 
+	log_tx.send(
+		logger::LogMessage {
+			level: logger::LogLevel::Info,
+			message: format!("Portable daemon version {}", consts::DAEMON_VERSION),
+		},
+	)
+		.await
+		.map_err(StartError::LogError)?;
 
 
 
 
 
-	stop_worker.await;
-	std::process::ExitCode::SUCCESS
+
+	stop_worker
+		.await
+		.map_err(StartError::StopWaitError)?;
+	Ok(())
 }
