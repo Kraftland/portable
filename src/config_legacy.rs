@@ -16,6 +16,9 @@ pub enum LegacyConfigError {
 }
 
 pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyConfigError> {
+	// println!("Using legacy config");
+
+
 	let mut file = tokio::fs::OpenOptions::new()
 		.read(true)
 		.write(false)

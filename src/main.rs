@@ -16,6 +16,9 @@ enum StartError {
 
 	#[error("Could not wait on stop worker: {0:#?}")]
 	StopWaitError(tokio::task::JoinError),
+
+	#[error("Could not read config: {0:#?}")]
+	ConfigError(config::ConfigError),
 }
 
 #[tokio::main]
@@ -41,7 +44,24 @@ async fn main() -> Result<(), StartError> {
 		},
 	)
 		.await
-		.map_err(StartError::LogError)?;
+		.map_err(StartError::LogError)
+		?;
+
+
+	let config = config_definition::Config::get()
+		.await
+		.map_err(StartError::ConfigError)
+		?;
+
+	log_tx.send(
+		logger::LogMessage {
+			level: logger::LogLevel::Debug,
+			message: format!("Resolved configuration: {config:#?}"),
+		}
+	)
+		.await
+		.map_err(StartError::LogError)
+		?;
 
 
 

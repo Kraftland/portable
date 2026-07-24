@@ -111,7 +111,7 @@ async fn get_legacy_bash_path() -> Result<ConfigType, ConfigError> {
 			let path = std::path::absolute(path)
 				.map_err(ConfigError::InvalidBashPath)?;
 			Ok(
-				ConfigType::TOML { path: path }
+				ConfigType::LegacyBash { path: path }
 			)
 		}
 		Err(e)	=> {
