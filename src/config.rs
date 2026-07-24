@@ -80,7 +80,9 @@ impl crate::config_definition::Config {
 					.map_err(ConfigError::InvalidTomlConfig)
 			}
 			ConfigType::LegacyBash { path }	=> {
-
+				crate::config_legacy::get_legacy_conf(&path)
+					.await
+					.map_err(ConfigError::InvalidBashConfig)
 			}
 		}
 	}
