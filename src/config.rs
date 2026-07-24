@@ -52,7 +52,7 @@ impl crate::config_definition::Config {
 			tokio::spawn(get_legacy_bash_path()),
 		];
 
-		let config_info;
+		let mut config_info = None;
 		let mut config_errors = vec![];
 		for spawn in config_spawns {
 			match spawn.await.map_err(ConfigError::SpawnError)? {
