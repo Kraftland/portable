@@ -1,9 +1,11 @@
 mod config_definition;
 mod config_legacy;
+mod config_toml;
+mod config;
 mod logger;
 mod stop;
 mod consts;
-mod config_toml;
+
 
 use thiserror::Error;
 
