@@ -6,7 +6,6 @@ mod logger;
 mod stop;
 mod consts;
 mod xdg;
-mod udev;
 mod bind;
 
 
