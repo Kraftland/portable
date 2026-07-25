@@ -5,6 +5,7 @@ mod config;
 mod logger;
 mod stop;
 mod consts;
+mod xdg;
 
 
 use thiserror::Error;
