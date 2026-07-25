@@ -7,6 +7,7 @@ mod stop;
 mod consts;
 mod xdg;
 mod udev;
+mod bind;
 
 
 use thiserror::Error;

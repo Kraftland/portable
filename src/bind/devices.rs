@@ -1,5 +1,4 @@
-mod devices {
-	use thiserror::Error;
+use thiserror::Error;
 
 	#[derive(Debug, Error)]
 	pub enum EnumerateError {
@@ -57,4 +56,3 @@ mod devices {
 		};
 		Ok(ret)
 	}
-}
