@@ -6,6 +6,7 @@ mod logger;
 mod stop;
 mod consts;
 mod xdg;
+mod udev;
 
 
 use thiserror::Error;
