@@ -10,7 +10,9 @@ pub enum XdgError {
 }
 
 pub struct XDG_DIRS {
-	pub runtime:	std::path::PathBuf,
+	pub runtime:		std::path::PathBuf,
+	pub home:		std::path::PathBuf,
+	pub config_home:	std::path::PathBuf,
 }
 
 impl XDG_DIRS {
