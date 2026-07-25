@@ -20,6 +20,12 @@ enum StartError {
 
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
+
+	#[error("Could not populate XDG Base Directories: {0:#?}")]
+	XdgError(xdg::XdgError),
+
+	#[error("Could not spawn thread: {0:#?}")]
+	SpawnError(tokio::task::JoinError),
 }
 
 #[tokio::main]
@@ -48,6 +54,7 @@ async fn main() -> Result<(), StartError> {
 		.map_err(StartError::LogError)
 		?;
 
+	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 
 	let config = config_definition::Config::get()
 		.await
@@ -65,6 +72,19 @@ async fn main() -> Result<(), StartError> {
 		?;
 
 
+	let xdg_dirs = xdg_dirs_spawn
+		.await
+		.map_err(StartError::SpawnError)?
+		.map_err(StartError::XdgError)?;
+	log_tx.send(
+		logger::LogMessage {
+			level: logger::LogLevel::Debug,
+			message: format!("Populated XDG Base Directories: {xdg_dirs:#?}"),
+		}
+	)
+		.await
+		.map_err(StartError::LogError)
+		?;
 
 
 
