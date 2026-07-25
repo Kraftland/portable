@@ -122,13 +122,13 @@ pub async fn logger (
 				println!("{}\t{}", debug_fmt, msg.message);
 			}
 			LogLevel::Info => {
-				println!("{}\t{}", info_fmt, msg.message);
+				println!("{}\t\t{}", info_fmt, msg.message);
 			}
 			LogLevel::Warn => {
-				eprintln!("{}\t{}", warn_fmt, msg.message);
+				eprintln!("{}\t\t{}", warn_fmt, msg.message);
 			}
 			LogLevel::Fatal => {
-				eprintln!("{}\t{}", fatal_fmt, msg.message);
+				eprintln!("{}\t\t{}", fatal_fmt, msg.message);
 				stop_sig_tx.send(crate::stop::StopLevel::Error(1)).await.unwrap();
 			}
 		}
