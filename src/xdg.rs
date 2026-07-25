@@ -9,13 +9,27 @@ pub enum XdgError {
 	HomeNotFound,
 }
 
-pub struct XDG_DIRS {
+pub struct XdgDirs {
 	pub runtime:		std::path::PathBuf,
 	pub home:		std::path::PathBuf,
 	pub config_home:	std::path::PathBuf,
 }
 
-impl XDG_DIRS {
+impl XdgDirs {
+	async fn get () -> Result<Self, XdgError> {
+		let home = match Self::home().await {
+			Some(v)	=> {v}
+			None	=> {
+				return Err(XdgError::HomeNotFound);
+			}
+		};
+
+		Ok(Self {
+			runtime:	Self::runtime().await?,
+			config_home:	Self::config_home(&home).await?,
+			home:		home,
+		})
+	}
 
 	async fn runtime (
 	) -> Result<std::path::PathBuf, XdgError> {
