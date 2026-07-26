@@ -14,6 +14,7 @@ pub struct XdgDirs {
 	pub runtime:		std::path::PathBuf,
 	pub home:		std::path::PathBuf,
 	pub config_home:	std::path::PathBuf,
+	pub data_home:		std::path::PathBuf,
 }
 
 impl XdgDirs {
@@ -28,6 +29,7 @@ impl XdgDirs {
 		Ok(Self {
 			runtime:	Self::runtime().await?,
 			config_home:	Self::config_home(&home).await?,
+			data_home:	Self::data_home(&home).await?,
 			home:		home,
 		})
 	}
@@ -38,6 +40,31 @@ impl XdgDirs {
 			Ok(v)	=> {Ok(std::path::PathBuf::from(v))}
 			Err(e)	=> {
 				return Err(XdgError::InvalidVar(e))
+			}
+		}
+	}
+
+	async fn data_home(home: &std::path::PathBuf) -> Result<std::path::PathBuf, XdgError> {
+		match std::env::var("XDG_DATA_HOME") {
+			Ok(v)	=> {
+				Ok(
+					std::path::PathBuf::from(v)
+				)
+			}
+			Err(e)	=> {
+				match e {
+					std::env::VarError::NotPresent	=> {
+						let mut path = home.clone();
+						path.push(".local");
+						path.push("share");
+						Ok(path)
+					}
+					_				=> {
+						Err(
+							XdgError::InvalidVar(e)
+						)
+					}
+				}
 			}
 		}
 	}
