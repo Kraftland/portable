@@ -37,6 +37,9 @@ impl Delta {
 }
 
 pub trait Translate {
+	/*
+		Delta is from struct Delta's get method
+	*/
 	async fn translate_home(self, delta: &Delta)	-> Result<std::path::PathBuf, TranslatePathError>;
 }
 
