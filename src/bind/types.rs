@@ -7,6 +7,50 @@ pub struct BindRules {
 	rules:	Vec<BindRule>
 }
 
+pub trait DeDupRules {
+	async fn dedup(self)	-> Self;
+}
+
+
+impl DeDupRules for BindRules {
+	async fn dedup(self)	-> Self {
+		let mut ret = vec![];
+		let mut dest_mnt = vec![];
+
+		for rule in self.rules {
+			match rule {
+				BindRule::FD { source_fd, dest, class }	=> {
+					if dest_mnt.contains(&dest) {
+						continue;
+					} else {
+						dest_mnt.push(dest.clone());
+						ret.push(BindRule::FD { source_fd, dest, class });
+					};
+				}
+				BindRule::Path { source, dest, class }	=> {
+					if dest_mnt.contains(&dest) {
+						continue;
+					} else {
+						dest_mnt.push(dest.clone());
+						ret.push(BindRule::Path { source, dest, class });
+					};
+				}
+				BindRule::Symlink { source, dest }	=> {
+					if dest_mnt.contains(&dest) {
+						continue;
+					} else {
+						dest_mnt.push(dest.clone());
+						ret.push(BindRule::Symlink { source, dest });
+					};
+				}
+			}
+		};
+		Self {
+			rules:	ret
+		}
+	}
+}
+
 
 /*
 	BindRule represents a single rule of exposing the host system
