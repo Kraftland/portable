@@ -1,3 +1,16 @@
+
+/*
+	BindRules represents a list of bind rules that is specifically without dependency tree.
+	It is not meant to be read or manipulated by outside modules to ensure consistency
+*/
+pub struct BindRules {
+	rules:	Vec<BindRule>
+}
+
+
+/*
+	BindRule represents a single rule of exposing the host system
+*/
 #[derive(Debug)]
 pub enum BindRule {
 	/*
