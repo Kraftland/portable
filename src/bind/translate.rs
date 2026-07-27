@@ -36,6 +36,16 @@ impl Delta {
 	}
 }
 
+pub trait Translate {
+	async fn translate_home(self, delta: &Delta)	-> Result<std::path::PathBuf, TranslatePathError>;
+}
+
+impl Translate for std::path::PathBuf {
+	async fn translate_home(self, delta: &Delta)	-> Result<std::path::PathBuf, TranslatePathError> {
+		home(self, delta).await
+	}
+}
+
 /*
 	Translate the given input path beneath $HOME to the sandbox home
 	Takes ownership of input value to avoid re-using.
