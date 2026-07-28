@@ -50,12 +50,61 @@ pub enum GPUError {
 // }
 
 
-
 async fn generate_bind_rules(
 	gpu:		GPUInfo,
 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 ) -> Vec<BindRule> {
 	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+
+	/*
+		sys/class/drm/ does not seem to be covered by udev
+	*/
+
+	{
+		let drm_path = std::path::PathBuf::from("/sys/class/drm");
+		match gpu.nodes.card_node {
+			Some(ref v)	=> {
+				let mut card_path = drm_path.clone();
+				card_path.push(v.sysname());
+				tx.send(
+					BindRule::Path {
+						source: card_path.clone(),
+						dest: card_path,
+						class: crate::bind::types::BindType::Device,
+					},
+				).expect("Error sending drm bind rules");
+			}
+			None	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Missing card node: {:#?}", gpu),
+					},
+				).await;
+			}
+		};
+		match gpu.nodes.render_node {
+			Some(ref v)	=> {
+				let mut card_path = drm_path.clone();
+				card_path.push(v.sysname());
+				tx.send(
+					BindRule::Path {
+						source: card_path.clone(),
+						dest: card_path,
+						class: crate::bind::types::BindType::Device,
+					},
+				).expect("Error sending drm bind rules");
+			}
+			None	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Missing renderer node: {:#?}", gpu),
+					},
+				).await;
+			}
+		}
+	};
 
 	match gpu.vendor {
 		GPUVendor::AMD		=> {
