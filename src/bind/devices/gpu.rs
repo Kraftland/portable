@@ -64,7 +64,7 @@ pub enum GPUError {
 // }
 
 pub async fn gputest_print_all_devices() -> String {
-	let (tx, rx) = tokio::sync::mpsc::channel(100000);
+	let (tx, _rx) = tokio::sync::mpsc::channel(100000);
 	let res = enumerate_gpus(&tx).await.unwrap();
 	format!("{res:#?}")
 }
@@ -105,7 +105,7 @@ async fn get_nvidia_devices(
 				}
 			}
 			Err(e)	=> {
-				logger.send(
+				let _ = logger.send(
 					LogMessage {
 						level: LogLevel::Warn,
 						message: format!("Could not read /dev entry: {e:#?}"),
