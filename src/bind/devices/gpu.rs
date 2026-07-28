@@ -18,6 +18,7 @@ pub enum GPUError {
 // }
 
 
+#[derive(Debug)]
 struct GPUDevice {
 	card_node:	Option<udev::Device>,
 	render_node:	Option<udev::Device>,
@@ -33,23 +34,108 @@ struct GPUInfo {
 	See GPUDevice struct for more details
 	Errors needs to be handled gracefully.
 */
-// async fn enumerate_gpus() -> Result<Vec<GPUInfo>, GPUError> {
-// 	let devices = crate::bind::devices::enumerate(
-// 		super::Filter::Subsystem { subsystem: "drm".to_string() },
-// 	)
-// 		.await
-// 		.map_err(GPUError::Enumerate)
-// 		?;
+async fn enumerate_gpus(
+	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+) -> Result<Vec<GPUInfo>, GPUError> {
+	let devices = crate::bind::devices::enumerate(
+		super::Filter::SubsystemWithDevtype {
+			subsystem: "drm".to_string(),
+			devtype: "drm_minor".to_string(),
+		},
+	)
+		.await
+		.map_err(GPUError::Enumerate)
+		?;
 
-// }
+
+	let devices = associate_card_render(devices, logger).await;
+
+	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+	let tracker = tokio_util::task::TaskTracker::new();
+
+	for dev in devices {
+		let tx_clone = tx.clone();
+		let log_clone = logger.clone();
+		tracker.spawn_local(async move {
+			if dev.card_node.is_none() || dev.render_node.is_none() {
+				let _ = log_clone.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not identify GPU: {:?}", dev)
+					}
+				).await;
+				return;
+			};
+
+			// Unwrap is then safe
+
+			let boot_display = {
+				let sysname = dev.card_node.as_ref().unwrap().sysname();
+				match device_is_boot_display(&dev.card_node.as_ref().unwrap()).await {
+					Ok(v)	=> {
+						let _ = log_clone.send(
+							crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Debug,
+							message: format!(
+								"{:?} is a boot display: {}",
+								sysname,
+								v,
+							) }
+						).await;
+						v
+					}
+					Err(e)	=> {
+						let _ = log_clone.send(
+							crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!(
+								"Could not determine boot display status for {:?}: {:#?}",
+								sysname,
+								e,
+								)
+							}
+						).await;
+						return;
+					}
+				}
+			};
+
+			let _ = tx_clone.send(
+				GPUInfo {
+					boot_display:	boot_display,
+					nodes:		dev,
+				}
+			);
+		});
+	};
+
+	tracker.close();
+	tracker.wait().await;
+
+	rx.close();
+
+	let mut ret = vec![];
+
+	loop {
+		match rx.recv().await {
+			Some(v)	=> {
+				ret.push(v);
+			}
+			None	=> {
+				break;
+			}
+		}
+	}
+	Ok(ret)
+}
 
 /*
 	Associates the card device with renderer, using the GPUDevice struct above
 	Internally uses the ID_PATH approach just like the previous impl
 */
 async fn associate_card_render(
-	devices: Vec<udev::Device>,
-	logger: tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	devices:	Vec<udev::Device>,
+	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 ) -> Vec<GPUDevice> {
 	// The map is for holding (card, renderer)
 	let mut map: std::collections::HashMap
