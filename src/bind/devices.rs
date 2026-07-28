@@ -16,12 +16,15 @@ pub enum EnumerateError {
 pub enum Filter {
 	// Enumerate by subsystem, this implies initialised
 	Subsystem {subsystem: String},
+
+	// Enumerate by subsystem with DEVTYPE, this implies initialised
+	SubsystemWithDevtype {subsystem: String, devtype: String},
 }
 
 use udev::{Device};
 pub async fn enumerate(filter: Filter) -> Result<Vec<Device>, EnumerateError> {
 	let mut enumerator = match filter {
-		Filter::Subsystem { subsystem }	=> {
+		Filter::Subsystem { subsystem }				=> {
 			let mut enumerator = {
 				match udev::Enumerator::new() {
 					Ok(v)	=> {v}
@@ -43,6 +46,34 @@ pub async fn enumerate(filter: Filter) -> Result<Vec<Device>, EnumerateError> {
 				.map_err(EnumerateError::AddMatchError)
 				?;
 
+			enumerator
+		}
+
+		Filter::SubsystemWithDevtype { subsystem, devtype }	=> {
+			let mut enumerator = {
+				match udev::Enumerator::new() {
+					Ok(v)	=> {v}
+					Err(e)	=> {
+						return Err(
+							EnumerateError::CreateEnumeratorError(
+								format!("{e:#?}"),
+							),
+						);
+					}
+				}
+			};
+			enumerator
+				.match_is_initialized()
+				.map_err(EnumerateError::AddMatchError)
+				?;
+			enumerator
+				.match_subsystem(subsystem)
+				.map_err(EnumerateError::AddMatchError)
+				?;
+			enumerator
+				.match_property("DEVTYPE", devtype)
+				.map_err(EnumerateError::AddMatchError)
+				?;
 			enumerator
 		}
 	};
