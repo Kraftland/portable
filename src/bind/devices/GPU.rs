@@ -8,12 +8,152 @@ pub enum GPUError {
 	InvalidBootDisplay(String),
 	#[error("Could not determine boot vga: invalid value {0:?}")]
 	InvalidBootVGA(String),
+
+	#[error("Could not enumerate GPUs: {0:#?}")]
+	Enumerate(crate::bind::devices::EnumerateError),
 }
 
 // pub async fn scan(all_gpus: bool) -> Result<Vec<BindRule>, GPUError> {
 
 // }
 
+
+struct GPUDevice {
+	card_node:	Option<udev::Device>,
+	render_node:	Option<udev::Device>,
+}
+
+struct GPUInfo {
+	boot_display:	bool,
+	nodes:		GPUDevice,
+}
+
+/*
+	Eumerates all graphics cards (and renderer nodes, paired together) as vectors of udev devices
+	See GPUDevice struct for more details
+	Errors needs to be handled gracefully.
+*/
+// async fn enumerate_gpus() -> Result<Vec<GPUInfo>, GPUError> {
+// 	let devices = crate::bind::devices::enumerate(
+// 		super::Filter::Subsystem { subsystem: "drm".to_string() },
+// 	)
+// 		.await
+// 		.map_err(GPUError::Enumerate)
+// 		?;
+
+// }
+
+/*
+	Associates the card device with renderer, using the GPUDevice struct above
+	Internally uses the ID_PATH approach just like the previous impl
+*/
+async fn associate_card_render(
+	devices: Vec<udev::Device>,
+	logger: tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+) -> Vec<GPUDevice> {
+	// The map is for holding (card, renderer)
+	let mut map: std::collections::HashMap
+		<std::ffi::OsString, (Option<udev::Device>, Option<udev::Device>)>
+		= std::collections::HashMap::new();
+	for dev in devices {
+		let id_path = {
+			match dev.property_value("ID_PATH") {
+				Some(v)	=> {
+					v
+				}
+				None	=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!("GPU {:?} does not have ID_PATH property", dev.sysname())
+						}
+					).await;
+					continue;
+				}
+			}
+		};
+
+		let device_type = match card_type(&dev).await {
+			Some(v)	=> {v}
+			None	=> {
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Warn,
+					message:	format!("GPU {:?} has unknown type", dev.sysname())
+				};
+				continue;
+			}
+		};
+
+		if map.contains_key(id_path) {
+			// unwrap is safe here
+			let mut value = map.get(id_path).unwrap().to_owned();
+			let updated = match device_type {
+				NodeType::Card		=> {
+					value.0 = Some(dev.to_owned());
+					value
+				}
+				NodeType::Renderer	=> {
+					value.1 = Some(dev.to_owned());
+					value
+				}
+			};
+			map.insert(id_path.into(), updated.clone());
+		} else {
+			map.insert(
+				id_path.into(),
+				match device_type {
+					NodeType::Card		=> {
+						(Some(dev), None)
+					}
+					NodeType::Renderer	=> {
+						(None, Some(dev))
+					}
+				},
+			);
+		};
+	};
+	let mut ret = vec![];
+	for (_k, v) in map {
+		let _ = logger.send(
+			crate::logger::LogMessage {
+				level: crate::logger::LogLevel::Debug,
+				message: format!(
+					"Bound GPU card {:?} to renderer node {:?}",
+					v.0,
+					v.1,
+				)
+			}
+		).await;
+		ret.push(
+			GPUDevice {
+				card_node:	v.0,
+				render_node:	v.1
+			}
+		);
+	};
+	ret
+}
+
+enum NodeType {
+	Card,
+	Renderer,
+}
+
+async fn card_type (device: &udev::Device) -> Option<NodeType> {
+	let sys_name = device.sysname();
+	let sys_name = match sys_name.to_str() {
+		Some(v)	=> {v}
+		None	=> {return None}
+	};
+
+	if sys_name.starts_with("card") {
+		return Some(NodeType::Card)
+	} else if sys_name.starts_with("render") {
+		return Some(NodeType::Renderer);
+	} else {
+		return None;
+	}
+}
 
 /*
 	Check if a device is connected to boot display.
