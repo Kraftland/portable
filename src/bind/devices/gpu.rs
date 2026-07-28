@@ -17,6 +17,58 @@ pub enum GPUError {
 }
 
 
+// pub async fn scan(
+// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+// 	all_gpus:	&bool,
+// ) -> Result<Vec<BindRule>, GPUError> {
+// 	let devices = {
+// 		let devs = enumerate_gpus(logger).await;
+
+// 	};
+
+// }
+
+// async fn generate_bind_rules(
+// 	gpu:		GPUInfo,
+// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+// ) -> Vec<BindRule> {
+// 	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+
+// 	match gpu.vendor {
+// 		GPUVendor::AMD		=> {
+// 			tx.send(
+// 				BindRule::Path {
+// 					source: std::path::PathBuf::from("/dev/kfd"),
+// 					dest: std::path::PathBuf::from("/dev/kfd"),
+// 					class: crate::bind::types::BindType::Device,
+// 				},
+// 			);
+// 		}
+
+// 		GPUVendor::Intel	=> {
+			// Intel doesn't need any new tricks, yet
+// 		}
+// 		GPUVendor::NVIDIA	=> {
+
+// 		}
+
+// 		GPUVendor::Others	=> {
+// 			logger.send(
+// 				crate::logger::LogMessage {
+// 					level: crate::logger::LogLevel::Warn,
+// 					message: format!("Could not apply GPU quirks: unknown vendor"),
+// 				}
+// 			).await;
+// 		}
+// 	};
+// }
+
+pub async fn gputest_print_all_devices() -> String {
+	let (tx, _rx) = tokio::sync::mpsc::channel(100000);
+	let res = enumerate_gpus(&tx).await.unwrap();
+	format!("{res:#?}")
+}
+
 
 /*
 	Scan /dev/ for nvidia device nodes that aren't in udev database
@@ -53,7 +105,7 @@ async fn get_nvidia_devices(
 				}
 			}
 			Err(e)	=> {
-				logger.send(
+				let _ = logger.send(
 					LogMessage {
 						level: LogLevel::Warn,
 						message: format!("Could not read /dev entry: {e:#?}"),
@@ -71,12 +123,14 @@ struct GPUDevice {
 	render_node:	Option<udev::Device>,
 }
 
+#[derive(Debug)]
 struct GPUInfo {
 	boot_display:	bool,
 	nodes:		GPUDevice,
 	vendor:		GPUVendor,
 }
 
+#[derive(Debug)]
 enum GPUVendor {
 	Intel,
 	AMD,
@@ -144,8 +198,9 @@ async fn enumerate_gpus(
 	for dev in devices {
 		let tx_clone = tx.clone();
 		let log_clone = logger.clone();
-		tracker.spawn_local(async move {
-			let dev = dev.to_owned();
+		// let dev_clone = dev.clone();
+		tracker.spawn(async move {
+			// let dev = dev.to_owned();
 			if dev.card_node.is_none() || dev.render_node.is_none() {
 				let _ = log_clone.send(
 					crate::logger::LogMessage {
@@ -158,13 +213,13 @@ async fn enumerate_gpus(
 
 			// Unwrap is then safe
 
-			let vendor_spawn = tokio::task::spawn_local(
-				get_vendor(dev.render_node.clone().unwrap()),
+			let vendor_spawn = tokio::task::spawn(
+				get_vendor(dev.render_node.clone().unwrap())
 			);
 
 			let boot_display = {
 				let sysname = dev.card_node.as_ref().unwrap().sysname();
-				match device_is_boot_display(&dev.card_node.as_ref().unwrap()).await {
+				match device_is_boot_display(&dev.card_node.as_ref().unwrap()) {
 					Ok(v)	=> {
 						let _ = log_clone.send(
 							crate::logger::LogMessage {
@@ -366,7 +421,7 @@ async fn card_type (device: &udev::Device) -> Option<NodeType> {
 
 	We will see whether this wakes up discrete GPU, if it does, then read the file manually
 */
-async fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, GPUError> {
+fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, GPUError> {
 	let boot_display_attr_value = card_device.attribute_value("boot_display");
 	match boot_display_attr_value {
 		Some(v)	=> {
