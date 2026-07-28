@@ -21,52 +21,163 @@ pub enum GPUError {
 // 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 // 	all_gpus:	&bool,
 // ) -> Result<Vec<BindRule>, GPUError> {
+// 	let nv_modules_mount = tokio::task::spawn_blocking(|| {
+// 		nvidia_module_mounts(true)
+// 	});
+
+
 // 	let devices = {
 // 		let devs = enumerate_gpus(logger).await;
-
 // 	};
 
-// }
-
-// async fn generate_bind_rules(
-// 	gpu:		GPUInfo,
-// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-// ) -> Vec<BindRule> {
-// 	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-
-// 	match gpu.vendor {
-// 		GPUVendor::AMD		=> {
-// 			tx.send(
-// 				BindRule::Path {
-// 					source: std::path::PathBuf::from("/dev/kfd"),
-// 					dest: std::path::PathBuf::from("/dev/kfd"),
-// 					class: crate::bind::types::BindType::Device,
-// 				},
-// 			);
-// 		}
-
-// 		GPUVendor::Intel	=> {
-			// Intel doesn't need any new tricks, yet
-// 		}
-// 		GPUVendor::NVIDIA	=> {
-
-// 		}
-
-// 		GPUVendor::Others	=> {
+// 	let nv_modules_mount = match nv_modules_mount.await {
+// 		Ok(v)	=> {v}
+// 		Err(e)	=> {
 // 			logger.send(
 // 				crate::logger::LogMessage {
 // 					level: crate::logger::LogLevel::Warn,
-// 					message: format!("Could not apply GPU quirks: unknown vendor"),
+// 					message: format!(
+// 						"Could not apply NVIDIA quirks: {:#?}",
+// 						e,
+// 					),
 // 				}
 // 			).await;
+// 			vec![]
 // 		}
 // 	};
+
+// 	let rules = nv_modules_mount;
 // }
+
+
+
+async fn generate_bind_rules(
+	gpu:		GPUInfo,
+	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+) -> Vec<BindRule> {
+	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+
+	match gpu.vendor {
+		GPUVendor::AMD		=> {
+			tx.send(
+				BindRule::Path {
+					source: std::path::PathBuf::from("/dev/kfd"),
+					dest: std::path::PathBuf::from("/dev/kfd"),
+					class: crate::bind::types::BindType::Device,
+				},
+			).unwrap();
+		}
+
+		GPUVendor::Intel	=> {
+			// Intel doesn't need any new tricks, yet
+		}
+		GPUVendor::NVIDIA	=> {
+			let nv_modules_mount = tokio::task::spawn_blocking(|| {
+				nvidia_module_mounts(false)
+			});
+
+			let nv_modules_mount = match nv_modules_mount.await {
+				Ok(v)	=> {v}
+				Err(e)	=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!(
+								"Could not apply NVIDIA quirks: {:#?}",
+								e,
+							),
+						}
+					).await;
+					return vec![];
+				}
+			};
+			for rule in nv_modules_mount {
+				tx.send(rule).unwrap();
+			};
+		}
+
+		GPUVendor::Others	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!("Could not apply GPU quirks: unknown vendor"),
+				}
+			).await;
+		}
+	};
+
+	rx.close();
+
+	let mut ret = vec![];
+
+	loop {
+		let msg = rx.recv().await;
+		match msg {
+			Some(v)	=> {
+				ret.push(v);
+			}
+			None	=> {
+				break;
+			}
+		}
+	}
+	ret
+}
 
 pub async fn gputest_print_all_devices() -> String {
 	let (tx, _rx) = tokio::sync::mpsc::channel(100000);
 	let res = enumerate_gpus(&tx).await.unwrap();
 	format!("{res:#?}")
+}
+
+
+/*
+	This needs spawn_blocking
+*/
+fn nvidia_module_mounts(block: bool) -> Vec<BindRule> {
+	let paths = vec![
+		"/sys/module/nvidia",
+		"/sys/module/nvidia_drm",
+		"/sys/module/nvidia_modeset",
+		"/sys/module/nvidia_uvm",
+		"/sys/module/nvidia_wmi_ec_backlight",
+	];
+
+	let mut ret = vec![];
+
+	for path in paths {
+		if ! path_exists(&path.into()) {
+			continue;
+		}
+		match block {
+			true	=> {
+				ret.push(
+					BindRule::Path {
+						source: "/dev/null".into(),
+						dest: path.into(),
+						class: crate::bind::types::BindType::ReadOnly,
+					},
+				);
+			}
+			false	=> {
+				ret.push(
+					BindRule::Path {
+						source: path.into(),
+						dest: path.into(),
+						class: crate::bind::types::BindType::Device,
+					},
+				);
+			}
+		}
+	};
+	ret
+}
+
+fn path_exists(path: &std::path::PathBuf) -> bool {
+	match std::fs::exists(path) {
+		Ok(v)	=> v,
+		Err(_)	=> false,
+	}
 }
 
 
