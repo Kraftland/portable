@@ -11,10 +11,17 @@ pub enum GPUError {
 
 	#[error("Could not enumerate GPUs: {0:#?}")]
 	Enumerate(crate::bind::devices::EnumerateError),
+
+	#[error("Could not enumerate GPUs: spawn error: {0:#?}")]
+	Spawn(tokio::task::JoinError),
 }
 
-// pub async fn scan(all_gpus: bool) -> Result<Vec<BindRule>, GPUError> {
 
+// pub async fn scan(
+// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+// 	all_gpus:	&bool,
+// ) -> Result<Vec<BindRule>, GPUError> {
+// 	let devices = enumerate_gpus(logger).await;
 // }
 
 
@@ -27,6 +34,47 @@ struct GPUDevice {
 struct GPUInfo {
 	boot_display:	bool,
 	nodes:		GPUDevice,
+	vendor:		GPUVendor,
+}
+
+enum GPUVendor {
+	Intel,
+	AMD,
+	NVIDIA,
+	Others,
+}
+
+async fn get_vendor(device: &udev::Device) -> GPUVendor {
+	match device.attribute_value("vendor") {
+		Some(v)	=> {
+			return map_to_vendor(v)
+		}
+		None	=> {}
+	};
+
+	let parent = match device.parent() {
+		Some(v)	=> {v}
+		None	=> {return GPUVendor::Others}
+	};
+
+	match parent.attribute_value("vendor") {
+		Some(v)	=> {
+			return map_to_vendor(v);
+		}
+		None	=> {
+			return GPUVendor::Others;
+		}
+	}
+}
+
+fn map_to_vendor(vendor_string: &std::ffi::OsStr) -> GPUVendor {
+	let string = vendor_string.to_str().unwrap_or("unknown");
+	match string {
+		"0x8086"	=> {GPUVendor::Intel}
+		"0x10de"	=> {GPUVendor::NVIDIA}
+		"0x1002"	=> {GPUVendor::AMD}
+		_		=> {GPUVendor::Others}
+	}
 }
 
 /*
