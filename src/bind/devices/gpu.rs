@@ -400,17 +400,26 @@ async fn enumerate_gpus(
 						v
 					}
 					Err(e)	=> {
-						let _ = log_clone.send(
-							crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!(
-								"Could not determine boot display status for {:?}: {:#?}",
-								sysname,
-								e,
-								)
+						match e {
+							GPUError::InvalidBootVGA(_)	=> {
+								false
 							}
-						).await;
-						return;
+
+							_				=> {
+								let _ = log_clone.send(
+									crate::logger::LogMessage {
+									level: crate::logger::LogLevel::Warn,
+									message: format!(
+						"Could not determine boot display status for {:?}: {:#?}",
+						sysname,
+						e,
+										)
+									}
+								).await;
+								false
+							}
+						}
+
 					}
 				}
 			};
