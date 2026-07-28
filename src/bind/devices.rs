@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-mod gpu;
+pub mod gpu;
 
 #[derive(Debug, Error)]
 pub enum EnumerateError {
