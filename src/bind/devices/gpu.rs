@@ -25,7 +25,7 @@ pub enum GPUError {
 // }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct GPUDevice {
 	card_node:	Option<udev::Device>,
 	render_node:	Option<udev::Device>,
@@ -44,7 +44,7 @@ enum GPUVendor {
 	Others,
 }
 
-async fn get_vendor(device: &udev::Device) -> GPUVendor {
+async fn get_vendor(device: udev::Device) -> GPUVendor {
 	match device.attribute_value("vendor") {
 		Some(v)	=> {
 			return map_to_vendor(v)
@@ -105,6 +105,7 @@ async fn enumerate_gpus(
 		let tx_clone = tx.clone();
 		let log_clone = logger.clone();
 		tracker.spawn_local(async move {
+			let dev = dev.to_owned();
 			if dev.card_node.is_none() || dev.render_node.is_none() {
 				let _ = log_clone.send(
 					crate::logger::LogMessage {
@@ -116,6 +117,10 @@ async fn enumerate_gpus(
 			};
 
 			// Unwrap is then safe
+
+			let vendor_spawn = tokio::task::spawn_local(
+				get_vendor(dev.render_node.clone().unwrap()),
+			);
 
 			let boot_display = {
 				let sysname = dev.card_node.as_ref().unwrap().sysname();
@@ -148,9 +153,30 @@ async fn enumerate_gpus(
 				}
 			};
 
+			let vendor = {
+				let vendor = vendor_spawn.await;
+				match vendor {
+					Ok(v)	=> {v}
+					Err(e)	=> {
+						let _ = log_clone.send(
+							crate::logger::LogMessage {
+								level: crate::logger::LogLevel::Warn,
+								message: format!(
+									"Could not parse GPU vendor: {:?}",
+									e,
+								),
+							}
+						).await;
+
+						GPUVendor::Others
+					}
+				}
+			};
+
 			let _ = tx_clone.send(
 				GPUInfo {
 					boot_display:	boot_display,
+					vendor:		vendor,
 					nodes:		dev,
 				}
 			);
