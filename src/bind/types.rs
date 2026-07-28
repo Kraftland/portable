@@ -8,12 +8,12 @@ pub struct BindRules {
 }
 
 pub trait DeDupRules {
-	async fn dedup(self)	-> Self;
+	fn dedup(self)	-> Self;
 }
 
 
 impl DeDupRules for BindRules {
-	async fn dedup(self)	-> Self {
+	fn dedup(self)	-> Self {
 		let mut ret = vec![];
 		let mut dest_mnt = vec![];
 
@@ -42,6 +42,9 @@ impl DeDupRules for BindRules {
 						dest_mnt.push(dest.clone());
 						ret.push(BindRule::Symlink { source, dest });
 					};
+				}
+				BindRule::Tmpfs { dest }		=> {
+					ret.push(BindRule::Tmpfs { dest });
 				}
 			}
 		};
@@ -74,6 +77,9 @@ pub enum BindRule {
 		source:		std::path::PathBuf,
 		dest:		std::path::PathBuf,
 		class:		BindType,
+	},
+	Tmpfs {
+		dest:		std::path::PathBuf,
 	},
 	Symlink {
 		source:		std::path::PathBuf,
