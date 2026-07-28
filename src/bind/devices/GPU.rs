@@ -26,7 +26,7 @@ pub enum GPUError {
 
 	We will see whether this wakes up discrete GPU, if it does, then read the file manually
 */
-async fn device_is_boot_display(card_device: udev::Device) -> Result<bool, GPUError> {
+async fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, GPUError> {
 	let boot_display_attr_value = card_device.attribute_value("boot_display");
 	match boot_display_attr_value {
 		Some(v)	=> {
