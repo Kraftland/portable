@@ -18,6 +18,7 @@
 - Fixed a possible situation where init may panic but continue running
 - Properly handled channel send error in spawner
 - Properly handled OpenPty errors
+- The primary GPU is now determined with boot display attribute value, rather than connector status. Allowing multi-GPU multi-head system to operate optimally ([#1072](https://github.com/Kraftland/portable/pull/1072))
 
 # 18.0 - Lawn
 
