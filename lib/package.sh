@@ -56,6 +56,11 @@ install -vDm755 \
 	"${installPrefix}/usr/lib/portable/prlimit-stub/"
 
 
+install -vDm755 \
+	"target/release/gputest" \
+	-t \
+	"${installPrefix}/usr/lib/portable/"
+
 install -t "${installPrefix}/usr/share/portable" -Dm755 "share"/*
 
 install -d "${installPrefix}/usr/share/doc"
