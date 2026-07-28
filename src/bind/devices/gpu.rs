@@ -17,13 +17,53 @@ pub enum GPUError {
 }
 
 
-// pub async fn scan(
-// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-// 	all_gpus:	&bool,
-// ) -> Result<Vec<BindRule>, GPUError> {
-// 	let devices = enumerate_gpus(logger).await;
-// }
 
+/*
+	Scan /dev/ for nvidia device nodes that aren't in udev database
+	This function needs spawn_blocking for std I/O
+*/
+async fn get_nvidia_devices(
+	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+) -> Vec<std::path::PathBuf> {
+	use crate::logger::LogMessage;
+	use crate::logger::LogLevel;
+	let dir = {
+		let dir = std::fs::read_dir("/dev");
+		match dir {
+			Ok(v)	=> {v}
+			Err(e)	=> {
+				let _ = logger.send(
+					LogMessage {
+						level: LogLevel::Warn,
+						message: format!("Could not read /dev: {e:#?}"),
+					}
+				).await;
+				return vec![];
+			}
+		}
+	};
+
+	let mut ret = vec![];
+
+	for entry in dir {
+		match entry {
+			Ok(v)	=> {
+				if v.file_name().to_string_lossy().starts_with("nvidia") {
+					ret.push(v.path());
+				}
+			}
+			Err(e)	=> {
+				logger.send(
+					LogMessage {
+						level: LogLevel::Warn,
+						message: format!("Could not read /dev entry: {e:#?}"),
+					}
+				).await;
+			}
+		}
+	};
+	ret
+}
 
 #[derive(Debug, Clone)]
 struct GPUDevice {
