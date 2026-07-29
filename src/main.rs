@@ -28,6 +28,8 @@ enum StartError {
 
 #[tokio::main]
 async fn main() -> Result<(), StartError> {
+	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
+
 	let (stop_func_tx, stop_func_rx) = tokio::sync::mpsc::channel(5);
 	let (stop_sig_tx, stop_sig_rx) = tokio::sync::mpsc::channel(1);
 
@@ -59,12 +61,20 @@ async fn main() -> Result<(), StartError> {
 		tx
 	};
 
-	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
+	let xdg_dirs = xdg_dirs_spawn
+		.await
+		.map_err(StartError::SpawnError)?
+		.map_err(StartError::XdgError)?;
 
-	let config = config::Config::get()
+
+	let config = {
+		config::Config::get(
+			log_tx.clone(),
+			xdg_dirs.config_home.clone(),
+		)
 		.await
 		.map_err(StartError::ConfigError)
-		?;
+	}?;
 
 	log_tx.send(
 		logger::LogMessage {
@@ -76,11 +86,6 @@ async fn main() -> Result<(), StartError> {
 		.map_err(StartError::LogError)
 		?;
 
-
-	let xdg_dirs = xdg_dirs_spawn
-		.await
-		.map_err(StartError::SpawnError)?
-		.map_err(StartError::XdgError)?;
 	log_tx.send(
 		logger::LogMessage {
 			level: logger::LogLevel::Debug,
