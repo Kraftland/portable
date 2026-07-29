@@ -35,14 +35,18 @@ pub enum ConfigError {
 	InvalidBashConfig(config_legacy::LegacyConfigError),
 }
 
+#[derive(Debug)]
 enum ConfigType {
 	TOML { path: std::path::PathBuf },
 	LegacyBash { path: std::path::PathBuf },
 }
 
 impl config_definition::Config {
-	pub async fn get() -> Result<config_definition::Config, ConfigError> {
-
+	pub async fn get(
+		logger:		crate::logger::LogSender,
+		config_home:	std::path::PathBuf,
+	) -> Result<config_definition::Config, ConfigError> {
+	let config_clone = config_home.clone();
 		/*
 			The trick here is that IntoIter implementation in std causes them to be
 				placed in a top-to-down manner. Whose behaviour can be used to
@@ -54,7 +58,7 @@ impl config_definition::Config {
 			Ref: https://doc.rust-lang.org/std/vec/struct.IntoIter.html
 		*/
 		let config_spawns = vec![
-			tokio::spawn(get_toml_path()),
+			tokio::spawn(get_toml_path(config_clone)),
 			tokio::spawn(get_legacy_bash_path()),
 		];
 
@@ -79,6 +83,13 @@ impl config_definition::Config {
 			}
 		};
 
+		let _ = logger.send(
+			crate::logger::LogMessage {
+				level: crate::logger::LogLevel::Debug,
+				message: format!("Picked configuration: {config_info:?}"),
+			},
+		).await;
+
 		match config_info {
 			ConfigType::TOML { path }	=> {
 				config_toml::read_config(&path)
@@ -94,9 +105,62 @@ impl config_definition::Config {
 	}
 }
 
-async fn get_toml_path() -> Result<ConfigType, ConfigError> {
+async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, ConfigError> {
+	use std::path::PathBuf;
 	match std::env::var("PORTABLE_CONF") {
 		Ok(v)	=> {
+			/*
+				This dictates what preference we prefer among configurations
+				The last means least preferred, while the first means most preferred
+
+				It holds a tuple: PathBuf to potentially useable path,
+				and JoinHandle to confirm whether it's available.
+			*/
+			let try_config_path = vec![
+				{
+					/*
+						Raw path configuration
+					*/
+					let base = PathBuf::from(&v);
+					(base.clone(), tokio::spawn(path_exist(base)))
+				},
+				{
+					/*
+						User level configuration
+						$XDG_CONFIG_HOME/portable/info/appID/config.toml
+					*/
+					let mut base = PathBuf::from(&config_home);
+					base.push("portable");
+					base.push("info");
+					base.push(&v);
+					base.push("config.toml");
+					(base.clone(), tokio::spawn(path_exist(base)))
+				},
+
+				{
+					/*
+						System level configuration
+						/usr/lib/portable/info/appID/config.toml
+					*/
+					let mut base = PathBuf::from("/usr/lib/portable/info");
+					base.push(&v);
+					base.push("config.toml");
+					(base.clone(), tokio::spawn(path_exist(base)))
+				},
+			];
+
+			for (path, result) in try_config_path {
+				match result.await.map_err(ConfigError::SpawnError)? {
+					true	=> {
+						return	Ok(
+							ConfigType::TOML { path }
+						);
+					}
+					false	=> {}
+				}
+			};
+
+
 			let path = std::path::PathBuf::from(v);
 			let path = std::path::absolute(path)
 				.map_err(ConfigError::InvalidTomlPath)?;
@@ -126,7 +190,7 @@ async fn get_legacy_bash_path() -> Result<ConfigType, ConfigError> {
 	}
 }
 
-async fn path_exist(path: &std::path::PathBuf) -> bool {
+async fn path_exist(path: std::path::PathBuf) -> bool {
 	let path = path.clone();
 	tokio::task::spawn_blocking(
 		move || {
