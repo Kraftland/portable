@@ -46,7 +46,7 @@ impl config_definition::Config {
 		/*
 			The trick here is that IntoIter implementation in std causes them to be
 				placed in a top-to-down manner. Whose behaviour can be used to
-				declear a priority between configuration types.
+				declare a priority between configuration types.
 
 			The TOML configuration will always run first, allowing us to prioritise it
 				over the legacy bash configuration.
@@ -124,4 +124,16 @@ async fn get_legacy_bash_path() -> Result<ConfigType, ConfigError> {
 			Err(ConfigError::InvalidBashVar(e))
 		}
 	}
+}
+
+async fn path_exist(path: &std::path::PathBuf) -> bool {
+	let path = path.clone();
+	tokio::task::spawn_blocking(
+		move || {
+			std::fs::exists(path)
+		},
+	)
+		.await
+		.unwrap_or(Ok(false))
+		.unwrap_or(false)
 }
