@@ -10,6 +10,8 @@ pub struct LogMessage {
 	pub message:		String,
 }
 
+pub type LogSender = tokio::sync::mpsc::Sender<LogMessage>;
+
 pub async fn logger (
 	mut log_rx: tokio::sync::mpsc::Receiver<LogMessage>,
 	stop_func_tx: tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
