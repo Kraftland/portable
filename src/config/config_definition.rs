@@ -78,9 +78,15 @@ pub struct BusExec {
 }
 
 #[derive(Debug,  Deserialize)]
+#[serde(default)]
 pub struct ProcMgmt {
-	#[serde(default = "default_true")]
 	pub background:		bool,
+}
+
+impl Default for ProcMgmt {
+	fn default() -> Self {
+		Self { background: true }
+	}
 }
 
 #[derive(Debug, Deserialize)]
