@@ -23,7 +23,7 @@ impl Delta {
 		This function involves 2 clones, it's better to cache the result somewhere
 	*/
 	pub async fn get(
-		config:		&crate::config_definition::Config,
+		config:		&crate::config::Config,
 		xdg_dir:	&crate::xdg::XdgDirs,
 	) -> Delta {
 		let mut path = std::path::PathBuf::from(

@@ -1,6 +1,3 @@
-use portable_daemon::config_definition;
-// use portable_daemon::config_legacy;
-// use portable_daemon::config_toml;
 use portable_daemon::config;
 use portable_daemon::logger;
 use portable_daemon::stop;
@@ -64,7 +61,7 @@ async fn main() -> Result<(), StartError> {
 
 	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 
-	let config = config_definition::Config::get()
+	let config = config::Config::get()
 		.await
 		.map_err(StartError::ConfigError)
 		?;
