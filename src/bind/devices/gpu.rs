@@ -173,8 +173,9 @@ async fn generate_bind_rules(
 	ret
 }
 
-pub async fn gputest_print_all_devices() -> String {
-	let (tx, _rx) = tokio::sync::mpsc::channel(100000);
+pub async fn gputest_print_all_devices(
+	tx: &tokio::sync::mpsc::Sender<crate::logger::LogMessage>
+) -> String {
 	let res = enumerate_gpus(&tx).await.unwrap();
 	format!("{res:#?}")
 }
@@ -349,6 +350,12 @@ async fn enumerate_gpus(
 		.map_err(GPUError::Enumerate)
 		?;
 
+	let _ = logger.send(
+		crate::logger::LogMessage {
+			level: crate::logger::LogLevel::Debug,
+			message: format!("Udev returned {} cards and nodes", devices.len())
+		},
+	).await;
 
 	let devices = associate_card_render(devices, logger).await;
 
@@ -393,17 +400,26 @@ async fn enumerate_gpus(
 						v
 					}
 					Err(e)	=> {
-						let _ = log_clone.send(
-							crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!(
-								"Could not determine boot display status for {:?}: {:#?}",
-								sysname,
-								e,
-								)
+						match e {
+							GPUError::InvalidBootVGA(_)	=> {
+								false
 							}
-						).await;
-						return;
+
+							_				=> {
+								let _ = log_clone.send(
+									crate::logger::LogMessage {
+									level: crate::logger::LogLevel::Warn,
+									message: format!(
+						"Could not determine boot display status for {:?}: {:#?}",
+						sysname,
+						e,
+										)
+									}
+								).await;
+								false
+							}
+						}
+
 					}
 				}
 			};
