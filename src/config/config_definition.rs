@@ -178,20 +178,27 @@ pub enum NetworkFilterTarget {
 
 #[derive(Debug, Deserialize)]
 pub struct Privacy {
-	#[serde(default = "default_false")]
 	pub lockdown:		bool,
 
 	#[serde(alias = "x11")]
-	#[serde(default = "default_false")]
 	pub x11_compat:		bool,
 
 	#[serde(alias = "classicNotifications")]
-	#[serde(default = "default_false")]
 	pub classic_notif:	bool,
 
 	#[serde(alias = "pipeWire")]
-	#[serde(default = "default_false")]
 	pub pipewire:		bool,
+}
+
+impl Default for Privacy {
+	fn default() -> Self {
+		Self {
+			lockdown: false,
+			x11_compat: false,
+			classic_notif: false,
+			pipewire: false,
+		}
+	}
 }
 
 #[derive(Debug, Deserialize)]
