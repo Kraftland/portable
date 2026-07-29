@@ -6,7 +6,6 @@ fn default_false()		-> bool {false}
 fn default_true()		-> bool {true}
 
 fn default_empty_vec_string()	-> Vec<String> {vec![]}
-fn default_empty_vec_device()	-> Vec<DeviceAllow> {vec![]}
 fn default_empty_vec_network()	-> Vec<NetworkFilterTarget> {vec![]}
 
 fn default_empty_string()	-> String {String::new()}
@@ -85,27 +84,30 @@ pub struct ProcMgmt {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct SysMgmt {
 	#[serde(alias = "inhibitSuspend")]
-	#[serde(default = "default_false")]
 	pub allow_inhibit:	bool,
 
 	#[serde(alias = "inhibitOnBehalf")]
-	#[serde(default = "default_false")]
 	pub conduct_inhibit:	bool,
 
-	#[serde(alias = "uclamp")]
-	#[serde(default = "default_uclamp")]
 	pub uclamp_max:		u16,
 
 	#[serde(alias = "deviceAllow")]
 	#[serde(deserialize_with = "deserialise_device_allow")]
-	#[serde(default = "default_empty_vec_device")]
 	pub device_allow:	Vec<DeviceAllow>,
 }
 
-fn default_uclamp () -> u16 {
-	100
+impl Default for SysMgmt {
+	fn default() -> Self {
+		Self {
+			allow_inhibit: false,
+			conduct_inhibit: false,
+			uclamp_max: 100,
+			device_allow: vec![],
+		}
+	}
 }
 
 #[derive(Debug)]
