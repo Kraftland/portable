@@ -1,6 +1,16 @@
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 
+fn default_false()		-> bool {false}
+
+fn default_true()		-> bool {true}
+
+fn default_empty_vec_string()	-> Vec<String> {vec![]}
+fn default_empty_vec_device()	-> Vec<DeviceAllow> {vec![]}
+fn default_empty_vec_network()	-> Vec<NetworkFilterTarget> {vec![]}
+
+fn default_empty_string()	-> String {String::new()}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -33,46 +43,55 @@ pub struct Metadata {
 	#[serde(alias = "stateDirectory")]
 	pub state_directory:	String,
 
+	#[serde(default = "default_config_version")]
 	pub config_version:	usize,
 }
+
+fn default_config_version () -> usize {0}
 
 #[derive(Debug, Deserialize)]
 pub struct Exec {
 	#[serde(alias = "target")]
 	pub target:		String,
+
 	#[serde(alias = "arguments")]
+	#[serde(default = "default_empty_vec_string")]
 	pub arguments:		Vec<String>,
+
 	#[serde(alias = "overlay")]
+	#[serde(default = "default_false")]
 	pub overlay:		bool,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct BusExec {
+	#[serde(default = "default_false")]
 	pub enable:		bool,
 	#[serde(alias = "target")]
+	#[serde(default = "default_empty_string")]
 	pub target:		String,
 	#[serde(alias = "arguments")]
+	#[serde(default = "default_empty_vec_string")]
 	pub arguments:		Vec<String>,
 	#[serde(alias = "overlay")]
+	#[serde(default = "default_false")]
 	pub overlay:		bool,
 }
 
 #[derive(Debug,  Deserialize)]
 pub struct ProcMgmt {
-	#[serde(default = "default_background")]
+	#[serde(default = "default_true")]
 	pub background:		bool,
-}
-
-fn default_background() -> bool {
-	true
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SysMgmt {
 	#[serde(alias = "inhibitSuspend")]
+	#[serde(default = "default_false")]
 	pub allow_inhibit:	bool,
 
 	#[serde(alias = "inhibitOnBehalf")]
+	#[serde(default = "default_false")]
 	pub conduct_inhibit:	bool,
 
 	#[serde(alias = "uclamp")]
@@ -81,6 +100,7 @@ pub struct SysMgmt {
 
 	#[serde(alias = "deviceAllow")]
 	#[serde(deserialize_with = "deserialise_device_allow")]
+	#[serde(default = "default_empty_vec_device")]
 	pub device_allow:	Vec<DeviceAllow>,
 }
 
@@ -137,14 +157,17 @@ fn deserialise_device_allow <'de, D> (deserialiser: D) -> Result<Vec<DeviceAllow
 #[derive(Debug, Deserialize)]
 pub struct Network {
 	#[serde(alias = "enable")]
+	#[serde(default = "default_false")]
 	pub allow_network:	bool,
 	#[serde(alias = "filter")]
+	#[serde(default = "default_false")]
 	pub enable_filter:	bool,
 	#[serde(alias = "filterDest")]
+	#[serde(default = "default_empty_vec_network")]
 	pub block_dest:		Vec<NetworkFilterTarget>,
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum NetworkFilterTarget {
 	IPAddr (std::net::IpAddr),
@@ -153,34 +176,42 @@ pub enum NetworkFilterTarget {
 
 #[derive(Debug, Deserialize)]
 pub struct Privacy {
+	#[serde(default = "default_false")]
 	pub lockdown:		bool,
 
 	#[serde(alias = "x11")]
+	#[serde(default = "default_false")]
 	pub x11_compat:		bool,
 
 	#[serde(alias = "classicNotifications")]
+	#[serde(default = "default_false")]
 	pub classic_notif:	bool,
 
 	#[serde(alias = "pipeWire")]
+	#[serde(default = "default_false")]
 	pub pipewire:		bool,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Advanced {
 	#[serde(alias = "zink")]
+	#[serde(default = "default_false")]
 	pub use_zink:		bool,
 
 	#[serde(alias = "qt5Compat")]
-	#[serde(default = "default_qt5_compat")]
+	#[serde(default = "default_true")]
 	pub qt5_compat:		bool,
 
 	#[serde(alias = "mprisName")]
+	#[serde(default = "default_empty_vec_string")]
 	pub mpris_names:	Vec<String>,
 
 	#[serde(alias = "trayWake")]
+	#[serde(default = "default_false")]
 	pub tray_wake:		bool,
 
 	#[serde(alias = "kDEStatus")]
+	#[serde(default = "default_false")]
 	pub allow_kde_status:	bool,
 
 	#[serde(alias = "flatpakInfo")]
@@ -188,13 +219,9 @@ pub struct Advanced {
 	pub flatpak_env:	bool,
 
 	#[serde(alias = "debugging")]
+	#[serde(default = "default_false")]
 	pub allow_debug:	bool,
 }
-
-fn default_qt5_compat () -> bool {
-	true
-}
-
 fn default_flatpak_env () -> bool {
 	true
 }
