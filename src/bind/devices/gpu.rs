@@ -2,6 +2,8 @@ use thiserror::Error;
 
 use crate::bind::types::BindRule;
 
+pub mod nvidia;
+
 #[derive(Error, Debug)]
 pub enum GPUError {
 	#[error("Could not determine boot display: invalid value {0:?}")]
@@ -57,7 +59,7 @@ async fn prime_offload_envs(
 	match vendor {
 		GPUVendor::NVIDIA { driver }	=> {
 			match driver {
-				NVIDIADriver::Nouveau		=> {
+				nvidia::NVIDIADriver::Nouveau			=> {
 					env_tx.send(
 						crate::envs::holder::EnvMessage::Add {
 							key: "DRI_PRIME".into(),
@@ -65,7 +67,7 @@ async fn prime_offload_envs(
 						},
 					).await.expect("Could not set offload envs");
 				}
-				NVIDIADriver::Proprietary	=> {
+				nvidia::NVIDIADriver::Proprietary		=> {
 					env_tx.send(
 						crate::envs::holder::EnvMessage::Add {
 							key: "__NV_PRIME_RENDER_OFFLOAD".into(),
@@ -90,6 +92,9 @@ async fn prime_offload_envs(
 							value: "nvidia_icd.json".into(),
 						},
 					).await.expect("Could not set offload envs");
+				}
+				nvidia::NVIDIADriver::Unknown { driver: _ }	=> {
+
 				}
 			}
 		}
@@ -119,7 +124,7 @@ async fn determine_active_gpus(
 				if gpu.boot_display {
 					continue;
 				};
-				prime_offload_envs(&gpu.vendor, &env_tx);
+				prime_offload_envs(&gpu.vendor, &env_tx).await;
 			};
 			return gpus
 		}
@@ -193,7 +198,7 @@ async fn generate_bind_rules(
 	};
 
 	match gpu.vendor {
-		GPUVendor::AMD		=> {
+		GPUVendor::AMD			=> {
 			tx.send(
 				BindRule::Path {
 					source: std::path::PathBuf::from("/dev/kfd"),
@@ -203,10 +208,27 @@ async fn generate_bind_rules(
 			).unwrap();
 		}
 
-		GPUVendor::Intel	=> {
+		GPUVendor::Intel		=> {
 			// Intel doesn't need any new tricks, yet
 		}
-		GPUVendor::NVIDIA	=> {
+		GPUVendor::NVIDIA {driver}	=> {
+			match driver {
+				nvidia::NVIDIADriver::Nouveau			=> {
+					// TODO: what about nouveau's modules?
+				}
+				nvidia::NVIDIADriver::Proprietary		=> {
+
+				}
+				nvidia::NVIDIADriver::Unknown { driver }	=> {
+					logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!("Unknown nvidia driver: {driver:?}"),
+						},
+					).await;
+				}
+			}
+
 			let nv_modules_mount = tokio::task::spawn_blocking(|| {
 				nvidia_module_mounts(false)
 			});
@@ -317,52 +339,7 @@ fn path_exists(path: &std::path::PathBuf) -> bool {
 }
 
 
-/*
-	Scan /dev/ for nvidia device nodes that aren't in udev database
-	This function needs spawn_blocking for std I/O
-*/
-async fn get_nvidia_devices(
-	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-) -> Vec<std::path::PathBuf> {
-	use crate::logger::LogMessage;
-	use crate::logger::LogLevel;
-	let dir = {
-		let dir = std::fs::read_dir("/dev");
-		match dir {
-			Ok(v)	=> {v}
-			Err(e)	=> {
-				let _ = logger.send(
-					LogMessage {
-						level: LogLevel::Warn,
-						message: format!("Could not read /dev: {e:#?}"),
-					}
-				).await;
-				return vec![];
-			}
-		}
-	};
 
-	let mut ret = vec![];
-
-	for entry in dir {
-		match entry {
-			Ok(v)	=> {
-				if v.file_name().to_string_lossy().starts_with("nvidia") {
-					ret.push(v.path());
-				}
-			}
-			Err(e)	=> {
-				let _ = logger.send(
-					LogMessage {
-						level: LogLevel::Warn,
-						message: format!("Could not read /dev entry: {e:#?}"),
-					}
-				).await;
-			}
-		}
-	};
-	ret
-}
 
 #[derive(Debug, Clone)]
 struct GPUDevice {
@@ -381,20 +358,14 @@ struct GPUInfo {
 enum GPUVendor {
 	Intel,
 	AMD,
-	NVIDIA	{driver: NVIDIADriver},
+	NVIDIA	{driver: nvidia::NVIDIADriver},
 	Others,
-}
-
-#[derive(Debug)]
-enum NVIDIADriver {
-	Nouveau,
-	Proprietary,
 }
 
 async fn get_vendor(device: udev::Device) -> GPUVendor {
 	match device.attribute_value("vendor") {
 		Some(v)	=> {
-			return map_to_vendor(v)
+			return map_to_vendor(v, &device)
 		}
 		None	=> {}
 	};
@@ -406,7 +377,7 @@ async fn get_vendor(device: udev::Device) -> GPUVendor {
 
 	match parent.attribute_value("vendor") {
 		Some(v)	=> {
-			return map_to_vendor(v);
+			return map_to_vendor(v, &device);
 		}
 		None	=> {
 			return GPUVendor::Others;
@@ -414,11 +385,15 @@ async fn get_vendor(device: udev::Device) -> GPUVendor {
 	}
 }
 
-fn map_to_vendor(vendor_string: &std::ffi::OsStr) -> GPUVendor {
+fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUVendor {
 	let string = vendor_string.to_str().unwrap_or("unknown");
 	match string {
 		"0x8086"	=> {GPUVendor::Intel}
-		"0x10de"	=> {GPUVendor::NVIDIA}
+		"0x10de"	=> {
+			GPUVendor::NVIDIA {
+				driver: nvidia::NVIDIADriver::get(device),
+			}
+		}
 		"0x1002"	=> {GPUVendor::AMD}
 		_		=> {GPUVendor::Others}
 	}

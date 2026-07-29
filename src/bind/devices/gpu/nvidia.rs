@@ -52,16 +52,20 @@ pub enum NVIDIADriver {
 	Unknown		{driver: Option<String>},
 }
 
-async fn get_nvidia_driver_type(device: &udev::Device)	-> NVIDIADriver {
-	let driver = match device.driver() {
-		Some(v)	=> {v}
-		None	=> {return NVIDIADriver::Unknown { driver: None };}
-	};
-	match driver.to_str() {
-		Some("nvidia")	=> NVIDIADriver::Proprietary,
-		Some("nouveau")	=> NVIDIADriver::Nouveau,
-		Some(v)		=> NVIDIADriver::Unknown { driver: Some(v.to_string()) },
-		None		=> NVIDIADriver::Unknown { driver: Some(format!("Invalid unicode")) },
+impl NVIDIADriver {
+	pub fn get(device: &udev::Device)	-> Self {
+		let driver = match device.driver() {
+			Some(v)	=> {v}
+			None	=> {return NVIDIADriver::Unknown { driver: None };}
+		};
+		match driver.to_str() {
+			Some("nvidia")	=> NVIDIADriver::Proprietary,
+			Some("nouveau")	=> NVIDIADriver::Nouveau,
+			Some(v)		=> NVIDIADriver::Unknown { driver: Some(v.to_string()) },
+			None		=> NVIDIADriver::Unknown { driver: Some(format!("Invalid unicode")) },
+		}
 	}
 }
+
+
 
