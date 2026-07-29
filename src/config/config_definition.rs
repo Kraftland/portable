@@ -1,6 +1,10 @@
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 
+fn default_false()		-> bool {false}
+
+fn default_empty_vec_string()	-> Vec<String> {vec![]}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -8,18 +12,24 @@ pub struct Config {
 
 	pub exec:		Exec,
 
+	#[serde(default)]
 	#[serde(alias = "busActivation")]
 	pub dbus_activation:	BusExec,
 
+	#[serde(default)]
 	#[serde(alias = "processes")]
 	pub process:		ProcMgmt,
 
+	#[serde(default)]
 	pub system:		SysMgmt,
 
+	#[serde(default)]
 	pub network:		Network,
 
+	#[serde(default)]
 	pub privacy:		Privacy,
 
+	#[serde(default)]
 	pub advanced:		Advanced,
 }
 
@@ -33,20 +43,28 @@ pub struct Metadata {
 	#[serde(alias = "stateDirectory")]
 	pub state_directory:	String,
 
+	#[serde(default = "default_config_version")]
 	pub config_version:	usize,
 }
+
+fn default_config_version () -> usize {0}
 
 #[derive(Debug, Deserialize)]
 pub struct Exec {
 	#[serde(alias = "target")]
 	pub target:		String,
+
 	#[serde(alias = "arguments")]
+	#[serde(default = "default_empty_vec_string")]
 	pub arguments:		Vec<String>,
+
 	#[serde(alias = "overlay")]
+	#[serde(default = "default_false")]
 	pub overlay:		bool,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct BusExec {
 	pub enable:		bool,
 	#[serde(alias = "target")]
@@ -57,17 +75,31 @@ pub struct BusExec {
 	pub overlay:		bool,
 }
 
+impl Default for BusExec {
+	fn default() -> Self {
+		Self {
+			enable: false,
+			target: String::new(),
+			arguments: vec![],
+			overlay: false,
+		}
+	}
+}
+
 #[derive(Debug,  Deserialize)]
+#[serde(default)]
 pub struct ProcMgmt {
-	#[serde(default = "default_background")]
 	pub background:		bool,
 }
 
-fn default_background() -> bool {
-	true
+impl Default for ProcMgmt {
+	fn default() -> Self {
+		Self { background: true }
+	}
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct SysMgmt {
 	#[serde(alias = "inhibitSuspend")]
 	pub allow_inhibit:	bool,
@@ -75,8 +107,6 @@ pub struct SysMgmt {
 	#[serde(alias = "inhibitOnBehalf")]
 	pub conduct_inhibit:	bool,
 
-	#[serde(alias = "uclamp")]
-	#[serde(default = "default_uclamp")]
 	pub uclamp_max:		u16,
 
 	#[serde(alias = "deviceAllow")]
@@ -84,8 +114,15 @@ pub struct SysMgmt {
 	pub device_allow:	Vec<DeviceAllow>,
 }
 
-fn default_uclamp () -> u16 {
-	100
+impl Default for SysMgmt {
+	fn default() -> Self {
+		Self {
+			allow_inhibit: false,
+			conduct_inhibit: false,
+			uclamp_max: 100,
+			device_allow: vec![],
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -135,6 +172,7 @@ fn deserialise_device_allow <'de, D> (deserialiser: D) -> Result<Vec<DeviceAllow
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Network {
 	#[serde(alias = "enable")]
 	pub allow_network:	bool,
@@ -144,7 +182,17 @@ pub struct Network {
 	pub block_dest:		Vec<NetworkFilterTarget>,
 }
 
-#[derive(Debug,Deserialize)]
+impl Default for Network {
+	fn default() -> Self {
+		Self {
+			allow_network: false,
+			enable_filter: false,
+			block_dest: vec![],
+		}
+	}
+}
+
+#[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum NetworkFilterTarget {
 	IPAddr (std::net::IpAddr),
@@ -152,6 +200,7 @@ pub enum NetworkFilterTarget {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Privacy {
 	pub lockdown:		bool,
 
@@ -165,13 +214,24 @@ pub struct Privacy {
 	pub pipewire:		bool,
 }
 
+impl Default for Privacy {
+	fn default() -> Self {
+		Self {
+			lockdown: false,
+			x11_compat: false,
+			classic_notif: false,
+			pipewire: false,
+		}
+	}
+}
+
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Advanced {
 	#[serde(alias = "zink")]
 	pub use_zink:		bool,
 
 	#[serde(alias = "qt5Compat")]
-	#[serde(default = "default_qt5_compat")]
 	pub qt5_compat:		bool,
 
 	#[serde(alias = "mprisName")]
@@ -184,17 +244,22 @@ pub struct Advanced {
 	pub allow_kde_status:	bool,
 
 	#[serde(alias = "flatpakInfo")]
-	#[serde(default = "default_flatpak_env")]
 	pub flatpak_env:	bool,
 
 	#[serde(alias = "debugging")]
 	pub allow_debug:	bool,
 }
 
-fn default_qt5_compat () -> bool {
-	true
-}
-
-fn default_flatpak_env () -> bool {
-	true
+impl Default for Advanced {
+	fn default() -> Self {
+		Self {
+			use_zink: false,
+			qt5_compat: true,
+			mpris_names: vec![],
+			tray_wake: false,
+			allow_kde_status: false,
+			flatpak_env: true,
+			allow_debug: false,
+		}
+	}
 }
