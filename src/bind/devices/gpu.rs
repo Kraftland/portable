@@ -222,11 +222,7 @@ fn nvidia_module_mounts(block: bool) -> Vec<BindRule> {
 		match block {
 			true	=> {
 				ret.push(
-					BindRule::Path {
-						source: "/dev/null".into(),
-						dest: path.into(),
-						class: crate::bind::types::BindType::ReadOnly,
-					},
+					BindRule::Tmpfs { dest: path.into() }
 				);
 			}
 			false	=> {
