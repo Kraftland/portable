@@ -21,6 +21,8 @@ pub enum GPUError {
 // 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 // 	all_gpus:	&bool,
 // ) -> Result<Vec<BindRule>, GPUError> {
+
+	// Block NVIDIA mounts first
 // 	let nv_modules_mount = tokio::task::spawn_blocking(|| {
 // 		nvidia_module_mounts(true)
 // 	});
@@ -30,7 +32,7 @@ pub enum GPUError {
 // 		let devs = enumerate_gpus(logger).await;
 // 	};
 
-// 	let nv_modules_mount = match nv_modules_mount.await {
+// 	let rules = match nv_modules_mount.await {
 // 		Ok(v)	=> {v}
 // 		Err(e)	=> {
 // 			logger.send(
@@ -46,8 +48,24 @@ pub enum GPUError {
 // 		}
 // 	};
 
-// 	let rules = nv_modules_mount;
 // }
+
+async fn determine_active_gpus(all_gpus: &bool, gpus: Vec<GPUInfo>) -> Vec<GPUInfo> {
+	match all_gpus {
+		true	=> {
+			return gpus
+		}
+		false	=> {}
+	};
+	let mut ret = vec![];
+
+	for gpu in gpus {
+		if gpu.boot_display {
+			ret.push(gpu);
+		}
+	};
+	ret
+}
 
 
 async fn generate_bind_rules(
