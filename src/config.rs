@@ -1,5 +1,11 @@
 use thiserror::Error;
 
+pub mod config_toml;
+pub mod config_legacy;
+pub mod config_definition;
+
+pub use config_definition::Config;
+
 #[derive(Error, Debug)]
 pub enum ConfigError {
 	#[error("Could not use TOML config path: invalid path: {0:#?}")]
@@ -23,10 +29,10 @@ pub enum ConfigError {
 	),
 
 	#[error("Could not decode TOML configuration: {0:#?}")]
-	InvalidTomlConfig(crate::config_toml::ParseTomlConfigError),
+	InvalidTomlConfig(config_toml::ParseTomlConfigError),
 
 	#[error("Could not decode legacy Bash configuration: {0:#?}")]
-	InvalidBashConfig(crate::config_legacy::LegacyConfigError),
+	InvalidBashConfig(config_legacy::LegacyConfigError),
 }
 
 enum ConfigType {
@@ -34,8 +40,8 @@ enum ConfigType {
 	LegacyBash { path: std::path::PathBuf },
 }
 
-impl crate::config_definition::Config {
-	pub async fn get() -> Result<crate::config_definition::Config, ConfigError> {
+impl config_definition::Config {
+	pub async fn get() -> Result<config_definition::Config, ConfigError> {
 
 		/*
 			The trick here is that IntoIter implementation in std causes them to be
@@ -75,12 +81,12 @@ impl crate::config_definition::Config {
 
 		match config_info {
 			ConfigType::TOML { path }	=> {
-				crate::config_toml::read_config(&path)
+				config_toml::read_config(&path)
 					.await
 					.map_err(ConfigError::InvalidTomlConfig)
 			}
 			ConfigType::LegacyBash { path }	=> {
-				crate::config_legacy::get_legacy_conf(&path)
+				config_legacy::get_legacy_conf(&path)
 					.await
 					.map_err(ConfigError::InvalidBashConfig)
 			}

@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::config_definition::*;
+use super::config_definition::*;
 
 #[derive(Debug, Error)]
 pub enum ParseTomlConfigError {
