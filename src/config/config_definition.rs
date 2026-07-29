@@ -157,16 +157,24 @@ fn deserialise_device_allow <'de, D> (deserialiser: D) -> Result<Vec<DeviceAllow
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Network {
 	#[serde(alias = "enable")]
-	#[serde(default = "default_false")]
 	pub allow_network:	bool,
 	#[serde(alias = "filter")]
-	#[serde(default = "default_false")]
 	pub enable_filter:	bool,
 	#[serde(alias = "filterDest")]
-	#[serde(default = "default_empty_vec_network")]
 	pub block_dest:		Vec<NetworkFilterTarget>,
+}
+
+impl Default for Network {
+	fn default() -> Self {
+		Self {
+			allow_network: false,
+			enable_filter: false,
+			block_dest: vec![],
+		}
+	}
 }
 
 #[derive(Debug, Deserialize)]
@@ -177,6 +185,7 @@ pub enum NetworkFilterTarget {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Privacy {
 	pub lockdown:		bool,
 
