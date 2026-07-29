@@ -6,6 +6,7 @@ use portable_daemon::logger;
 use portable_daemon::stop;
 use portable_daemon::consts;
 use portable_daemon::xdg;
+use portable_daemon::envs;
 // use portable_daemon::bind;
 
 use thiserror::Error;
@@ -53,6 +54,13 @@ async fn main() -> Result<(), StartError> {
 		.await
 		.map_err(StartError::LogError)
 		?;
+
+	let envs_tx = {
+		let log_clone = log_tx.clone();
+		let (tx, rx) = envs::holder::new_channel().await;
+		tokio::spawn(envs::holder::holder(rx, log_clone.to_owned()));
+		tx
+	};
 
 	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 
