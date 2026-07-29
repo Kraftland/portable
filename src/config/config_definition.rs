@@ -195,35 +195,40 @@ pub struct Privacy {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Advanced {
 	#[serde(alias = "zink")]
-	#[serde(default = "default_false")]
 	pub use_zink:		bool,
 
 	#[serde(alias = "qt5Compat")]
-	#[serde(default = "default_true")]
 	pub qt5_compat:		bool,
 
 	#[serde(alias = "mprisName")]
-	#[serde(default = "default_empty_vec_string")]
 	pub mpris_names:	Vec<String>,
 
 	#[serde(alias = "trayWake")]
-	#[serde(default = "default_false")]
 	pub tray_wake:		bool,
 
 	#[serde(alias = "kDEStatus")]
-	#[serde(default = "default_false")]
 	pub allow_kde_status:	bool,
 
 	#[serde(alias = "flatpakInfo")]
-	#[serde(default = "default_flatpak_env")]
 	pub flatpak_env:	bool,
 
 	#[serde(alias = "debugging")]
-	#[serde(default = "default_false")]
 	pub allow_debug:	bool,
 }
-fn default_flatpak_env () -> bool {
-	true
+
+impl Default for Advanced {
+	fn default() -> Self {
+		Self {
+			use_zink: false,
+			qt5_compat: true,
+			mpris_names: vec![],
+			tray_wake: false,
+			allow_kde_status: false,
+			flatpak_env: true,
+			allow_debug: false,
+		}
+	}
 }
