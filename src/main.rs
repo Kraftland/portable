@@ -27,12 +27,9 @@ enum StartError {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), StartError> {
-	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
-
+async fn main() {
 	let (stop_func_tx, stop_func_rx) = tokio::sync::mpsc::channel(5);
 	let (stop_sig_tx, stop_sig_rx) = tokio::sync::mpsc::channel(1);
-
 	let stop_worker = {
 		tokio::spawn(stop::stop_worker(stop_func_rx, stop_sig_rx))
 	};
@@ -43,6 +40,25 @@ async fn main() -> Result<(), StartError> {
 		tokio::spawn(logger::logger(log_rx, stop_func_tx, stop_clone));
 		log_tx
 	};
+
+	match run(log_tx.clone()).await {
+		Ok(_)	=> {}
+		Err(e)	=> {
+			log_tx.send(
+				logger::LogMessage {
+					level: logger::LogLevel::Fatal,
+					message: format!("{e:#?}"),
+				},
+			).await.unwrap();
+		}
+	}
+	let _ = stop_worker.await;
+}
+
+async fn run(
+	log_tx:		logger::LogSender,
+) -> Result<(), StartError> {
+	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 
 	log_tx.send(
 		logger::LogMessage {
@@ -99,8 +115,8 @@ async fn main() -> Result<(), StartError> {
 
 
 
-	stop_worker
-		.await
-		.map_err(StartError::StopWaitError)?;
+	// stop_worker
+	// 	.await
+	// 	.map_err(StartError::StopWaitError)?;
 	Ok(())
 }
