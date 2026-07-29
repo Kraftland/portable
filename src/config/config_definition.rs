@@ -3,12 +3,7 @@ use serde::de::Error;
 
 fn default_false()		-> bool {false}
 
-fn default_true()		-> bool {true}
-
 fn default_empty_vec_string()	-> Vec<String> {vec![]}
-fn default_empty_vec_network()	-> Vec<NetworkFilterTarget> {vec![]}
-
-fn default_empty_string()	-> String {String::new()}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,18 +12,24 @@ pub struct Config {
 
 	pub exec:		Exec,
 
+	#[serde(default)]
 	#[serde(alias = "busActivation")]
 	pub dbus_activation:	BusExec,
 
+	#[serde(default)]
 	#[serde(alias = "processes")]
 	pub process:		ProcMgmt,
 
+	#[serde(default)]
 	pub system:		SysMgmt,
 
+	#[serde(default)]
 	pub network:		Network,
 
+	#[serde(default)]
 	pub privacy:		Privacy,
 
+	#[serde(default)]
 	pub advanced:		Advanced,
 }
 
@@ -63,18 +64,26 @@ pub struct Exec {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct BusExec {
-	#[serde(default = "default_false")]
 	pub enable:		bool,
 	#[serde(alias = "target")]
-	#[serde(default = "default_empty_string")]
 	pub target:		String,
 	#[serde(alias = "arguments")]
-	#[serde(default = "default_empty_vec_string")]
 	pub arguments:		Vec<String>,
 	#[serde(alias = "overlay")]
-	#[serde(default = "default_false")]
 	pub overlay:		bool,
+}
+
+impl Default for BusExec {
+	fn default() -> Self {
+		Self {
+			enable: false,
+			target: String::new(),
+			arguments: vec![],
+			overlay: false,
+		}
+	}
 }
 
 #[derive(Debug,  Deserialize)]
