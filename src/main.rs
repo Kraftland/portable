@@ -13,9 +13,6 @@ enum StartError {
 	#[error("Could not contact logging thread: {0:#?}")]
 	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
 
-	#[error("Could not wait on stop worker: {0:#?}")]
-	StopWaitError(tokio::task::JoinError),
-
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
 
