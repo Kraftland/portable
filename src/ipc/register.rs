@@ -22,7 +22,7 @@ pub enum RegisterError {
 }
 
 pub async fn register(
-	app_id:		&str,
+	app_id:		String,
 	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 ) -> Result<RegisterStatus, RegisterError> {
 	let builder = zbus::connection::Builder::
@@ -54,14 +54,15 @@ pub async fn register(
 		)
 		.map_err(RegisterError::ServeObjectError)
 		?;
+
+	let mut name = String::from("top.kimiblock.portable.");
+	name.push_str(&app_id);
+
 	let conn = builder
 		.build()
 		.await
 		.map_err(RegisterError::BuildConnectionError)
 		?;
-
-	let mut name = String::from("top.kimiblock.portable.");
-	name.push_str(&app_id);
 
 	match conn.request_name(name).await {
 		Ok(_)	=> {
@@ -78,5 +79,4 @@ pub async fn register(
 			}
 		}
 	}
-
 }

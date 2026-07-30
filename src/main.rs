@@ -4,6 +4,7 @@ use portable_daemon::stop;
 use portable_daemon::consts;
 use portable_daemon::xdg;
 use portable_daemon::envs;
+use portable_daemon::ipc;
 // use portable_daemon::bind;
 
 use thiserror::Error;
@@ -21,6 +22,9 @@ enum StartError {
 
 	#[error("Could not spawn thread: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not register D-Bus service: {0:#?}")]
+	BusError(ipc::register::RegisterError),
 }
 
 #[tokio::main]
@@ -38,7 +42,7 @@ async fn main() {
 		log_tx
 	};
 
-	match run(log_tx.clone()).await {
+	match run(log_tx.clone(), stop_sig_tx).await {
 		Ok(_)	=> {}
 		Err(e)	=> {
 			log_tx.send(
@@ -54,6 +58,7 @@ async fn main() {
 
 async fn run(
 	log_tx:		logger::LogSender,
+	stop_tx:	tokio::sync::mpsc::Sender<stop::StopLevel>,
 ) -> Result<(), StartError> {
 	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 
@@ -87,7 +92,18 @@ async fn run(
 		)
 		.await
 		.map_err(StartError::ConfigError)
-	}?;
+	}
+	?;
+
+	let bus_spawn = {
+		let stop_clone = stop_tx.clone();
+		tokio::spawn(
+			ipc::register::register(
+				config.metadata.sandbox_id.clone(),
+				stop_clone,
+			)
+		)
+	};
 
 	log_tx.send(
 		logger::LogMessage {
@@ -110,6 +126,29 @@ async fn run(
 		?;
 
 
+
+	let connection = match bus_spawn
+		.await
+		.map_err(StartError::SpawnError)?
+		.map_err(StartError::BusError)?
+	{
+		ipc::register::RegisterStatus::Primary { connection }	=> {connection}
+		ipc::register::RegisterStatus::Secondary		=> {unimplemented!()}
+	};
+
+	log_tx.send(
+		logger::LogMessage {
+			level: logger::LogLevel::Debug,
+			message: format!("Registered to session bus as primary"),
+		}
+	).await
+	.map_err(StartError::LogError)?;
+
+	/*
+		Stop, or termination is handled by stop_worker, we sleep forever here to prevent bus being dropped
+		TODO: remove this after implementing spawner
+	*/
+	std::future::pending::<()>().await;
 
 
 	// stop_worker
