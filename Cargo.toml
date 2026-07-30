@@ -1,6 +1,6 @@
 [package]
 name = "portable-daemon"
-version = "0.1.0"
+version = "20"
 edition = "2024"
 
 [dependencies]
@@ -19,3 +19,7 @@ zbus = { version = "5.18.0", features = ["async-executor", "async-fs", "async-io
 resolver = "3"
 members = ["lib/legacy_conf"]
 exclude = ["lib/init"]
+
+[features]
+default = ["systemd"]
+systemd = []
