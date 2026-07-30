@@ -17,6 +17,7 @@ impl Info {
 	}
 
 	#[zbus(name = "Version")]
+	#[zbus(property)]
 	async fn version(&self) -> u32 {
 		crate::consts::DAEMON_VERSION
 	}
@@ -46,5 +47,19 @@ impl AuxStart {
 			}
 		}
 		unimplemented!()
+	}
+}
+
+struct Controller {
+	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+}
+
+#[interface (name = "top.kimiblock.Portable.Controller")]
+impl Controller {
+	#[zbus(name = "Stop")]
+	async fn stop(&self) {
+		self.stop_tx.send(crate::stop::StopLevel::Normal)
+			.await
+			.expect("Could not send stop signal");
 	}
 }
