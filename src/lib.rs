@@ -5,3 +5,4 @@ pub mod consts;
 pub mod xdg;
 pub mod bind;
 pub mod envs;
+pub mod ipc;
