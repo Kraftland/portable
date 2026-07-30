@@ -15,7 +15,7 @@ pub enum ConfigError {
 	InvalidTomlVar(std::env::VarError),
 
 	#[error("Could not use legacy Bash config path: invalid path: {0:#?}")]
-	InvalidBashPath(std::io::Error),
+	InvalidBashPath(String),
 
 	#[error("Could not use legacy Bash config: null or invalid environment variable: {0:#?}")]
 	InvalidBashVar(std::env::VarError),
@@ -59,7 +59,7 @@ impl config_definition::Config {
 		*/
 		let config_spawns = vec![
 			tokio::spawn(get_toml_path(config_clone)),
-			tokio::spawn(get_legacy_bash_path()),
+			tokio::spawn(get_legacy_bash_path(config_home)),
 		];
 
 		let mut config_info = None;
@@ -168,15 +168,61 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 	}
 }
 
-async fn get_legacy_bash_path() -> Result<ConfigType, ConfigError> {
+async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigType, ConfigError> {
 	match std::env::var("_portableConfig") {
 		Ok(v)	=> {
-			let path = std::path::PathBuf::from(v);
-			let path = std::path::absolute(path)
-				.map_err(ConfigError::InvalidBashPath)?;
-			Ok(
-				ConfigType::LegacyBash { path: path }
-			)
+			use std::path::PathBuf;
+			/*
+				This dictates what preference we prefer among configurations
+				The last means least preferred, while the first means most preferred
+
+				It holds a tuple: PathBuf to potentially useable path,
+				and JoinHandle to confirm whether it's available.
+			*/
+			let try_config_path = vec![
+				{
+					/*
+						Raw path configuration
+					*/
+					let base = PathBuf::from(&v);
+					(base.clone(), tokio::spawn(path_exist(base)))
+				},
+				{
+					/*
+						User level configuration
+						$XDG_CONFIG_HOME/portable/info/appID/config
+					*/
+					let mut base = PathBuf::from(&config_home);
+					base.push("portable");
+					base.push("info");
+					base.push(&v);
+					base.push("config");
+					(base.clone(), tokio::spawn(path_exist(base)))
+				},
+
+				{
+					/*
+						System level configuration
+						/usr/lib/portable/info/appID/config
+					*/
+					let mut base = PathBuf::from("/usr/lib/portable/info");
+					base.push(&v);
+					base.push("config");
+					(base.clone(), tokio::spawn(path_exist(base)))
+				},
+			];
+
+			for (path, result) in try_config_path {
+				match result.await.map_err(ConfigError::SpawnError)? {
+					true	=> {
+						return	Ok(
+							ConfigType::LegacyBash { path }
+						);
+					}
+					false	=> {}
+				}
+			};
+			Err(ConfigError::InvalidBashPath(v))
 		}
 		Err(e)	=> {
 			Err(ConfigError::InvalidBashVar(e))
