@@ -21,5 +21,8 @@ members = ["lib/legacy_conf"]
 exclude = ["lib/init"]
 
 [features]
-default = ["systemd"]
+default = ["systemd", "flatpak"]
 systemd = []
+
+# Mimic Flatpak to host, required until appd lands
+flatpak = []
