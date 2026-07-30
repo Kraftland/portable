@@ -9,7 +9,7 @@ pub use config_definition::Config;
 #[derive(Error, Debug)]
 pub enum ConfigError {
 	#[error("Could not use TOML config path: invalid path: {0:#?}")]
-	InvalidTomlPath(std::io::Error),
+	InvalidTomlPath(String),
 
 	#[error("Could not use TOML config: null or invalid environment variable: {0:#?}")]
 	InvalidTomlVar(std::env::VarError),
@@ -159,14 +159,8 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 					false	=> {}
 				}
 			};
+			Err(ConfigError::InvalidTomlPath(v))
 
-
-			let path = std::path::PathBuf::from(v);
-			let path = std::path::absolute(path)
-				.map_err(ConfigError::InvalidTomlPath)?;
-			Ok(
-				ConfigType::TOML { path: path }
-			)
 		}
 		Err(e)	=> {
 			Err(ConfigError::InvalidTomlVar(e))
