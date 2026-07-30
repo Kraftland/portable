@@ -11,6 +11,10 @@ pub trait DeDupRules {
 	fn dedup(self)	-> Self;
 }
 
+pub trait ToBubblewrap {
+	fn bwrap(self)	-> Vec<String>;
+}
+
 
 impl DeDupRules for BindRules {
 	fn dedup(self)	-> Self {

@@ -1,6 +1,6 @@
 [package]
 name = "portable-daemon"
-version = "20"
+version = "20.0.0"
 edition = "2024"
 
 [dependencies]
