@@ -133,7 +133,19 @@ async fn run(
 		.map_err(StartError::BusError)?
 	{
 		ipc::register::RegisterStatus::Primary { connection }	=> {connection}
-		ipc::register::RegisterStatus::Secondary		=> {unimplemented!()}
+		ipc::register::RegisterStatus::Secondary		=> {
+			log_tx.send(
+				logger::LogMessage {
+					level: logger::LogLevel::Debug,
+					message: format!("Entering auxiliary mode"),
+				},
+			)
+			.await
+			.map_err(StartError::LogError)
+			?;
+
+			unimplemented!();
+		}
 	};
 
 	log_tx.send(
