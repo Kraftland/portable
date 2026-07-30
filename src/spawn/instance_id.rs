@@ -19,6 +19,12 @@ pub async fn generate_instance_id(
 	let mut instance_id: u32;
 
 	loop {
+		/*
+			Portable apps would never require a detection
+			The instance ID is app-specific, and it is not possible to have several
+			primary instances
+		*/
+
 		let id = rng.generate();
 
 		#[cfg(feature = "flatpak")]
@@ -52,6 +58,9 @@ pub async fn generate_instance_id(
 		instance_id = id;
 		break;
 	};
+
+	Ok(instance_id.to_string())
+
 }
 
 /*
