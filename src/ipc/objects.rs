@@ -22,7 +22,9 @@ impl Info {
 	}
 }
 
-struct AuxStart;
+struct AuxStart {
+	started:	std::sync::atomic::AtomicBool,
+}
 
 #[interface (name = "top.kimiblock.portable.AuxStart")]
 impl AuxStart {
@@ -36,6 +38,13 @@ impl AuxStart {
 		extra_files:	std::collections::HashMap<String, String>,
 		envs:		std::collections::HashMap<String, String>,
 	) -> zbus::zvariant::OwnedFd {
+		loop {
+			if ! self.started.load(std::sync::atomic::Ordering::Relaxed) {
+				tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+			} else {
+				break;
+			}
+		}
 		unimplemented!()
 	}
 }
