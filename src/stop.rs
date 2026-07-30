@@ -1,4 +1,3 @@
-
 // Pre runs first, then Post
 pub enum FunctionLayer{
 	Pre,
@@ -106,5 +105,7 @@ async fn shutdown(
 	post_tracker.wait().await;
 	if error_code {
 		std::process::exit(1);
+	} else {
+		std::process::exit(0)
 	}
 }
