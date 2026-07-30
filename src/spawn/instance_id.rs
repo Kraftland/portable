@@ -16,7 +16,7 @@ pub async fn generate_instance_id(
 ) -> Result<String, InstanceIDError> {
 	let mut rng = super::rng::Rng::new();
 
-	let mut instance_id: u32;
+	let instance_id: u32;
 
 	loop {
 		/*
