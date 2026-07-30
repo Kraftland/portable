@@ -3,6 +3,8 @@ pub mod systemd;
 
 pub mod rng;
 
+pub mod instance_id;
+
 pub struct Spawn {
 	fs_rules:	crate::bind::types::BindRules,
 	logger:		crate::logger::LogSender,
