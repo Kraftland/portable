@@ -150,5 +150,17 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			String::from("SuccessExitStatus"),
+			{
+				let kill_signals: (Vec<i32>, Vec<i32>) = (vec![9], vec![15]);
+				let value = zbus::zvariant::Value::from(kill_signals);
+				value.try_into().expect("Could not build systemd properties")
+			}
+		)
+	);
+
+
 	vec
 }
