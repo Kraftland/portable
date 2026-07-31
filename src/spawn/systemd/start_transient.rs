@@ -143,5 +143,12 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			String::from("ExitType"),
+			OwnedValue::from(Str::from("cgroup")),
+		)
+	);
+
 	vec
 }
