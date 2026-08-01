@@ -5,6 +5,12 @@ pub enum StartAppError {
 
 	#[error("Could not generate properties for Manager: {0:#?}")]
 	PropertiesError(zbus::zvariant::Error),
+
+	#[error("Could not spawn task: {0:#?}")]
+	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not generate properties for Manager: envs error: {0:#?}")]
+	EnvsError(crate::envs::holder::EnvError),
 }
 
 #[cfg(feature = "systemd")]
@@ -21,9 +27,8 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 		let unit_name = ServiceName::new(
 			&self.app_id,
 			&self.uid,
-			self.envs.to_owned(),
 		).await;
-		let properties = generate_properties(&self.app_id).await?;
+		let properties = generate_properties(&self.app_id, self.envs.to_owned()).await?;
 
 		proxy.start_transient_unit(
 			unit_name.inner().await.to_string(),
@@ -54,7 +59,6 @@ impl ServiceName {
 	async fn new(
 		app_id:	&str,
 		uid:	&str,
-		envs:	crate::envs::holder::HoldChannel,
 	) -> Self {
 		let mut unit_name = String::from("app-portable-");
 		unit_name.push_str(app_id);
@@ -85,7 +89,10 @@ impl ServiceName {
 */
 async fn generate_properties(
 	app_id:		&str,
+	envs:		crate::envs::holder::HoldChannel,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
+	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
+
 	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![];
 
 	use zbus::zvariant::{OwnedValue, Str};
@@ -432,6 +439,37 @@ async fn generate_properties(
 			},
 		)
 	);
+
+	vec.push(
+		(
+			"Environment".into(),
+			{
+				let envs = envs_poll
+					.await
+					.map_err(StartAppError::SpawnError)
+					?
+					.map_err(StartAppError::EnvsError)
+					?;
+				let mut environment = vec![];
+				for (k, v) in envs {
+					let mut env = String::new();
+					env.push_str(&k);
+					env.push_str("=");
+					env.push_str(&v);
+					environment.push(env);
+				};
+				let array = zbus::zvariant::Array::from(environment);
+				array
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			},
+		)
+	);
+
+
+
+
 
 	/*
 		TimeoutStartSec was not ported, we have stable systemd notify impl
