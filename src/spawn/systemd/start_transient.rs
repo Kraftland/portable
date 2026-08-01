@@ -398,6 +398,33 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			"SystemCallFilter".into(),
+			{
+				let whitelist = false;
+				let deny_list = vec![
+					"@clock",
+					"@cpu-emulation",
+					"@module",
+					"@obsolete",
+					"@raw-io",
+					"@reboot",
+					"@swap",
+				];
+				let array = zbus::zvariant::Array::from(deny_list);
+
+				let array_val = zbus::zvariant::Value::from(array);
+				zbus::zvariant::Structure::from(
+					(zbus::zvariant::Value::from(whitelist), array_val),
+				)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			},
+		)
+	);
+
 	/*
 		TimeoutStartSec was not ported, we have stable systemd notify impl
 		SecureBits was not ported. It seems to require value 32 (bit mask 1 << 5)
