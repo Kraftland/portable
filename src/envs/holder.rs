@@ -1,4 +1,13 @@
-// use thiserror::Error;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum EnvError {
+	#[error("Could not sync environment variables: channel error: {0:#?}")]
+	ChannelError(tokio::sync::mpsc::error::SendError<EnvMessage>),
+
+	#[error("Could not acquire environment variables: channel error: {0:#?}")]
+	RecvError(tokio::sync::oneshot::error::RecvError),
+}
 
 #[derive(Debug)]
 pub enum EnvMessage {
@@ -44,10 +53,34 @@ pub async fn holder(
 				envs_map.insert(key, value);
 			}
 			EnvMessage::Collect { chan }	=> {
-				chan.send(envs_map.to_owned())
-					.expect("Could not send variables");
+				let result = chan.send(envs_map.to_owned());
+				match result {
+					Ok(_)	=> {}
+					Err(e)	=> {
+						log_tx.send(
+							LogMessage {
+								level: crate::logger::LogLevel::Fatal,
+								message: format!("Could not send envs: {e:#?}")
+							}
+						).await;
+					}
+				}
+				rx.close();
+				return;
 			}
 		}
 	}
 
+}
+
+pub async fn retrieve(ch: HoldChannel) -> Result<std::collections::HashMap<String, String>, EnvError> {
+	let (tx, rx) = tokio::sync::oneshot::channel();
+	ch.send(
+		EnvMessage::Collect { chan: tx }
+	)
+		.await
+		.map_err(EnvError::ChannelError)?;
+	rx
+		.await
+		.map_err(EnvError::RecvError)
 }
