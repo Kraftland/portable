@@ -364,6 +364,36 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			"UnsetEnvironment".into(),
+			{
+				let list = vec![
+					"GNOME_SETUP_DISPLAY",
+					"PIPEWIRE_REMOTE",
+					"PAM_KWALLET5_LOGIN",
+					"GTK2_RC_FILES",
+					"ICEAUTHORITY",
+					"MANAGERPID",
+					"INVOCATION_ID",
+					"MANAGERPIDFDID",
+					"SSH_AUTH_SOCK",
+					"__EGL_VENDOR_LIBRARY_FILENAMES",
+					"__GLX_VENDOR_LIBRARY_NAME",
+					"VK_LOADER_DRIVERS_SELECT",
+					"VK_LOADER_DRIVERS_DISABLE",
+					"MAIL",
+					"SYSTEMD_EXEC_PID",
+				];
+				let array = zbus::zvariant::Array::from(list);
+				zbus::zvariant::Value::from(array)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			}
+		)
+	);
+
 	/*
 		TimeoutStartSec was not ported, we have stable systemd notify impl
 		SecureBits was not ported. It seems to require value 32 (bit mask 1 << 5)
