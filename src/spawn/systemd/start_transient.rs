@@ -18,7 +18,11 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			.map_err(StartAppError::ManagerProxyError)
 			?;
 
-		let unit_name = ServiceName::new(&self.app_id, &self.uid).await;
+		let unit_name = ServiceName::new(
+			&self.app_id,
+			&self.uid,
+			self.envs.to_owned(),
+		).await;
 		let properties = generate_properties(&self.app_id).await?;
 
 		proxy.start_transient_unit(
@@ -47,7 +51,11 @@ pub struct ServiceName {
 }
 
 impl ServiceName {
-	async fn new(app_id: &str, uid: &str) -> Self {
+	async fn new(
+		app_id:	&str,
+		uid:	&str,
+		envs:	crate::envs::holder::HoldChannel,
+	) -> Self {
 		let mut unit_name = String::from("app-portable-");
 		unit_name.push_str(app_id);
 		unit_name.push_str("@");
