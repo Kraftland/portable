@@ -2,6 +2,9 @@
 pub enum StartAppError {
 	#[error("Could not create proxy to Manager: {0:#?}")]
 	ManagerProxyError(zbus::Error),
+
+	#[error("Could not generate properties for Manager: {0:#?}")]
+	PropertiesError(zbus::zvariant::Error),
 }
 
 #[cfg(feature = "systemd")]
@@ -16,7 +19,7 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			?;
 
 		let unit_name = ServiceName::new(&self.app_id, &self.uid).await;
-		let properties = generate_properties(&self.app_id).await;
+		let properties = generate_properties(&self.app_id).await?;
 
 		proxy.start_transient_unit(
 			unit_name.inner().await.to_string(),
@@ -74,7 +77,7 @@ impl ServiceName {
 */
 async fn generate_properties(
 	app_id:		&str,
-) -> Vec<(String, zbus::zvariant::OwnedValue)> {
+) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![];
 
 	use zbus::zvariant::{OwnedValue, Str};
@@ -122,8 +125,10 @@ async fn generate_properties(
 					Str::from("xdg-desktop-portal.service"),
 				];
 				let array = zbus::zvariant::Array::from(str_vec);
-				zbus::zvariant::Value::Array(array).try_into()
-					.expect("Could not build systemd properties")
+				zbus::zvariant::Value::Array(array)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
 			},
 		)
 	);
@@ -138,7 +143,8 @@ async fn generate_properties(
 				let array = zbus::zvariant::Array::from(str_vec);
 				zbus::zvariant::Value::Array(array)
 					.try_into()
-					.expect("Could not build systemd properties")
+					.map_err(StartAppError::PropertiesError)
+					?
 			}
 		)
 	);
@@ -156,7 +162,10 @@ async fn generate_properties(
 			{
 				let kill_signals: (Vec<i32>, Vec<i32>) = (vec![9], vec![15]);
 				let value = zbus::zvariant::Value::from(kill_signals);
-				value.try_into().expect("Could not build systemd properties")
+				value
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
 			}
 		)
 	);
@@ -239,10 +248,29 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			String::from("RestrictAddressFamilies"),
+			{
+				let vector = vec![
+					"AF_UNIX",
+					"AF_INET",
+					"AF_INET6",
+					"AF_NETLINK",
+				];
+				let array = zbus::zvariant::Array::from(vector);
+				array
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			}
+		)
+	);
+
 	/*
 		TimeoutStartSec was not ported, we have stable systemd notify impl
 		SecureBits was not ported. It seems to require value 32 (bit mask 1 << 5)
 	*/
 
-	vec
+	Ok(vec)
 }
