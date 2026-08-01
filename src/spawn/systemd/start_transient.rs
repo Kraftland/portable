@@ -161,6 +161,13 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			String::from("NotifyAccess"),
+			OwnedValue::from(Str::from("all")),
+		)
+	);
+
 
 	vec
 }
