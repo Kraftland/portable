@@ -292,6 +292,13 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			String::from("RestrictRealtime"),
+			OwnedValue::from(true),
+		)
+	);
+
 	/*
 		TimeoutStartSec was not ported, we have stable systemd notify impl
 		SecureBits was not ported. It seems to require value 32 (bit mask 1 << 5)
