@@ -370,6 +370,8 @@ async fn generate_properties(
 			{
 				let list = vec![
 					"GNOME_SETUP_DISPLAY",
+					"GDM_LANG",
+					"GDMSESSION",
 					"PIPEWIRE_REMOTE",
 					"PAM_KWALLET5_LOGIN",
 					"GTK2_RC_FILES",
@@ -378,6 +380,8 @@ async fn generate_properties(
 					"INVOCATION_ID",
 					"MANAGERPIDFDID",
 					"SSH_AUTH_SOCK",
+					"DESKTOP_SESSION",
+					"SHELL",
 					"__EGL_VENDOR_LIBRARY_FILENAMES",
 					"__GLX_VENDOR_LIBRARY_NAME",
 					"VK_LOADER_DRIVERS_SELECT",
