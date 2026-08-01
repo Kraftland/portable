@@ -259,7 +259,8 @@ async fn generate_properties(
 					"AF_NETLINK",
 				];
 				let array = zbus::zvariant::Array::from(vector);
-				array
+				let value = zbus::zvariant::Structure::from((true, array));
+				value
 					.try_into()
 					.map_err(StartAppError::PropertiesError)
 					?
