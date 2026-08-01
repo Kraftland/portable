@@ -320,7 +320,20 @@ async fn generate_properties(
 		(
 			"PrivateUsers".into(),
 			true.into(),
-		),
+		)
+	);
+
+	vec.push(
+		(
+			"ProtectControlGroups".into(),
+			true.into(),
+		)
+	);
+	vec.push(
+		(
+			"ProtectControlGroupsEx".into(),
+			Str::from("private").into(),
+		)
 	);
 
 	/*
