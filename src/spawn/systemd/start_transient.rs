@@ -2,6 +2,15 @@
 pub enum StartAppError {
 	#[error("Could not create proxy to Manager: {0:#?}")]
 	ManagerProxyError(zbus::Error),
+
+	#[error("Could not generate properties for Manager: {0:#?}")]
+	PropertiesError(zbus::zvariant::Error),
+
+	#[error("Could not spawn task: {0:#?}")]
+	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not generate properties for Manager: envs error: {0:#?}")]
+	EnvsError(crate::envs::holder::EnvError),
 }
 
 #[cfg(feature = "systemd")]
@@ -15,8 +24,11 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			.map_err(StartAppError::ManagerProxyError)
 			?;
 
-		let unit_name = ServiceName::new(&self.app_id, &self.uid).await;
-		let properties = generate_properties(&self.app_id).await;
+		let unit_name = ServiceName::new(
+			&self.app_id,
+			&self.uid,
+		).await;
+		let properties = generate_properties(&self.app_id, self.envs.to_owned()).await?;
 
 		proxy.start_transient_unit(
 			unit_name.inner().await.to_string(),
@@ -44,7 +56,10 @@ pub struct ServiceName {
 }
 
 impl ServiceName {
-	async fn new(app_id: &str, uid: &str) -> Self {
+	async fn new(
+		app_id:	&str,
+		uid:	&str,
+	) -> Self {
 		let mut unit_name = String::from("app-portable-");
 		unit_name.push_str(app_id);
 		unit_name.push_str("@");
@@ -74,7 +89,10 @@ impl ServiceName {
 */
 async fn generate_properties(
 	app_id:		&str,
-) -> Vec<(String, zbus::zvariant::OwnedValue)> {
+	envs:		crate::envs::holder::HoldChannel,
+) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
+	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
+
 	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![];
 
 	use zbus::zvariant::{OwnedValue, Str};
@@ -122,8 +140,10 @@ async fn generate_properties(
 					Str::from("xdg-desktop-portal.service"),
 				];
 				let array = zbus::zvariant::Array::from(str_vec);
-				zbus::zvariant::Value::Array(array).try_into()
-					.expect("Could not build systemd properties")
+				zbus::zvariant::Value::Array(array)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
 			},
 		)
 	);
@@ -138,7 +158,8 @@ async fn generate_properties(
 				let array = zbus::zvariant::Array::from(str_vec);
 				zbus::zvariant::Value::Array(array)
 					.try_into()
-					.expect("Could not build systemd properties")
+					.map_err(StartAppError::PropertiesError)
+					?
 			}
 		)
 	);
@@ -156,7 +177,10 @@ async fn generate_properties(
 			{
 				let kill_signals: (Vec<i32>, Vec<i32>) = (vec![9], vec![15]);
 				let value = zbus::zvariant::Value::from(kill_signals);
-				value.try_into().expect("Could not build systemd properties")
+				value
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
 			}
 		)
 	);
@@ -189,10 +213,268 @@ async fn generate_properties(
 		)
 	);
 
+	vec.push(
+		(
+			String::from("MemoryPressureWatch"),
+			OwnedValue::from(Str::from("on")),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("OOMPolicy"),
+			OwnedValue::from(Str::from("kill")),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("SyslogIdentifier"),
+			OwnedValue::from(Str::from(app_id)),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("PrivateIPC"),
+			OwnedValue::from(true),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("PrivatePIDs"),
+			OwnedValue::from(true),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("ProtectClock"),
+			OwnedValue::from(true),
+		)
+	);
+
+	// Required for --proc to work
+	vec.push(
+		(
+			String::from("ProtectKernelLogs"),
+			OwnedValue::from(false),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("RestrictAddressFamilies"),
+			{
+				let vector = vec![
+					"AF_UNIX",
+					"AF_INET",
+					"AF_INET6",
+					"AF_NETLINK",
+				];
+				let array = zbus::zvariant::Array::from(vector);
+				let value = zbus::zvariant::Structure::from((true, array));
+				value
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			}
+		)
+	);
+
+	vec.push(
+		(
+			String::from("CapabilityBoundingSet"),
+			/*
+				Bitmask here
+			*/
+			OwnedValue::from(0 as u64),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("RestrictSUIDSGID"),
+			OwnedValue::from(true),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("LockPersonality"),
+			OwnedValue::from(true),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("RestrictRealtime"),
+			OwnedValue::from(true),
+		)
+	);
+
+	vec.push(
+		(
+			String::from("ProtectProc"),
+			OwnedValue::from(Str::from("invisible")),
+			/*
+				https://github.com/systemd/systemd/blob/6a863b4dc31adc49fdfdd5deba32ed1b115adda3/src/core/namespace.h#L40
+			*/
+		)
+	);
+
+	vec.push(
+		(
+			String::from("ProcSubset"),
+			Str::from("pid").into(),
+		)
+	);
+
+	vec.push(
+		(
+			"PrivateUsers".into(),
+			true.into(),
+		)
+	);
+
+	vec.push(
+		(
+			"ProtectControlGroups".into(),
+			true.into(),
+		)
+	);
+	vec.push(
+		(
+			"ProtectControlGroupsEx".into(),
+			Str::from("private").into(),
+		)
+	);
+
+	vec.push(
+		(
+			"PrivateMounts".into(),
+			true.into(),
+		)
+	);
+
+	vec.push(
+		(
+			"ProtectHome".into(),
+			Str::from("no").into(),
+		)
+	);
+
+	vec.push(
+		(
+			"KeyringMode".into(),
+			Str::from("private").into(),
+		)
+	);
+
+	vec.push(
+		(
+			"TimeoutStopUSec".into(),
+			(std::time::Duration::from_mins(1).as_micros() as u64).into()
+		)
+	);
+
+	vec.push(
+		(
+			"UnsetEnvironment".into(),
+			{
+				let list = vec![
+					"GNOME_SETUP_DISPLAY",
+					"GDM_LANG",
+					"GDMSESSION",
+					"PIPEWIRE_REMOTE",
+					"PAM_KWALLET5_LOGIN",
+					"GTK2_RC_FILES",
+					"ICEAUTHORITY",
+					"MANAGERPID",
+					"INVOCATION_ID",
+					"MANAGERPIDFDID",
+					"SSH_AUTH_SOCK",
+					"DESKTOP_SESSION",
+					"SHELL",
+					"__EGL_VENDOR_LIBRARY_FILENAMES",
+					"__GLX_VENDOR_LIBRARY_NAME",
+					"VK_LOADER_DRIVERS_SELECT",
+					"VK_LOADER_DRIVERS_DISABLE",
+					"MAIL",
+					"SYSTEMD_EXEC_PID",
+				];
+				let array = zbus::zvariant::Array::from(list);
+				zbus::zvariant::Value::from(array)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			}
+		)
+	);
+
+	vec.push(
+		(
+			"SystemCallFilter".into(),
+			{
+				let whitelist = false;
+				let deny_list = vec![
+					"@clock",
+					"@cpu-emulation",
+					"@module",
+					"@obsolete",
+					"@raw-io",
+					"@reboot",
+					"@swap",
+				];
+				let array = zbus::zvariant::Array::from(deny_list);
+
+				let array_val = zbus::zvariant::Value::from(array);
+				zbus::zvariant::Structure::from(
+					(zbus::zvariant::Value::from(whitelist), array_val),
+				)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			},
+		)
+	);
+
+	vec.push(
+		(
+			"Environment".into(),
+			{
+				let envs = envs_poll
+					.await
+					.map_err(StartAppError::SpawnError)
+					?
+					.map_err(StartAppError::EnvsError)
+					?;
+				let mut environment = vec![];
+				for (k, v) in envs {
+					let mut env = String::new();
+					env.push_str(&k);
+					env.push_str("=");
+					env.push_str(&v);
+					environment.push(env);
+				};
+				let array = zbus::zvariant::Array::from(environment);
+				array
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			},
+		)
+	);
+
+
+
+
+
 	/*
 		TimeoutStartSec was not ported, we have stable systemd notify impl
 		SecureBits was not ported. It seems to require value 32 (bit mask 1 << 5)
 	*/
 
-	vec
+	Ok(vec)
 }
