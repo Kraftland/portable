@@ -228,9 +228,6 @@ impl DeDupRules for BindRules {
 						ret.push(BindRule::Symlink { source, dest });
 					};
 				}
-				BindRule::Tmpfs { dest }		=> {
-					ret.push(BindRule::Tmpfs { dest });
-				}
 				BindRule::Overlay { sources, dest, class }
 									=> {
 					if dest_mnt.contains(&dest) {
