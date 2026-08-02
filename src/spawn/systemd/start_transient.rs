@@ -35,6 +35,7 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			self.envs.to_owned(),
 			&exec_target,
 			exec_arguments,
+			self.home.to_owned(),
 		).await?;
 
 		proxy.start_transient_unit(
