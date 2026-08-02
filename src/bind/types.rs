@@ -127,6 +127,7 @@ impl ToCmdline for BindRules {
 				BindRule::Overlay { sources, dest, class }	=> {
 					for source in sources {
 						ret.push("--overlay-src".into());
+						ret.push(source.to_string_lossy().into());
 					};
 					match class {
 						OverlayType::Ro		=> {
