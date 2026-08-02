@@ -97,6 +97,7 @@ async fn generate_properties(
 	envs:		crate::envs::holder::HoldChannel,
 	exec_target:	&String,
 	exec_arguments:	Vec<String>,
+	home:		std::path::PathBuf,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
 
@@ -488,20 +489,31 @@ async fn generate_properties(
 		(
 			"Environment".into(),
 			{
-				let envs = envs_poll
-					.await
-					.map_err(StartAppError::SpawnError)
-					?
-					.map_err(StartAppError::EnvsError)
-					?;
 				let mut environment = vec![];
-				for (k, v) in envs {
-					let mut env = String::new();
-					env.push_str(&k);
-					env.push_str("=");
-					env.push_str(&v);
-					environment.push(env);
+
+				{
+					let mut home_env = String::from("HOME=");
+					home_env.push_str(&home.to_string_lossy());
+					environment.push(home_env);
 				};
+
+				{
+					let envs = envs_poll
+						.await
+						.map_err(StartAppError::SpawnError)
+						?
+						.map_err(StartAppError::EnvsError)
+						?;
+					for (k, v) in envs {
+						let mut env = String::new();
+						env.push_str(&k);
+						env.push_str("=");
+						env.push_str(&v);
+						environment.push(env);
+					};
+				};
+
+
 				let array = zbus::zvariant::Array::from(environment);
 				array
 					.try_into()
