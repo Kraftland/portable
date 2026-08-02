@@ -64,6 +64,12 @@ pub enum VirtualFS {
 		size_mb:	Option<usize>,
 		perms:		Option<std::fs::Permissions>,
 	},
+	/**
+		Typically mounted inside /dev as /dev/mqueue, so it must be specified after /dev!
+
+		[See manpage](https://www.man7.org/linux/man-pages/man7/mq_overview.7.html)
+	*/
+	Mqueue,
 }
 
 /**
@@ -184,7 +190,7 @@ impl ToCmdline for BindRules {
 									ret.push(size.to_string());
 								}
 								None	=> {}
-							}
+							};
 							match perms {
 								Some(v)	=> {
 									use std::os::unix::fs::PermissionsExt;
@@ -192,7 +198,11 @@ impl ToCmdline for BindRules {
 									ret.push(format!("{:04o}", v.mode()));
 								}
 								None	=> {}
-							}
+							};
+							ret.push("--tmpfs".into());
+						}
+						VirtualFS::Mqueue	=> {
+							ret.push("--mqueue".into());
 						}
 					};
 
