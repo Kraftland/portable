@@ -18,6 +18,8 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 	async fn start(
 		&self,
 		dbus_conn:	&zbus::Connection,
+		exec_target:	String,
+		exec_arguments:	Vec<String>,
 	) -> Result<(), crate::spawn::StartAppError> {
 		let proxy = zbus_systemd::systemd1::ManagerProxy::new(dbus_conn)
 			.await
@@ -28,7 +30,12 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&self.app_id,
 			&self.uid,
 		).await;
-		let properties = generate_properties(&self.app_id, self.envs.to_owned()).await?;
+		let properties = generate_properties(
+			&self.app_id,
+			self.envs.to_owned(),
+			&exec_target,
+			exec_arguments,
+		).await?;
 
 		proxy.start_transient_unit(
 			unit_name.inner().await.to_string(),
@@ -83,12 +90,12 @@ impl ServiceName {
 
 	exec_arguments should not contain argv0, we'll handle it internally
 
-	I hate their docs. What a genius and brillant move to hide those!
+	I hate their docs. What a genius and brilliant move to hide those!
 */
 async fn generate_properties(
 	app_id:		&str,
 	envs:		crate::envs::holder::HoldChannel,
-	exec_target:	String,
+	exec_target:	&String,
 	exec_arguments:	Vec<String>,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
