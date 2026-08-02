@@ -38,6 +38,22 @@ pub enum BindRule {
 		dest:		std::path::PathBuf,
 		class:		OverlayType,
 	},
+
+	/**
+		Mount new virtual filesystems on DEST (devtmpfs, etc.)
+	*/
+	VirtualFS {
+		dest:		std::path::PathBuf,
+		class:		VirtualFS,
+	}
+}
+
+/**
+	The type of VFS
+*/
+#[derive(Debug)]
+pub enum VirtualFS {
+	Devtmpfs,
 }
 
 /**
@@ -145,6 +161,15 @@ impl ToCmdline for BindRules {
 					};
 					ret.push(dest.to_string_lossy().into());
 				}
+				BindRule::VirtualFS { dest, class }		=> {
+					match class {
+						VirtualFS::Devtmpfs	=> {
+							ret.push("--dev".into());
+						}
+					};
+
+					ret.push(dest.to_string_lossy().into());
+				}
 			}
 		};
 		ret
@@ -183,7 +208,15 @@ impl DeDupRules for BindRules {
 					if dest_mnt.contains(&dest) {
 						continue;
 					};
+					dest_mnt.push(dest.clone());
 					ret.push(BindRule::Overlay { sources, dest, class });
+				}
+				BindRule::VirtualFS { dest, class }	=> {
+					if dest_mnt.contains(&dest) {
+						continue;
+					};
+					dest_mnt.push(dest.clone());
+					ret.push(BindRule::VirtualFS { dest, class });
 				}
 			}
 		};
