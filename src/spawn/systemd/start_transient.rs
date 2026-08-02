@@ -76,20 +76,20 @@ impl ServiceName {
 	Properties are defined in systemd source, scattered around various vtables.
 
 	Notably, those files contain said vtables:
+		- https://github.com/systemd/systemd/blob/main/src/core/dbus-execute.c
+		- https://github.com/systemd/systemd/blob/main/src/core/dbus-cgroup.c
+		- https://github.com/systemd/systemd/blob/main/src/core/dbus-unit.c
+		- https://github.com/systemd/systemd/blob/main/src/core/dbus-service.c
 
-		https://github.com/systemd/systemd/blob/main/src/core/dbus-execute.c
-
-		https://github.com/systemd/systemd/blob/main/src/core/dbus-cgroup.c
-
-		https://github.com/systemd/systemd/blob/main/src/core/dbus-unit.c
-
-		https://github.com/systemd/systemd/blob/main/src/core/dbus-service.c
+	exec_arguments should not contain argv0, we'll handle it internally
 
 	I hate their docs. What a genius and brillant move to hide those!
 */
 async fn generate_properties(
 	app_id:		&str,
 	envs:		crate::envs::holder::HoldChannel,
+	exec_target:	String,
+	exec_arguments:	Vec<String>,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
 
@@ -97,6 +97,43 @@ async fn generate_properties(
 
 	use zbus::zvariant::{OwnedValue, Str};
 
+	vec.push(
+		(
+			/*
+				ExecStartEx appears to accept a(sasas)
+
+				which is array of (path, argv, and flags)
+
+				Flags appears to accept the following:
+				- "ignore-failure"
+				- "privileged"
+				- "no-setuid"
+				- "no-env-expand"
+				- "via-shell"
+			*/
+			String::from("ExecStartEx"),
+			{
+				let mut args = vec![];
+				args.push(exec_target.clone());
+				for arg in exec_arguments {
+					args.push(arg);
+				};
+
+				let flags = vec![
+					"no-setuid",
+				];
+
+				let native_tuple = (exec_target, args, flags);
+
+				let array = vec![native_tuple];
+
+				zbus::zvariant::Array::from(array)
+					.try_into()
+					.map_err(StartAppError::PropertiesError)
+					?
+			}
+		)
+	);
 
 	vec.push(
 		(
