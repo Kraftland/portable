@@ -178,6 +178,13 @@ impl DeDupRules for BindRules {
 				BindRule::Tmpfs { dest }		=> {
 					ret.push(BindRule::Tmpfs { dest });
 				}
+				BindRule::Overlay { sources, dest, class }
+									=> {
+					if dest_mnt.contains(&dest) {
+						continue;
+					};
+					ret.push(BindRule::Overlay { sources, dest, class });
+				}
 			}
 		};
 		Self {
