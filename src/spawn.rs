@@ -30,4 +30,5 @@ pub struct Spawn {
 	fs_rules:	crate::bind::types::BindRules,
 	logger:		crate::logger::LogSender,
 	envs:		crate::envs::holder::HoldChannel,
+	home:		std::path::PathBuf,
 }

@@ -14,19 +14,6 @@ pub struct BindRules {
 */
 #[derive(Debug)]
 pub enum BindRule {
-	/*
-		Binds the file descriptor at path
-		This SHOULD be preferred for user files and directories to avoid symlink attacks
-		The descriptors path translates to --bind-fd, --ro-bind-fd
-		(--dev-bind does not have a corresponding switch, so we need to reject these)
-
-		WARNING: TYPE MUST NOT BE DEVICE
-	*/
-	FD {
-		source_fd:	std::os::fd::OwnedFd,
-		dest:		std::path::PathBuf,
-		class:		BindType,
-	},
 	Path {
 		source:		std::path::PathBuf,
 		dest:		std::path::PathBuf,
@@ -41,6 +28,11 @@ pub enum BindRule {
 	},
 }
 
+/**
+	Specifies the Bind Type for filesystem
+
+	The device type is not implemented for overlayfs mounting
+*/
 #[derive(Debug)]
 pub enum BindType {
 	ReadWrite,
@@ -52,27 +44,51 @@ pub trait DeDupRules {
 	fn dedup(self)	-> Self;
 }
 
+
 /**
-	ExportFileDescriptors describes a file descriptor for command-fds to expose
+	The trait ToCmdline defines shared behaviour to convert certain rules as command line
+	arguments.
+
+	For example, BindRules implements this to
 */
-#[derive(Debug)]
-pub struct ExportFileDescriptor {
-	index:		i32,
-	FD:		std::os::fd::OwnedFd,
+pub trait ToCmdline {
+	async fn to_cmdline(self)	-> Vec<String>;
 }
 
-impl ExportFileDescriptor {
-	fn from(fd: std::os::fd::OwnedFd)	-> Self {
-		use std::os::fd::AsRawFd;
-		Self {
-			index: fd.as_raw_fd(),
-			FD: fd,
-		}
+impl ToCmdline for BindRules {
+	async fn to_cmdline(self)	-> Vec<String> {
+		let mut ret = vec![];
+		for rule in self.rules {
+			match rule {
+				BindRule::Path { source, dest, class }	=> {
+					match class {
+						BindType::Device	=> {
+							ret.push("--dev-bind".to_string());
+						}
+						BindType::ReadOnly	=> {
+							ret.push("--ro-bind".into());
+						}
+						BindType::ReadWrite	=> {
+							ret.push("--bind".into());
+						}
+					};
+					ret.push(source.to_string_lossy().into());
+					ret.push(dest.to_string_lossy().into());
+				}
+				BindRule::Tmpfs { dest }		=> {
+					ret.push("--tmpfs".into());
+					ret.push(dest.to_string_lossy().into());
+				}
+				BindRule::Symlink { source, dest }	=> {
+					ret.push("--symlink".into());
+					ret.push(source.to_string_lossy().into());
+					ret.push(dest.to_string_lossy().into());
+				}
+			}
+		};
+		ret
 	}
 }
-
-
-
 
 
 impl DeDupRules for BindRules {
@@ -82,14 +98,6 @@ impl DeDupRules for BindRules {
 
 		for rule in self.rules {
 			match rule {
-				BindRule::FD { source_fd, dest, class }	=> {
-					if dest_mnt.contains(&dest) {
-						continue;
-					} else {
-						dest_mnt.push(dest.clone());
-						ret.push(BindRule::FD { source_fd, dest, class });
-					};
-				}
 				BindRule::Path { source, dest, class }	=> {
 					if dest_mnt.contains(&dest) {
 						continue;
