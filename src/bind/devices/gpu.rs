@@ -222,7 +222,13 @@ fn nvidia_module_mounts(block: bool) -> Vec<BindRule> {
 		match block {
 			true	=> {
 				ret.push(
-					BindRule::Tmpfs { dest: path.into() }
+					BindRule::VirtualFS {
+						dest: path.into(),
+						class: crate::bind::types::VirtualFS::Tmpfs {
+							size_mb: Some(0),
+							perms: None,
+						},
+					}
 				);
 			}
 			false	=> {
