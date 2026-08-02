@@ -1,19 +1,78 @@
 
-/*
+/**
 	BindRules represents a list of bind rules that is specifically without dependency tree.
-	It is not meant to be read or manipulated by outside modules to ensure consistency
+	It is not meant to be read or manipulated by outside modules to ensure consistency.
+
+	The trait ToCmdline is implemented to convert from BindRules to bubblewrap arguments.
 */
 pub struct BindRules {
 	rules:	Vec<BindRule>
+}
+
+/**
+	BindRule represents a single rule of exposing the host system
+*/
+#[derive(Debug)]
+pub enum BindRule {
+	/*
+		Binds the file descriptor at path
+		This SHOULD be preferred for user files and directories to avoid symlink attacks
+		The descriptors path translates to --bind-fd, --ro-bind-fd
+		(--dev-bind does not have a corresponding switch, so we need to reject these)
+
+		WARNING: TYPE MUST NOT BE DEVICE
+	*/
+	FD {
+		source_fd:	std::os::fd::OwnedFd,
+		dest:		std::path::PathBuf,
+		class:		BindType,
+	},
+	Path {
+		source:		std::path::PathBuf,
+		dest:		std::path::PathBuf,
+		class:		BindType,
+	},
+	Tmpfs {
+		dest:		std::path::PathBuf,
+	},
+	Symlink {
+		source:		std::path::PathBuf,
+		dest:		std::path::PathBuf,
+	},
+}
+
+#[derive(Debug)]
+pub enum BindType {
+	ReadWrite,
+	ReadOnly,
+	Device,
 }
 
 pub trait DeDupRules {
 	fn dedup(self)	-> Self;
 }
 
-pub trait ToBubblewrap {
-	fn bwrap(self)	-> Vec<String>;
+/**
+	ExportFileDescriptors describes a file descriptor for command-fds to expose
+*/
+#[derive(Debug)]
+pub struct ExportFileDescriptor {
+	index:		i32,
+	FD:		std::os::fd::OwnedFd,
 }
+
+impl ExportFileDescriptor {
+	fn from(fd: std::os::fd::OwnedFd)	-> Self {
+		use std::os::fd::AsRawFd;
+		Self {
+			index: fd.as_raw_fd(),
+			FD: fd,
+		}
+	}
+}
+
+
+
 
 
 impl DeDupRules for BindRules {
@@ -58,42 +117,3 @@ impl DeDupRules for BindRules {
 	}
 }
 
-
-/*
-	BindRule represents a single rule of exposing the host system
-*/
-#[derive(Debug)]
-pub enum BindRule {
-	/*
-		Binds the file descriptor at path
-		This SHOULD be preferred for user files and directories to avoid symlink attacks
-		The descriptors path translates to --bind-fd, --ro-bind-fd
-		(--dev-bind does not have a corresponding switch, so we need to reject these)
-
-		WARNING: TYPE MUST NOT BE DEVICE
-	*/
-	FD {
-		source_fd:	std::os::fd::OwnedFd,
-		dest:		std::path::PathBuf,
-		class:		BindType,
-	},
-	Path {
-		source:		std::path::PathBuf,
-		dest:		std::path::PathBuf,
-		class:		BindType,
-	},
-	Tmpfs {
-		dest:		std::path::PathBuf,
-	},
-	Symlink {
-		source:		std::path::PathBuf,
-		dest:		std::path::PathBuf,
-	},
-}
-
-#[derive(Debug)]
-pub enum BindType {
-	ReadWrite,
-	ReadOnly,
-	Device,
-}
