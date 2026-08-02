@@ -53,7 +53,10 @@ pub enum BindRule {
 */
 #[derive(Debug)]
 pub enum VirtualFS {
+	/// Mount new devtmpfs
 	Devtmpfs,
+	/// Mount new procfs
+	Procfs,
 }
 
 /**
@@ -165,6 +168,9 @@ impl ToCmdline for BindRules {
 					match class {
 						VirtualFS::Devtmpfs	=> {
 							ret.push("--dev".into());
+						}
+						VirtualFS::Procfs	=> {
+							ret.push("--proc".into());
 						}
 					};
 
