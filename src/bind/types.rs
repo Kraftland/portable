@@ -19,9 +19,6 @@ pub enum BindRule {
 		dest:		std::path::PathBuf,
 		class:		BindType,
 	},
-	Tmpfs {
-		dest:		std::path::PathBuf,
-	},
 	Symlink {
 		source:		std::path::PathBuf,
 		dest:		std::path::PathBuf,
@@ -57,6 +54,16 @@ pub enum VirtualFS {
 	Devtmpfs,
 	/// Mount new procfs
 	Procfs,
+	/// Mount new tmpfs
+	Tmpfs {
+		/**
+			Specify a size limit.
+			The value is internally translated to bytes my multiplying 1024^2
+			and passed to --size in bubblewrap
+		*/
+		size_mb:	Option<usize>,
+		perms:		Option<std::fs::Permissions>,
+	},
 }
 
 /**
@@ -134,10 +141,6 @@ impl ToCmdline for BindRules {
 					ret.push(source.to_string_lossy().into());
 					ret.push(dest.to_string_lossy().into());
 				}
-				BindRule::Tmpfs { dest }			=> {
-					ret.push("--tmpfs".into());
-					ret.push(dest.to_string_lossy().into());
-				}
 				BindRule::Symlink { source, dest }		=> {
 					ret.push("--symlink".into());
 					ret.push(source.to_string_lossy().into());
@@ -172,6 +175,25 @@ impl ToCmdline for BindRules {
 						VirtualFS::Procfs	=> {
 							ret.push("--proc".into());
 						}
+						VirtualFS::Tmpfs { size_mb, perms }
+									=> {
+							match size_mb {
+								Some(v)	=> {
+									ret.push("--size".into());
+									let size = v * 1024 * 1024;
+									ret.push(size.to_string());
+								}
+								None	=> {}
+							}
+							match perms {
+								Some(v)	=> {
+									use std::os::unix::fs::PermissionsExt;
+									ret.push("--perms".into());
+									ret.push(format!("{:04o}", v.mode()));
+								}
+								None	=> {}
+							}
+						}
 					};
 
 					ret.push(dest.to_string_lossy().into());
@@ -205,9 +227,6 @@ impl DeDupRules for BindRules {
 						dest_mnt.push(dest.clone());
 						ret.push(BindRule::Symlink { source, dest });
 					};
-				}
-				BindRule::Tmpfs { dest }		=> {
-					ret.push(BindRule::Tmpfs { dest });
 				}
 				BindRule::Overlay { sources, dest, class }
 									=> {
