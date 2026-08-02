@@ -26,6 +26,46 @@ pub enum BindRule {
 		source:		std::path::PathBuf,
 		dest:		std::path::PathBuf,
 	},
+
+	/**
+		The sources are overlaid in the order given,
+			with the first source on the command line at the bottom of the stack:
+		if a  given path to be read exists in more than one source,
+		the file is read from the last such source specified.
+	*/
+	Overlay {
+		sources:	Vec<std::path::PathBuf>,
+		dest:		std::path::PathBuf,
+		class:		OverlayType,
+	},
+}
+
+/**
+	The type of overlayfs
+*/
+#[derive(Debug)]
+pub enum OverlayType {
+	/**
+		With ReadWrite all writes will go to RWSRC.
+		Reads will come preferentially from RWSRC,
+		then from any --overlay-src paths.
+		WORKDIR must be an empty directory on the same filesystem as RWSRC,
+		and is used internally by the kernel.
+	*/
+	ReadWrite {
+		rwsrc:		std::path::PathBuf,
+		workdir:	std::path::PathBuf,
+	},
+
+	/**
+		All writes will go to the tmpfs that hosts the sandbox root
+	*/
+	Tmpfs,
+
+	/**
+		Filesystem will be mounted read-only
+	*/
+	Ro,
 }
 
 /**
@@ -60,7 +100,7 @@ impl ToCmdline for BindRules {
 		let mut ret = vec![];
 		for rule in self.rules {
 			match rule {
-				BindRule::Path { source, dest, class }	=> {
+				BindRule::Path { source, dest, class }		=> {
 					match class {
 						BindType::Device	=> {
 							ret.push("--dev-bind".to_string());
@@ -75,13 +115,34 @@ impl ToCmdline for BindRules {
 					ret.push(source.to_string_lossy().into());
 					ret.push(dest.to_string_lossy().into());
 				}
-				BindRule::Tmpfs { dest }		=> {
+				BindRule::Tmpfs { dest }			=> {
 					ret.push("--tmpfs".into());
 					ret.push(dest.to_string_lossy().into());
 				}
-				BindRule::Symlink { source, dest }	=> {
+				BindRule::Symlink { source, dest }		=> {
 					ret.push("--symlink".into());
 					ret.push(source.to_string_lossy().into());
+					ret.push(dest.to_string_lossy().into());
+				}
+				BindRule::Overlay { sources, dest, class }	=> {
+					for source in sources {
+						ret.push("--overlay-src".into());
+						ret.push(source.to_string_lossy().into());
+					};
+					match class {
+						OverlayType::Ro		=> {
+							ret.push("--ro-overlay".into());
+						}
+						OverlayType::Tmpfs	=> {
+							ret.push("--tmp-overlay".into());
+						}
+						OverlayType::ReadWrite { rwsrc, workdir }
+									=> {
+							ret.push("--overlay".into());
+							ret.push(rwsrc.to_string_lossy().into());
+							ret.push(workdir.to_string_lossy().into());
+						}
+					};
 					ret.push(dest.to_string_lossy().into());
 				}
 			}
@@ -116,6 +177,13 @@ impl DeDupRules for BindRules {
 				}
 				BindRule::Tmpfs { dest }		=> {
 					ret.push(BindRule::Tmpfs { dest });
+				}
+				BindRule::Overlay { sources, dest, class }
+									=> {
+					if dest_mnt.contains(&dest) {
+						continue;
+					};
+					ret.push(BindRule::Overlay { sources, dest, class });
 				}
 			}
 		};
