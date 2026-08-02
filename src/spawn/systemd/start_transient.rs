@@ -83,7 +83,7 @@ impl ServiceName {
 
 	exec_arguments should not contain argv0, we'll handle it internally
 
-	I hate their docs. What a genius and brillant move to hide those!
+	I hate their docs. What a genius and brilliant move to hide those!
 */
 async fn generate_properties(
 	app_id:		&str,
