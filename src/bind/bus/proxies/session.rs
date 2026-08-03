@@ -88,6 +88,34 @@ async fn compile_rules(
 	)
 }
 
+async fn generate_bus_rules(
+	app_id:	&str,
+) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
+	use crate::bind::bus::rules::BusAccessLevel;
+	use crate::bind::bus::rules::BusName;
+	let rules: Vec<BusAccessLevel> = vec![
+		BusAccessLevel::OwnName {
+			bus_name: {
+				let mut name = String::from(app_id);
+				name.push_str(".*");
+				BusName::try_from(name)
+					.map_err(ProxyError::InvalidBusNameError)
+					?
+			},
+		},
+		BusAccessLevel::OwnName {
+			bus_name: {
+				let name = String::from(app_id);
+				BusName::try_from(name)
+					.map_err(ProxyError::InvalidBusNameError)
+					?
+			},
+		},
+	];
+
+	Ok(rules)
+}
+
 async fn get_session_bus_address() -> Result<String, ProxyError> {
 	let env = std::env::var("DBUS_SESSION_BUS_ADDRESS")
 		.map_err(ProxyError::AddressUnknownError)
@@ -193,6 +221,9 @@ pub enum ProxyError {
 
 	#[error("Could not start D-Bus proxy for session bus: thread spawn error: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not start D-Bus proxy for session bus: invalid bus name: {0:#?}")]
+	InvalidBusNameError(crate::bind::bus::rules::BusNameError),
 
 	#[error("Could not start D-Bus proxy for session bus: invalid character: {0:#?}")]
 	OsStringError(std::io::Error),
