@@ -119,7 +119,27 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.unifiedpush.Distributor.*")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-		}
+		},
+		BusAccessLevel::See {
+			bus_name: BusName::try_from("org.a11y.Bus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+		},
+
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.a11y.Bus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.a11y.Bus.GetAddress".to_string(),
+			object_path: "/org/a11y/bus".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.a11y.Bus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Properties.Get".into(),
+			object_path: "/org/a11y/bus".into(),
+		},
 	];
 
 	/*
@@ -134,28 +154,12 @@ async fn generate_bus_rules(
 	);
 
 	rules.push(
-		BusAccessLevel::See {
-			bus_name: BusName::try_from("org.a11y.Bus")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-		}
-	);
-	rules.push(
 		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.a11y.Bus")
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "org.a11y.Bus.GetAddress".to_string(),
-			object_path: "/org/a11y/bus".into(),
-		}
-	);
-	rules.push(
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.a11y.Bus")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.freedesktop.DBus.Properties.Get".into(),
-			object_path: "/org/a11y/bus".into(),
+			method: "org.freedesktop.portal.Request.*".into(),
+			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
 		}
 	);
 
