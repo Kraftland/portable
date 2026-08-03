@@ -35,5 +35,10 @@ pub trait StartProxy: Sized {
 	fn new(
 		logger:		crate::logger::LogSender,
 		proxy_path:	std::path::PathBuf,
+
+		#[cfg(feature = "flatpak")]
+		info_path:	std::path::PathBuf,
+		#[cfg(feature = "flatpak")]
+		runtime_dir:	std::path::PathBuf,
 	) -> impl std::future::Future<Output = Result<Self, Self::ProxyError>> + Send;
 }

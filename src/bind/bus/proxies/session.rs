@@ -13,11 +13,21 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 	async fn new(
 			logger:		crate::logger::LogSender,
 			proxy_path:	std::path::PathBuf,
+
+			#[cfg(feature = "flatpak")]
+			info_path:	std::path::PathBuf,
+			#[cfg(feature = "flatpak")]
+			runtime_dir:	std::path::PathBuf,
 		) -> Result<Self, Self::ProxyError>
 	{
 		compile_rules(
 			logger,
 			proxy_path,
+
+			#[cfg(feature = "flatpak")]
+			info_path,
+			#[cfg(feature = "flatpak")]
+			runtime_dir
 		).await
 	}
 
@@ -31,6 +41,11 @@ use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	proxy_path:	std::path::PathBuf,
+
+	#[cfg(feature = "flatpak")]
+	info_path:	std::path::PathBuf,
+	#[cfg(feature = "flatpak")]
+	runtime_dir:	std::path::PathBuf,
 ) -> Result<Proxy, ProxyError> {
 	let bus_address = tokio::spawn(get_session_bus_address());
 
@@ -44,6 +59,10 @@ async fn compile_rules(
 	let sandbox_rules = tokio::spawn(
 		generate_sandbox_rules(
 			proxy_path.clone(),
+			#[cfg(feature = "flatpak")]
+			info_path,
+			#[cfg(feature = "flatpak")]
+			runtime_dir,
 		),
 	);
 
@@ -78,6 +97,11 @@ async fn get_session_bus_address() -> Result<String, ProxyError> {
 
 async fn generate_sandbox_rules(
 	proxy_path:	std::path::PathBuf,
+
+	#[cfg(feature = "flatpak")]
+	info_path:	std::path::PathBuf,
+	#[cfg(feature = "flatpak")]
+	runtime_dir:	std::path::PathBuf,
 ) -> Result<crate::bind::types::BindRules, ProxyError> {
 	let mut rules = vec![
 		BindRule::Symlink {
@@ -116,6 +140,28 @@ async fn generate_sandbox_rules(
 			class: crate::bind::types::BindType::ReadWrite,
 		},
 	];
+
+	#[cfg(feature = "flatpak")]
+	{
+		rules.push(
+			BindRule::Path {
+				source: info_path.clone(),
+				dest: {
+					let mut path = std::path::PathBuf::from(runtime_dir);
+					path.push(".flatpak-info");
+					path
+				},
+				class: crate::bind::types::BindType::ReadOnly,
+			}
+		);
+		rules.push(
+			BindRule::Path {
+				source: info_path,
+				dest: std::path::PathBuf::from("/.flatpak-info"),
+				class: crate::bind::types::BindType::ReadOnly,
+			}
+		);
+	}
 
 	{
 		let env = std::env::var("DBUS_SESSION_BUS_ADDRESS")
