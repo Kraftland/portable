@@ -162,7 +162,15 @@ async fn generate_bus_rules(
 			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
 		}
 	);
-
+	rules.push(
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.Request.*".into(),
+			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
+		}
+	);
 
 	Ok(rules)
 }
