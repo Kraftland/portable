@@ -248,7 +248,7 @@ async fn generate_bus_rules(
 	rules.push(
 		// CreateInputContext for /inputmethod obj path
 		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
 			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
@@ -257,7 +257,7 @@ async fn generate_bus_rules(
 	);
 	rules.push(
 		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
 			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
