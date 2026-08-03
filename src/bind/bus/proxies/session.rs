@@ -246,11 +246,22 @@ async fn generate_bus_rules(
 	);
 
 	rules.push(
-		// TODO: we want to properly inspect and sandbox this
-		BusAccessLevel::WellknownName {
-			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+		// CreateInputContext for /inputmethod obj path
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
+			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
+			object_path: "/inputmethod".into(),
+		}
+	);
+	rules.push(
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
+			object_path: "/org/freedesktop/portal/inputmethod".into(),
 		}
 	);
 	rules.push(
