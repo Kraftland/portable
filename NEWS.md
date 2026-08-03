@@ -21,6 +21,7 @@
 - The `io_uring_setup` system call is now allowed
 - The primary GPU is now determined with boot display attribute value, rather than connector status. Allowing multi-GPU multi-head system to operate optimally ([#1072](https://github.com/Kraftland/portable/pull/1072))
 - It is now less likely for Init to be stuck when running for a few days
+- Non-native system calls will now cause the thread to be killed, rather than returning ENOSYS silently.
 
 # 18.0 - Lawn
 
