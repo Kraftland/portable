@@ -5,6 +5,7 @@
 
 	The trait ToCmdline is implemented to convert from BindRules to bubblewrap arguments.
 */
+#[derive(Debug)]
 pub struct BindRules {
 	rules:	Vec<BindRule>
 }
