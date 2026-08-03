@@ -140,6 +140,22 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.DBus.Properties.Get".into(),
 			object_path: "/org/a11y/bus".into(),
 		},
+
+		// Request interface
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.Request.*".into(),
+			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
+		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.Request.*".into(),
+			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
+		},
 	];
 
 	/*
@@ -153,24 +169,6 @@ async fn generate_bus_rules(
 		}
 	);
 
-	rules.push(
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.freedesktop.portal.Request.*".into(),
-			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
-		}
-	);
-	rules.push(
-		BusAccessLevel::GetBroadcast {
-			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.freedesktop.portal.Request.*".into(),
-			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
-		}
-	);
 
 	Ok(rules)
 }

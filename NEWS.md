@@ -23,6 +23,7 @@
 - It is now less likely for Init to be stuck when running for a few days
 - Non-native system calls will now cause the thread to be killed, rather than returning ENOSYS silently.
 - The D-Bus proxy has been more properly restricted from other local processes.
+- Portal responses has been locked down more appropiately
 
 # 18.0 - Lawn
 
