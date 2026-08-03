@@ -93,7 +93,7 @@ async fn generate_bus_rules(
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
-	let rules: Vec<BusAccessLevel> = vec![
+	let mut rules: Vec<BusAccessLevel> = vec![
 		BusAccessLevel::OwnName {
 			bus_name: {
 				let mut name = String::from(app_id);
@@ -111,7 +111,15 @@ async fn generate_bus_rules(
 					?
 			},
 		},
+		BusAccessLevel::WellknownName {
+			bus_name: BusName::try_from("org.unifiedpush.Distributor.*")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+		}
 	];
+
+
+
 
 	Ok(rules)
 }
