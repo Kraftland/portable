@@ -196,6 +196,7 @@ async fn generate_bus_rules(
 
 
 	rules.push(
+		// Stop the sandbox
 		BusAccessLevel::Call {
 			bus_name: {
 				let mut name = String::from("top.kimiblock.portable.");
@@ -206,7 +207,18 @@ async fn generate_bus_rules(
 			},
 			method: "top.kimiblock.Portable.Controller.Stop".into(),
 			object_path: "/top/kimiblock/portable/daemon".into(),
-		}
+		},
+	);
+
+	rules.push(
+		// Call FileManager1
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.FileManager1")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.FileManager1.*".into(),
+			object_path: "/org/freedesktop/FileManager1".into(),
+		},
 	);
 
 	{
