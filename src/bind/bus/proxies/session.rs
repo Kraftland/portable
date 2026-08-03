@@ -245,6 +245,24 @@ async fn generate_bus_rules(
 		}
 	);
 
+	rules.push(
+		// TODO: we want to properly inspect and sandbox this
+		BusAccessLevel::WellknownName {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+		}
+	);
+	rules.push(
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.IBus.Portal.*".into(),
+			object_path: "/org/freedesktop/IBus".into(),
+		}
+	);
+
 	if *kde_status {
 		rules.push(
 			BusAccessLevel::Call {
