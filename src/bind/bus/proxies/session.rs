@@ -111,6 +111,10 @@ async fn generate_bus_rules(
 					?
 			},
 		},
+
+		/*
+			TODO: We need to properly sandbox UnifiedPush distributors!
+		*/
 		BusAccessLevel::WellknownName {
 			bus_name: BusName::try_from("org.unifiedpush.Distributor.*")
 				.map_err(ProxyError::InvalidBusNameError)
@@ -118,7 +122,16 @@ async fn generate_bus_rules(
 		}
 	];
 
-
+	/*
+		TODO: We need to properly sandbox the global menu!
+	*/
+	rules.push(
+		BusAccessLevel::WellknownName {
+			bus_name: BusName::try_from("com.canonical.AppMenu.Registrar")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+		}
+	);
 
 
 	Ok(rules)
