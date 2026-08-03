@@ -6,6 +6,18 @@
 */
 #[derive(Debug)]
 pub enum BusAccessLevel {
+	/**
+		The name/ID is visible in the ListNames, ListActivatableNames etc.'s reply
+		The name's info, such as PID can be retrived
+	*/
+	See {
+		bus_name:	BusName,
+	},
+
+	/**
+		Allow the sandboxed app to take ownership of said bus name.
+		Very dangerous as it allows app to impersonate other services.
+	*/
 	OwnName {
 		bus_name:	BusName,
 	},
