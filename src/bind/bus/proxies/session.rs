@@ -183,16 +183,29 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.DBus.Properties.*".into(),
 			object_path: "/org/freedesktop/portal/desktop/*".into(),
 		},
-	];
 
-	/*
-		TODO: We need to properly sandbox the global menu!
-	*/
-	rules.push(
+		/*
+			TODO: We need to properly sandbox the global menu!
+		*/
 		BusAccessLevel::WellknownName {
 			bus_name: BusName::try_from("com.canonical.AppMenu.Registrar")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
+		}
+	];
+
+
+	rules.push(
+		BusAccessLevel::Call {
+			bus_name: {
+				let mut name = String::from("top.kimiblock.portable.");
+				name.push_str(app_id);
+				BusName::try_from(name)
+					.map_err(ProxyError::InvalidBusNameError)
+					?
+			},
+			method: "top.kimiblock.Portable.Controller.Stop".into(),
+			object_path: "/top/kimiblock/portable/daemon".into(),
 		}
 	);
 
