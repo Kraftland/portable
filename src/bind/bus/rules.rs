@@ -92,3 +92,16 @@ impl TryFrom<String> for BusName {
 	}
 	type Error = BusNameError;
 }
+
+impl TryFrom<&str> for BusName {
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		if value.len() >= 255 {
+			Err(BusNameError::BusNameTooLongError(value.len()))
+		} else {
+			Ok(Self {
+				name: value.into()
+			})
+		}
+	}
+	type Error = BusNameError;
+}
