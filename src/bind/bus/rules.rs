@@ -6,8 +6,12 @@
 */
 #[derive(Debug)]
 pub enum BusAccessLevel {
+	OwnName {
+		bus_name:	BusName,
+	},
+
 	/**
-		The most dangerous and open access type.
+		The second most dangerous and open access type.
 		It allows the sandboxed application to talk with an outside service unfiltered.
 
 		Internally maps to xdg-dbus-proxy's TALK policy to prevent acquiring names
