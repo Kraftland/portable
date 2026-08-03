@@ -2,6 +2,8 @@
 	Proxy for the D-Bus session bus address
 */
 
+mod portal_allowlist;
+
 impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 	async fn start(
 			proxy: crate::bind::bus::Proxy,
@@ -172,6 +174,15 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.portal.Session.*".into(),
 			object_path: "/org/freedesktop/portal/desktop/session/*".into(),
 		},
+
+		// Properties interface
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Properties.*".into(),
+			object_path: "/org/freedesktop/portal/desktop/*".into(),
+		},
 	];
 
 	/*
@@ -185,6 +196,25 @@ async fn generate_bus_rules(
 		}
 	);
 
+	{
+		let portals = portal_allowlist::get_allowed_portals().await;
+		for portal in portals {
+			rules.push(
+				BusAccessLevel::Call {
+					bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+						.map_err(ProxyError::InvalidBusNameError)
+						?,
+					method: {
+						let mut method = String::from("org.freedesktop.portal.");
+						method.push_str(&portal);
+						method.push_str(".*");
+						method
+					},
+					object_path: "/org/freedesktop/portal/desktop".into(),
+				}
+			);
+		};
+	};
 
 
 	Ok(rules)
