@@ -221,6 +221,27 @@ async fn generate_bus_rules(
 		},
 	);
 
+	rules.push(
+		// Calling StatusNotifier endpoints
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.kde.StatusNotifierWatcher.*".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		}
+	);
+	rules.push(
+		// Receiving broadcast from StatusNotifier endpoints
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.kde.StatusNotifierWatcher.*".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		}
+	);
+
 	{
 		let portals = portal_allowlist::get_allowed_portals().await;
 		for portal in portals {
