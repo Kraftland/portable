@@ -43,6 +43,7 @@ use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	proxy_path:	std::path::PathBuf,
+	mpris_names:	Vec<String>,
 
 	#[cfg(feature = "flatpak")]
 	info_path:	std::path::PathBuf,
@@ -93,9 +94,11 @@ async fn compile_rules(
 async fn generate_bus_rules(
 	app_id:		&str,
 	kde_status:	&bool,
+	mpris_names:	Vec<String>,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
+
 	let mut rules: Vec<BusAccessLevel> = vec![
 		BusAccessLevel::OwnName {
 			bus_name: {
@@ -255,6 +258,22 @@ async fn generate_bus_rules(
 			object_path: "/org/freedesktop/IBus".into(),
 		}
 	];
+
+	if mpris_names.len() > 0 {
+		for mpris_name in mpris_names {
+			rules.push(
+				BusAccessLevel::OwnName {
+					bus_name: {
+						let mut name = String::from("org.mpris.MediaPlayer2.");
+						name.push_str(&mpris_name);
+						BusName::try_from(name)
+							.map_err(ProxyError::InvalidBusNameError)
+							?
+					},
+				}
+			);
+		}
+	}
 
 	rules.push(
 		// Call FileManager1
