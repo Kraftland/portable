@@ -236,6 +236,15 @@ async fn generate_bus_rules(
 		},
 	);
 
+	rules.push(
+		// Documents Portal, seems well sandboxed so we just expose the full name
+		BusAccessLevel::WellknownName {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+		}
+	);
+
 	if *kde_status {
 		rules.push(
 			BusAccessLevel::Call {
