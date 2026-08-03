@@ -91,7 +91,8 @@ async fn compile_rules(
 }
 
 async fn generate_bus_rules(
-	app_id:	&str,
+	app_id:		&str,
+	kde_status:	&bool,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
@@ -234,6 +235,36 @@ async fn generate_bus_rules(
 			object_path: "/org/freedesktop/FileManager1".into(),
 		},
 	);
+
+	if *kde_status {
+		rules.push(
+			BusAccessLevel::Call {
+				bus_name: BusName::try_from("org.kde.JobViewServer")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.kde.JobViewServerV2.requestView".into(),
+				object_path: "/JobViewServer".into(),
+			}
+		);
+		rules.push(
+			BusAccessLevel::Call {
+				bus_name: BusName::try_from("org.kde.JobViewServer")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.kde.JobViewV3.update".into(),
+				object_path: "/org/kde/notificationmanager/jobs/*".into(),
+			}
+		);
+		rules.push(
+			BusAccessLevel::Call {
+				bus_name: BusName::try_from("org.kde.JobViewServer")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.kde.JobViewServer=org.kde.JobViewV3.terminate".into(),
+				object_path: "/org/kde/notificationmanager/jobs/*".into(),
+			}
+		);
+	}
 
 	{
 		let portals = portal_allowlist::get_allowed_portals().await;
