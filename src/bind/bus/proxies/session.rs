@@ -181,9 +181,6 @@ async fn generate_sandbox_rules(
 			None	=> {}
 		}
 	};
-	{
-
-	};
 
 	Ok(rules)
 }
