@@ -1,5 +1,6 @@
 pub mod rules;
 pub mod proxies;
+pub mod documents;
 
 /**
 	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy
