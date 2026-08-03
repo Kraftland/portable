@@ -223,6 +223,37 @@ async fn generate_bus_rules(
 			method: "org.kde.StatusNotifierWatcher.*".into(),
 			object_path: "/StatusNotifierWatcher".into(),
 		},
+
+		// Documents Portal, seems well sandboxed so we just expose the full name
+		BusAccessLevel::WellknownName {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+		},
+
+		// CreateInputContext for /inputmethod obj path
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
+			object_path: "/inputmethod".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
+			object_path: "/org/freedesktop/portal/inputmethod".into(),
+		},
+		// iBus portal
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.IBus.Portal.*".into(),
+			object_path: "/org/freedesktop/IBus".into(),
+		}
 	];
 
 	rules.push(
@@ -234,44 +265,6 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.FileManager1.*".into(),
 			object_path: "/org/freedesktop/FileManager1".into(),
 		},
-	);
-
-	rules.push(
-		// Documents Portal, seems well sandboxed so we just expose the full name
-		BusAccessLevel::WellknownName {
-			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-		}
-	);
-
-	rules.push(
-		// CreateInputContext for /inputmethod obj path
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
-			object_path: "/inputmethod".into(),
-		}
-	);
-	rules.push(
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
-			object_path: "/org/freedesktop/portal/inputmethod".into(),
-		}
-	);
-	rules.push(
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.freedesktop.IBus.Portal.*".into(),
-			object_path: "/org/freedesktop/IBus".into(),
-		}
 	);
 
 	if *kde_status {
