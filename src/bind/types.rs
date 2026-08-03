@@ -5,10 +5,7 @@
 
 	The trait ToCmdline is implemented to convert from BindRules to bubblewrap arguments.
 */
-#[derive(Debug)]
-pub struct BindRules {
-	rules:	Vec<BindRule>
-}
+pub type BindRules = Vec<BindRule>;
 
 /**
 	BindRule represents a single rule of exposing the host system
@@ -131,7 +128,7 @@ pub trait ToCmdline {
 impl ToCmdline for BindRules {
 	async fn to_cmdline(self)	-> Vec<String> {
 		let mut ret = vec![];
-		for rule in self.rules {
+		for rule in self {
 			match rule {
 				BindRule::Path { source, dest, class }		=> {
 					match class {
@@ -221,7 +218,7 @@ impl DeDupRules for BindRules {
 		let mut ret = vec![];
 		let mut dest_mnt = vec![];
 
-		for rule in self.rules {
+		for rule in self {
 			match rule {
 				BindRule::Path { source, dest, class }	=> {
 					if dest_mnt.contains(&dest) {
@@ -256,9 +253,7 @@ impl DeDupRules for BindRules {
 				}
 			}
 		};
-		Self {
-			rules:	ret
-		}
+		ret
 	}
 }
 
