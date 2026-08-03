@@ -191,11 +191,8 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("com.canonical.AppMenu.Registrar")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-		}
-	];
+		},
 
-
-	rules.push(
 		// Stop the sandbox
 		BusAccessLevel::Call {
 			bus_name: {
@@ -208,7 +205,24 @@ async fn generate_bus_rules(
 			method: "top.kimiblock.Portable.Controller.Stop".into(),
 			object_path: "/top/kimiblock/portable/daemon".into(),
 		},
-	);
+
+		// Calling StatusNotifier endpoints
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.kde.StatusNotifierWatcher.*".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		},
+		// Receiving broadcast from StatusNotifier endpoints
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.kde.StatusNotifierWatcher.*".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		},
+	];
 
 	rules.push(
 		// Call FileManager1
@@ -219,27 +233,6 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.FileManager1.*".into(),
 			object_path: "/org/freedesktop/FileManager1".into(),
 		},
-	);
-
-	rules.push(
-		// Calling StatusNotifier endpoints
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.kde.StatusNotifierWatcher.*".into(),
-			object_path: "/StatusNotifierWatcher".into(),
-		}
-	);
-	rules.push(
-		// Receiving broadcast from StatusNotifier endpoints
-		BusAccessLevel::GetBroadcast {
-			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.kde.StatusNotifierWatcher.*".into(),
-			object_path: "/StatusNotifierWatcher".into(),
-		}
 	);
 
 	{
