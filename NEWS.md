@@ -25,6 +25,8 @@
 - The D-Bus proxy has been more properly restricted from other local processes.
 - Portal responses has been locked down more appropriately.
 - Fixed an issue with D-Bus filtering where legacy notification action would not trigger anything.
+- The PulseAudio server is being parsed rather than assuming default path
+- The PulseAudio server is activated before starting sandbox
 
 # 18.0 - Lawn
 

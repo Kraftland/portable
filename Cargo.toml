@@ -29,8 +29,8 @@ members = ["lib/legacy_conf"]
 exclude = ["lib/init"]
 
 [features]
-default = ["systemd", "flatpak"]
+default = ["systemd", "flatpak", "pulseaudio"]
 systemd = []
-
+pulseaudio = []
 # Mimic Flatpak to host, required until appd lands
 flatpak = []
