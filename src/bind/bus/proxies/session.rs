@@ -93,8 +93,9 @@ async fn compile_rules(
 
 async fn generate_bus_rules(
 	app_id:		&str,
-	kde_status:	&bool,
+	kde_status:	bool,
 	mpris_names:	Vec<String>,
+	classic_notif:	bool,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
@@ -318,7 +319,28 @@ async fn generate_bus_rules(
 		},
 	);
 
-	if *kde_status {
+	if classic_notif {
+		rules.push(
+			BusAccessLevel::Call {
+				bus_name: BusName::try_from("org.freedesktop.Notifications")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.freedesktop.Notifications.*".into(),
+				object_path: "/org/freedesktop/Notifications".into(),
+			}
+		);
+		rules.push(
+			BusAccessLevel::GetBroadcast {
+				bus_name: BusName::try_from("org.freedesktop.Notifications")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.freedesktop.Notifications.*".into(),
+				object_path: "/org/freedesktop/Notifications".into(),
+			}
+		);
+	}
+
+	if kde_status {
 		rules.push(
 			BusAccessLevel::Call {
 				bus_name: BusName::try_from("org.kde.JobViewServer")
