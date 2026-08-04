@@ -29,8 +29,19 @@ members = ["lib/legacy_conf"]
 exclude = ["lib/init"]
 
 [features]
-default = ["systemd", "flatpak", "pulseaudio"]
-systemd = []
+default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland"]
+
+# Build with systemd support, note that non-systemd mode does not work yet
+systemd	= []
+
+# Build with X11 display protocol support, this includes real X11 display or XWayland
+x11	= []
+
+# Build with Wayland display protocol support
+wayland	= []
+
+# Build with PulseAudio support, with server address parsing and binding
 pulseaudio = []
+
 # Mimic Flatpak to host, required until appd lands
 flatpak = []
