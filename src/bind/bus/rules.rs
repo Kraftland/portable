@@ -77,6 +77,53 @@ pub enum BusAccessLevel {
 	},
 }
 
+use crate::bind::types::ToCmdline;
+
+impl BusAccessLevel {
+	async fn to_cmdline(self)	-> String {
+		match self {
+			BusAccessLevel::See { bus_name }	=> {
+				let mut cmdline = String::from("--see=");
+				cmdline.push_str(&bus_name.to_string());
+				cmdline
+			}
+			BusAccessLevel::Call { bus_name, method, object_path }
+								=> {
+				let mut cmdline = String::from("--call=");
+				cmdline.push_str(&bus_name.to_string());
+				cmdline.push_str("=");
+				cmdline.push_str(&method);
+				cmdline.push_str("@");
+				cmdline.push_str(&object_path);
+				cmdline
+			}
+			BusAccessLevel::OwnName { bus_name }	=> {
+				let mut cmdline = String::from("--own=");
+				cmdline.push_str(&bus_name.to_string());
+				cmdline
+			}
+			BusAccessLevel::GetBroadcast { bus_name, method, object_path }
+								=> {
+				let mut cmdline = String::from("--broadcast=");
+				cmdline.push_str(&bus_name.to_string());
+				cmdline.push_str("=");
+				cmdline.push_str(&method);
+				cmdline.push_str("@");
+				cmdline.push_str(&object_path);
+				cmdline
+			}
+			BusAccessLevel::WellknownName { bus_name }
+								=> {
+				let mut cmdline = String::from("--talk=");
+				cmdline.push_str(&bus_name.to_string());
+				cmdline
+			}
+		}
+	}
+}
+
+
+
 /**
 	The BusName struct is mostly a type alias of String, but wrapped inside a struct to perform
 	checks.
@@ -90,6 +137,18 @@ pub struct BusName {
 pub enum BusNameError {
 	#[error("Could not convert type to D-Bus name: bus name must not exceed 255 characters (0)")]
 	BusNameTooLongError(usize),
+}
+
+impl Into<String> for BusName {
+	fn into(self) -> String {
+		self.name
+	}
+}
+
+impl ToString for BusName {
+	fn to_string(&self) -> String {
+		self.name.to_owned()
+	}
 }
 
 impl TryFrom<String> for BusName {
