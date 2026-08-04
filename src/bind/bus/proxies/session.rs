@@ -101,6 +101,8 @@ async fn generate_bus_rules(
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
 
+	let status_notifier_spawn = tokio::spawn(generate_status_notifier_rules());
+
 	let mut rules: Vec<BusAccessLevel> = vec![
 		BusAccessLevel::OwnName {
 			bus_name: {
@@ -389,8 +391,55 @@ async fn generate_bus_rules(
 		};
 	};
 
+	{
+		let tray_rules = status_notifier_spawn
+			.await
+			.map_err(ProxyError::SpawnError)
+			?
+			?;
+		for rule in tray_rules {
+			rules.push(rule);
+		}
+	};
+
 
 	Ok(rules)
+}
+
+async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
+	use crate::bind::bus::rules::BusAccessLevel;
+	use crate::bind::bus::rules::BusName;
+
+	let threads = std::thread::available_parallelism()
+		.map(|n| n.get())
+		.map_err(ProxyError::CoreCountError)
+		?;
+
+	let mut counter: u8 = 0;
+	let mut PID: usize = threads - 1;
+	let mut ret = vec![];
+	let name_prefix = String::from("org.kde.StatusNotifierItem-");
+
+	loop {
+		if counter > 10 {
+			return Ok(ret);
+		}
+		counter += 1;
+
+		let mut name = String::from(&name_prefix);
+		name.push_str(&PID.to_string());
+		name.push_str("-1");
+
+		ret.push(
+			BusAccessLevel::OwnName {
+				bus_name: BusName::try_from(name)
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+			}
+		);
+		PID += 1;
+	}
+
 }
 
 async fn get_session_bus_address() -> Result<String, ProxyError> {
@@ -507,4 +556,7 @@ pub enum ProxyError {
 
 	#[error("Could not start D-Bus proxy: segment is infinite")]
 	InfiniteSegmentError,
+
+	#[error("Could not start D-Bus proxy: error obtaining CPU core count: {0:#?}")]
+	CoreCountError(std::io::Error),
 }
