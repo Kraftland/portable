@@ -57,7 +57,7 @@ pub async fn holder(
 				match result {
 					Ok(_)	=> {}
 					Err(e)	=> {
-						log_tx.send(
+						let _ = log_tx.send(
 							LogMessage {
 								level: crate::logger::LogLevel::Fatal,
 								message: format!("Could not send envs: {e:#?}")
