@@ -5,5 +5,4 @@ use crate::bind::types::BindRules;
 
 pub async fn bind() -> Result<BindRules, DisplayError> {
 	unimplemented!();
-	vec![]
 }
