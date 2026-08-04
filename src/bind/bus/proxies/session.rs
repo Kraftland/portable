@@ -92,10 +92,11 @@ async fn compile_rules(
 }
 
 async fn generate_bus_rules(
-	app_id:		&str,
-	kde_status:	bool,
-	mpris_names:	Vec<String>,
-	classic_notif:	bool,
+	app_id:			&str,
+	kde_status:		bool,
+	mpris_names:		Vec<String>,
+	classic_notif:		bool,
+	inhibit:	bool,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
@@ -371,7 +372,7 @@ async fn generate_bus_rules(
 	}
 
 	{
-		let portals = portal_allowlist::get_allowed_portals().await;
+		let portals = portal_allowlist::get_allowed_portals(inhibit).await;
 		for portal in portals {
 			rules.push(
 				BusAccessLevel::Call {

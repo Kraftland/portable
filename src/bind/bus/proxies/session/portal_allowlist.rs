@@ -1,5 +1,5 @@
-pub async fn get_allowed_portals() -> Vec<String> {
-	vec![
+pub async fn get_allowed_portals(inhibit: bool) -> Vec<String> {
+	let rule = vec![
 		"Account".to_string(),
 		"Camera".into(),
 		"Clipboard".into(),
@@ -23,5 +23,11 @@ pub async fn get_allowed_portals() -> Vec<String> {
 		"Usb".into(),
 		"Wallpaper".into(),
 		"GlobalShortcuts".into(),
-	]
+	];
+
+	if inhibit {
+		rule.push("Inhibit".into());
+	}
+
+	rule
 }
