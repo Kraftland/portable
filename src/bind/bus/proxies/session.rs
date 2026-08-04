@@ -258,7 +258,16 @@ async fn generate_bus_rules(
 				?,
 			method: "org.freedesktop.IBus.Portal.*".into(),
 			object_path: "/org/freedesktop/IBus".into(),
-		}
+		},
+
+		// Call FileManager1
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.FileManager1")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.FileManager1.*".into(),
+			object_path: "/org/freedesktop/FileManager1".into(),
+		},
 	];
 
 	// MPRIS default names
@@ -308,17 +317,6 @@ async fn generate_bus_rules(
 			);
 		}
 	}
-
-	rules.push(
-		// Call FileManager1
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.FileManager1")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.freedesktop.FileManager1.*".into(),
-			object_path: "/org/freedesktop/FileManager1".into(),
-		},
-	);
 
 	if classic_notif {
 		rules.push(
