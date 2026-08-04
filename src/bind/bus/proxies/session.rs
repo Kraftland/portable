@@ -15,6 +15,7 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 	async fn new(
 			logger:		crate::logger::LogSender,
 			proxy_path:	std::path::PathBuf,
+			mpris_names:	Vec<String>,
 
 			#[cfg(feature = "flatpak")]
 			info_path:	std::path::PathBuf,
@@ -25,6 +26,7 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 		compile_rules(
 			logger,
 			proxy_path,
+			mpris_names,
 
 			#[cfg(feature = "flatpak")]
 			info_path,

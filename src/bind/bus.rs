@@ -36,6 +36,7 @@ pub trait StartProxy: Sized {
 	fn new(
 		logger:		crate::logger::LogSender,
 		proxy_path:	std::path::PathBuf,
+		mpris_names:	Vec<String>,
 
 		#[cfg(feature = "flatpak")]
 		info_path:	std::path::PathBuf,
