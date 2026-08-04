@@ -79,8 +79,20 @@ pub enum BusAccessLevel {
 
 use crate::bind::types::ToCmdline;
 
-impl BusAccessLevel {
-	async fn to_cmdline(self)	-> String {
+impl ToCmdline for Vec<BusAccessLevel> {
+	async fn to_cmdline(self)	-> Vec<String> {
+		let mut ret = vec![];
+
+		for rule in self {
+			ret.push(rule.to_string());
+		}
+
+		ret
+	}
+}
+
+impl ToString for BusAccessLevel {
+	fn to_string(&self)	-> String {
 		match self {
 			BusAccessLevel::See { bus_name }	=> {
 				let mut cmdline = String::from("--see=");
