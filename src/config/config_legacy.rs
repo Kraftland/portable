@@ -12,7 +12,7 @@ pub enum LegacyConfigError {
 	ReadConfigError(tokio::io::Error),
 
 	#[error("Could not deserialise legacy config: {0:#?}")]
-	DeserializeError(legacy_conf::Error),
+	DeserializeError(portable_legacy_conf::Error),
 }
 
 pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyConfigError> {
@@ -33,8 +33,8 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 		.await
 		.map_err(LegacyConfigError::ReadConfigError)?;
 
-	let decoded_legacy_conf: legacy_conf::Config
-		= legacy_conf::from_str(config_raw.as_str())
+	let decoded_legacy_conf: portable_legacy_conf::Config
+		= portable_legacy_conf::from_str(config_raw.as_str())
 			.map_err(LegacyConfigError::DeserializeError)
 			?;
 
