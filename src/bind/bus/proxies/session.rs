@@ -11,11 +11,11 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 			proxy_path:	std::path::PathBuf,
 			mpris_names:	Vec<String>,
 			stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-
 			app_id:		String,
 			kde_status:	bool,
 			classic_notif:	bool,
 			inhibit:	bool,
+			status_fd:	Option<std::os::fd::OwnedFd>,
 
 			#[cfg(feature = "flatpak")]
 			info_path:	std::path::PathBuf,
@@ -33,6 +33,7 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 			kde_status,
 			classic_notif,
 			inhibit,
+			status_fd,
 
 			#[cfg(feature = "flatpak")]
 			info_path,
@@ -53,11 +54,11 @@ async fn compile_rules(
 	proxy_path:	std::path::PathBuf,
 	mpris_names:	Vec<String>,
 	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-
 	app_id:		String,
 	kde_status:	bool,
 	classic_notif:	bool,
 	inhibit:	bool,
+	status_fd:	Option<std::os::fd::OwnedFd>,
 
 	#[cfg(feature = "flatpak")]
 	info_path:	std::path::PathBuf,
@@ -95,28 +96,31 @@ async fn compile_rules(
 
 	Ok(
 		Proxy {
-			sandbox:	sandbox_rules
-						.await
-						.map_err(ProxyError::SpawnError)
-						?
-						?,
-			bus_access:	bus_access_spawn
-						.await
-						.map_err(ProxyError::SpawnError)
-						?
-						?,
-			bus_address: 	bus_address
-						.await
-						.map_err(ProxyError::SpawnError)
-						?
-						?,
+			sandbox:		sandbox_rules
+							.await
+							.map_err(ProxyError::SpawnError)
+							?
+							?,
+			bus_access:		bus_access_spawn
+							.await
+							.map_err(ProxyError::SpawnError)
+							?
+							?,
+			bus_address: 		bus_address
+							.await
+							.map_err(ProxyError::SpawnError)
+							?
+							?,
 			logger: logger,
-			proxy_address: proxy_address,
-			bind_lifetime:	stop_token,
-			sloppy_names:	false,
+			proxy_address:		proxy_address,
+			bind_lifetime:		stop_token,
+			sloppy_names:		false,
+			json_status_file:	status_fd,
 		}
 	)
 }
+
+
 
 async fn generate_bus_rules(
 	app_id:			String,
