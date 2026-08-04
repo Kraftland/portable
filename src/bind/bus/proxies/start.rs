@@ -4,6 +4,9 @@ use crate::bind::bus::Proxy;
 pub enum StartProxyError {
 	#[error("Could not start D-Bus proxy: {0:#?}")]
 	SpawnError(std::io::Error),
+
+	#[error("Could not start D-Bus proxy: mapping file descriptors failed: {0:#?}")]
+	FDError(command_fds::FdMappingCollision),
 }
 
 impl Proxy {
@@ -37,7 +40,9 @@ impl Proxy {
 							child_fd:	25,
 						}
 					],
-				);
+				)
+					.map_err(StartProxyError::FDError)
+					?;
 				cmdline.push("--json-status-fd".into());
 				cmdline.push("25".into());
 			}
@@ -75,7 +80,7 @@ impl Proxy {
 			.map_err(StartProxyError::SpawnError)
 			?;
 
-		self.logger.send(
+		let _ = self.logger.send(
 			crate::logger::LogMessage {
 				level: crate::logger::LogLevel::Debug,
 				message: format!("Started D-Bus proxy for {}", self.bus_address),
@@ -89,7 +94,7 @@ impl Proxy {
 					let result = child.wait().await;
 					match result {
 						Ok(_)	=> {
-							self.logger.send(
+							let _ = self.logger.send(
 								crate::logger::LogMessage {
 									level: crate::logger::LogLevel::Debug,
 									message: format!("D-Bus proxy exited"),
@@ -97,10 +102,11 @@ impl Proxy {
 							).await;
 							stop_channel
 								.send(crate::stop::StopLevel::Normal)
-								.await;
+								.await
+								.expect("Could not send stop signal");
 						}
 						Err(e)	=> {
-							self.logger.send(
+							let _ = self.logger.send(
 								crate::logger::LogMessage {
 									level: crate::logger::LogLevel::Fatal,
 									message: format!(
@@ -110,7 +116,8 @@ impl Proxy {
 							).await;
 							stop_channel
 								.send(crate::stop::StopLevel::Error(1))
-								.await;
+								.await
+								.expect("Could not send stop signal");
 						}
 					}
 				});
