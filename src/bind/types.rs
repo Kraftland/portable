@@ -122,7 +122,7 @@ pub trait DeDupRules {
 	For example, BindRules implements this to
 */
 pub trait ToCmdline {
-	async fn to_cmdline(self)	-> Vec<String>;
+	fn to_cmdline(self)	-> impl std::future::Future<Output = Vec<String>> + Send;
 }
 
 impl ToCmdline for BindRules {
