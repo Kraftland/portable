@@ -1,4 +1,12 @@
-async fn get(conn: zbus::Connection) -> Result<std::path::PathBuf, DocumentsError> {
+/**
+	The public type describes a path of Documents Portal
+
+*/
+pub type DocumentPath = std::path::PathBuf;
+
+async fn get(
+	conn: zbus::Connection
+) -> Result<DocumentPath, DocumentsError> {
 	let proxy = DocumentsProxy::new(&conn)
 		.await
 		.map_err(DocumentsError::ProxyError)
