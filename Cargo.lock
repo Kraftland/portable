@@ -474,14 +474,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "legacy_conf"
-version = "0.1.0"
-dependencies = [
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -626,8 +618,8 @@ name = "portable-daemon"
 version = "20.0.0"
 dependencies = [
  "jiff",
- "legacy_conf",
  "nix",
+ "portable_legacy_conf",
  "serde",
  "thiserror",
  "tokio",
@@ -636,6 +628,14 @@ dependencies = [
  "udev",
  "zbus",
  "zbus_systemd",
+]
+
+[[package]]
+name = "portable_legacy_conf"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
