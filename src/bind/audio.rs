@@ -6,8 +6,8 @@ pub use pulse::*;
 pub struct Audio;
 
 pub trait GetAddress {
-	async fn get(
+	fn get(
 		logger:		crate::logger::LogSender,
 		runtime_dir:	std::path::PathBuf,
-	)	-> Option<std::path::PathBuf>;
+	)	-> impl std::future::Future<Output = Option<std::path::PathBuf>> + Send;
 }
