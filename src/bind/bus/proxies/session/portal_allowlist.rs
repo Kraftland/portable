@@ -1,5 +1,5 @@
 pub async fn get_allowed_portals(inhibit: bool) -> Vec<String> {
-	let rule = vec![
+	let mut rule = vec![
 		"Account".to_string(),
 		"Camera".into(),
 		"Clipboard".into(),
