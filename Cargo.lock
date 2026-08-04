@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "portable-daemon"
-version = "20.0.0"
+version = "19.9.9"
 dependencies = [
  "command-fds",
  "jiff",

@@ -1,6 +1,6 @@
 [package]
 name = "portable-daemon"
-version = "20.0.0"
+version = "19.9.9"
 edition = "2024"
 authors = ["Kimiblock"]
 rust-version = "1.97"
