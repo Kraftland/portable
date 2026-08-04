@@ -2,10 +2,16 @@
 name = "portable-daemon"
 version = "20.0.0"
 edition = "2024"
+authors = ["Kimiblock"]
+rust-version = "1.97"
+documentation = "https://github.com/Kraftland/portable"
+description = "Fast, private, modern sandbox designed for desktop Linux"
+repository = "https://github.com/Kraftland/portable"
+license = "GPL-3.0-or-later"
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
-legacy_conf = { path = "./lib/legacy_conf" }
+portable_legacy_conf = { version = "1.0.0", path = "./lib/legacy_conf" }
 thiserror = "2.0.19"
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "sync", "signal", "fs", "io-util"] }
 tokio-util = { version = "0.7.18", features = ["rt"] }
