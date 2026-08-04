@@ -23,6 +23,7 @@ pub struct Proxy {
 		Specifies a stop token when needed
 	*/
 	pub bind_lifetime:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	pub json_status_file:	Option<std::os::fd::OwnedFd>,
 }
 /**
 	The shared trait StartProxy dictates a common start method for D-Bus proxies.
@@ -33,6 +34,8 @@ pub trait StartProxy: Sized {
 		Note that proxy_path internally translates to:
 			unix:path=<proxy_path>/bus
 		To workaround an issue with bind-mounting non-existent files
+
+		The proxy directory must exist beforehand.
 	*/
 	fn new(
 		logger:		crate::logger::LogSender,
@@ -44,6 +47,7 @@ pub trait StartProxy: Sized {
 		kde_status:	bool,
 		classic_notif:	bool,
 		inhibit:	bool,
+		status_fd:	Option<std::os::fd::OwnedFd>,
 
 		#[cfg(feature = "flatpak")]
 		info_path:	std::path::PathBuf,
