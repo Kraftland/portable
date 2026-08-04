@@ -259,6 +259,38 @@ async fn generate_bus_rules(
 		}
 	];
 
+	// MPRIS default names
+	{
+		let app_id_last_segment = match app_id.split(".").last() {
+			Some(v)	=> {v}
+			None	=> {
+				return Err(ProxyError::InfiniteSegmentError);
+			}
+		};
+		let mut mpris_compat = String::from("org.mpris.MediaPlayer2.");
+		let mut mpris_appid = String::from("org.mpris.MediaPlayer2.");
+		mpris_compat.push_str(app_id_last_segment);
+		mpris_compat.push_str(".*");
+
+		mpris_appid.push_str(&app_id);
+		mpris_appid.push_str(".*");
+
+		let bus_names = vec![
+			mpris_compat,
+			mpris_appid,
+		];
+
+		for bus_name in bus_names {
+			rules.push(
+				BusAccessLevel::OwnName {
+					bus_name: BusName::try_from(bus_name)
+						.map_err(ProxyError::InvalidBusNameError)
+						?,
+					}
+			);
+		};
+	};
+
 	if mpris_names.len() > 0 {
 		for mpris_name in mpris_names {
 			rules.push(
@@ -451,4 +483,7 @@ pub enum ProxyError {
 
 	#[error("Could not start D-Bus proxy for session bus: invalid character: {0:#?}")]
 	OsStringError(std::io::Error),
+
+	#[error("Could not start D-Bus proxy: segment is infinite")]
+	InfiniteSegmentError,
 }
