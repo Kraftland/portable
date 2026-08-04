@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 pub mod gpu;
+pub mod camera;
 
 #[derive(Debug, Error)]
 pub enum EnumerateError {
@@ -161,5 +162,7 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 		}
 	}
 
-	ret
+	use super::types::DeDupRules;
+
+	ret.dedup()
 }
