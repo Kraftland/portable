@@ -162,7 +162,5 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 		}
 	}
 
-	use super::types::DeDupRules;
-
-	ret.dedup()
+	ret
 }
