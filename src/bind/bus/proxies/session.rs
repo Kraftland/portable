@@ -5,12 +5,6 @@
 mod portal_allowlist;
 
 impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
-	async fn start(
-			proxy: crate::bind::bus::Proxy,
-		) -> Result<(), Self::ProxyError>
-	{
-
-	}
 
 	async fn new(
 			logger:		crate::logger::LogSender,
@@ -76,19 +70,21 @@ async fn compile_rules(
 
 	Ok(
 		Proxy {
-			sandbox: sandbox_rules
-				.await
-				.map_err(ProxyError::SpawnError)
-				?
-				?,
-			bus_access: bus_access,
-			bus_address: bus_address
-				.await
-				.map_err(ProxyError::SpawnError)
-				?
-				?,
+			sandbox:	sandbox_rules
+						.await
+						.map_err(ProxyError::SpawnError)
+						?
+						?,
+			bus_access:	bus_access,
+			bus_address: 	bus_address
+						.await
+						.map_err(ProxyError::SpawnError)
+						?
+						?,
 			logger: logger,
 			proxy_address: proxy_address,
+			bind_lifetime:	true,
+			sloppy_names:	false,
 		}
 	)
 }

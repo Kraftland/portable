@@ -11,22 +11,21 @@ pub struct Proxy {
 	bus_address:	String,
 	logger:		crate::logger::LogSender,
 	proxy_address:	String,
+
+	/**
+		Internally maps to --sloppy-names, makes all unique names visible
+	*/
+	sloppy_names:	bool,
+
+	/**
+		Whether to kill the sandbox once the proxy dies
+	*/
+	bind_lifetime:	bool,
 }
-
-#[derive(thiserror::Error, Debug)]
-pub enum BusProxyError {
-
-}
-
 /**
 	The shared trait StartProxy dictates a common start method for D-Bus proxies.
 */
 pub trait StartProxy: Sized {
-	fn start(
-		proxy: Proxy,
-	) -> impl std::future::Future<Output = Result<(), Self::ProxyError>> + Send;
-	type ProxyError;
-
 	/// See struct Proxy for more info
 	/**
 		Note that proxy_path internally translates to:
@@ -43,4 +42,6 @@ pub trait StartProxy: Sized {
 		#[cfg(feature = "flatpak")]
 		runtime_dir:	std::path::PathBuf,
 	) -> impl std::future::Future<Output = Result<Self, Self::ProxyError>> + Send;
+
+	type ProxyError;
 }
