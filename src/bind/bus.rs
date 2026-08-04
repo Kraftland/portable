@@ -6,21 +6,23 @@ pub mod documents;
 	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy
 */
 pub struct Proxy {
-	sandbox:	crate::bind::types::BindRules,
-	bus_access:	Vec<rules::BusAccessLevel>,
-	bus_address:	String,
-	logger:		crate::logger::LogSender,
-	proxy_address:	String,
+	pub sandbox:		crate::bind::types::BindRules,
+	pub bus_access:		Vec<rules::BusAccessLevel>,
+	pub bus_address:	String,
+	pub logger:		crate::logger::LogSender,
+	pub proxy_address:	String,
 
 	/**
 		Internally maps to --sloppy-names, makes all unique names visible
 	*/
-	sloppy_names:	bool,
+	pub sloppy_names:	bool,
 
 	/**
 		Whether to kill the sandbox once the proxy dies
+
+		Specifies a stop token when needed
 	*/
-	bind_lifetime:	bool,
+	pub bind_lifetime:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
 }
 /**
 	The shared trait StartProxy dictates a common start method for D-Bus proxies.
@@ -36,6 +38,12 @@ pub trait StartProxy: Sized {
 		logger:		crate::logger::LogSender,
 		proxy_path:	std::path::PathBuf,
 		mpris_names:	Vec<String>,
+		stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+
+		app_id:		String,
+		kde_status:	bool,
+		classic_notif:	bool,
+		inhibit:	bool,
 
 		#[cfg(feature = "flatpak")]
 		info_path:	std::path::PathBuf,

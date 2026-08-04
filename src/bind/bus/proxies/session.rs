@@ -10,6 +10,12 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 			logger:		crate::logger::LogSender,
 			proxy_path:	std::path::PathBuf,
 			mpris_names:	Vec<String>,
+			stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+
+			app_id:		String,
+			kde_status:	bool,
+			classic_notif:	bool,
+			inhibit:	bool,
 
 			#[cfg(feature = "flatpak")]
 			info_path:	std::path::PathBuf,
@@ -21,6 +27,12 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 			logger,
 			proxy_path,
 			mpris_names,
+			stop_token,
+
+			app_id,
+			kde_status,
+			classic_notif,
+			inhibit,
 
 			#[cfg(feature = "flatpak")]
 			info_path,
@@ -40,6 +52,12 @@ async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	proxy_path:	std::path::PathBuf,
 	mpris_names:	Vec<String>,
+	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+
+	app_id:		String,
+	kde_status:	bool,
+	classic_notif:	bool,
+	inhibit:	bool,
 
 	#[cfg(feature = "flatpak")]
 	info_path:	std::path::PathBuf,
@@ -55,6 +73,16 @@ async fn compile_rules(
 		path
 	};
 
+	let bus_access_spawn = tokio::spawn(
+		generate_bus_rules(
+			String::from(app_id),
+			kde_status,
+			mpris_names,
+			classic_notif,
+			inhibit,
+		),
+	);
+
 	let sandbox_rules = tokio::spawn(
 		generate_sandbox_rules(
 			proxy_path.clone(),
@@ -65,9 +93,6 @@ async fn compile_rules(
 		),
 	);
 
-
-	let bus_access: Vec<crate::bind::bus::rules::BusAccessLevel> = vec![];
-
 	Ok(
 		Proxy {
 			sandbox:	sandbox_rules
@@ -75,7 +100,11 @@ async fn compile_rules(
 						.map_err(ProxyError::SpawnError)
 						?
 						?,
-			bus_access:	bus_access,
+			bus_access:	bus_access_spawn
+						.await
+						.map_err(ProxyError::SpawnError)
+						?
+						?,
 			bus_address: 	bus_address
 						.await
 						.map_err(ProxyError::SpawnError)
@@ -83,14 +112,14 @@ async fn compile_rules(
 						?,
 			logger: logger,
 			proxy_address: proxy_address,
-			bind_lifetime:	true,
+			bind_lifetime:	stop_token,
 			sloppy_names:	false,
 		}
 	)
 }
 
 async fn generate_bus_rules(
-	app_id:			&str,
+	app_id:			String,
 	kde_status:		bool,
 	mpris_names:		Vec<String>,
 	classic_notif:		bool,
@@ -104,7 +133,7 @@ async fn generate_bus_rules(
 	let mut rules: Vec<BusAccessLevel> = vec![
 		BusAccessLevel::OwnName {
 			bus_name: {
-				let mut name = String::from(app_id);
+				let mut name = String::from(&app_id);
 				name.push_str(".*");
 				BusName::try_from(name)
 					.map_err(ProxyError::InvalidBusNameError)
@@ -113,7 +142,7 @@ async fn generate_bus_rules(
 		},
 		BusAccessLevel::OwnName {
 			bus_name: {
-				let name = String::from(app_id);
+				let name = String::from(&app_id);
 				BusName::try_from(name)
 					.map_err(ProxyError::InvalidBusNameError)
 					?
@@ -203,7 +232,7 @@ async fn generate_bus_rules(
 		BusAccessLevel::Call {
 			bus_name: {
 				let mut name = String::from("top.kimiblock.portable.");
-				name.push_str(app_id);
+				name.push_str(&app_id);
 				BusName::try_from(name)
 					.map_err(ProxyError::InvalidBusNameError)
 					?
