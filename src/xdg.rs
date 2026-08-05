@@ -26,11 +26,13 @@ impl XdgDirs {
 			}
 		};
 
+		let runtime_dir = Self::runtime().await?;
+
 		Ok(Self {
-			runtime:	Self::runtime().await?,
-			config_home:	Self::config_home(&home).await?,
-			data_home:	Self::data_home(&home).await?,
-			home:		home,
+			runtime:		runtime_dir.clone(),
+			config_home:		Self::config_home(&home).await?,
+			data_home:		Self::data_home(&home).await?,
+			home:			home,
 		})
 	}
 
