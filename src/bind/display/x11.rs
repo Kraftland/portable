@@ -4,6 +4,7 @@ pub enum DisplayBindError {
 	SpawnError(tokio::task::JoinError),
 }
 
+#[derive(Clone)]
 pub struct X11 {
 	pub logger:		crate::logger::LogSender,
 	pub home:		std::path::PathBuf,
