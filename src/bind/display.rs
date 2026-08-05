@@ -50,6 +50,7 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 pub async fn bind(
 	logger:		crate::logger::LogSender,
 	home:		std::path::PathBuf,
+	env:		crate::envs::holder::HoldChannel,
 
 	// socket enablement below
 	x11:		bool,
@@ -80,6 +81,7 @@ pub async fn bind(
 		let info = x11::X11 {
 			logger:	logger.clone(),
 			home:	home,
+			env:	env.clone(),
 		};
 		spawn_collector.push(
 			tokio::spawn(async move {
