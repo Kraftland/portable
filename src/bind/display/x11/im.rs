@@ -5,7 +5,7 @@ pub enum InputMethodKind {
 	Unknown,
 }
 
-async fn detect_kind() -> InputMethodKind {
+pub async fn detect_kind() -> InputMethodKind {
 	let check_envs = vec![
 		"XMODIFIERS",
 		"INPUT_METHOD",
