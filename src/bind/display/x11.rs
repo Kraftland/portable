@@ -24,6 +24,28 @@ impl super::BindDisplay for X11 {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::DisplayBindError> {
 		let mut ret = vec![];
 
+		match std::env::var("DISPLAY") {
+			Ok(v)	=> {
+				self.env.send(
+					crate::envs::holder::EnvMessage::Add {
+						key: "DISPLAY".into(),
+						value: v,
+					}
+				)
+					.await
+					.map_err(DisplayBindError::SendEnvError)
+					?;
+			}
+			Err(e)	=> {
+				let _ = self.logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not obtain $DISPLAY: {e:#?}"),
+					}
+				).await;
+			}
+		};
+
 		let xauth_spawn = tokio::spawn(xauth::bind(self.home, self.env));
 
 
