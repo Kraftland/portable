@@ -23,6 +23,8 @@ pub enum SecurityContextError {
 
 /**
 	Create a security context protocol
+
+	Returns the original PathBuf when unsupported
 */
 pub async fn create_context(
 	original_socket:	std::path::PathBuf,
@@ -38,7 +40,26 @@ pub async fn create_context(
 		.await
 		?;
 
-	if ! supports_security_context(&conn).await? {
+	let supports_security_context = {
+		let protocol = std::ffi::CString::new("security-context-v1")
+			.map_err(SecurityContextError::CStringError)
+			?;
+		let globals = conn.globals();
+
+		let mut security_context: bool = false;
+
+		for global in globals {
+			if global.interface == protocol {
+				security_context = true
+			} else {
+				continue;
+			}
+		}
+
+		security_context
+	};
+
+	if ! supports_security_context {
 		let _ = logger.send(
 			crate::logger::LogMessage {
 				level: crate::logger::LogLevel::Warn,
@@ -143,21 +164,6 @@ async fn listen_context(
 		&mut wayland_conn,
 	);
 	Ok(())
-}
-
-async fn supports_security_context(conn: &wayrs_client::Connection<()>) -> Result<bool, SecurityContextError> {
-	let protocol = std::ffi::CString::new("security-context-v1")
-		.map_err(SecurityContextError::CStringError)
-		?;
-	let globals = conn.globals();
-
-	for global in globals {
-		if global.interface == protocol {
-			return Ok(true);
-		}
-	};
-
-	return Ok(false);
 }
 
 /**
