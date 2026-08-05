@@ -17,5 +17,7 @@ pub trait RuntimePaths: Sized {
 	async fn create_path(&self)		->
 		Result<(), Self::RuntimePathError>;
 
+	fn path(&self) -> std::path::PathBuf;
+
 	type RuntimePathError;
 }

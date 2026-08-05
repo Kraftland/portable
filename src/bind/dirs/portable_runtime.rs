@@ -28,6 +28,10 @@ impl super::RuntimePaths for PortableRuntime {
 			.map_err(Error::CreateError)
 	}
 
+	fn path(&self) -> std::path::PathBuf {
+		std::path::PathBuf::from(&self.path)
+	}
+
 	type RuntimePathError = Error;
 }
 
