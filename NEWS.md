@@ -8,6 +8,11 @@
 	- Classic Notifications	-> `false`
 	- Network		-> `false`
 
+## Notable non-breaking changes:
+- Display protocol:
+	- The native display protocol will always be enabled
+	- Wayland socket is now mounted at `/run/wayland`
+
 ## Improvements:
 - Implemented overlay execution for D-Bus activation
 - Made seccomp filter compilation asynchronous to avoid blocking
@@ -27,6 +32,7 @@
 - Fixed an issue with D-Bus filtering where legacy notification action would not trigger anything.
 - The PulseAudio server is being parsed rather than assuming default path
 - The PulseAudio server is activated before starting sandbox
+
 
 # 18.0 - Lawn
 
