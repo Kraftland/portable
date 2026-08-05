@@ -63,10 +63,10 @@ pub async fn bind(
 ) -> Result<BindRules, DisplayError> {
 	let mut spawn_collector = vec![];
 
-	/**
+	/*
 		We use this variable to avoid applying Input Method workaround multiple times
 	*/
-	let mut ime_applied: bool;
+	let mut ime_applied: bool = false;
 
 	#[cfg(feature = "x11")]
 	if x11 {
@@ -75,6 +75,20 @@ pub async fn bind(
 			home:	home,
 			env:	env.clone(),
 		};
+
+		if ! ime_applied {
+			ime_applied = true;
+			let info = info.clone();
+			spawn_collector.push(
+				tokio::spawn(async move {
+					info
+					.ime()
+					.await
+					.map_err(DisplayError::X11Error)
+				})
+			);
+		}
+
 		spawn_collector.push(
 			tokio::spawn(async move {
 				info
