@@ -26,6 +26,11 @@ pub mod wayland;
 pub trait BindDisplay {
 	fn bind(self) -> impl std::future::Future<Output = Result<crate::bind::types::BindRules, Self::DisplayBindError>> + Send;
 
+	/**
+		ime is for Input Method Editor workarounds
+	*/
+	fn ime(self) -> impl std::future::Future<Output = Result<crate::bind::types::BindRules, Self::DisplayBindError>> + Send;
+
 	type DisplayBindError;
 }
 
@@ -47,40 +52,77 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 	}).await.map_err(ExistError::SpawnError)?
 }
 
-pub async fn bind() -> Result<BindRules, DisplayError> {
-	#[cfg(feature = "wayland")]
-	let wayland_spawn = {
-		let info = wayland::Wayland;
-		tokio::spawn(async move {
-			info
-				.bind()
-				.await
-				.map_err(DisplayError::WaylandError)
-		})
-	};
+pub async fn bind(
+	logger:		crate::logger::LogSender,
+	home:		std::path::PathBuf,
+	env:		crate::envs::holder::HoldChannel,
+
+	// socket enablement below
+	x11:		bool,
+	wayland:	bool,
+) -> Result<BindRules, DisplayError> {
+	let mut spawn_collector = vec![];
+
+	/*
+		We use this variable to avoid applying Input Method workaround multiple times
+	*/
+	let mut ime_applied: bool = false;
 
 	#[cfg(feature = "x11")]
-	let x11_spawn = {
-		let info = x11::X11;
-		tokio::spawn(async move {
-			info
-				.bind()
-				.await
-				.map_err(DisplayError::X11Error)
-		})
+	if x11 {
+		let info = x11::X11 {
+			logger:	logger.clone(),
+			home:	home,
+			env:	env.clone(),
+		};
+
+		if ! ime_applied {
+			ime_applied = true;
+			let info = info.clone();
+			spawn_collector.push(
+				tokio::spawn(async move {
+					info
+					.ime()
+					.await
+					.map_err(DisplayError::X11Error)
+				})
+			);
+		}
+
+		spawn_collector.push(
+			tokio::spawn(async move {
+				info
+					.bind()
+					.await
+					.map_err(DisplayError::X11Error)
+			})
+		);
+	};
+
+	#[cfg(feature = "wayland")]
+	if wayland {
+		let info = wayland::Wayland;
+		spawn_collector.push(
+			tokio::spawn(async move {
+				info
+					.bind()
+					.await
+					.map_err(DisplayError::WaylandError)
+			})
+		);
 	};
 
 	let mut ret = vec![];
 
-	#[cfg(feature = "wayland")]
-	ret.extend(
-		wayland_spawn.await.map_err(DisplayError::SpawnError)??
-	);
-
-	#[cfg(feature = "x11")]
-	ret.extend(
-		x11_spawn.await.map_err(DisplayError::SpawnError)??
-	);
+	for spawn in spawn_collector {
+		ret.extend(
+			spawn
+				.await
+				.map_err(DisplayError::SpawnError)
+				?
+				?
+		);
+	};
 
 	Ok(ret)
 }

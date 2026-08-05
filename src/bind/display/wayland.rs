@@ -8,5 +8,9 @@ impl super::BindDisplay for Wayland {
 		unimplemented!()
 	}
 
+	async fn ime(self) -> Result<crate::bind::types::BindRules, Self::DisplayBindError> {
+		unimplemented!()
+	}
+
 	type DisplayBindError = DisplayBindError;
 }
