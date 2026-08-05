@@ -54,6 +54,13 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 
 pub mod session;
 
+/**
+	Bind the relevant display into sandbox
+
+	Note that the defaults (if not specified) for sockets should be FALSE unless
+	specified in configuration otherwise, as bind() will perform automatic enabling of
+	native display protocols
+*/
 pub async fn bind(
 	logger:		crate::logger::LogSender,
 	home:		std::path::PathBuf,
