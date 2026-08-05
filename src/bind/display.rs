@@ -52,15 +52,52 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 	}).await.map_err(ExistError::SpawnError)?
 }
 
+pub mod session;
+
+/**
+	Bind the relevant display into sandbox
+
+	Note that the defaults (if not specified) for sockets should be FALSE unless
+	specified in configuration otherwise, as bind() will perform automatic enabling of
+	native display protocols
+*/
 pub async fn bind(
 	logger:		crate::logger::LogSender,
 	home:		std::path::PathBuf,
+	runtime_dir:	std::path::PathBuf,
 	env:		crate::envs::holder::HoldChannel,
 
 	// socket enablement below
-	x11:		bool,
-	wayland:	bool,
+	mut x11:	bool,
+	mut wayland:	bool,
 ) -> Result<BindRules, DisplayError> {
+
+	/*
+		Enable the native session type socket
+	*/
+	match session::detect().await {
+		session::SessionType::Wayland	=> {
+			wayland = true
+		}
+		session::SessionType::X11	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!("X11 is insecure!"),
+				}
+			).await;
+			x11 = true
+		}
+		session::SessionType::Unknown	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!("Unknown session type!"),
+				}
+			).await;
+		}
+	};
+
 	let mut spawn_collector = vec![];
 
 	/*
@@ -101,7 +138,13 @@ pub async fn bind(
 
 	#[cfg(feature = "wayland")]
 	if wayland {
-		let info = wayland::Wayland;
+		let info = wayland::Wayland {
+			runtime_dir:	runtime_dir,
+			env:		env,
+		};
+
+		if ! ime_applied {}
+
 		spawn_collector.push(
 			tokio::spawn(async move {
 				info
