@@ -47,7 +47,13 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 	}).await.map_err(ExistError::SpawnError)?
 }
 
-pub async fn bind() -> Result<BindRules, DisplayError> {
+pub async fn bind(
+	logger:		crate::logger::LogSender,
+	home:		std::path::PathBuf,
+	x11:		bool,
+) -> Result<BindRules, DisplayError> {
+	let mut spawn_collector = vec![];
+
 	#[cfg(feature = "wayland")]
 	let wayland_spawn = {
 		let info = wayland::Wayland;
@@ -60,27 +66,32 @@ pub async fn bind() -> Result<BindRules, DisplayError> {
 	};
 
 	#[cfg(feature = "x11")]
-	let x11_spawn = {
-		let info = x11::X11;
-		tokio::spawn(async move {
-			info
-				.bind()
-				.await
-				.map_err(DisplayError::X11Error)
-		})
-	};
+	if x11 {
+		let info = x11::X11 {
+			logger:	logger.clone(),
+			home:	home,
+		};
+		spawn_collector.push(
+			tokio::spawn(async move {
+				info
+					.bind()
+					.await
+					.map_err(DisplayError::X11Error)
+			})
+		);
+	}
 
 	let mut ret = vec![];
 
-	#[cfg(feature = "wayland")]
-	ret.extend(
-		wayland_spawn.await.map_err(DisplayError::SpawnError)??
-	);
-
-	#[cfg(feature = "x11")]
-	ret.extend(
-		x11_spawn.await.map_err(DisplayError::SpawnError)??
-	);
+	for spawn in spawn_collector {
+		ret.extend(
+			spawn
+				.await
+				.map_err(DisplayError::SpawnError)
+				?
+				?
+		);
+	};
 
 	Ok(ret)
 }
