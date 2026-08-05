@@ -26,6 +26,11 @@ pub mod wayland;
 pub trait BindDisplay {
 	fn bind(self) -> impl std::future::Future<Output = Result<crate::bind::types::BindRules, Self::DisplayBindError>> + Send;
 
+	/**
+		ime is for Input Method Editor workarounds
+	*/
+	fn ime(self) -> impl std::future::Future<Output = Result<crate::bind::types::BindRules, Self::DisplayBindError>> + Send;
+
 	type DisplayBindError;
 }
 
