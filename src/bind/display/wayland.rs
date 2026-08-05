@@ -13,7 +13,6 @@ pub enum DisplayBindError {
 pub mod find_socket;
 
 pub struct Wayland {
-	pub logger:		crate::logger::LogSender,
 	pub runtime_dir:	std::path::PathBuf,
 	pub env:		crate::envs::holder::HoldChannel,
 }

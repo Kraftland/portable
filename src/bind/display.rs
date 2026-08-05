@@ -64,6 +64,7 @@ pub mod session;
 pub async fn bind(
 	logger:		crate::logger::LogSender,
 	home:		std::path::PathBuf,
+	runtime_dir:	std::path::PathBuf,
 	env:		crate::envs::holder::HoldChannel,
 
 	// socket enablement below
@@ -137,7 +138,10 @@ pub async fn bind(
 
 	#[cfg(feature = "wayland")]
 	if wayland {
-		let info = wayland::Wayland;
+		let info = wayland::Wayland {
+			runtime_dir:	runtime_dir,
+			env:		env,
+		};
 
 		if ! ime_applied {}
 
