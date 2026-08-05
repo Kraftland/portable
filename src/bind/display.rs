@@ -57,6 +57,11 @@ pub async fn bind(
 ) -> Result<BindRules, DisplayError> {
 	let mut spawn_collector = vec![];
 
+	/**
+		We use this variable to avoid applying Input Method workaround multiple times
+	*/
+	let mut ime_applied: bool;
+
 	#[cfg(feature = "wayland")]
 	if wayland {
 		let info = wayland::Wayland;
