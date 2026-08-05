@@ -50,20 +50,25 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 pub async fn bind(
 	logger:		crate::logger::LogSender,
 	home:		std::path::PathBuf,
+
+	// socket enablement below
 	x11:		bool,
+	wayland:	bool,
 ) -> Result<BindRules, DisplayError> {
 	let mut spawn_collector = vec![];
 
 	#[cfg(feature = "wayland")]
-	let wayland_spawn = {
+	if wayland {
 		let info = wayland::Wayland;
-		tokio::spawn(async move {
-			info
-				.bind()
-				.await
-				.map_err(DisplayError::WaylandError)
-		})
-	};
+		spawn_collector.push(
+			tokio::spawn(async move {
+				info
+					.bind()
+					.await
+					.map_err(DisplayError::WaylandError)
+			})
+		);
+	}
 
 	#[cfg(feature = "x11")]
 	if x11 {
