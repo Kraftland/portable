@@ -57,6 +57,8 @@ pub mod session;
 /**
 	Bind the relevant display into sandbox
 
+	This function must run after Portable's runtime dir is created
+
 	Note that the defaults (if not specified) for sockets should be FALSE unless
 	specified in configuration otherwise, as bind() will perform automatic enabling of
 	native display protocols

@@ -10,7 +10,8 @@ pub enum DisplayBindError {
 	SendEnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
 }
 
-pub mod find_socket;
+mod find_socket;
+mod security_context;
 
 pub struct Wayland {
 	pub runtime_dir:	std::path::PathBuf,
