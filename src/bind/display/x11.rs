@@ -42,7 +42,20 @@ impl super::BindDisplay for X11 {
 			}
 		};
 
-		unimplemented!()
+		match super::exists("/tmp/.X11-unix".into()).await.map_err(DisplayBindError::IOError)? {
+			true	=> {
+				ret.push(
+					crate::bind::types::BindRule::Path {
+						source: "/tmp/.X11-unix".into(),
+						dest: "/tmp/.X11-unix".into(),
+						class: crate::bind::types::BindType::ReadWrite,
+					},
+				);
+			}
+			false	=> {}
+		};
+
+		Ok(ret)
 	}
 
 	async fn ime(self) -> Result<crate::bind::types::BindRules, Self::DisplayBindError> {
