@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+pub type PortableRuntime = std::path::PathBuf;
+
 #[derive(Debug, Error)]
 pub enum XdgError {
 	#[error("Could not determine XDG dirs: invalid variable: {0:#?}")]
@@ -15,6 +17,11 @@ pub struct XdgDirs {
 	pub home:		std::path::PathBuf,
 	pub config_home:	std::path::PathBuf,
 	pub data_home:		std::path::PathBuf,
+
+	/**
+		Runtime directory for Portable to store data
+	*/
+	pub portable_runtime:	PortableRuntime,
 }
 
 impl XdgDirs {
@@ -26,11 +33,19 @@ impl XdgDirs {
 			}
 		};
 
+		let runtime_dir = Self::runtime().await?;
+
 		Ok(Self {
-			runtime:	Self::runtime().await?,
-			config_home:	Self::config_home(&home).await?,
-			data_home:	Self::data_home(&home).await?,
-			home:		home,
+			runtime:		runtime_dir.clone(),
+			config_home:		Self::config_home(&home).await?,
+			data_home:		Self::data_home(&home).await?,
+			home:			home,
+			portable_runtime:	{
+				let mut runtime = runtime_dir;
+				runtime.push("portable");
+				runtime.push("appID");
+				runtime
+			}
 		})
 	}
 
