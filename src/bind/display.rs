@@ -63,19 +63,6 @@ pub async fn bind(
 	*/
 	let mut ime_applied: bool;
 
-	#[cfg(feature = "wayland")]
-	if wayland {
-		let info = wayland::Wayland;
-		spawn_collector.push(
-			tokio::spawn(async move {
-				info
-					.bind()
-					.await
-					.map_err(DisplayError::WaylandError)
-			})
-		);
-	}
-
 	#[cfg(feature = "x11")]
 	if x11 {
 		let info = x11::X11 {
@@ -91,7 +78,20 @@ pub async fn bind(
 					.map_err(DisplayError::X11Error)
 			})
 		);
-	}
+	};
+
+	#[cfg(feature = "wayland")]
+	if wayland {
+		let info = wayland::Wayland;
+		spawn_collector.push(
+			tokio::spawn(async move {
+				info
+					.bind()
+					.await
+					.map_err(DisplayError::WaylandError)
+			})
+		);
+	};
 
 	let mut ret = vec![];
 
