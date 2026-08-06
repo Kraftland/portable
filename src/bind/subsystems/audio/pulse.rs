@@ -8,6 +8,9 @@ pub enum PulseError {
 
 	#[error("Could not find the location for PulseAudio socket")]
 	NoUseableSocketError(),
+
+	#[error("Could not send environment variable: {0:#?}")]
+	SendEnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
 }
 
 
@@ -17,17 +20,57 @@ pub enum PulseError {
 	Ideally it should run as early as possible.
 */
 
-impl super::GetAddress for super::Audio {
-	async fn get(
-		logger:		crate::logger::LogSender,
-		runtime_dir:	std::path::PathBuf,
-	)	-> Option<std::path::PathBuf> {
-		get_server_address(logger, runtime_dir).await
+impl crate::bind::subsystems::GenerateBind for super::Audio {
+	type BindError = PulseError;
+
+	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		let path = get_server_address(&self.logger, self.runtime_dir).await;
+
+		let path = match path {
+			Some(v)	=> {
+				v
+			}
+			None	=> {
+				let _ = self.logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not find PulseAudio server"),
+					},
+				).await;
+				return Ok(vec![]);
+			}
+		};
+		generate_bind(self.env, path).await
 	}
 }
 
+use crate::bind::types::BindRules;
+
+async fn generate_bind(
+	env:	crate::envs::holder::HoldChannel,
+	path:	std::path::PathBuf,
+) -> Result<BindRules, PulseError> {
+	env.send(
+		crate::envs::holder::EnvMessage::Add {
+			key: "PULSE_SERVER".into(),
+			value: "unix:/run/PulseAudio".into(),
+		},
+	).await
+	.map_err(PulseError::SendEnvError)
+	?;
+	use crate::bind::types::BindRule;
+
+	Ok(vec![
+		BindRule::Path {
+			source: path,
+			dest: "/run/PulseAudio".into(),
+			class: crate::bind::types::BindType::ReadOnly,
+		}
+	])
+}
+
 async fn get_server_address(
-	logger:		crate::logger::LogSender,
+	logger:		&crate::logger::LogSender,
 	runtime_dir:	std::path::PathBuf,
 ) -> Option<std::path::PathBuf> {
 	let path = parse_address(
