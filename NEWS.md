@@ -32,6 +32,7 @@
 - Fixed an issue with D-Bus filtering where legacy notification action would not trigger anything.
 - The PulseAudio server is being parsed rather than assuming default path
 - The PulseAudio server is activated before starting sandbox
+- Portable now utilises the wp-security-context-v1 protocol to provide a secure way of window identification
 
 
 # 18.0 - Lawn

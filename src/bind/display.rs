@@ -64,14 +64,18 @@ pub mod session;
 	native display protocols
 */
 pub async fn bind(
-	logger:		crate::logger::LogSender,
-	home:		std::path::PathBuf,
-	runtime_dir:	std::path::PathBuf,
-	env:		crate::envs::holder::HoldChannel,
+	logger:			crate::logger::LogSender,
+	home:			std::path::PathBuf,
+	runtime_dir:		std::path::PathBuf,
+	env:			crate::envs::holder::HoldChannel,
+
+	portable_runtime:	crate::bind::dirs::portable_runtime::PortableRuntime,
+	app_id:			String,
+	instance_id:		String,
 
 	// socket enablement below
-	mut x11:	bool,
-	mut wayland:	bool,
+	mut x11:		bool,
+	mut wayland:		bool,
 ) -> Result<BindRules, DisplayError> {
 
 	/*
@@ -141,8 +145,12 @@ pub async fn bind(
 	#[cfg(feature = "wayland")]
 	if wayland {
 		let info = wayland::Wayland {
-			runtime_dir:	runtime_dir,
-			env:		env,
+			runtime_dir:		runtime_dir,
+			env:			env,
+			portable_runtime:	portable_runtime,
+			logger:			logger,
+			app_id:			app_id,
+			instance_id:		instance_id,
 		};
 
 		if ! ime_applied {}

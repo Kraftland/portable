@@ -8,6 +8,9 @@ pub enum DisplayBindError {
 
 	#[error("Could not send environment variable: {0:#?}")]
 	SendEnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
+
+	#[error("Error creating security context: {0:#?}")]
+	WpSecurityContextV1Error(security_context::SecurityContextError),
 }
 
 mod find_socket;
@@ -16,13 +19,29 @@ mod security_context;
 pub struct Wayland {
 	pub runtime_dir:	std::path::PathBuf,
 	pub env:		crate::envs::holder::HoldChannel,
+	pub portable_runtime:	crate::bind::dirs::portable_runtime::PortableRuntime,
+	pub logger:		crate::logger::LogSender,
+	pub app_id:		String,
+	pub instance_id:	String,
 }
 
 impl super::BindDisplay for Wayland {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::DisplayBindError> {
-		let display = find_socket::find(self.runtime_dir)
-			.await
-			?;
+		let display = {
+			let host_socket = find_socket::find(self.runtime_dir)
+				.await
+				?;
+			security_context::create_context(
+				host_socket,
+				self.portable_runtime,
+				self.logger,
+				self.app_id,
+				self.instance_id,
+			)
+				.await
+				.map_err(DisplayBindError::WpSecurityContextV1Error)
+				?
+		};
 
 		let mut ret: crate::bind::types::BindRules = vec![];
 		ret.push(
