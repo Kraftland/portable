@@ -89,6 +89,9 @@ pub async fn enumerate(filter: Filter) -> Result<Vec<Device>, EnumerateError> {
 }
 
 async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindRule> {
+	use crate::bind::types::BindType;
+	use crate::bind::types::BindRule;
+
 	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
 	let tracker = tokio_util::task::TaskTracker::new();
@@ -109,7 +112,7 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 				crate::bind::types::BindRule::Path {
 					source: std::path::PathBuf::from(link),
 					dest: std::path::PathBuf::from(link),
-					class: super::types::BindType::Device,
+					class: BindType::Device,
 				},
 			)
 			.expect("Error while sending rule to channel");
@@ -122,7 +125,7 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 				crate::bind::types::BindRule::Path {
 					source: v.to_path_buf(),
 					dest: v.to_path_buf(),
-					class: super::types::BindType::Device,
+					class: BindType::Device,
 				}
 			)
 			.expect("Error while sending rule to channel");
@@ -137,10 +140,10 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 		let path = std::path::PathBuf::from("/sys");
 		let path = path.join(devpath);
 		tx.send(
-			super::types::BindRule::Path {
+			BindRule::Path {
 				source: path.clone(),
 				dest: path,
-				class: super::types::BindType::Device,
+				class: BindType::Device,
 			},
 		)
 			.expect("Error while sending rule to channel");

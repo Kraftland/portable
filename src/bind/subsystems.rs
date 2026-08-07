@@ -15,3 +15,5 @@ pub trait GenerateBind {
 
 #[cfg(feature = "audio")]
 pub mod audio;
+
+pub mod devices;

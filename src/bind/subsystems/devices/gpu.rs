@@ -13,7 +13,7 @@ pub enum GPUError {
 	InvalidBootVGA(String),
 
 	#[error("Could not enumerate GPUs: {0:#?}")]
-	Enumerate(crate::bind::devices::EnumerateError),
+	Enumerate(crate::bind::subsystems::devices::EnumerateError),
 
 	#[error("Could not enumerate GPUs: spawn error: {0:#?}")]
 	Spawn(tokio::task::JoinError),
@@ -321,7 +321,7 @@ fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUV
 async fn enumerate_gpus(
 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 ) -> Result<Vec<GPUInfo>, GPUError> {
-	let devices = crate::bind::devices::enumerate(
+	let devices = crate::bind::subsystems::devices::enumerate(
 		super::Filter::SubsystemWithDevtype {
 			subsystem: "drm".to_string(),
 			devtype: "drm_minor".to_string(),

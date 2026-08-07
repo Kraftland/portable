@@ -18,7 +18,7 @@ async fn main() {
 	};
 	println!(
 		"{}",
-		bind::devices::gpu::gputest_print_all_devices(&log_tx.clone()).await
+		bind::subsystems::devices::gpu::gputest_print_all_devices(&log_tx.clone()).await
 	);
 	std::thread::sleep(std::time::Duration::from_secs(5));
 }
