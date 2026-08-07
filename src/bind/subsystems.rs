@@ -23,3 +23,5 @@ pub mod dirs;
 
 #[cfg(feature = "display")]
 pub mod display;
+
+pub mod desktop_file;
