@@ -6,7 +6,60 @@ pub mod gpu;
 #[cfg(feature = "camera")]
 pub mod camera;
 
+/**
+	Implementation of Devices subsystem
+*/
+pub struct Devices {
+	all_gpus:	bool,
+	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+}
 
+impl super::GenerateBind for Devices {
+	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		let mut tasks = vec![];
+
+		let logger_clone = self.logger.clone();
+
+		#[cfg(feature = "gpu")]
+		tasks.push(
+			tokio::spawn(
+				async move {
+					gpu::scan(
+						logger_clone,
+						self.all_gpus,
+					)
+					.await
+					.map_err(DeviceError::GPUError)
+				}
+			),
+		);
+
+
+		let mut ret = vec![];
+		for task in tasks {
+			ret.extend(
+				task
+					.await
+					.map_err(DeviceError::Spawn)
+					?
+					?
+				);
+		};
+
+		Ok(ret)
+	}
+
+	type BindError = DeviceError;
+}
+
+#[derive(Debug, Error)]
+pub enum DeviceError {
+	#[error("Could not handle GPU devices: {0:#?}")]
+	GPUError(gpu::GPUError),
+
+	#[error("Could not spawn task: {0:#?}")]
+	Spawn(tokio::task::JoinError),
+}
 
 #[derive(Debug, Error)]
 pub enum EnumerateError {
