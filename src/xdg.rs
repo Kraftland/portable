@@ -15,6 +15,14 @@ pub struct XdgDirs {
 	pub home:		std::path::PathBuf,
 	pub config_home:	std::path::PathBuf,
 	pub data_home:		std::path::PathBuf,
+
+	/**
+		$XDG_DATA_DIRS defines the preference-ordered set of base directories
+		to search for data files in addition to the $XDG_DATA_HOME base directory.
+
+		Portable's data_dirs definition includes DATA_HOME
+	*/
+	pub data_dirs:		Vec<std::path::PathBuf>
 }
 
 impl XdgDirs {
@@ -27,12 +35,39 @@ impl XdgDirs {
 		};
 
 		let runtime_dir = Self::runtime().await?;
+		let data_home = Self::data_home(&home).await?;
+
+		let data_dirs = {
+			let mut ret = vec![];
+			ret.push(data_home.clone());
+
+			let data_env = match std::env::var("XDG_DATA_DIRS") {
+				Ok(v)	=> {
+					let iter = v.split(":");
+					let mut env = vec![];
+					for pth in iter {
+						env.push(std::path::PathBuf::from(pth));
+					};
+					env
+				}
+				Err(_)	=> {
+					vec![
+						std::path::PathBuf::from("/usr/local/share"),
+						std::path::PathBuf::from("/usr/share"),
+					]
+				}
+			};
+
+			ret.extend(data_env);
+			ret
+		};
 
 		Ok(Self {
 			runtime:		runtime_dir.clone(),
 			config_home:		Self::config_home(&home).await?,
-			data_home:		Self::data_home(&home).await?,
+			data_home:		data_home,
 			home:			home,
+			data_dirs:		data_dirs,
 		})
 	}
 
