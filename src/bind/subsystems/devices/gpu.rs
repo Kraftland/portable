@@ -5,6 +5,7 @@ use crate::bind::types::BindRule;
 pub mod nvidia;
 pub mod prime;
 mod bind;
+mod udev_dev;
 
 #[derive(Error, Debug)]
 pub enum GPUError {
@@ -34,9 +35,18 @@ pub async fn scan(
 
 
 	let devices = {
-		enumerate_gpus(&logger)
-		.await
-		?
+		match enumerate_gpus(&logger).await {
+			Ok(v)	=> {v}
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not enumerate GPUs: {e:#?}"),
+					},
+				).await;
+				return Ok(vec![]);
+			}
+		}
 	};
 
 	let mut rules = match nv_modules_mount.await {
@@ -111,29 +121,6 @@ pub enum GPUVendor {
 	Others,
 }
 
-async fn get_vendor(device: udev::Device) -> GPUVendor {
-	match device.attribute_value("vendor") {
-		Some(v)	=> {
-			return map_to_vendor(v, &device)
-		}
-		None	=> {}
-	};
-
-	let parent = match device.parent() {
-		Some(v)	=> {v}
-		None	=> {return GPUVendor::Others}
-	};
-
-	match parent.attribute_value("vendor") {
-		Some(v)	=> {
-			return map_to_vendor(v, &device);
-		}
-		None	=> {
-			return GPUVendor::Others;
-		}
-	}
-}
-
 fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUVendor {
 	let string = vendor_string.to_str().unwrap_or("unknown");
 	match string {
@@ -197,7 +184,7 @@ async fn enumerate_gpus(
 			// Unwrap is then safe
 
 			let vendor_spawn = tokio::task::spawn(
-				get_vendor(dev.render_node.clone().unwrap())
+				udev_dev::get_vendor(dev.render_node.clone().unwrap())
 			);
 
 			let boot_display = {
