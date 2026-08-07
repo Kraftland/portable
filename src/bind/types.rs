@@ -221,12 +221,12 @@ impl DeDupRules for BindRules {
 		for rule in self {
 			match rule {
 				BindRule::Path { source, dest, class }	=> {
-					if dest_mnt.contains(&dest) {
-						continue;
-					} else {
-						dest_mnt.push(dest.clone());
-						ret.push(BindRule::Path { source, dest, class });
-					};
+					// if dest_mnt.contains(&dest) {
+					// 	continue;
+					// } else {
+					// 	dest_mnt.push(dest.clone());
+					// };
+					ret.push(BindRule::Path { source, dest, class });
 				}
 				BindRule::Symlink { source, dest }	=> {
 					if dest_mnt.contains(&dest) {
@@ -238,17 +238,17 @@ impl DeDupRules for BindRules {
 				}
 				BindRule::Overlay { sources, dest, class }
 									=> {
-					if dest_mnt.contains(&dest) {
-						continue;
-					};
-					dest_mnt.push(dest.clone());
+					// if dest_mnt.contains(&dest) {
+					// 	continue;
+					// };
+					// dest_mnt.push(dest.clone());
 					ret.push(BindRule::Overlay { sources, dest, class });
 				}
 				BindRule::VirtualFS { dest, class }	=> {
-					if dest_mnt.contains(&dest) {
-						continue;
-					};
-					dest_mnt.push(dest.clone());
+					// if dest_mnt.contains(&dest) {
+					// 	continue;
+					// };
+					// dest_mnt.push(dest.clone());
 					ret.push(BindRule::VirtualFS { dest, class });
 				}
 			}
