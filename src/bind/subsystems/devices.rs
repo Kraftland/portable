@@ -6,6 +6,9 @@ pub mod gpu;
 #[cfg(feature = "camera")]
 pub mod camera;
 
+#[cfg(feature = "input")]
+mod input;
+
 /**
 	Implementation of Devices subsystem
 */
@@ -97,8 +100,7 @@ pub enum Filter {
 	SubsystemWithDevtype {subsystem: String, devtype: String},
 }
 
-use udev::{Device};
-pub async fn enumerate(filter: Filter) -> Result<Vec<Device>, EnumerateError> {
+pub async fn enumerate(filter: Filter) -> Result<Vec<udev::Device>, EnumerateError> {
 	let mut enumerator = match filter {
 		Filter::Subsystem { subsystem }				=> {
 			let mut enumerator = {
