@@ -15,6 +15,7 @@ mod input;
 pub struct Devices {
 	all_gpus:	bool,
 	bind_camera:	bool,
+	bind_input:	bool,
 	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 }
 
@@ -37,6 +38,19 @@ impl super::GenerateBind for Devices {
 				}
 			),
 		);
+
+		#[cfg(feature = "input")]
+		if self.bind_input {
+			tasks.push(
+				tokio::spawn(
+					async move {
+						input::scan()
+							.await
+							.map_err(DeviceError::InputError)
+					}
+				)
+			);
+		};
 
 		#[cfg(feature = "camera")]
 		if self.bind_camera {
@@ -76,6 +90,9 @@ pub enum DeviceError {
 
 	#[error("Could not handle Camera devices: {0:#?}")]
 	CameraError(camera::CameraError),
+
+	#[error("Could not handle Input devices: {0:#?}")]
+	InputError(input::InputError),
 
 	#[error("Could not spawn task: {0:#?}")]
 	Spawn(tokio::task::JoinError),
