@@ -38,7 +38,7 @@ members = ["lib/legacy_conf"]
 exclude = ["lib/init"]
 
 [features]
-default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera"]
+default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input"]
 
 # Audio support metaflag
 audio	= []
@@ -49,9 +49,11 @@ pulseaudio = ["audio"]
 # Devices support metaflag
 devices	= ["dep:udev"]
 # Build with GPU bindings support
-gpu = ["devices"]
+gpu	= ["devices"]
 # Build with Camera bindings support
-camera = ["devices"]
+camera	= ["devices"]
+# Build with Input bindings support
+input	= ["devices"]
 
 # Build with systemd support, note that non-systemd mode does not work yet
 systemd	= ["dep:zbus_systemd"]

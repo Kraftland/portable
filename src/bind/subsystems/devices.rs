@@ -6,12 +6,16 @@ pub mod gpu;
 #[cfg(feature = "camera")]
 pub mod camera;
 
+#[cfg(feature = "input")]
+mod input;
+
 /**
 	Implementation of Devices subsystem
 */
 pub struct Devices {
 	all_gpus:	bool,
 	bind_camera:	bool,
+	bind_input:	bool,
 	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 }
 
@@ -34,6 +38,19 @@ impl super::GenerateBind for Devices {
 				}
 			),
 		);
+
+		#[cfg(feature = "input")]
+		if self.bind_input {
+			tasks.push(
+				tokio::spawn(
+					async move {
+						input::scan()
+							.await
+							.map_err(DeviceError::InputError)
+					}
+				)
+			);
+		};
 
 		#[cfg(feature = "camera")]
 		if self.bind_camera {
@@ -74,6 +91,9 @@ pub enum DeviceError {
 	#[error("Could not handle Camera devices: {0:#?}")]
 	CameraError(camera::CameraError),
 
+	#[error("Could not handle Input devices: {0:#?}")]
+	InputError(input::InputError),
+
 	#[error("Could not spawn task: {0:#?}")]
 	Spawn(tokio::task::JoinError),
 }
@@ -97,8 +117,7 @@ pub enum Filter {
 	SubsystemWithDevtype {subsystem: String, devtype: String},
 }
 
-use udev::{Device};
-pub async fn enumerate(filter: Filter) -> Result<Vec<Device>, EnumerateError> {
+pub async fn enumerate(filter: Filter) -> Result<Vec<udev::Device>, EnumerateError> {
 	let mut enumerator = match filter {
 		Filter::Subsystem { subsystem }				=> {
 			let mut enumerator = {
