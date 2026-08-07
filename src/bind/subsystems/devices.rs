@@ -1,7 +1,12 @@
 use thiserror::Error;
 
+#[cfg(feature = "gpu")]
 pub mod gpu;
+
+#[cfg(feature = "camera")]
 pub mod camera;
+
+
 
 #[derive(Debug, Error)]
 pub enum EnumerateError {

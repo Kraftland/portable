@@ -18,7 +18,6 @@ tokio-util = { version = "0.7.18", features = ["rt"] }
 nix = { version = "0.31.3", features = ["term"] }
 jiff = { version = "0.2.34", features = ["std"], default-features = false }
 toml = { version = "1.1.3", features = ["parse", "serde"], default-features = false }
-udev = { version = "0.9.3", features = ["send", "sync"], default-features = false }
 zbus = { version = "5.18.0", features = ["async-executor", "async-fs", "async-io", "async-lock", "async-process", "async-task", "tokio"], default-features = false }
 
 command-fds = { version = "0.3.3", features = ["tokio"] }
@@ -30,6 +29,8 @@ zbus_systemd = { version = "0.26100.0", features = ["systemd1"], default-feature
 wayrs-protocols = { version = "0.14.11", features = ["security-context-v1"] , optional = true }
 wayrs-client = { version = "1.3.1", features = ["tokio"], optional = true }
 
+# Devices
+udev = { version = "0.9.3", features = ["send", "sync"], default-features = false, optional = true }
 
 [workspace]
 resolver = "3"
@@ -37,10 +38,20 @@ members = ["lib/legacy_conf"]
 exclude = ["lib/init"]
 
 [features]
-default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland"]
+default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera"]
 
 # Audio support metaflag
 audio	= []
+# Build with PulseAudio support, with server address parsing and binding.
+# This flag serves as an implementation for the audio subsystem.
+pulseaudio = ["audio"]
+
+# Devices support metaflag
+devices	= ["dep:udev"]
+# Build with GPU bindings support
+gpu = ["devices"]
+# Build with Camera bindings support
+camera = ["devices"]
 
 # Build with systemd support, note that non-systemd mode does not work yet
 systemd	= ["dep:zbus_systemd"]
@@ -50,10 +61,6 @@ x11	= []
 
 # Build with Wayland display protocol support
 wayland	= ["dep:wayrs-client", "dep:wayrs-protocols"]
-
-# Build with PulseAudio support, with server address parsing and binding.
-# This flag serves as an implementation for the audio subsystem.
-pulseaudio = ["audio"]
 
 # Mimic Flatpak to host, required until appd lands
 flatpak = []
