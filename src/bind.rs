@@ -6,6 +6,4 @@ pub mod bus;
 
 pub mod display;
 
-pub mod dirs;
-
 pub mod subsystems;
