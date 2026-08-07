@@ -19,7 +19,7 @@ mod security_context;
 pub struct Wayland {
 	pub runtime_dir:	std::path::PathBuf,
 	pub env:		crate::envs::holder::HoldChannel,
-	pub portable_runtime:	crate::bind::dirs::portable_runtime::PortableRuntime,
+	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	pub logger:		crate::logger::LogSender,
 	pub app_id:		String,
 	pub instance_id:	String,

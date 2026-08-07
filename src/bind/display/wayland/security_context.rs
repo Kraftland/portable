@@ -28,13 +28,13 @@ pub enum SecurityContextError {
 */
 pub async fn create_context(
 	original_socket:	std::path::PathBuf,
-	portable_runtime:	crate::bind::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	logger:			crate::logger::LogSender,
 
 	app_id:			String,
 	instance_id:		String,
 ) -> Result<std::path::PathBuf, SecurityContextError> {
-	use crate::bind::dirs::RuntimePaths;
+	use crate::bind::subsystems::dirs::RuntimePaths;
 
 	let conn = connect_socket()
 		.await

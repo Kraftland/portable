@@ -92,7 +92,7 @@ pub async fn generate_bind_rules(
 			}
 
 			let nv_modules_mount = tokio::task::spawn_blocking(|| {
-				super::nvidia_module_mounts(false)
+				super::nvidia::nvidia_module_mounts(false)
 			});
 
 			let nv_modules_mount = match nv_modules_mount.await {

@@ -18,3 +18,5 @@ pub mod audio;
 
 #[cfg(feature = "devices")]
 pub mod devices;
+
+pub mod dirs;
