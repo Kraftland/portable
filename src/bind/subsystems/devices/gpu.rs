@@ -78,7 +78,7 @@ pub async fn scan(
 	}
 
 
-	Ok(rules)
+	Ok(crate::bind::types::DeDupRules::dedup(rules))
 
 }
 
