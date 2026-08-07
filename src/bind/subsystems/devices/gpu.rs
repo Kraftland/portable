@@ -29,7 +29,7 @@ pub async fn scan(
 
 	// Block NVIDIA mounts first
 	let nv_modules_mount = tokio::task::spawn_blocking(|| {
-		nvidia_module_mounts(true)
+		nvidia::nvidia_module_mounts(true)
 	});
 
 
@@ -78,51 +78,6 @@ pub async fn gputest_print_all_devices(
 ) -> String {
 	let res = enumerate_gpus(&tx).await.unwrap();
 	format!("{res:#?}")
-}
-
-
-/**
-	This needs spawn_blocking
-*/
-fn nvidia_module_mounts(block: bool) -> Vec<BindRule> {
-	let paths = vec![
-		"/sys/module/nvidia",
-		"/sys/module/nvidia_drm",
-		"/sys/module/nvidia_modeset",
-		"/sys/module/nvidia_uvm",
-		"/sys/module/nvidia_wmi_ec_backlight",
-	];
-
-	let mut ret = vec![];
-
-	for path in paths {
-		if ! path_exists(&path.into()) {
-			continue;
-		}
-		match block {
-			true	=> {
-				ret.push(
-					BindRule::VirtualFS {
-						dest: path.into(),
-						class: crate::bind::types::VirtualFS::Tmpfs {
-							size_mb: Some(0),
-							perms: None,
-						},
-					}
-				);
-			}
-			false	=> {
-				ret.push(
-					BindRule::Path {
-						source: path.into(),
-						dest: path.into(),
-						class: crate::bind::types::BindType::Device,
-					},
-				);
-			}
-		}
-	};
-	ret
 }
 
 fn path_exists(path: &std::path::PathBuf) -> bool {
