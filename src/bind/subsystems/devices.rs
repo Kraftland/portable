@@ -11,6 +11,7 @@ pub mod camera;
 */
 pub struct Devices {
 	all_gpus:	bool,
+	bind_camera:	bool,
 	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 }
 
@@ -34,6 +35,19 @@ impl super::GenerateBind for Devices {
 			),
 		);
 
+		#[cfg(feature = "camera")]
+		if self.bind_camera {
+			tasks.push(
+				tokio::spawn(
+					async move {
+						camera::scan()
+						.await
+						.map_err(DeviceError::CameraError)
+					}
+				)
+			);
+		}
+
 
 		let mut ret = vec![];
 		for task in tasks {
@@ -56,6 +70,9 @@ impl super::GenerateBind for Devices {
 pub enum DeviceError {
 	#[error("Could not handle GPU devices: {0:#?}")]
 	GPUError(gpu::GPUError),
+
+	#[error("Could not handle Camera devices: {0:#?}")]
+	CameraError(camera::CameraError),
 
 	#[error("Could not spawn task: {0:#?}")]
 	Spawn(tokio::task::JoinError),

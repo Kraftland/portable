@@ -6,7 +6,7 @@ pub enum CameraError {
 
 use crate::bind::types::BindRules;
 
-async fn scan() -> Result<BindRules, CameraError> {
+pub async fn scan() -> Result<BindRules, CameraError> {
 	let devices = super::enumerate(
 		super::Filter::Subsystem {
 			subsystem: "video4linux".into(),
