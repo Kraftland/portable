@@ -14,6 +14,38 @@ pub enum DisplayError {
 	X11Error(x11::DisplayBindError),
 }
 
+pub struct Display {
+	logger:			crate::logger::LogSender,
+	home:			std::path::PathBuf,
+	runtime_dir:		std::path::PathBuf,
+	env:			crate::envs::holder::HoldChannel,
+
+	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	app_id:			String,
+	instance_id:		String,
+
+	// socket enablement below
+	x11:		bool,
+	wayland:		bool,
+}
+
+impl super::GenerateBind for Display {
+	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		bind(
+			self.logger,
+			self.home,
+			self.runtime_dir,
+			self.env,
+			self.portable_runtime,
+			self.app_id,
+			self.instance_id,
+			self.x11,
+			self.wayland,
+		).await
+	}
+	type BindError = DisplayError;
+}
+
 #[cfg(feature = "x11")]
 pub mod x11;
 
@@ -52,7 +84,7 @@ pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
 	}).await.map_err(ExistError::SpawnError)?
 }
 
-pub mod session;
+mod session;
 
 /**
 	Bind the relevant display into sandbox
@@ -63,13 +95,13 @@ pub mod session;
 	specified in configuration otherwise, as bind() will perform automatic enabling of
 	native display protocols
 */
-pub async fn bind(
+async fn bind(
 	logger:			crate::logger::LogSender,
 	home:			std::path::PathBuf,
 	runtime_dir:		std::path::PathBuf,
 	env:			crate::envs::holder::HoldChannel,
 
-	portable_runtime:	crate::bind::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	app_id:			String,
 	instance_id:		String,
 

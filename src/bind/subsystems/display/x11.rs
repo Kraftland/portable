@@ -4,7 +4,7 @@ pub enum DisplayBindError {
 	SpawnError(tokio::task::JoinError),
 
 	#[error("I/O error: {0:#?}")]
-	IOError(crate::bind::display::ExistError),
+	IOError(crate::bind::subsystems::display::ExistError),
 
 	#[error("Could not send environment variable: {0:#?}")]
 	SendEnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),

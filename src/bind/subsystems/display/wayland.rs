@@ -1,7 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum DisplayBindError {
 	#[error("I/O error: {0:#?}")]
-	IOError(crate::bind::display::ExistError),
+	IOError(crate::bind::subsystems::display::ExistError),
 
 	#[error("Could not use Wayland socket: path does not exist")]
 	NonExistentError,
@@ -19,7 +19,7 @@ mod security_context;
 pub struct Wayland {
 	pub runtime_dir:	std::path::PathBuf,
 	pub env:		crate::envs::holder::HoldChannel,
-	pub portable_runtime:	crate::bind::dirs::portable_runtime::PortableRuntime,
+	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	pub logger:		crate::logger::LogSender,
 	pub app_id:		String,
 	pub instance_id:	String,

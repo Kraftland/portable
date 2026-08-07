@@ -4,6 +4,8 @@ use crate::bind::types::BindRule;
 
 pub mod nvidia;
 pub mod prime;
+mod bind;
+mod udev_dev;
 
 #[derive(Error, Debug)]
 pub enum GPUError {
@@ -13,236 +15,79 @@ pub enum GPUError {
 	InvalidBootVGA(String),
 
 	#[error("Could not enumerate GPUs: {0:#?}")]
-	Enumerate(crate::bind::devices::EnumerateError),
+	Enumerate(crate::bind::subsystems::devices::EnumerateError),
 
 	#[error("Could not enumerate GPUs: spawn error: {0:#?}")]
 	Spawn(tokio::task::JoinError),
 }
 
 
-// pub async fn scan(
-// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-// 	all_gpus:	&bool,
-// ) -> Result<Vec<BindRule>, GPUError> {
+
+pub async fn scan(
+	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	all_gpus:	bool,
+) -> Result<Vec<BindRule>, GPUError> {
 
 	// Block NVIDIA mounts first
-// 	let nv_modules_mount = tokio::task::spawn_blocking(|| {
-// 		nvidia_module_mounts(true)
-// 	});
+	let nv_modules_mount = tokio::task::spawn_blocking(|| {
+		nvidia::nvidia_module_mounts(true)
+	});
 
 
-// 	let devices = {
-// 		let devs = enumerate_gpus(logger).await;
-// 	};
-
-// 	let rules = match nv_modules_mount.await {
-// 		Ok(v)	=> {v}
-// 		Err(e)	=> {
-// 			logger.send(
-// 				crate::logger::LogMessage {
-// 					level: crate::logger::LogLevel::Warn,
-// 					message: format!(
-// 						"Could not apply NVIDIA quirks: {:#?}",
-// 						e,
-// 					),
-// 				}
-// 			).await;
-// 			vec![]
-// 		}
-// 	};
-
-// }
-
-async fn generate_bind_rules(
-	gpu:		GPUInfo,
-	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-) -> Vec<BindRule> {
-	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-
-	/*
-		sys/class/drm/ does not seem to be covered by udev
-	*/
-
-	{
-		let drm_path = std::path::PathBuf::from("/sys/class/drm");
-		match gpu.nodes.card_node {
-			Some(ref v)	=> {
-				let mut card_path = drm_path.clone();
-				card_path.push(v.sysname());
-				tx.send(
-					BindRule::Path {
-						source: card_path.clone(),
-						dest: card_path,
-						class: crate::bind::types::BindType::Device,
-					},
-				).expect("Error sending drm bind rules");
-			}
-			None	=> {
+	let devices = {
+		match enumerate_gpus(&logger).await {
+			Ok(v)	=> {v}
+			Err(e)	=> {
 				let _ = logger.send(
 					crate::logger::LogMessage {
 						level: crate::logger::LogLevel::Warn,
-						message: format!("Missing card node: {:#?}", gpu),
+						message: format!("Could not enumerate GPUs: {e:#?}"),
 					},
 				).await;
-			}
-		};
-		match gpu.nodes.render_node {
-			Some(ref v)	=> {
-				let mut card_path = drm_path.clone();
-				card_path.push(v.sysname());
-				tx.send(
-					BindRule::Path {
-						source: card_path.clone(),
-						dest: card_path,
-						class: crate::bind::types::BindType::Device,
-					},
-				).expect("Error sending drm bind rules");
-			}
-			None	=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Missing renderer node: {:#?}", gpu),
-					},
-				).await;
+				return Ok(vec![]);
 			}
 		}
 	};
 
-	match gpu.vendor {
-		GPUVendor::AMD			=> {
-			tx.send(
-				BindRule::Path {
-					source: std::path::PathBuf::from("/dev/kfd"),
-					dest: std::path::PathBuf::from("/dev/kfd"),
-					class: crate::bind::types::BindType::Device,
-				},
-			).unwrap();
-		}
-
-		GPUVendor::Intel		=> {
-			// Intel doesn't need any new tricks, yet
-		}
-		GPUVendor::NVIDIA {driver}	=> {
-			match driver {
-				nvidia::NVIDIADriver::Nouveau			=> {
-					// TODO: what about nouveau's modules?
-				}
-				nvidia::NVIDIADriver::Proprietary		=> {
-
-				}
-				nvidia::NVIDIADriver::Unknown { driver }	=> {
-					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!("Unknown nvidia driver: {driver:?}"),
-						},
-					).await;
-				}
-			}
-
-			let nv_modules_mount = tokio::task::spawn_blocking(|| {
-				nvidia_module_mounts(false)
-			});
-
-			let nv_modules_mount = match nv_modules_mount.await {
-				Ok(v)	=> {v}
-				Err(e)	=> {
-					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!(
-								"Could not apply NVIDIA quirks: {:#?}",
-								e,
-							),
-						}
-					).await;
-					return vec![];
-				}
-			};
-			for rule in nv_modules_mount {
-				tx.send(rule).unwrap();
-			};
-		}
-
-		GPUVendor::Others	=> {
+	let mut rules = match nv_modules_mount.await {
+		Ok(v)	=> {v}
+		Err(e)	=> {
 			let _ = logger.send(
 				crate::logger::LogMessage {
 					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not apply GPU quirks: unknown vendor"),
+					message: format!(
+						"Could not apply NVIDIA quirks: {:#?}",
+						e,
+					),
 				}
 			).await;
+			vec![]
 		}
 	};
 
-	rx.close();
-
-	let mut ret = vec![];
-
-	loop {
-		let msg = rx.recv().await;
-		match msg {
-			Some(v)	=> {
-				ret.push(v);
-			}
-			None	=> {
-				break;
+	if all_gpus {
+		for gpu in devices {
+			rules.extend(bind::generate_bind_rules(gpu, &logger).await);
+		};
+	} else {
+		for gpu in devices {
+			if gpu.boot_display {
+				rules.extend(bind::generate_bind_rules(gpu, &logger).await);
 			}
 		}
 	}
-	ret
+
+
+	Ok(crate::bind::types::DeDupRules::dedup(rules))
+
 }
+
 
 pub async fn gputest_print_all_devices(
 	tx: &tokio::sync::mpsc::Sender<crate::logger::LogMessage>
 ) -> String {
 	let res = enumerate_gpus(&tx).await.unwrap();
 	format!("{res:#?}")
-}
-
-
-/*
-	This needs spawn_blocking
-*/
-fn nvidia_module_mounts(block: bool) -> Vec<BindRule> {
-	let paths = vec![
-		"/sys/module/nvidia",
-		"/sys/module/nvidia_drm",
-		"/sys/module/nvidia_modeset",
-		"/sys/module/nvidia_uvm",
-		"/sys/module/nvidia_wmi_ec_backlight",
-	];
-
-	let mut ret = vec![];
-
-	for path in paths {
-		if ! path_exists(&path.into()) {
-			continue;
-		}
-		match block {
-			true	=> {
-				ret.push(
-					BindRule::VirtualFS {
-						dest: path.into(),
-						class: crate::bind::types::VirtualFS::Tmpfs {
-							size_mb: Some(0),
-							perms: None,
-						},
-					}
-				);
-			}
-			false	=> {
-				ret.push(
-					BindRule::Path {
-						source: path.into(),
-						dest: path.into(),
-						class: crate::bind::types::BindType::Device,
-					},
-				);
-			}
-		}
-	};
-	ret
 }
 
 fn path_exists(path: &std::path::PathBuf) -> bool {
@@ -276,29 +121,6 @@ pub enum GPUVendor {
 	Others,
 }
 
-async fn get_vendor(device: udev::Device) -> GPUVendor {
-	match device.attribute_value("vendor") {
-		Some(v)	=> {
-			return map_to_vendor(v, &device)
-		}
-		None	=> {}
-	};
-
-	let parent = match device.parent() {
-		Some(v)	=> {v}
-		None	=> {return GPUVendor::Others}
-	};
-
-	match parent.attribute_value("vendor") {
-		Some(v)	=> {
-			return map_to_vendor(v, &device);
-		}
-		None	=> {
-			return GPUVendor::Others;
-		}
-	}
-}
-
 fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUVendor {
 	let string = vendor_string.to_str().unwrap_or("unknown");
 	match string {
@@ -313,7 +135,7 @@ fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUV
 	}
 }
 
-/*
+/**
 	Eumerates all graphics cards (and renderer nodes, paired together) as vectors of udev devices
 	See GPUDevice struct for more details
 	Errors needs to be handled gracefully.
@@ -321,7 +143,7 @@ fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUV
 async fn enumerate_gpus(
 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 ) -> Result<Vec<GPUInfo>, GPUError> {
-	let devices = crate::bind::devices::enumerate(
+	let devices = crate::bind::subsystems::devices::enumerate(
 		super::Filter::SubsystemWithDevtype {
 			subsystem: "drm".to_string(),
 			devtype: "drm_minor".to_string(),
@@ -362,7 +184,7 @@ async fn enumerate_gpus(
 			// Unwrap is then safe
 
 			let vendor_spawn = tokio::task::spawn(
-				get_vendor(dev.render_node.clone().unwrap())
+				udev_dev::get_vendor(dev.render_node.clone().unwrap())
 			);
 
 			let boot_display = {
@@ -455,7 +277,7 @@ async fn enumerate_gpus(
 	Ok(ret)
 }
 
-/*
+/**
 	Associates the card device with renderer, using the GPUDevice struct above
 	Internally uses the ID_PATH approach just like the previous impl
 */

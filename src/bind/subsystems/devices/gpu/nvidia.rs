@@ -68,4 +68,47 @@ impl NVIDIADriver {
 }
 
 
+/**
+	This needs spawn_blocking
+*/
+pub fn nvidia_module_mounts(block: bool) -> Vec<crate::bind::types::BindRule> {
+	use crate::bind::types::BindRule;
+	let paths = vec![
+		"/sys/module/nvidia",
+		"/sys/module/nvidia_drm",
+		"/sys/module/nvidia_modeset",
+		"/sys/module/nvidia_uvm",
+		"/sys/module/nvidia_wmi_ec_backlight",
+	];
 
+	let mut ret = vec![];
+
+	for path in paths {
+		if ! super::path_exists(&path.into()) {
+			continue;
+		}
+		match block {
+			true	=> {
+				ret.push(
+					BindRule::VirtualFS {
+						dest: path.into(),
+						class: crate::bind::types::VirtualFS::Tmpfs {
+							size_mb: Some(0),
+							perms: None,
+						},
+					}
+				);
+			}
+			false	=> {
+				ret.push(
+					BindRule::Path {
+						source: path.into(),
+						dest: path.into(),
+						class: crate::bind::types::BindType::Device,
+					},
+				);
+			}
+		}
+	};
+	ret
+}

@@ -4,7 +4,7 @@ pub enum XAuthorityError {
 	InvalidEnv(std::env::VarError),
 
 	#[error("I/O error: {0:#?}")]
-	IOError(crate::bind::display::ExistError),
+	IOError(crate::bind::subsystems::display::ExistError),
 
 	#[error("Could not find useable XAUTHORITY file")]
 	NotExistError,
@@ -57,7 +57,7 @@ async fn get_authority_path(home: &std::path::PathBuf) -> Result<std::path::Path
 		}
 	};
 
-	let exist = crate::bind::display::exists(path.clone())
+	let exist = crate::bind::subsystems::display::exists(path.clone())
 		.await
 		.map_err(XAuthorityError::IOError)
 		?;
