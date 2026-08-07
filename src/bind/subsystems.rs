@@ -20,3 +20,6 @@ pub mod audio;
 pub mod devices;
 
 pub mod dirs;
+
+#[cfg(feature = "display")]
+pub mod display;

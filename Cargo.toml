@@ -56,11 +56,12 @@ camera = ["devices"]
 # Build with systemd support, note that non-systemd mode does not work yet
 systemd	= ["dep:zbus_systemd"]
 
+# Display support metaflag
+display	= []
 # Build with X11 display protocol support, this includes real X11 display or XWayland
-x11	= []
-
+x11	= ["display"]
 # Build with Wayland display protocol support
-wayland	= ["dep:wayrs-client", "dep:wayrs-protocols"]
+wayland	= ["dep:wayrs-client", "dep:wayrs-protocols", "display"]
 
 # Mimic Flatpak to host, required until appd lands
 flatpak = []

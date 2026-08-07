@@ -8,7 +8,7 @@
 pub async fn find(
 	runtime_dir: std::path::PathBuf,
 ) -> Result<std::path::PathBuf, super::DisplayBindError> {
-	use crate::bind::display::exists;
+	use crate::bind::subsystems::display::exists;
 
 	/*
 		use WAYLAND_DISPLAY environment variable if it is set

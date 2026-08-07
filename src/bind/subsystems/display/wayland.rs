@@ -1,7 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum DisplayBindError {
 	#[error("I/O error: {0:#?}")]
-	IOError(crate::bind::display::ExistError),
+	IOError(crate::bind::subsystems::display::ExistError),
 
 	#[error("Could not use Wayland socket: path does not exist")]
 	NonExistentError,
