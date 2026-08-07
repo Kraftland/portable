@@ -20,38 +20,56 @@ pub enum GPUError {
 }
 
 
-// pub async fn scan(
-// 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-// 	all_gpus:	&bool,
-// ) -> Result<Vec<BindRule>, GPUError> {
+
+pub async fn scan(
+	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	all_gpus:	bool,
+) -> Result<Vec<BindRule>, GPUError> {
 
 	// Block NVIDIA mounts first
-// 	let nv_modules_mount = tokio::task::spawn_blocking(|| {
-// 		nvidia_module_mounts(true)
-// 	});
+	let nv_modules_mount = tokio::task::spawn_blocking(|| {
+		nvidia_module_mounts(true)
+	});
 
 
-// 	let devices = {
-// 		let devs = enumerate_gpus(logger).await;
-// 	};
+	let devices = {
+		enumerate_gpus(&logger)
+		.await
+		?
+	};
 
-// 	let rules = match nv_modules_mount.await {
-// 		Ok(v)	=> {v}
-// 		Err(e)	=> {
-// 			logger.send(
-// 				crate::logger::LogMessage {
-// 					level: crate::logger::LogLevel::Warn,
-// 					message: format!(
-// 						"Could not apply NVIDIA quirks: {:#?}",
-// 						e,
-// 					),
-// 				}
-// 			).await;
-// 			vec![]
-// 		}
-// 	};
+	let mut rules = match nv_modules_mount.await {
+		Ok(v)	=> {v}
+		Err(e)	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!(
+						"Could not apply NVIDIA quirks: {:#?}",
+						e,
+					),
+				}
+			).await;
+			vec![]
+		}
+	};
 
-// }
+	if all_gpus {
+		for gpu in devices {
+			rules.extend(generate_bind_rules(gpu, &logger).await);
+		};
+	} else {
+		for gpu in devices {
+			if gpu.boot_display {
+				rules.extend(generate_bind_rules(gpu, &logger).await);
+			}
+		}
+	}
+
+
+	Ok(rules)
+
+}
 
 async fn generate_bind_rules(
 	gpu:		GPUInfo,
@@ -201,7 +219,7 @@ pub async fn gputest_print_all_devices(
 }
 
 
-/*
+/**
 	This needs spawn_blocking
 */
 fn nvidia_module_mounts(block: bool) -> Vec<BindRule> {
@@ -313,7 +331,7 @@ fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUV
 	}
 }
 
-/*
+/**
 	Eumerates all graphics cards (and renderer nodes, paired together) as vectors of udev devices
 	See GPUDevice struct for more details
 	Errors needs to be handled gracefully.
@@ -455,7 +473,7 @@ async fn enumerate_gpus(
 	Ok(ret)
 }
 
-/*
+/**
 	Associates the card device with renderer, using the GPUDevice struct above
 	Internally uses the ID_PATH approach just like the previous impl
 */
