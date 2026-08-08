@@ -3,7 +3,7 @@
 
 	Errors out if not UNIX socket to provide isolation. As network filtering does not work.
 */
-pub async fn get_address(conn: zbus::Connection) -> Result<String, super::AtspiError> {
+pub async fn get_address(conn: zbus::Connection) -> Result<std::path::PathBuf, super::AtspiError> {
 	let proxy = GetAddressProxy::new(&conn)
 		.await
 		.map_err(super::AtspiError::AddressError)
@@ -14,10 +14,9 @@ pub async fn get_address(conn: zbus::Connection) -> Result<String, super::AtspiE
 		.map_err(super::AtspiError::AddressError)
 		?;
 
-	if address.starts_with("unix:path=") {
-		Ok(address)
-	} else {
-		Err(super::AtspiError::NotSocketError)
+	match address.strip_prefix("unix:path=") {
+		Some(v)	=> Ok(std::path::PathBuf::from(v)),
+		None	=> Err(super::AtspiError::NotSocketError),
 	}
 }
 
