@@ -63,6 +63,7 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 				bind_lifetime:		None,
 				json_status_file:	None,
 				app_sandbox:		Some(sandbox::app(&proxy_socket_path).await),
+				envs:			None,
 			}
 		)
 	}

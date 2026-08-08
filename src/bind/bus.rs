@@ -38,6 +38,11 @@ pub struct Proxy {
 		Whether or not to introduce addition to the application sandboxing rules
 	*/
 	pub app_sandbox:	Option<crate::bind::types::BindRules>,
+
+	/**
+		Whether or not to introduce addition to the application environment variables
+	*/
+	pub envs:		Option<std::collections::HashMap<String, String>>
 }
 
 /**
