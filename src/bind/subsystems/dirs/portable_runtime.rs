@@ -28,10 +28,19 @@ impl super::RuntimePathsTrait for PortableRuntime {
 			.await
 			.map_err(Error::CreateError)?;
 
+		let path_clone = self.path.clone();
+
 		stop.send(
 			crate::stop::StopFunc {
 				layer: crate::stop::FunctionLayer::Pre,
-				function: Box::new(|| {}),
+				function: Box::new(|| {
+					match std::fs::remove_dir_all(path_clone) {
+						Ok(_)	=> {}
+						Err(e)	=> {
+							eprintln!("Could not remove runtime directory: {e:#?}")
+						}
+					};
+				}),
 			},
 		).await.map_err(Error::StopError)?;
 
