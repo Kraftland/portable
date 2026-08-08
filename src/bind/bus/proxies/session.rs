@@ -4,41 +4,43 @@
 
 mod portal_allowlist;
 
-impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
+/**
+	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy
+
+	The flatpak info file will always be under Portable's runtime directory, named flatpak-info
+*/
+pub struct Proxy {
+	logger:		crate::logger::LogSender,
+	proxy_path:	std::path::PathBuf,
+	mpris_names:	Vec<String>,
+	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	app_id:		String,
+	kde_status:	bool,
+	classic_notif:	bool,
+	inhibit:	bool,
+	status_fd:	Option<std::os::fd::OwnedFd>,
+
+	portable_dir:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+}
+
+impl crate::bind::bus::StartProxy for Proxy {
 
 	async fn new(
-			logger:		crate::logger::LogSender,
-			proxy_path:	std::path::PathBuf,
-			mpris_names:	Vec<String>,
-			stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-			app_id:		String,
-			kde_status:	bool,
-			classic_notif:	bool,
-			inhibit:	bool,
-			status_fd:	Option<std::os::fd::OwnedFd>,
-
-			#[cfg(feature = "flatpak")]
-			info_path:	std::path::PathBuf,
-			#[cfg(feature = "flatpak")]
-			runtime_dir:	std::path::PathBuf,
-		) -> Result<Self, Self::ProxyError>
+			self
+	) -> Result<crate::bind::bus::Proxy, Self::ProxyError>
 	{
 		compile_rules(
-			logger,
-			proxy_path,
-			mpris_names,
-			stop_token,
+			self.logger,
+			self.proxy_path,
+			self.mpris_names,
+			self.stop_token,
 
-			app_id,
-			kde_status,
-			classic_notif,
-			inhibit,
-			status_fd,
-
-			#[cfg(feature = "flatpak")]
-			info_path,
-			#[cfg(feature = "flatpak")]
-			runtime_dir
+			self.app_id,
+			self.kde_status,
+			self.classic_notif,
+			self.inhibit,
+			self.status_fd,
+			self.portable_dir,
 		).await
 	}
 
@@ -47,7 +49,6 @@ impl crate::bind::bus::StartProxy for crate::bind::bus::Proxy {
 }
 
 
-use crate::bind::bus::Proxy;
 use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
@@ -59,12 +60,8 @@ async fn compile_rules(
 	classic_notif:	bool,
 	inhibit:	bool,
 	status_fd:	Option<std::os::fd::OwnedFd>,
-
-	#[cfg(feature = "flatpak")]
-	info_path:	std::path::PathBuf,
-	#[cfg(feature = "flatpak")]
-	runtime_dir:	std::path::PathBuf,
-) -> Result<Proxy, ProxyError> {
+	portable_dir:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+) -> Result<crate::bind::bus::Proxy, ProxyError> {
 	let bus_address = tokio::spawn(get_session_bus_address());
 
 	let proxy_address = {
@@ -84,18 +81,23 @@ async fn compile_rules(
 		),
 	);
 
+	#[cfg(feature = "flatpak")]
+	let flatpak_info_path = {
+		use crate::bind::subsystems::dirs::RuntimePathsTrait;
+		portable_dir.path()
+	};
+
 	let sandbox_rules = tokio::spawn(
 		generate_sandbox_rules(
 			proxy_path.clone(),
+
 			#[cfg(feature = "flatpak")]
-			info_path,
-			#[cfg(feature = "flatpak")]
-			runtime_dir,
+			flatpak_info_path,
 		),
 	);
 
 	Ok(
-		Proxy {
+		crate::bind::bus::Proxy {
 			sandbox:		sandbox_rules
 							.await
 							.map_err(ProxyError::SpawnError)
@@ -127,7 +129,7 @@ async fn generate_bus_rules(
 	kde_status:		bool,
 	mpris_names:		Vec<String>,
 	classic_notif:		bool,
-	inhibit:	bool,
+	inhibit:		bool,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
@@ -485,8 +487,6 @@ async fn generate_sandbox_rules(
 
 	#[cfg(feature = "flatpak")]
 	info_path:	std::path::PathBuf,
-	#[cfg(feature = "flatpak")]
-	runtime_dir:	std::path::PathBuf,
 ) -> Result<crate::bind::types::BindRules, ProxyError> {
 	let mut rules = vec![
 		BindRule::Symlink {
@@ -528,17 +528,6 @@ async fn generate_sandbox_rules(
 
 	#[cfg(feature = "flatpak")]
 	{
-		rules.push(
-			BindRule::Path {
-				source: info_path.clone(),
-				dest: {
-					let mut path = std::path::PathBuf::from(runtime_dir);
-					path.push(".flatpak-info");
-					path
-				},
-				class: crate::bind::types::BindType::ReadOnly,
-			}
-		);
 		rules.push(
 			BindRule::Path {
 				source: info_path,
