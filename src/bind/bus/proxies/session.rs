@@ -96,6 +96,18 @@ async fn compile_rules(
 		),
 	);
 
+	let app_sandbox_rules = {
+		use crate::bind::types::BindRule;
+
+		vec![
+			BindRule::Path {
+				source: proxy_path.clone(),
+				dest: "/run/session_bus".into(),
+				class: crate::bind::types::BindType::ReadWrite,
+			}
+		]
+	};
+
 	Ok(
 		crate::bind::bus::Proxy {
 			sandbox:		sandbox_rules
@@ -118,6 +130,15 @@ async fn compile_rules(
 			bind_lifetime:		stop_token,
 			sloppy_names:		false,
 			json_status_file:	status_fd,
+			app_sandbox:		Some(app_sandbox_rules),
+			envs:			{
+				let mut map = std::collections::HashMap::new();
+				map.insert(
+					"DBUS_SESSION_BUS_ADDRESS".to_string(),
+					"/run/session_bus".to_string(),
+				);
+				Some(map)
+			},
 		}
 	)
 }
@@ -449,7 +470,7 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 		?;
 
 	let mut counter: u8 = 0;
-	let mut PID: usize = threads - 1;
+	let mut pid: usize = threads - 1;
 	let mut ret = vec![];
 	let name_prefix = String::from("org.kde.StatusNotifierItem-");
 
@@ -460,7 +481,7 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 		counter += 1;
 
 		let mut name = String::from(&name_prefix);
-		name.push_str(&PID.to_string());
+		name.push_str(&pid.to_string());
 		name.push_str("-1");
 
 		ret.push(
@@ -470,7 +491,7 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 					?,
 			}
 		);
-		PID += 1;
+		pid += 1;
 	}
 
 }
