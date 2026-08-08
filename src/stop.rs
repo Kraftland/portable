@@ -83,10 +83,8 @@ async fn shutdown(
 	let pre_tracker = tokio_util::task::TaskTracker::new();
 	let post_tracker = tokio_util::task::TaskTracker::new();
 	for func in pre_funcs {
-		pre_tracker.spawn(
-			async move {
-				func()
-			},
+		pre_tracker.spawn_blocking(
+			|| func()
 		);
 	};
 	
@@ -94,10 +92,8 @@ async fn shutdown(
 	pre_tracker.wait().await;
 
 	for func in post_funcs {
-		post_tracker.spawn(
-			async move {
-				func()
-			},
+		post_tracker.spawn_blocking(
+			|| func()
 		);
 	};
 	
