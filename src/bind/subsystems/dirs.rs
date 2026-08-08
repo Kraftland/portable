@@ -1,6 +1,6 @@
 pub mod portable_runtime;
 
-pub trait RuntimePaths: Sized {
+pub trait RuntimePathsTrait: Sized {
 	/**
 		Create a new runtime path for type
 	*/
@@ -14,8 +14,8 @@ pub trait RuntimePaths: Sized {
 	/**
 		Create the inner path
 	*/
-	async fn create_path(&self)		->
-		Result<(), Self::RuntimePathError>;
+	fn create_path(&self, stop_func: tokio::sync::mpsc::Sender<crate::stop::StopFunc>) ->
+		impl std::future::Future<Output = Result<(), Self::RuntimePathError>> + Send;
 
 	fn path(&self) -> std::path::PathBuf;
 

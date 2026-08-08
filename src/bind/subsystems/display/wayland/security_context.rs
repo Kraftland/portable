@@ -34,7 +34,7 @@ pub async fn create_context(
 	app_id:			String,
 	instance_id:		String,
 ) -> Result<std::path::PathBuf, SecurityContextError> {
-	use crate::bind::subsystems::dirs::RuntimePaths;
+	use crate::bind::subsystems::dirs::RuntimePathsTrait;
 
 	let conn = connect_socket()
 		.await
