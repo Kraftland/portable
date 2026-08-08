@@ -449,7 +449,7 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 		?;
 
 	let mut counter: u8 = 0;
-	let mut PID: usize = threads - 1;
+	let mut pid: usize = threads - 1;
 	let mut ret = vec![];
 	let name_prefix = String::from("org.kde.StatusNotifierItem-");
 
@@ -460,7 +460,7 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 		counter += 1;
 
 		let mut name = String::from(&name_prefix);
-		name.push_str(&PID.to_string());
+		name.push_str(&pid.to_string());
 		name.push_str("-1");
 
 		ret.push(
@@ -470,7 +470,7 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 					?,
 			}
 		);
-		PID += 1;
+		pid += 1;
 	}
 
 }
