@@ -3,13 +3,16 @@ pub mod proxies;
 pub mod documents;
 
 /**
-	Note that proxy_path internally translates to:
+	Note that proxy_path is in form of:
 		unix:path=<proxy_path>/bus
 	to workaround an issue with bind-mounting non-existent files
 
 	The proxy directory must exist beforehand.
 
-	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy
+	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy.
+
+	To influence the core sandbox binding logic, the app_sandbox field can be
+	implemented. It can affect environment variables and filesystem bindings.
 */
 pub struct Proxy {
 	pub sandbox:		crate::bind::types::BindRules,
@@ -30,6 +33,11 @@ pub struct Proxy {
 	*/
 	pub bind_lifetime:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
 	pub json_status_file:	Option<std::os::fd::OwnedFd>,
+
+	/**
+		Whether or not to introduce addition to the application sandboxing rules
+	*/
+	pub app_sandbox:	Option<crate::bind::types::BindRules>,
 }
 
 /**
