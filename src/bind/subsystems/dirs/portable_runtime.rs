@@ -1,3 +1,4 @@
+
 /**
 	Runtime directory for Portable to store data
 */
@@ -5,7 +6,7 @@ pub struct PortableRuntime {
 	path:	std::path::PathBuf,
 }
 
-impl super::RuntimePaths for PortableRuntime {
+impl super::RuntimePathsTrait for PortableRuntime {
 	fn new(
 		config:		&crate::config::Config,
 		xdg:		&crate::xdg::XdgDirs,
@@ -20,12 +21,30 @@ impl super::RuntimePaths for PortableRuntime {
 		Self { path }
 	}
 
-	async fn create_path(&self)		->
+	async fn create_path(&self, stop: tokio::sync::mpsc::Sender<crate::stop::StopFunc>)	->
 			Result<(), Self::RuntimePathError>
 	{
 		tokio::fs::create_dir_all(&self.path)
 			.await
-			.map_err(Error::CreateError)
+			.map_err(Error::CreateError)?;
+
+		let path_clone = self.path.clone();
+
+		stop.send(
+			crate::stop::StopFunc {
+				layer: crate::stop::FunctionLayer::Pre,
+				function: Box::new(|| {
+					match std::fs::remove_dir_all(path_clone) {
+						Ok(_)	=> {}
+						Err(e)	=> {
+							eprintln!("Could not remove runtime directory: {e:#?}")
+						}
+					};
+				}),
+			},
+		).await.map_err(Error::StopError)?;
+
+		Ok(())
 	}
 
 	fn path(&self) -> std::path::PathBuf {
@@ -42,4 +61,7 @@ pub enum Error {
 
 	#[error("Could not create directory: {0:#?}")]
 	CreateError(std::io::Error),
+
+	#[error("Could not contact stop worker: {0:#?}")]
+	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopFunc>),
 }
