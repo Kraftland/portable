@@ -1,4 +1,5 @@
 mod paths;
+mod flatpak;
 
 /**
 	The public function is used to mask certain paths for privacy
@@ -8,6 +9,11 @@ pub async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
 	use crate::bind::types::BindRule;
 
 	let mut status = vec![];
+	let mut subtask = vec![];
+
+	subtask.push(
+		flatpak::mask_spawn()
+	);
 
 	for path in paths::get_paths() {
 		status.push(
@@ -26,6 +32,13 @@ pub async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
 					},
 				},
 			);
+		}
+	};
+
+	for task in subtask {
+		match task.await {
+			Some(v)	=> {ret.push(v);}
+			None	=> {continue;}
 		}
 	};
 
