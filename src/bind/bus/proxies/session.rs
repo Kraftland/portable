@@ -96,6 +96,18 @@ async fn compile_rules(
 		),
 	);
 
+	let app_sandbox_rules = {
+		use crate::bind::types::BindRule;
+
+		vec![
+			BindRule::Path {
+				source: proxy_path.clone(),
+				dest: "/run/session_bus".into(),
+				class: crate::bind::types::BindType::ReadWrite,
+			}
+		]
+	};
+
 	Ok(
 		crate::bind::bus::Proxy {
 			sandbox:		sandbox_rules
@@ -118,6 +130,15 @@ async fn compile_rules(
 			bind_lifetime:		stop_token,
 			sloppy_names:		false,
 			json_status_file:	status_fd,
+			app_sandbox:		Some(app_sandbox_rules),
+			envs:			{
+				let mut map = std::collections::HashMap::new();
+				map.insert(
+					"DBUS_SESSION_BUS_ADDRESS".to_string(),
+					"/run/session_bus".to_string(),
+				);
+				Some(map)
+			},
 		}
 	)
 }
