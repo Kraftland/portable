@@ -5,9 +5,12 @@
 	Master descriptor is capable of resizing and stuff, but needs to handle manually.
 */
 pub struct PtyPair {
-	master:		std::os::fd::OwnedFd,
-	slave:		std::os::fd::OwnedFd,
+	pub master:		nix::pty::PtyMaster,
+	pub slave:		std::os::fd::OwnedFd,
+	pub slave_name:		PtsName,
 }
+
+pub type PtsName = String;
 
 #[derive(thiserror::Error, Debug)]
 pub enum PtyError {
@@ -18,11 +21,20 @@ pub enum PtyError {
 impl PtyPair {
 	async fn new() -> Result<Self, PtyError> {
 		let pair = nix::pty::openpty(None, None)
-			.map_err(PtyError::NewPtyError)?;
+			.map_err(PtyError::NewPtyError)
+			?;
+
+		// Scary!
+		let master = unsafe {
+			nix::pty::PtyMaster::from_owned_fd(pair.master)
+		};
+
 		Ok(
 			PtyPair {
-				master: pair.master,
-				slave: pair.slave,
+				slave_name:	nix::pty::ptsname_r(&master)
+							.map_err(PtyError::NewPtyError)?,
+				master:		master,
+				slave:		pair.slave,
 			},
 		)
 	}
