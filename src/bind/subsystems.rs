@@ -25,3 +25,5 @@ pub mod dirs;
 pub mod display;
 
 pub mod desktop_file;
+
+pub mod mask;
