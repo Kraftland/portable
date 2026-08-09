@@ -13,6 +13,7 @@ pub enum StartAppError {
 	EnvsError(crate::envs::holder::EnvError),
 }
 
+
 #[cfg(feature = "systemd")]
 impl crate::spawn::Start for crate::spawn::Spawn {
 	async fn start(
@@ -36,6 +37,7 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&exec_target,
 			exec_arguments,
 			self.home.to_owned(),
+			self.slave_pts.to_owned(),
 		).await?;
 
 		proxy.start_transient_unit(
@@ -99,10 +101,31 @@ async fn generate_properties(
 	exec_target:	&String,
 	exec_arguments:	Vec<String>,
 	home:		std::path::PathBuf,
+	slave_pts:	crate::spawn::console::PtsName,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
 
-	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![];
+	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![
+		/*
+			TTYPath is a string, we get the name from console module
+		*/
+		(
+			String::from("TTYPath"),
+			OwnedValue::from(Str::from(slave_pts)),
+		),
+		(
+			String::from("StandardInput"),
+			OwnedValue::from(Str::from("tty")),
+		),
+		(
+			String::from("StandardOutput"),
+			OwnedValue::from(Str::from("tty")),
+		),
+		(
+			String::from("StandardError"),
+			OwnedValue::from(Str::from("tty")),
+		),
+	];
 
 	use zbus::zvariant::{OwnedValue, Str};
 
