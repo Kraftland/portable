@@ -2,7 +2,9 @@ pub struct RuntimeOpts {
 	/**
 		File forwarding
 	*/
-	pub file_expose:	Option<std::collections::HashMap<std::path::PathBuf, std::path::PathBuf>>,
+	pub file_expose:	Vec<FileExposurePreference>,
+	pub Action:		Action,
+	pub app_args:		Vec<String>,
 }
 
 /**
