@@ -1,3 +1,11 @@
+/**
+	Contact the Init to request File System Access
+
+	Errors and sends a message when Init is not active
+
+	The caller is responsible for terminating and pass in a bus connection, thus it must run
+		after session bus registration
+*/
 pub async fn share_path_with_helper(
 	bus_conn:	&zbus::Connection,
 	directory:	bool,
@@ -19,7 +27,25 @@ pub async fn share_path_with_helper(
 		}
 	}
 
-	unimplemented!()
+	let name = {
+		let mut name = String::from(app_id);
+		name.push_str(".Portable.Helper");
+		name
+	};
+
+
+	let ipc_proxy = IPCProxy::new(bus_conn, name)
+		.await
+		.map_err(ShareError::ProxyError)
+		?;
+
+	ipc_proxy
+		.request_fs(directory)
+		.await
+		.map_err(ShareError::CommError)
+		?;
+
+	Ok(())
 }
 
 /**
@@ -71,4 +97,7 @@ pub enum ShareError {
 
 	#[error("Helper is not alive or responding")]
 	NotAliveError,
+
+	#[error("Could not communicate with Init: {0:#?}")]
+	CommError(zbus::Error),
 }
