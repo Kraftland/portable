@@ -6,7 +6,7 @@
 */
 pub enum RegisterStatus {
 	Primary {connection: zbus::Connection},
-	Secondary,
+	Secondary {connection: zbus::Connection},
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -71,7 +71,7 @@ pub async fn register(
 		Err(e)	=> {
 			match e {
 				zbus::Error::NameTaken	=> {
-					Ok(RegisterStatus::Secondary)
+					Ok(RegisterStatus::Secondary { connection: conn })
 				}
 				_			=> {
 					Err(RegisterError::RequestNameError(e))
