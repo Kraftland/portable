@@ -1,7 +1,24 @@
 pub async fn share_path_with_helper(
 	bus_conn:	&zbus::Connection,
 	directory:	bool,
+	app_id:		&str,
 ) -> Result<(), ShareError> {
+	match helper_is_alive(app_id, bus_conn).await {
+		Ok(true)	=> {}
+		Ok(false)	=> {
+			let _ = crate::ipc::portals::legacy_notif::notify(
+				bus_conn,
+				"sad-computer-symbolic",
+				"Could not share files or directories",
+				"The Init process of specified sandbox is not running",
+			).await;
+			return Err(ShareError::NotAliveError);
+		}
+		Err(e)		=> {
+			return Err(e);
+		}
+	}
+
 	unimplemented!()
 }
 
@@ -51,4 +68,7 @@ pub enum ShareError {
 
 	#[error("Could not create proxy: {0:#?}")]
 	ProxyError(zbus::Error),
+
+	#[error("Helper is not alive or responding")]
+	NotAliveError,
 }
