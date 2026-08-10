@@ -16,7 +16,14 @@ pub struct RuntimeOpts {
 	and said actions should be handled in the cmdline module
 */
 pub enum Action {
-	Normal,
+	Normal {
+		debug_shell:	bool,
+	},
+	ShareFile,
+	ShareDir,
+	OpenHome,
+	ResetDocs,
+	ShowStats,
 	Quit,
 }
 
