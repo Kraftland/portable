@@ -1,3 +1,28 @@
+/**
+	Notifies the user with org.freedesktop.Notifications
+*/
+pub async fn notify(
+	dbus_conn:	&zbus::Connection,
+	icon:		&str,
+	summary:	&str,
+	body:		&str,
+) -> Result<(), zbus::Error> {
+	let proxy = NotifyProxy::new(dbus_conn)
+		.await
+		?;
+
+	proxy.send(
+		"Portable Daemon".to_string(),
+		0,
+		icon.into(),
+		summary.into(),
+		body.into(),
+		vec![],
+		std::collections::HashMap::new(),
+		7,
+	).await?;
+	Ok(())
+}
 
 #[zbus::proxy(
 	interface = "org.freedesktop.Notifications",
