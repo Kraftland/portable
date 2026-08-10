@@ -1,8 +1,32 @@
-pub struct CmdlineOpts {
+pub struct RuntimeOpts {
 	/**
 		File forwarding
 	*/
-	pub file_expose:	Option<std::collections::HashMap<std::path::PathBuf, std::path::PathBuf>>,
+	pub file_expose:	Vec<FileExposurePreference>,
+	pub Action:		Action,
+	pub app_args:		Vec<String>,
+}
+
+/**
+	StartMode designates different operation modes
+
+	Normal means continue starting or activating the instance
+
+	Action designates the previous --actions flag
+
+	When set to other values, the main thread aborts start up
+	and said actions should be handled in the cmdline module
+*/
+pub enum Action {
+	Normal {
+		debug_shell:	bool,
+	},
+	ShareFile,
+	ShareDir,
+	OpenHome,
+	ResetDocs,
+	ShowStats,
+	Quit,
 }
 
 /**
@@ -31,5 +55,7 @@ pub enum FileExposurePreference {
 
 		Cmdline rewrite is needed for this type
 	*/
-	Passthrough
+	Passthrough {
+		host:	std::path::PathBuf,
+	},
 }
