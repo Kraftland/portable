@@ -1,1 +1,1 @@
-mod legacy_notif;
+pub mod legacy_notif;
