@@ -133,7 +133,7 @@ async fn run(
 		.map_err(StartError::BusError)?
 	{
 		ipc::register::RegisterStatus::Primary { connection }	=> {connection}
-		ipc::register::RegisterStatus::Secondary		=> {
+		ipc::register::RegisterStatus::Secondary { connection }	=> {
 			log_tx.send(
 				logger::LogMessage {
 					level: logger::LogLevel::Debug,
@@ -144,7 +144,9 @@ async fn run(
 			.map_err(StartError::LogError)
 			?;
 
-			unimplemented!();
+
+			stop_tx.send(stop::StopLevel::Normal);
+			return Ok(());
 		}
 	};
 
