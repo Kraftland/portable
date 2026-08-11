@@ -35,6 +35,9 @@ enum StartError {
 
 	#[error("Could not share files or directories: {0:#?}")]
 	ShareError(portable_daemon::pref::runtime::cmdline::share_file::ShareError),
+
+	#[error("Could not stop remote sandbox: {0:#?}")]
+	StopControllerError(portable_daemon::ipc::controller::quit::StopError),
 }
 
 #[tokio::main]
@@ -190,7 +193,15 @@ async fn run(
 			return Ok(());
 		}
 		pref::runtime::options::Action::Quit				=> {
-			unimplemented!();
+			use portable_daemon::ipc::controller::quit;
+
+			quit::stop_app(
+				&config.metadata.sandbox_id,
+				&dbus_conn,
+			)
+				.await
+				.map_err(StartError::StopControllerError)
+				?;
 
 			stop_tx.send(stop::StopLevel::Normal)
 				.await
