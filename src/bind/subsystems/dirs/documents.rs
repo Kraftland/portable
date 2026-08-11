@@ -31,6 +31,7 @@ impl DocumentsMountPoint {
 						.map_err(DocumentError::TranslateError)
 						?;
 					let mut pathbuf = std::path::PathBuf::from(path);
+					pathbuf.push("by-app");
 					pathbuf.push(&config.metadata.sandbox_id);
 					pathbuf
 				},
@@ -38,11 +39,11 @@ impl DocumentsMountPoint {
 		)
 	}
 
-	fn path(&self)	-> std::path::PathBuf {
+	pub fn path(&self)	-> std::path::PathBuf {
 		self.inner.clone()
 	}
 
-	fn path_ref(&self) -> &std::path::PathBuf {
+	fn path_ref(&self)	-> &std::path::PathBuf {
 		&self.inner
 	}
 
