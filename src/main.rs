@@ -227,15 +227,6 @@ async fn run(
 				?;
 			return Ok(());
 		}
-		pref::runtime::options::Action::ShowStats			=> {
-			unimplemented!();
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
-			return Ok(());
-		}
 	}
 
 	match bus_spawn
