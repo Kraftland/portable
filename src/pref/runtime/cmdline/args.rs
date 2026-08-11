@@ -89,9 +89,6 @@ pub async fn parse(logger: crate::logger::LogSender)
 								=> {
 				start_mode = Action::ResetDocs
 			}
-			"stat" | "stats" | "--stat" | "--stats" => {
-				start_mode = Action::ShowStats
-			}
 			"f5aaebc6-0014-4d30-beba-72bce57e0650"	=> {
 				return Err(CmdlineError::UnsafeError);
 			}
