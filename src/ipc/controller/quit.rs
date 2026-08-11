@@ -1,3 +1,8 @@
+/**
+	Call the controller to stop the sandbox
+
+	It does not guarantee that the specified cgroup is killed before returning
+*/
 pub async fn stop_app(app_id: &str, bus: &zbus::Connection) -> Result<(), StopError> {
 	let name = {
 		let mut name = String::new();
