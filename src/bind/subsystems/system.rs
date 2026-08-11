@@ -12,6 +12,8 @@ pub async fn bind(
 	xdg_runtime:		std::path::PathBuf,
 	data_dir:		std::path::PathBuf,
 	state_dir:		String,
+	overlay_bin:		bool,
+	app_id:			String,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
@@ -284,7 +286,32 @@ pub async fn bind(
 			dest:	"/etc/nsswitch.conf".into(),
 			class:	crate::bind::types::BindType::ReadOnly,
 		},
+		/*
+			Privacy mounts are handled in the mask subsystem
+		*/
 	];
+
+	{
+		let mut overlay_source = vec![
+			std::path::PathBuf::from("/usr/bin"),
+			std::path::PathBuf::from("/usr/lib/portable/overlay-usr"),
+		];
+		if overlay_bin {
+			let mut path = std::path::PathBuf::from("/usr/lib/portable/info");
+			path.push(&app_id);
+			path.push("bin");
+			overlay_source.push(
+				path
+			);
+		}
+		ret.push(
+			BindRule::Overlay {
+				sources: overlay_source,
+				dest: "/usr/bin".into(),
+				class: crate::bind::types::OverlayType::Ro,
+			}
+		);
+	};
 
 	// systemd notify socket
 	{
