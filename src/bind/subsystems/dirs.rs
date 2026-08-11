@@ -3,6 +3,8 @@ pub mod portable_runtime;
 #[cfg(feature = "flatpak")]
 pub mod flatpak;
 
+pub mod documents;
+
 pub trait RuntimePathsTrait: Sized {
 	/**
 		Create a new runtime path for type
