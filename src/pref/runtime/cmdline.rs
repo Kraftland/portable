@@ -1,6 +1,6 @@
 mod bw_bind_par;
 mod args;
-mod share_file;
+pub mod share_file;
 
 /**
 	Parse the command line collection, it also handles some legacy environment variables.

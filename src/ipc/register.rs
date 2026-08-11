@@ -1,12 +1,12 @@
-/*
+/**
 	RegisterStatus dictates which mode to operate on
 
 	Primary means the sole instance to start and configure sandbox
 	Secondary relies on another primary instance to execute a process
 */
 pub enum RegisterStatus {
-	Primary {connection: zbus::Connection},
-	Secondary {connection: zbus::Connection},
+	Primary,
+	Secondary,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -21,15 +21,16 @@ pub enum RegisterError {
 	RequestNameError(zbus::Error),
 }
 
-pub async fn register(
-	app_id:		String,
-	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
-) -> Result<RegisterStatus, RegisterError> {
-	let builder = zbus::connection::Builder::
-		session()
+/**
+	Connect to the session bus and publish services
+
+	Must be done before register to handle multi-instance and certain commamdline flags
+*/
+pub async fn connect(stop_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>)
+-> Result<zbus::Connection, RegisterError> {
+	let builder = zbus::connection::Builder::session()
 		.map_err(RegisterError::BuildConnectionError)
 		?;
-
 	let builder = builder
 		.allow_name_replacements(false);
 	let builder = builder
@@ -54,24 +55,34 @@ pub async fn register(
 		)
 		.map_err(RegisterError::ServeObjectError)
 		?;
+	builder
+		.build()
+		.await
+		.map_err(RegisterError::BuildConnectionError)
+}
+
+
+/**
+	Register as the primary instance on the session bus, if possible
+
+	Otherwise returns the secondary status
+*/
+pub async fn register(
+	app_id:		String,
+	conn:		zbus::Connection,
+) -> Result<RegisterStatus, RegisterError> {
 
 	let mut name = String::from("top.kimiblock.portable.");
 	name.push_str(&app_id);
 
-	let conn = builder
-		.build()
-		.await
-		.map_err(RegisterError::BuildConnectionError)
-		?;
-
 	match conn.request_name(name).await {
 		Ok(_)	=> {
-			Ok(RegisterStatus::Primary { connection: conn })
+			Ok(RegisterStatus::Primary)
 		}
 		Err(e)	=> {
 			match e {
 				zbus::Error::NameTaken	=> {
-					Ok(RegisterStatus::Secondary { connection: conn })
+					Ok(RegisterStatus::Secondary)
 				}
 				_			=> {
 					Err(RegisterError::RequestNameError(e))

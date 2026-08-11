@@ -5,6 +5,7 @@ use portable_daemon::consts;
 use portable_daemon::xdg;
 use portable_daemon::envs;
 use portable_daemon::ipc;
+use portable_daemon::pref;
 // use portable_daemon::bind;
 
 use thiserror::Error;
@@ -13,6 +14,9 @@ use thiserror::Error;
 enum StartError {
 	#[error("Could not contact logging thread: {0:#?}")]
 	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
+
+	#[error("Could not contact stop worker: {0:#?}")]
+	StopError(tokio::sync::mpsc::error::SendError<stop::StopLevel>),
 
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
@@ -25,6 +29,12 @@ enum StartError {
 
 	#[error("Could not register D-Bus service: {0:#?}")]
 	BusError(ipc::register::RegisterError),
+
+	#[error("Could not parse runtime options: {0:#?}")]
+	RuntimeOptError(portable_daemon::pref::runtime::cmdline::RuntimeOptsError),
+
+	#[error("Could not share files or directories: {0:#?}")]
+	ShareError(portable_daemon::pref::runtime::cmdline::share_file::ShareError),
 }
 
 #[tokio::main]
@@ -60,7 +70,15 @@ async fn run(
 	log_tx:		logger::LogSender,
 	stop_tx:	tokio::sync::mpsc::Sender<stop::StopLevel>,
 ) -> Result<(), StartError> {
+	let runtime_opts_spawn = {
+		tokio::spawn(portable_daemon::pref::runtime::cmdline::parse(log_tx.clone()))
+	};
+
 	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
+	let bus_spawn = {
+		let stop_clone = stop_tx.clone();
+		tokio::spawn(ipc::register::connect(stop_clone))
+	};
 
 	log_tx.send(
 		logger::LogMessage {
@@ -84,7 +102,6 @@ async fn run(
 		.map_err(StartError::SpawnError)?
 		.map_err(StartError::XdgError)?;
 
-
 	let config = {
 		config::Config::get(
 			log_tx.clone(),
@@ -95,16 +112,23 @@ async fn run(
 	}
 	?;
 
+
+	let dbus_conn = bus_spawn
+		.await
+		.map_err(StartError::SpawnError)?
+		.map_err(StartError::BusError)?;
+
 	let bus_spawn = {
-		let stop_clone = stop_tx.clone();
+		let bus = dbus_conn.clone();
 		tokio::spawn(
 			ipc::register::register(
 				config.metadata.sandbox_id.clone(),
-				stop_clone,
+				bus,
 			)
 		)
 	};
 
+	#[cfg(debug_assertions)]
 	log_tx.send(
 		logger::LogMessage {
 			level: logger::LogLevel::Debug,
@@ -115,6 +139,7 @@ async fn run(
 		.map_err(StartError::LogError)
 		?;
 
+	#[cfg(debug_assertions)]
 	log_tx.send(
 		logger::LogMessage {
 			level: logger::LogLevel::Debug,
@@ -125,15 +150,91 @@ async fn run(
 		.map_err(StartError::LogError)
 		?;
 
+	let runtime_opts = runtime_opts_spawn
+		.await
+		.map_err(StartError::SpawnError)?
+		.map_err(StartError::RuntimeOptError)?;
 
+	match runtime_opts.Action {
+		pref::runtime::options::Action::Normal { debug_shell: _ }	=> {}
+		pref::runtime::options::Action::ShareFile			=> {
+			use portable_daemon::pref::runtime::cmdline::share_file;
+			share_file::share_path_with_helper(
+				&dbus_conn,
+				false,
+				&config.metadata.sandbox_id,
+			).await
+			.map_err(StartError::ShareError)
+			?;
 
-	let connection = match bus_spawn
+			stop_tx.send(stop::StopLevel::Normal)
+				.await
+				.map_err(StartError::StopError)
+				?;
+			return Ok(());
+		}
+		pref::runtime::options::Action::ShareDir			=> {
+			use portable_daemon::pref::runtime::cmdline::share_file;
+			share_file::share_path_with_helper(
+				&dbus_conn,
+				true,
+				&config.metadata.sandbox_id,
+			).await
+			.map_err(StartError::ShareError)
+			?;
+
+			stop_tx.send(stop::StopLevel::Normal)
+				.await
+				.map_err(StartError::StopError)
+				?;
+			return Ok(());
+		}
+		pref::runtime::options::Action::Quit				=> {
+			unimplemented!();
+
+			stop_tx.send(stop::StopLevel::Normal)
+				.await
+				.map_err(StartError::StopError)
+				?;
+			return Ok(());
+		}
+		pref::runtime::options::Action::OpenHome			=> {
+			unimplemented!();
+
+			stop_tx.send(stop::StopLevel::Normal)
+				.await
+				.map_err(StartError::StopError)
+				?;
+			return Ok(());
+		}
+		pref::runtime::options::Action::ResetDocs			=> {
+			unimplemented!();
+
+			stop_tx.send(stop::StopLevel::Normal)
+				.await
+				.map_err(StartError::StopError)
+				?;
+			return Ok(());
+		}
+		pref::runtime::options::Action::ShowStats			=> {
+			unimplemented!();
+
+			stop_tx.send(stop::StopLevel::Normal)
+				.await
+				.map_err(StartError::StopError)
+				?;
+			return Ok(());
+		}
+	}
+
+	match bus_spawn
 		.await
 		.map_err(StartError::SpawnError)?
 		.map_err(StartError::BusError)?
 	{
-		ipc::register::RegisterStatus::Primary { connection }	=> {connection}
-		ipc::register::RegisterStatus::Secondary { connection }	=> {
+		ipc::register::RegisterStatus::Primary		=> {}
+		ipc::register::RegisterStatus::Secondary	=> {
+			#[cfg(debug_assertions)]
 			log_tx.send(
 				logger::LogMessage {
 					level: logger::LogLevel::Debug,
@@ -144,8 +245,10 @@ async fn run(
 			.map_err(StartError::LogError)
 			?;
 
-
 			stop_tx.send(stop::StopLevel::Normal);
+
+			unimplemented!();
+
 			return Ok(());
 		}
 	};
