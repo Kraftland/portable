@@ -99,3 +99,4 @@ pub enum Error {
 	#[error("Could not contact stop worker: {0:#?}")]
 	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopFunc>),
 }
+
