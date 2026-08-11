@@ -5,7 +5,7 @@
 
 	resolved is stripped to drop dependency on relevant socket
 */
-async fn generate(
+pub async fn generate(
 	portable_runtime:	std::path::PathBuf,
 ) -> Result<std::path::PathBuf, NsswitchError> {
 	let content = {

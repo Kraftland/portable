@@ -1,3 +1,6 @@
+mod passwd;
+mod nsswitch;
+
 /**
 	The system bind subsystem exposes several paths of system root.
 
@@ -7,9 +10,27 @@ pub async fn bind(
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg_runtime:		std::path::PathBuf,
+	data_dir:		std::path::PathBuf,
+	state_dir:		String,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
+	let state_directory = {
+		let mut path = data_dir.clone();
+		path.push(state_dir);
+		path
+	};
+
+	let passwd_spawn = tokio::spawn(
+		passwd::generate(
+			portable_runtime.path(),
+			state_directory,
+		)
+	);
+	let nsswitch_spawn = tokio::spawn(
+		nsswitch::generate(portable_runtime.path())
+	);
+
 	use crate::bind::subsystems::dirs::RuntimePathsTrait;
 	use crate::bind::types::BindRule;
 	let mut ret = vec![
@@ -182,7 +203,7 @@ pub async fn bind(
 		BindRule::VirtualFS {
 			dest:	"/home".into(),
 			class:	crate::bind::types::VirtualFS::Tmpfs {
-				size_mb:	Some(0),
+				size_mb:	None,
 				perms:		None,
 			},
 		},
@@ -241,6 +262,26 @@ pub async fn bind(
 		BindRule::Path {
 			source:	"/etc/resolv.conf".into(),
 			dest:	"/etc/resolv.conf".into(),
+			class:	crate::bind::types::BindType::ReadOnly,
+		},
+		BindRule::Path {
+			source:	{
+				passwd_spawn
+					.await
+					.map_err(SystemBindError::SpawnError)?
+					.map_err(SystemBindError::PasswdError)?
+			},
+			dest:	"/etc/passwd".into(),
+			class:	crate::bind::types::BindType::ReadOnly,
+		},
+		BindRule::Path {
+			source:	{
+				nsswitch_spawn
+					.await
+					.map_err(SystemBindError::SpawnError)?
+					.map_err(SystemBindError::NsswitchError)?
+			},
+			dest:	"/etc/nsswitch.conf".into(),
 			class:	crate::bind::types::BindType::ReadOnly,
 		},
 	];
@@ -418,4 +459,13 @@ pub async fn bind(
 pub enum SystemBindError {
 	#[error("I/O error while reading path: {0:#?}")]
 	IOError(std::io::Error),
+
+	#[error("Could not generate nsswitch file: {0:#?}")]
+	NsswitchError(nsswitch::NsswitchError),
+
+	#[error("Could not generate passwd file: {0:#?}")]
+	PasswdError(passwd::PasswdError),
+
+	#[error("Could not spawn task: {0:#?}")]
+	SpawnError(tokio::task::JoinError),
 }

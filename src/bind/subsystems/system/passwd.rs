@@ -3,7 +3,7 @@
 
 	shell is hard-coded to /usr/bin/bash, and it returns the passwd file path back
 */
-async fn generate(
+pub async fn generate(
 	portable_runtime:	std::path::PathBuf,
 	state_directory:	std::path::PathBuf,
 ) -> Result<std::path::PathBuf, PasswdError> {
