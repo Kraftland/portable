@@ -4,7 +4,8 @@
 	The struct does not implement shared trait due to the async and IPC nature.
 */
 pub struct DocumentsMountPoint {
-	inner:	std::path::PathBuf,
+	inner:		std::path::PathBuf,
+	inner_per_app:	std::path::PathBuf,
 }
 
 impl DocumentsMountPoint {
@@ -19,28 +20,35 @@ impl DocumentsMountPoint {
 			.map_err(DocumentError::ProxyError)
 			?;
 
+		let bytes = proxy
+			.mount_point()
+			.await
+			.map_err(DocumentError::CallError)
+			?;
+		let path = String::from_utf8(bytes)
+			.map_err(DocumentError::TranslateError)
+			?;
+		let mut per_app_path = std::path::PathBuf::from(path);
+
+		let public_path = per_app_path.clone();
+
+		per_app_path.push("by-app");
+		per_app_path.push(&config.metadata.sandbox_id);
+
 		Ok(
 			DocumentsMountPoint {
-				inner: {
-					let bytes = proxy
-						.mount_point()
-						.await
-						.map_err(DocumentError::CallError)
-						?;
-					let path = String::from_utf8(bytes)
-						.map_err(DocumentError::TranslateError)
-						?;
-					let mut pathbuf = std::path::PathBuf::from(path);
-					pathbuf.push("by-app");
-					pathbuf.push(&config.metadata.sandbox_id);
-					pathbuf
-				},
+				inner:		public_path,
+				inner_per_app:	per_app_path,
 			}
 		)
 	}
 
 	pub fn path(&self)	-> std::path::PathBuf {
 		self.inner.clone()
+	}
+
+	pub fn path_per_app(&self) -> std::path::PathBuf {
+		self.inner_per_app.clone()
 	}
 
 	fn path_ref(&self)	-> &std::path::PathBuf {
