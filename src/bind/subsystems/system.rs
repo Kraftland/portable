@@ -1,5 +1,6 @@
 mod passwd;
 mod nsswitch;
+mod kvm;
 
 /**
 	The system bind subsystem exposes several paths of system root.
@@ -13,6 +14,7 @@ pub async fn bind(
 	data_dir:		std::path::PathBuf,
 	state_dir:		String,
 	overlay_bin:		bool,
+	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
 	app_id:			String,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
@@ -22,6 +24,10 @@ pub async fn bind(
 		path.push(state_dir);
 		path
 	};
+
+	let kvm_spawn = tokio::spawn(
+		kvm::mount_kvm(device_allow)
+	);
 
 	let passwd_spawn = tokio::spawn(
 		passwd::generate(
@@ -476,10 +482,14 @@ pub async fn bind(
 		);
 	};
 
-		BindRule::Symlink {
-			source:	"/usr/lib".into(),
-			dest:	"/lib".into(),
-		}
+	ret.extend(
+		kvm_spawn
+			.await
+			.map_err(SystemBindError::SpawnError)?
+			.map_err(SystemBindError::KvmError)?
+	);
+
+
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -495,4 +505,7 @@ pub enum SystemBindError {
 
 	#[error("Could not spawn task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not mount kvm device: {0:#?}")]
+	KvmError(kvm::KvmError),
 }
