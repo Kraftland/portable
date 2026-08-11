@@ -35,4 +35,18 @@ pub struct InitInfo {
 		An array of strings describing the arguments to pass
 	*/
 	pub target_args:	Vec<String>,
+
+	/**
+		uclamp_min describes the minimum guaranteed performance operating point.
+
+		It is clamped between 0 and 100, as per cgroup v2 specifications.
+	*/
+	pub uclamp_min:		u8,
+	/**
+		uclamp_max describes the maximum performance operating point.
+		It operates as a ceiling limit.
+
+		It is clamped between 0 and 100, as per cgroup v2 specifications.
+	*/
+	pub uclamp_max:		u8,
 }
