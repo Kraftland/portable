@@ -10,5 +10,6 @@ pub fn get_paths() -> Vec<std::path::PathBuf> {
 		"/etc/kernel".into(),
 
 		"/proc/1".into(),
+		"/usr/share/applications".into(),
 	]
 }
