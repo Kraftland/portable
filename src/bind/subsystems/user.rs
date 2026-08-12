@@ -1,4 +1,5 @@
 mod paths;
+mod theming;
 mod create_state_dir;
 
 /**
@@ -10,6 +11,11 @@ mod create_state_dir;
 
 	As such, the second argument is a path map for later use in the D-Bus subsystem.
 */
+pub struct UserBind {
+	translator:	crate::bind::translate::Delta,
+	xdg_config:	std::sync::Arc<std::path::PathBuf>,
+}
+
 pub async fn bind()
 -> Result<(crate::bind::types::BindRules, std::collections::HashMap<String, String>), UserBindError>
 {
@@ -20,4 +26,7 @@ pub async fn bind()
 pub enum UserBindError {
 	#[error("I/O error creating sandbox home: {0:#?}")]
 	CreateHomeError(std::io::Error),
+
+	#[error("Error translating user path: {0:#?}")]
+	TranslatePathError(crate::bind::translate::TranslatePathError),
 }

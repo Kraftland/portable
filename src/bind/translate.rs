@@ -40,7 +40,7 @@ pub trait Translate {
 	/*
 		Delta is from struct Delta's get method
 	*/
-	fn translate_home(self, delta: &Delta)	-> impl std::future::Future<Output = Result<std::path::PathBuf, TranslatePathError>> + Send;
+	fn translate_home(&self, delta: &Delta)	-> impl std::future::Future<Output = Result<std::path::PathBuf, TranslatePathError>> + Send;
 }
 
 impl Translate for std::path::PathBuf {
@@ -48,8 +48,8 @@ impl Translate for std::path::PathBuf {
 		Translate the given input path beneath $HOME to the sandbox home
 		Takes ownership of input value to avoid re-using.
 	*/
-	async fn translate_home(self, delta: &Delta)	-> Result<std::path::PathBuf, TranslatePathError> {
-		home(self, delta).await
+	async fn translate_home(&self, delta: &Delta)	-> Result<std::path::PathBuf, TranslatePathError> {
+		home(self.to_path_buf(), delta).await
 	}
 }
 
