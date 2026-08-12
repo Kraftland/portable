@@ -15,18 +15,18 @@ pub enum DisplayError {
 }
 
 pub struct Display {
-	logger:			crate::logger::LogSender,
-	home:			std::path::PathBuf,
-	runtime_dir:		std::path::PathBuf,
-	env:			crate::envs::holder::HoldChannel,
+	pub logger:		crate::logger::LogSender,
+	pub home:		std::path::PathBuf,
+	pub runtime_dir:	std::path::PathBuf,
+	pub env:		crate::envs::holder::HoldChannel,
 
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
-	app_id:			String,
-	instance_id:		String,
+	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	pub app_id:		String,
+	pub instance_id:	String,
 
 	// socket enablement below
-	x11:		bool,
-	wayland:		bool,
+	pub x11:		bool,
+	pub wayland:		bool,
 }
 
 impl super::GenerateBind for Display {

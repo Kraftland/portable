@@ -2,6 +2,7 @@
 /**
 	Runtime directory for Portable to store data
 */
+#[derive(Debug, Clone)]
 pub struct PortableRuntime {
 	path:	std::path::PathBuf,
 }
