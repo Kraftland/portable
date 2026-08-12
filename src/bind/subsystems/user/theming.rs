@@ -146,6 +146,18 @@ async fn paths(
 
 		(path, nested)
 	};
+	let (icons_host, icons_nested) = {
+		let mut path = xdg_data.to_path_buf();
+		path.push("icons");
+
+		let nested = path
+			.translate_home(&translator)
+			.await
+			.map_err(super::UserBindError::TranslatePathError)
+			?;
+
+		(path, nested)
+	};
 
 	Ok(vec![
 		(fontconfig_host, fontconfig_nested),
@@ -156,5 +168,6 @@ async fn paths(
 		(kdeglobals_host, kdeglobals_nested),
 		(qt6ct_host, qt6ct_nested),
 		(fonts_host, fonts_nested),
+		(icons_host, icons_nested),
 	])
 }
