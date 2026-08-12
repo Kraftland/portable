@@ -71,8 +71,6 @@ pub struct BusExec {
 	pub target:		String,
 	#[serde(alias = "arguments")]
 	pub arguments:		Vec<String>,
-	#[serde(alias = "overlay")]
-	pub overlay:		bool,
 }
 
 impl Default for BusExec {
