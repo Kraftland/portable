@@ -2,11 +2,11 @@
 	Runtime directory to mimic Flatpak
 */
 pub struct FlatpakRuntime {
-	appid_path:	std::path::PathBuf,
+	appid_path:	std::sync::Arc<std::path::PathBuf>,
 
-	instance_path:	std::path::PathBuf,
+	instance_path:	std::sync::Arc<std::path::PathBuf>,
 
-	tmp_subdir:	std::path::PathBuf,
+	tmp_subdir:	std::sync::Arc<std::path::PathBuf>,
 }
 
 impl super::RuntimePathsTrait for FlatpakRuntime {
@@ -30,9 +30,9 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 		instance_path.push(instance_id);
 
 		Self {
-			appid_path:	appid_path,
-			instance_path:	instance_path,
-			tmp_subdir: 	tmp_path,
+			appid_path:	std::sync::Arc::new(appid_path),
+			instance_path:	std::sync::Arc::new(instance_path),
+			tmp_subdir:	std::sync::Arc::new(tmp_path),
 		}
 	}
 
@@ -41,10 +41,10 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 	{
 
 		// tmp_subdir is inside appid_path
-		tokio::fs::create_dir_all(&self.tmp_subdir)
+		tokio::fs::create_dir_all(self.tmp_subdir.as_path())
 			.await
 			.map_err(Error::CreateError)?;
-		let path_clone = self.appid_path.clone();
+		let path_clone = self.appid_path.to_path_buf();
 		stop.send(
 			crate::stop::StopFunc {
 				layer: crate::stop::FunctionLayer::Pre,
@@ -60,10 +60,10 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 		).await.map_err(Error::StopError)?;
 
 
-		tokio::fs::create_dir_all(&self.instance_path)
+		tokio::fs::create_dir_all(self.instance_path.as_path())
 			.await
 			.map_err(Error::CreateError)?;
-		let path_clone = self.instance_path.clone();
+		let path_clone = self.instance_path.to_path_buf();
 		stop.send(
 			crate::stop::StopFunc {
 				layer: crate::stop::FunctionLayer::Pre,
@@ -82,7 +82,7 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 	}
 
 	fn path(&self) -> std::path::PathBuf {
-		std::path::PathBuf::from(&self.instance_path)
+		self.instance_path.to_path_buf()
 	}
 
 	type RuntimePathError = Error;
