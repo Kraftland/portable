@@ -125,7 +125,7 @@ impl Default for SysMgmt {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum DeviceAllow {
 	DiscreteGPU,
 	Input,
