@@ -6,14 +6,18 @@ mod kvm;
 	The system bind subsystem
 */
 pub struct SystemBind {
+	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+
+	pub xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
+
 	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	pub xdg_runtime:	std::sync::Arc<std::path::PathBuf>,
-	pub data_dir:		std::path::PathBuf,
 	pub state_dir:		String,
 	pub overlay_bin:	bool,
 	pub device_allow:	Vec<crate::config::config_definition::DeviceAllow>,
 	pub app_id:		String,
+
+	pub flatpak_info:	std::path::PathBuf,
 }
 
 impl super::GenerateBind for SystemBind {
@@ -21,12 +25,14 @@ impl super::GenerateBind for SystemBind {
 		bind(
 			self.portable_runtime,
 			self.document_mount,
-			self.xdg_runtime,
-			self.data_dir,
+			self.xdg,
 			self.state_dir,
 			self.overlay_bin,
 			self.device_allow,
 			self.app_id,
+
+			#[cfg(feature = "flatpak")]
+			self.flatpak_info,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -40,17 +46,19 @@ impl super::GenerateBind for SystemBind {
 async fn bind(
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	xdg_runtime:		std::sync::Arc<std::path::PathBuf>,
-	data_dir:		std::path::PathBuf,
+	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	state_dir:		String,
 	overlay_bin:		bool,
 	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
 	app_id:			String,
+
+	#[cfg(feature = "flatpak")]
+	flatpak_info:		std::path::PathBuf,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
 	let state_directory = {
-		let mut path = data_dir.clone();
+		let mut path = xdg.data_home.to_path_buf();
 		path.push(state_dir);
 		path
 	};
@@ -145,6 +153,13 @@ async fn bind(
 				size_mb:	Some(1),
 				perms:		None,
 			},
+		},
+
+		#[cfg(feature = "flatpak")]
+		BindRule::Path {
+			source:	flatpak_info,
+			dest:	"/.flatpak-info".into(),
+			class:	crate::bind::types::BindType::ReadOnly,
 		},
 
 		/*
@@ -351,7 +366,7 @@ async fn bind(
 
 	// systemd notify socket
 	{
-		let mut notify_path = xdg_runtime.as_path().to_path_buf();
+		let mut notify_path = xdg.runtime.to_path_buf();
 		notify_path.push("systemd");
 		notify_path.push("notify");
 		ret.push(
