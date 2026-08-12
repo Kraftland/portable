@@ -489,7 +489,7 @@ pub async fn bind(
 			.map_err(SystemBindError::KvmError)?
 	);
 
-
+	Ok(ret)
 }
 
 #[derive(thiserror::Error, Debug)]
