@@ -12,11 +12,12 @@ mod input;
 /**
 	Implementation of Devices subsystem
 */
+#[derive(Debug)]
 pub struct Devices {
-	all_gpus:	bool,
-	bind_camera:	bool,
-	bind_input:	bool,
-	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	pub all_gpus:		bool,
+	pub bind_camera:	bool,
+	pub bind_input:		bool,
+	pub logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 }
 
 impl super::GenerateBind for Devices {

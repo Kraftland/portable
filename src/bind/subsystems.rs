@@ -22,6 +22,9 @@ pub async fn generate_bindrules(
 	overlay_bin:		bool,
 	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
 	app_id:			String,
+
+	logger:			crate::logger::LogSender,
+
 )
 -> Result<super::types::BindRules, BindError> {
 	let mut workers = vec![];
@@ -34,7 +37,7 @@ pub async fn generate_bindrules(
 			data_dir:		data_dir,
 			state_dir:		state_dir,
 			overlay_bin:		overlay_bin,
-			device_allow:		device_allow,
+			device_allow:		device_allow.clone(),
 			app_id:			app_id,
 		};
 
@@ -45,6 +48,45 @@ pub async fn generate_bindrules(
 						.bind()
 						.await
 						.map_err(BindError::SystemBindError)
+				}
+			)
+		);
+	};
+	{
+		use crate::config::config_definition::DeviceAllow;
+
+		let mut all_gpus = false;
+		let mut bind_cam = false;
+		let mut bind_input = false;
+		for allow in device_allow {
+			match allow {
+				DeviceAllow::DiscreteGPU	=> {
+					all_gpus = true
+				}
+				DeviceAllow::Camera		=> {
+					bind_cam = true
+				}
+				DeviceAllow::Input		=> {
+					bind_input = true
+				}
+				_				=> {}
+			}
+		};
+
+		let device_bind = devices::Devices {
+			all_gpus:	all_gpus,
+			bind_camera:	bind_cam,
+			bind_input:	bind_input,
+			logger:		logger.clone(),
+		};
+
+		workers.push(
+			tokio::spawn(
+				async {
+					device_bind
+						.bind()
+						.await
+						.map_err(BindError::DeviceBindError)
 				}
 			)
 		);
@@ -72,6 +114,9 @@ pub enum BindError {
 	#[error("Could not bind system paths: {0:#?}")]
 	SystemBindError(system::SystemBindError),
 
+	#[error("Could not bind devices: {0:#?}")]
+	DeviceBindError(devices::DeviceError),
+
 	#[error("Could not spawn bind task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
 }
@@ -93,4 +138,4 @@ pub mod mask;
 
 pub mod user;
 
-pub mod system;
+mod system;
