@@ -16,6 +16,8 @@ pub struct SystemBind {
 	pub overlay_bin:	bool,
 	pub device_allow:	Vec<crate::config::config_definition::DeviceAllow>,
 	pub app_id:		String,
+
+	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
 }
 
 impl super::GenerateBind for SystemBind {
@@ -29,6 +31,7 @@ impl super::GenerateBind for SystemBind {
 			self.overlay_bin,
 			self.device_allow,
 			self.app_id,
+			self.flatpak_info,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -48,6 +51,7 @@ async fn bind(
 	overlay_bin:		bool,
 	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
 	app_id:			String,
+	flatpak_info:		std::sync::Arc<std::path::PathBuf>,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
@@ -332,7 +336,24 @@ async fn bind(
 	if config.advanced.flatpak_env {
 		ret.push(
 			BindRule::Path {
-				source: (), dest: (), class: () }
+				source:	flatpak_info.to_path_buf(),
+				dest:	"/.flatpak-info".into(),
+				class: crate::bind::types::BindType::ReadOnly,
+			}
+		);
+
+		let info_runtime_path = {
+			let mut path = xdg.runtime.to_path_buf();
+			path.push(".flatpak-info");
+			path
+		};
+
+		ret.push(
+			BindRule::Path {
+				source:	flatpak_info.to_path_buf(),
+				dest:	info_runtime_path,
+				class: crate::bind::types::BindType::ReadOnly,
+			}
 		);
 	};
 
