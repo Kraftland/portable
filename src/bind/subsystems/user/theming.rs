@@ -103,11 +103,25 @@ async fn paths(
 		(path, nested)
 	};
 
+	let (kdeglobals_host, kdeglobals_nested) = {
+		let mut path = xdg_config.to_path_buf();
+		path.push("kdeglobals");
+
+		let nested = path
+			.translate_home(&translator)
+			.await
+			.map_err(super::UserBindError::TranslatePathError)
+			?;
+
+		(path, nested)
+	};
+
 	Ok(vec![
 		(fontconfig_host, fontconfig_nested),
 		(gtk3_css_host, gtk3_css_nested),
 		(gtk3_noctalia_host, gtk3_noctalia_nested),
 		(gtk3_colours_host, gtk3_colours_nested),
 		(gtk4_css_host, gtk4_css_nested),
+		(kdeglobals_host, kdeglobals_nested),
 	])
 }
