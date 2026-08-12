@@ -15,9 +15,9 @@ pub enum DisplayError {
 }
 
 pub struct Display {
+	pub xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
+
 	pub logger:		crate::logger::LogSender,
-	pub home:		std::path::PathBuf,
-	pub runtime_dir:	std::sync::Arc<std::path::PathBuf>,
 	pub env:		crate::envs::holder::HoldChannel,
 
 	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
@@ -32,9 +32,8 @@ pub struct Display {
 impl super::GenerateBind for Display {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
 		bind(
+			self.xdg,
 			self.logger,
-			self.home,
-			self.runtime_dir,
 			self.env,
 			self.portable_runtime,
 			self.app_id,
@@ -96,9 +95,8 @@ mod session;
 	native display protocols
 */
 async fn bind(
+	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	logger:			crate::logger::LogSender,
-	home:			std::path::PathBuf,
-	runtime_dir:		std::sync::Arc<std::path::PathBuf>,
 	env:			crate::envs::holder::HoldChannel,
 
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
