@@ -126,6 +126,19 @@ pub async fn generate_bindrules(
 			)
 		);
 	};
+	{
+		let mask_bind = mask::Mask {};
+		workers.push(
+			tokio::spawn(
+				async {
+					mask_bind
+						.bind()
+						.await
+						.map_err(BindError::MaskError)
+				}
+			)
+		);
+	};
 
 	unimplemented!();
 
@@ -154,6 +167,9 @@ pub enum BindError {
 
 	#[error("Could not bind display sockets: {0:#?}")]
 	DisplayBindError(display::DisplayError),
+
+	#[error("Could not mask certain paths: {0:#?}")]
+	MaskError(mask::MaskError),
 
 	#[error("Could not spawn bind task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
