@@ -3,11 +3,41 @@ mod nsswitch;
 mod kvm;
 
 /**
+	The system bind subsystem
+*/
+pub struct SystemBind {
+	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
+	pub xdg_runtime:	std::path::PathBuf,
+	pub data_dir:		std::path::PathBuf,
+	pub state_dir:		String,
+	pub overlay_bin:	bool,
+	pub device_allow:	Vec<crate::config::config_definition::DeviceAllow>,
+	pub app_id:		String,
+}
+
+impl super::GenerateBind for SystemBind {
+	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		bind(
+			self.portable_runtime,
+			self.document_mount,
+			self.xdg_runtime,
+			self.data_dir,
+			self.state_dir,
+			self.overlay_bin,
+			self.device_allow,
+			self.app_id,
+		).await
+	}
+	type BindError = SystemBindError;
+}
+
+/**
 	The system bind subsystem exposes several paths of system root.
 
 	It is designed to provide theming consistency in mind. Masking is done via the mask subsystem.
 */
-pub async fn bind(
+async fn bind(
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg_runtime:		std::path::PathBuf,
