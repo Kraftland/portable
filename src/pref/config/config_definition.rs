@@ -79,7 +79,6 @@ impl Default for BusExec {
 			enable: false,
 			target: String::new(),
 			arguments: vec![],
-			overlay: false,
 		}
 	}
 }

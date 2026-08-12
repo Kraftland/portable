@@ -66,7 +66,6 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 			enable: false,
 			target: "".to_string(),
 			arguments: vec![],
-			overlay: false,
 		},
 		process: ProcMgmt {
 			background: true,
