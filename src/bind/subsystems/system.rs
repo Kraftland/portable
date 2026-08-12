@@ -16,13 +16,12 @@ pub struct SystemBind {
 	pub overlay_bin:	bool,
 	pub device_allow:	Vec<crate::config::config_definition::DeviceAllow>,
 	pub app_id:		String,
-
-	pub flatpak_info:	std::path::PathBuf,
 }
 
 impl super::GenerateBind for SystemBind {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
 		bind(
+			self.config,
 			self.portable_runtime,
 			self.document_mount,
 			self.xdg,
@@ -30,9 +29,6 @@ impl super::GenerateBind for SystemBind {
 			self.overlay_bin,
 			self.device_allow,
 			self.app_id,
-
-			#[cfg(feature = "flatpak")]
-			self.flatpak_info,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -44,6 +40,7 @@ impl super::GenerateBind for SystemBind {
 	It is designed to provide theming consistency in mind. Masking is done via the mask subsystem.
 */
 async fn bind(
+	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
@@ -51,9 +48,6 @@ async fn bind(
 	overlay_bin:		bool,
 	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
 	app_id:			String,
-
-	#[cfg(feature = "flatpak")]
-	flatpak_info:		std::path::PathBuf,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
@@ -153,13 +147,6 @@ async fn bind(
 				size_mb:	Some(1),
 				perms:		None,
 			},
-		},
-
-		#[cfg(feature = "flatpak")]
-		BindRule::Path {
-			source:	flatpak_info,
-			dest:	"/.flatpak-info".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
 		},
 
 		/*
@@ -341,6 +328,13 @@ async fn bind(
 			Privacy mounts are handled in the mask subsystem
 		*/
 	];
+
+	if config.advanced.flatpak_env {
+		ret.push(
+			BindRule::Path {
+				source: (), dest: (), class: () }
+		);
+	};
 
 	{
 		let mut overlay_source = vec![
