@@ -1,10 +1,19 @@
 mod paths;
 mod flatpak;
 
+pub struct Mask {}
+
+impl super::GenerateBind for Mask {
+	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		mask_paths().await
+	}
+	type BindError = MaskError;
+}
+
 /**
 	The public function is used to mask certain paths for privacy
 */
-pub async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
+async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
 	let mut ret = vec![];
 	use crate::bind::types::BindRule;
 
