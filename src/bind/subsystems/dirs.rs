@@ -1,6 +1,5 @@
 pub mod portable_runtime;
 
-#[cfg(feature = "flatpak")]
 pub mod flatpak;
 
 pub mod documents;
