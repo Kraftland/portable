@@ -4,7 +4,7 @@
 */
 #[derive(Debug, Clone)]
 pub struct PortableRuntime {
-	path:	std::path::PathBuf,
+	path:	std::sync::Arc<std::path::PathBuf>,
 }
 
 impl super::RuntimePathsTrait for PortableRuntime {
@@ -19,23 +19,23 @@ impl super::RuntimePathsTrait for PortableRuntime {
 		path.push("portable");
 		path.push(&config.metadata.sandbox_id);
 		path.push(instance_id);
-		Self { path }
+		Self { path: std::sync::Arc::new(path) }
 	}
 
 	async fn create_path(&self, stop: tokio::sync::mpsc::Sender<crate::stop::StopFunc>)	->
 			Result<(), Self::RuntimePathError>
 	{
-		tokio::fs::create_dir_all(&self.path)
+		tokio::fs::create_dir_all(self.path.clone().as_path())
 			.await
 			.map_err(Error::CreateError)?;
 
-		let path_clone = self.path.clone();
+		let remove_path = self.path.clone();
 
 		stop.send(
 			crate::stop::StopFunc {
 				layer: crate::stop::FunctionLayer::Pre,
-				function: Box::new(|| {
-					match std::fs::remove_dir_all(path_clone) {
+				function: Box::new(move || {
+					match std::fs::remove_dir_all(remove_path.as_path()) {
 						Ok(_)	=> {}
 						Err(e)	=> {
 							eprintln!("Could not remove runtime directory: {e:#?}")
@@ -49,7 +49,7 @@ impl super::RuntimePathsTrait for PortableRuntime {
 	}
 
 	fn path(&self) -> std::path::PathBuf {
-		std::path::PathBuf::from(&self.path)
+		self.path.to_path_buf()
 	}
 
 	type RuntimePathError = Error;
