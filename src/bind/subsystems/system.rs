@@ -12,10 +12,6 @@ pub struct SystemBind {
 
 	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	pub state_dir:		String,
-	pub overlay_bin:	bool,
-	pub device_allow:	Vec<crate::config::config_definition::DeviceAllow>,
-	pub app_id:		String,
 
 	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
 }
@@ -27,10 +23,6 @@ impl super::GenerateBind for SystemBind {
 			self.portable_runtime,
 			self.document_mount,
 			self.xdg,
-			self.state_dir,
-			self.overlay_bin,
-			self.device_allow,
-			self.app_id,
 			self.flatpak_info,
 		).await
 	}
@@ -47,22 +39,18 @@ async fn bind(
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
-	state_dir:		String,
-	overlay_bin:		bool,
-	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
-	app_id:			String,
 	flatpak_info:		std::sync::Arc<std::path::PathBuf>,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
 	let state_directory = {
 		let mut path = xdg.data_home.to_path_buf();
-		path.push(state_dir);
+		path.push(&config.metadata.state_directory);
 		path
 	};
 
 	let kvm_spawn = tokio::spawn(
-		kvm::mount_kvm(device_allow)
+		kvm::mount_kvm(config.system.device_allow.clone())
 	);
 
 	let passwd_spawn = tokio::spawn(
@@ -362,9 +350,9 @@ async fn bind(
 			std::path::PathBuf::from("/usr/bin"),
 			std::path::PathBuf::from("/usr/lib/portable/overlay-usr"),
 		];
-		if overlay_bin {
+		if config.exec.overlay {
 			let mut path = std::path::PathBuf::from("/usr/lib/portable/info");
-			path.push(&app_id);
+			path.push(&config.metadata.sandbox_id);
 			path.push("bin");
 			overlay_source.push(
 				path
