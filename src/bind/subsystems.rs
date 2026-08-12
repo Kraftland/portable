@@ -25,20 +25,25 @@ pub async fn generate_bindrules(
 
 	logger:			crate::logger::LogSender,
 
+	allow_x11:		bool,
+	home:			std::path::PathBuf,
+	env:			crate::envs::holder::HoldChannel,
+	instance_id:		String,
+
 )
 -> Result<super::types::BindRules, BindError> {
 	let mut workers = vec![];
 
 	{
 		let system_bind = system::SystemBind {
-			portable_runtime:	portable_runtime,
+			portable_runtime:	portable_runtime.clone(),
 			document_mount:		document_mount,
-			xdg_runtime:		xdg_runtime,
+			xdg_runtime:		xdg_runtime.clone(),
 			data_dir:		data_dir,
 			state_dir:		state_dir,
 			overlay_bin:		overlay_bin,
 			device_allow:		device_allow.clone(),
-			app_id:			app_id,
+			app_id:			app_id.clone(),
 		};
 
 		workers.push(
@@ -91,6 +96,34 @@ pub async fn generate_bindrules(
 			)
 		);
 	};
+	{
+		let display_bind = display::Display {
+			logger:			logger,
+			home:			home,
+			runtime_dir:		xdg_runtime,
+			env:			env,
+			portable_runtime:	portable_runtime,
+			app_id:			app_id,
+			instance_id:		instance_id,
+			x11:			allow_x11,
+			/*
+				We don't have a dedicated Wayland configuration now
+				It will be enabled on session type detection
+			*/
+			wayland:		false,
+		};
+
+		workers.push(
+			tokio::spawn(
+				async {
+					display_bind
+						.bind()
+						.await
+						.map_err(BindError::DisplayBindError)
+				}
+			)
+		);
+	};
 
 	unimplemented!();
 
@@ -117,6 +150,9 @@ pub enum BindError {
 	#[error("Could not bind devices: {0:#?}")]
 	DeviceBindError(devices::DeviceError),
 
+	#[error("Could not bind display sockets: {0:#?}")]
+	DisplayBindError(display::DisplayError),
+
 	#[error("Could not spawn bind task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
 }
@@ -130,7 +166,7 @@ pub mod devices;
 pub mod dirs;
 
 #[cfg(feature = "display")]
-pub mod display;
+mod display;
 
 pub mod desktop_file;
 
