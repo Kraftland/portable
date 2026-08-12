@@ -14,6 +14,14 @@ pub async fn bind(
 					class: crate::bind::types::BindType::ReadOnly,
 				}
 			);
+		} else if path.0.is_file() {
+			ret.push(
+				crate::bind::types::BindRule::Path {
+					source: path.0,
+					dest: path.1,
+					class: crate::bind::types::BindType::ReadOnly,
+				}
+			);
 		}
 	}
 
