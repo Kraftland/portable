@@ -32,6 +32,8 @@ pub async fn generate_bindrules(
 
 )
 -> Result<super::types::BindRules, BindError> {
+	let xdg_runtime = std::sync::Arc::new(xdg_runtime);
+
 	let mut workers = vec![];
 
 	{
@@ -100,7 +102,7 @@ pub async fn generate_bindrules(
 		let display_bind = display::Display {
 			logger:			logger,
 			home:			home,
-			runtime_dir:		xdg_runtime,
+			runtime_dir:		xdg_runtime.clone(),
 			env:			env,
 			portable_runtime:	portable_runtime,
 			app_id:			app_id,

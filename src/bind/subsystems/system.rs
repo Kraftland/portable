@@ -8,7 +8,7 @@ mod kvm;
 pub struct SystemBind {
 	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	pub xdg_runtime:	std::path::PathBuf,
+	pub xdg_runtime:	std::sync::Arc<std::path::PathBuf>,
 	pub data_dir:		std::path::PathBuf,
 	pub state_dir:		String,
 	pub overlay_bin:	bool,
@@ -40,7 +40,7 @@ impl super::GenerateBind for SystemBind {
 async fn bind(
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	xdg_runtime:		std::path::PathBuf,
+	xdg_runtime:		std::sync::Arc<std::path::PathBuf>,
 	data_dir:		std::path::PathBuf,
 	state_dir:		String,
 	overlay_bin:		bool,
@@ -351,7 +351,7 @@ async fn bind(
 
 	// systemd notify socket
 	{
-		let mut notify_path = xdg_runtime;
+		let mut notify_path = xdg_runtime.as_path().to_path_buf();
 		notify_path.push("systemd");
 		notify_path.push("notify");
 		ret.push(

@@ -17,7 +17,7 @@ pub enum DisplayError {
 pub struct Display {
 	pub logger:		crate::logger::LogSender,
 	pub home:		std::path::PathBuf,
-	pub runtime_dir:	std::path::PathBuf,
+	pub runtime_dir:	std::sync::Arc<std::path::PathBuf>,
 	pub env:		crate::envs::holder::HoldChannel,
 
 	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
@@ -98,7 +98,7 @@ mod session;
 async fn bind(
 	logger:			crate::logger::LogSender,
 	home:			std::path::PathBuf,
-	runtime_dir:		std::path::PathBuf,
+	runtime_dir:		std::sync::Arc<std::path::PathBuf>,
 	env:			crate::envs::holder::HoldChannel,
 
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
@@ -177,7 +177,7 @@ async fn bind(
 	#[cfg(feature = "wayland")]
 	if wayland {
 		let info = wayland::Wayland {
-			runtime_dir:		runtime_dir,
+			runtime_dir:		runtime_dir.as_path().to_path_buf(),
 			env:			env,
 			portable_runtime:	portable_runtime,
 			logger:			logger,
