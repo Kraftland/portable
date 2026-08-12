@@ -12,14 +12,19 @@ mod create_state_dir;
 	As such, the second argument is a path map for later use in the D-Bus subsystem.
 */
 pub struct UserBind {
-	translator:	crate::bind::translate::Delta,
-	xdg_config:	std::sync::Arc<std::path::PathBuf>,
+	pub translator:	crate::bind::translate::Delta,
+	pub xdg:	std::sync::Arc<crate::xdg::XdgDirs>,
+	pub config:	std::sync::Arc<crate::config::config_definition::Config>,
 }
 
-pub async fn bind()
--> Result<(crate::bind::types::BindRules, std::collections::HashMap<String, String>), UserBindError>
-{
-	unimplemented!()
+impl super::GenerateBind for UserBind {
+	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		let mut binds = paths::bind(
+			self.xdg.data_home.to_path_buf(),
+			self.xdg.home.clone(),
+			self.config.metadata.state_directory,
+		).await?;
+	}
 }
 
 #[derive(thiserror::Error, Debug)]
