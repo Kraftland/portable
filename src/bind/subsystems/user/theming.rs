@@ -42,6 +42,21 @@ async fn paths(
 	let (gtk3_css_host, gtk3_css_nested) = {
 		let mut path = xdg_config.to_path_buf();
 		path.push("gtk-3.0");
+		path.push("gtk.css");
+
+		let nested = path
+			.translate_home(&translator)
+			.await
+			.map_err(super::UserBindError::TranslatePathError)
+			?;
+
+		(path, nested)
+	};
+
+	let (gtk3_noctalia_host, gtk3_noctalia_nested) = {
+		let mut path = xdg_config.to_path_buf();
+		path.push("gtk-3.0");
+		path.push("noctalia.css");
 
 		let nested = path
 			.translate_home(&translator)
@@ -55,5 +70,6 @@ async fn paths(
 	Ok(vec![
 		(fontconfig_host, fontconfig_nested),
 		(gtk3_css_host, gtk3_css_nested),
+		(gtk3_noctalia_host, gtk3_noctalia_nested),
 	])
 }
