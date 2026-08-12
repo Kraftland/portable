@@ -8,5 +8,8 @@ pub fn get_paths() -> Vec<std::path::PathBuf> {
 		"/sys/devices/virtual/sound".into(),
 
 		"/etc/kernel".into(),
+
+		"/proc/1".into(),
+		"/usr/share/applications".into(),
 	]
 }
