@@ -39,7 +39,21 @@ async fn paths(
 		.map_err(super::UserBindError::TranslatePathError)
 		?;
 
+	let (gtk3_css_host, gtk3_css_nested) = {
+		let mut path = xdg_config.to_path_buf();
+		path.push("gtk-3.0");
+
+		let nested = path
+			.translate_home(&translator)
+			.await
+			.map_err(super::UserBindError::TranslatePathError)
+			?;
+
+		(path, nested)
+	};
+
 	Ok(vec![
-		(fontconfig_host, fontconfig_nested)
+		(fontconfig_host, fontconfig_nested),
+		(gtk3_css_host, gtk3_css_nested),
 	])
 }
