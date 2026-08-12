@@ -145,7 +145,7 @@ async fn bind(
 	if x11 {
 		let info = x11::X11 {
 			logger:	logger.clone(),
-			home:	home,
+			home:	xdg.home.to_path_buf(),
 			env:	env.clone(),
 		};
 
@@ -175,7 +175,7 @@ async fn bind(
 	#[cfg(feature = "wayland")]
 	if wayland {
 		let info = wayland::Wayland {
-			runtime_dir:		runtime_dir.as_path().to_path_buf(),
+			runtime_dir:		xdg.runtime.to_path_buf(),
 			env:			env,
 			portable_runtime:	portable_runtime,
 			logger:			logger,
