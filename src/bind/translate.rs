@@ -15,7 +15,7 @@ pub enum TranslatePathError {
 		it's delta would be $XDG_DATA_DIR/test_Data
 */
 pub struct Delta {
-	path:	std::path::PathBuf,
+	path:	std::sync::Arc<std::path::PathBuf>,
 }
 
 impl Delta {
@@ -31,7 +31,7 @@ impl Delta {
 		);
 		path.push(config.metadata.state_directory.clone());
 		Delta {
-			path:	path
+			path:	path.into()
 		}
 	}
 }
@@ -44,17 +44,18 @@ pub trait Translate {
 }
 
 impl Translate for std::path::PathBuf {
+	/**
+		Translate the given input path beneath $HOME to the sandbox home
+		Takes ownership of input value to avoid re-using.
+	*/
 	async fn translate_home(self, delta: &Delta)	-> Result<std::path::PathBuf, TranslatePathError> {
 		home(self, delta).await
 	}
 }
 
-/*
+/**
 	Translate the given input path beneath $HOME to the sandbox home
 	Takes ownership of input value to avoid re-using.
-
-	TODO: maybe implement it as a trait?
-
 */
 pub async fn home(origin: std::path::PathBuf, delta: &Delta) -> Result<std::path::PathBuf, TranslatePathError> {
 	let home = {
@@ -68,7 +69,7 @@ pub async fn home(origin: std::path::PathBuf, delta: &Delta) -> Result<std::path
 
 	let stripped_path = strip_prefix(origin, &home).await?;
 
-	let mut ret = std::path::PathBuf::from(delta.path.clone());
+	let mut ret = delta.path.to_path_buf();
 	ret.push(stripped_path);
 	Ok(ret)
 }
