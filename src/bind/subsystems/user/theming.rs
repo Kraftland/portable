@@ -1,6 +1,7 @@
 pub async fn bind(
 	translator:	crate::bind::translate::Delta,
 	xdg_config:	std::sync::Arc<std::path::PathBuf>,
+	xdg_data:	std::sync::Arc<std::path::PathBuf>,
 ) -> Result<crate::bind::types::BindRules, super::UserBindError> {
 	let mut ret = vec![];
 
@@ -34,6 +35,7 @@ pub async fn bind(
 async fn paths(
 	translator:	crate::bind::translate::Delta,
 	xdg_config:	std::sync::Arc<std::path::PathBuf>,
+	xdg_data:	std::sync::Arc<std::path::PathBuf>,
 ) -> Result<Vec<(std::path::PathBuf, std::path::PathBuf)>, super::UserBindError> {
 	use crate::bind::translate::Translate;
 	let fontconfig_host = {
@@ -129,6 +131,22 @@ async fn paths(
 		(path, nested)
 	};
 
+	/*
+		We might consider to drop this as it allows fingerprinting
+	*/
+	let (fonts_host, fonts_nested) = {
+		let mut path = xdg_data.to_path_buf();
+		path.push("fonts");
+
+		let nested = path
+			.translate_home(&translator)
+			.await
+			.map_err(super::UserBindError::TranslatePathError)
+			?;
+
+		(path, nested)
+	};
+
 	Ok(vec![
 		(fontconfig_host, fontconfig_nested),
 		(gtk3_css_host, gtk3_css_nested),
@@ -137,5 +155,6 @@ async fn paths(
 		(gtk4_css_host, gtk4_css_nested),
 		(kdeglobals_host, kdeglobals_nested),
 		(qt6ct_host, qt6ct_nested),
+		(fonts_host, fonts_nested),
 	])
 }
