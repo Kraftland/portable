@@ -9,13 +9,13 @@ pub struct DocumentsMountPoint {
 }
 
 impl DocumentsMountPoint {
-	async fn new(
-			config:		&crate::config::Config,
-			bus:		&zbus::Connection
+	pub async fn new(
+			config:		std::sync::Arc<crate::config::config_definition::Config>,
+			bus:		zbus::Connection
 		)	->
 			Result<Self, DocumentError>
 	{
-		let proxy = DocumentsProxy::new(bus)
+		let proxy = DocumentsProxy::new(&bus)
 			.await
 			.map_err(DocumentError::ProxyError)
 			?;
@@ -51,11 +51,11 @@ impl DocumentsMountPoint {
 		self.inner_per_app.clone()
 	}
 
-	fn path_ref(&self)	-> &std::path::PathBuf {
+	pub fn path_ref(&self)	-> &std::path::PathBuf {
 		&self.inner
 	}
 
-	async fn create_path(&self) -> Result<(), DocumentError> {
+	pub async fn create_path(&self) -> Result<(), DocumentError> {
 		tokio::fs::create_dir_all(self.path_ref())
 			.await
 			.map_err(DocumentError::CreateError)

@@ -15,7 +15,7 @@ pub enum FlatpakInfoError {
 */
 pub async fn create(
 	config:			std::sync::Arc<crate::config::config_definition::Config>,
-	instance_id:		std::sync::Arc<str>,
+	instance_id:		std::sync::Arc<String>,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
