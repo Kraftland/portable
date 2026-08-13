@@ -14,6 +14,40 @@ pub async fn forward_file(
 
 	logger:		crate::logger::LogSender,
 ) -> (BindRules, HashMap<String, String>) {
+	if expose_list.len() > 0 {
+		match question(&expose_list).await {
+			Ok(true)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Info,
+						message: format!("User consent given for exposing"),
+					},
+				).await;
+			}
+			Ok(false)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Info,
+						message: format!("User denied exposing files"),
+					},
+				).await;
+				return (vec![], std::collections::HashMap::new());
+			}
+			Err(e)		=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not ask for consent: {e:#?}"),
+					},
+				).await;
+				return (vec![], std::collections::HashMap::new());
+			}
+		}
+	} else {
+		return (vec![], std::collections::HashMap::new());
+	}
+
+
 	use crate::pref::runtime::options::FileExposurePreference;
 	use crate::bind::types::BindRule;
 	let mut rules = vec![];
@@ -67,4 +101,59 @@ pub async fn forward_file(
 	};
 
 	(rules, pass_map)
+}
+
+/**
+	Ask the user for consent of exposing files. Currently uses Zenity but we want to natively
+		do that in the future.
+*/
+async fn question(paths: &Vec<crate::pref::runtime::options::FileExposurePreference>)
+-> Result<bool, super::UserBindError> {
+	let mut cmd_args = vec![
+		"--title",
+		"Permission Control",
+		"--icon=folder-open-symbolic",
+		"--question",
+		"--default-cancel",
+	];
+
+	let text = {
+		use crate::pref::runtime::options::FileExposurePreference;
+		let mut string = String::new();
+		string.push_str("--text=Exposing the following path: \n");
+		for path in paths {
+			match path {
+				FileExposurePreference::Passthrough { host }	=> {
+					string.push_str(&host.to_string_lossy());
+				}
+				FileExposurePreference::MountPath { host, dest: _, class: _ }
+										=> {
+					string.push_str(&host.to_string_lossy());
+				}
+			}
+		};
+		string
+	};
+
+	cmd_args.push(&text);
+
+	let mut command = tokio::process::Command::new("zenity");
+
+	let mut command = command.kill_on_drop(true);
+	command = command.args(cmd_args);
+
+	let mut child = match command.spawn() {
+		Ok(v)	=> v,
+		Err(e)	=> {
+			return Err(
+				super::UserBindError::ZenitySpawnError(e)
+			);
+		}
+	};
+
+	if child.wait().await.map_err(super::UserBindError::ZenitySpawnError)?.success() {
+		Ok(true)
+	} else {
+		Ok(false)
+	}
 }
