@@ -2,7 +2,7 @@
 pub async fn bind(
 	xdg_data_dir:	std::path::PathBuf,
 	xdg_home:	std::path::PathBuf,
-	state_dir:	String,
+	state_dir:	&str,
 ) -> Result<crate::bind::types::BindRules, super::UserBindError> {
 	use crate::bind::types::BindRule;
 

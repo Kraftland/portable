@@ -1,11 +1,11 @@
 pub async fn bind(
 	translator:	crate::bind::translate::Delta,
-	xdg_config:	std::sync::Arc<std::path::PathBuf>,
-	xdg_data:	std::sync::Arc<std::path::PathBuf>,
+	xdg_config:	std::path::PathBuf,
+	xdg_data:	std::path::PathBuf,
 ) -> Result<crate::bind::types::BindRules, super::UserBindError> {
 	let mut ret = vec![];
 
-	for path in paths(translator, xdg_config).await? {
+	for path in paths(translator, xdg_config, xdg_data).await? {
 		// Returns true if the path exists on disk and is pointing at a directory
 		if path.0.is_dir() {
 			ret.push(
@@ -34,8 +34,8 @@ pub async fn bind(
 */
 async fn paths(
 	translator:	crate::bind::translate::Delta,
-	xdg_config:	std::sync::Arc<std::path::PathBuf>,
-	xdg_data:	std::sync::Arc<std::path::PathBuf>,
+	xdg_config:	std::path::PathBuf,
+	xdg_data:	std::path::PathBuf,
 ) -> Result<Vec<(std::path::PathBuf, std::path::PathBuf)>, super::UserBindError> {
 	use crate::bind::translate::Translate;
 	let fontconfig_host = {
