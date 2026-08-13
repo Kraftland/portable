@@ -10,17 +10,19 @@ mod portal_allowlist;
 	The flatpak info file will always be under Portable's runtime directory, named flatpak-info
 */
 pub struct Proxy {
-	logger:		crate::logger::LogSender,
-	proxy_path:	std::path::PathBuf,
-	mpris_names:	Vec<String>,
-	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-	app_id:		String,
-	kde_status:	bool,
-	classic_notif:	bool,
-	inhibit:	bool,
-	status_fd:	Option<std::os::fd::OwnedFd>,
+	pub logger:		crate::logger::LogSender,
+	pub proxy_path:		std::path::PathBuf,
+	pub mpris_names:	Vec<String>,
+	pub stop_token:		Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	pub app_id:		String,
+	pub kde_status:		bool,
+	pub classic_notif:	bool,
+	pub inhibit:		bool,
 
-	portable_dir:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	#[cfg(feature = "flatpak")]
+	pub status_fd:		Option<std::os::fd::OwnedFd>,
+	#[cfg(feature = "flatpak")]
+	pub flatpak_info:		std::path::PathBuf,
 }
 
 impl crate::bind::bus::StartProxy for Proxy {
@@ -39,8 +41,10 @@ impl crate::bind::bus::StartProxy for Proxy {
 			self.kde_status,
 			self.classic_notif,
 			self.inhibit,
+			#[cfg(feature = "flatpak")]
 			self.status_fd,
-			self.portable_dir,
+			#[cfg(feature = "flatpak")]
+			self.flatpak_info,
 		).await
 	}
 
@@ -59,8 +63,10 @@ async fn compile_rules(
 	kde_status:	bool,
 	classic_notif:	bool,
 	inhibit:	bool,
+	#[cfg(feature = "flatpak")]
 	status_fd:	Option<std::os::fd::OwnedFd>,
-	portable_dir:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	#[cfg(feature = "flatpak")]
+	flatpak_info:	std::path::PathBuf,
 ) -> Result<crate::bind::bus::Proxy, ProxyError> {
 	let bus_address = tokio::spawn(get_session_bus_address());
 
@@ -81,18 +87,12 @@ async fn compile_rules(
 		),
 	);
 
-	#[cfg(feature = "flatpak")]
-	let flatpak_info_path = {
-		use crate::bind::subsystems::dirs::RuntimePathsTrait;
-		portable_dir.path()
-	};
-
 	let sandbox_rules = tokio::spawn(
 		generate_sandbox_rules(
 			proxy_path.clone(),
 
 			#[cfg(feature = "flatpak")]
-			flatpak_info_path,
+			flatpak_info,
 		),
 	);
 
@@ -129,6 +129,7 @@ async fn compile_rules(
 			proxy_address:		proxy_address,
 			bind_lifetime:		stop_token,
 			sloppy_names:		false,
+			#[cfg(feature = "flatpak")]
 			json_status_file:	status_fd,
 			app_sandbox:		Some(app_sandbox_rules),
 			envs:			{
