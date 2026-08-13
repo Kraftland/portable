@@ -4,8 +4,11 @@ pub struct RuntimeOpts {
 	*/
 	pub file_expose:	Vec<FileExposurePreference>,
 	pub Action:		Action,
-	pub app_args:		Vec<String>,
+	pub app_args:		ApplicationArguments,
+	pub bus_activation:	bool,
 }
+
+pub type ApplicationArguments = Vec<String>;
 
 /**
 	StartMode designates different operation modes

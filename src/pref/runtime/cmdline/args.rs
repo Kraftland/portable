@@ -12,6 +12,7 @@ pub async fn parse(logger: crate::logger::LogSender)
 
 
 	let mut file_forwarding: bool = false;
+	let mut bus_activate: bool = false;
 	let mut expose_files: Vec<FileExposurePreference> = vec![];
 	let mut start_mode: Action = Action::Normal {debug_shell: false};
 	let mut application_args = vec![];
@@ -34,6 +35,9 @@ pub async fn parse(logger: crate::logger::LogSender)
 			}
 			"--file-forwarding" | "--forward-file"	=> {
 				file_forwarding = true
+			}
+			"--dbus-activation"			=> {
+				bus_activate = true
 			}
 			"--expose"				=> {
 				skip_counter = 2;
@@ -114,6 +118,7 @@ pub async fn parse(logger: crate::logger::LogSender)
 			file_expose: 	expose_files,
 			Action:		start_mode,
 			app_args:	application_args,
+			bus_activation:	bus_activate,
 		},
 	)
 }

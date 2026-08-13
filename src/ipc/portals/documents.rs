@@ -4,7 +4,7 @@
 	Caller can use .zip to iterate and make a connection between original paths and new paths
 */
 pub async fn add_full(
-	paths:		&Vec<std::path::PathBuf>,
+	paths:		&Vec<&std::path::PathBuf>,
 	dbus_conn:	&zbus::Connection,
 	app_id:		&str,
 ) -> Result<Vec<std::path::PathBuf>, DocumentError> {

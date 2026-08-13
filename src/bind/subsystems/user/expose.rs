@@ -7,7 +7,9 @@ use std::collections::HashMap;
 	a vector of bind rules to represent type MountPath, and a hashmap of (orig, dest) for D-Bus
 */
 pub async fn forward_file(
-	expose_list:	Vec<crate::pref::runtime::options::FileExposurePreference>,
+	expose_list:	&Vec<crate::pref::runtime::options::FileExposurePreference>,
+
+	forward_file:	bool,
 
 	dbus_conn:	&zbus::Connection,
 	app_id:		&str,
@@ -54,14 +56,28 @@ pub async fn forward_file(
 
 	let mut path_list = vec![];
 
+	use crate::bind::types::BindType;
+
 	for expose in expose_list {
 		match expose {
 			FileExposurePreference::MountPath { host, dest, class }	=> {
 				rules.push(
 					BindRule::Path {
-						source:	host,
-						dest:	dest,
-						class:	class,
+						source:	host.to_path_buf(),
+						dest:	dest.to_path_buf(),
+						class:	{
+							match class {
+								BindType::Device	=> {
+									BindType::Device
+								}
+								BindType::ReadOnly	=> {
+									BindType::ReadOnly
+								}
+								BindType::ReadWrite	=> {
+									BindType::ReadWrite
+								}
+							}
+						},
 					}
 				);
 			}
@@ -73,7 +89,7 @@ pub async fn forward_file(
 
 	let mut pass_map = HashMap::new();
 
-	if path_list.len() > 0 {
+	if path_list.len() > 0 && forward_file {
 		let doc_ids = crate::ipc::portals::documents::add_full(
 			&path_list,
 			dbus_conn,
