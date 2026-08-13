@@ -61,6 +61,9 @@ enum StartError {
 
 	#[error("Could not generate bind rules: {0:#?}")]
 	BindError(bind::subsystems::BindError),
+
+	#[error("Could not publish info for Init: {0:#?}")]
+	InitPublishError(zbus::Error),
 }
 
 #[tokio::main]
@@ -464,6 +467,12 @@ async fn run(
 		.map_err(StartError::BindError)
 		?;
 
+	let init_info = tokio::spawn(
+		init_info.publish(
+			dbus_conn.clone(),
+		),
+	);
+
 	bind_rules.extend(
 		bus_binds
 			.await
@@ -472,6 +481,12 @@ async fn run(
 			.map_err(StartError::ProxyError)
 			?,
 	);
+	init_info
+		.await
+		.map_err(StartError::SpawnError)
+		?
+		.map_err(StartError::InitPublishError)
+		?;
 
 	/*
 		Stop, or termination is handled by stop_worker, we sleep forever here to prevent bus being dropped
