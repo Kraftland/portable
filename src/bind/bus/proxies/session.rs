@@ -12,12 +12,9 @@ mod portal_allowlist;
 pub struct Proxy {
 	pub logger:		crate::logger::LogSender,
 	pub proxy_path:		std::path::PathBuf,
-	pub mpris_names:	Vec<String>,
+	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+
 	pub stop_token:		Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-	pub app_id:		String,
-	pub kde_status:		bool,
-	pub classic_notif:	bool,
-	pub inhibit:		bool,
 
 	#[cfg(feature = "flatpak")]
 	pub status_fd:		Option<std::os::fd::OwnedFd>,
@@ -34,13 +31,8 @@ impl crate::bind::bus::StartProxy for Proxy {
 		compile_rules(
 			self.logger,
 			self.proxy_path,
-			self.mpris_names,
+			self.config,
 			self.stop_token,
-
-			self.app_id,
-			self.kde_status,
-			self.classic_notif,
-			self.inhibit,
 			#[cfg(feature = "flatpak")]
 			self.status_fd,
 			#[cfg(feature = "flatpak")]
@@ -57,12 +49,8 @@ use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	proxy_path:	std::path::PathBuf,
-	mpris_names:	Vec<String>,
+	config:		std::sync::Arc<crate::config::config_definition::Config>,
 	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-	app_id:		String,
-	kde_status:	bool,
-	classic_notif:	bool,
-	inhibit:	bool,
 	#[cfg(feature = "flatpak")]
 	status_fd:	Option<std::os::fd::OwnedFd>,
 	#[cfg(feature = "flatpak")]
@@ -79,11 +67,11 @@ async fn compile_rules(
 
 	let bus_access_spawn = tokio::spawn(
 		generate_bus_rules(
-			String::from(app_id),
-			kde_status,
-			mpris_names,
-			classic_notif,
-			inhibit,
+			config.metadata.sandbox_id.to_string(),
+			config.advanced.allow_kde_status,
+			config.advanced.mpris_names.clone(),
+			config.privacy.classic_notif,
+			config.system.allow_inhibit,
 		),
 	);
 

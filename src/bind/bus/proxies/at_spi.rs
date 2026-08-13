@@ -2,12 +2,12 @@
 	The accessibility bus proxy, errors should not be critical
 */
 pub struct AtspiProxy {
-	zbus_connection:	zbus::Connection,
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
-	logger:			crate::logger::LogSender,
+	pub zbus_connection:	zbus::Connection,
+	pub portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
+	pub logger:		crate::logger::LogSender,
 
 	#[cfg(feature = "flatpak")]
-	flatpak_info:		std::path::PathBuf,
+	pub flatpak_info:	std::path::PathBuf,
 }
 
 mod rules;
@@ -85,3 +85,4 @@ pub enum AtspiError {
 	#[error("Could not start D-Bus proxy for a11y bus: thread spawn error: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
 }
+
