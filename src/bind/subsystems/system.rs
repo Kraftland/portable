@@ -10,7 +10,7 @@ pub struct SystemBind {
 
 	pub xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 
-	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	pub portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 
 	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
@@ -36,7 +36,7 @@ impl super::GenerateBind for SystemBind {
 */
 async fn bind(
 	config:			std::sync::Arc<crate::config::config_definition::Config>,
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	flatpak_info:		std::sync::Arc<std::path::PathBuf>,

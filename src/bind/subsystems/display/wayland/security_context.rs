@@ -28,7 +28,7 @@ pub enum SecurityContextError {
 */
 pub async fn create_context(
 	original_socket:	std::path::PathBuf,
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	logger:			crate::logger::LogSender,
 
 	app_id:			String,

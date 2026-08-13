@@ -10,7 +10,7 @@ pub mod at_spi;
 pub async fn start_proxies(
 	logger:		crate::logger::LogSender,
 	config:		std::sync::Arc<crate::config::config_definition::Config>,
-	stop_tx:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	bus_conn:	zbus::Connection,
 
@@ -51,7 +51,7 @@ pub async fn start_proxies(
 			logger:		logger.clone(),
 			proxy_path:	proxy_path,
 			config:		config.clone(),
-			stop_token:	stop_tx.clone(),
+			stop_token:	Some(stop_tx.clone()),
 
 			#[cfg(feature = "flatpak")]
 			status_fd:	Some(status_fd),
