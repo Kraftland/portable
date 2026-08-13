@@ -6,27 +6,24 @@ mod kvm;
 	The system bind subsystem
 */
 pub struct SystemBind {
+	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+
+	pub xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
+
 	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	pub xdg_runtime:	std::sync::Arc<std::path::PathBuf>,
-	pub data_dir:		std::path::PathBuf,
-	pub state_dir:		String,
-	pub overlay_bin:	bool,
-	pub device_allow:	Vec<crate::config::config_definition::DeviceAllow>,
-	pub app_id:		String,
+
+	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
 }
 
 impl super::GenerateBind for SystemBind {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
 		bind(
+			self.config,
 			self.portable_runtime,
 			self.document_mount,
-			self.xdg_runtime,
-			self.data_dir,
-			self.state_dir,
-			self.overlay_bin,
-			self.device_allow,
-			self.app_id,
+			self.xdg,
+			self.flatpak_info,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -38,25 +35,22 @@ impl super::GenerateBind for SystemBind {
 	It is designed to provide theming consistency in mind. Masking is done via the mask subsystem.
 */
 async fn bind(
+	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	xdg_runtime:		std::sync::Arc<std::path::PathBuf>,
-	data_dir:		std::path::PathBuf,
-	state_dir:		String,
-	overlay_bin:		bool,
-	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
-	app_id:			String,
+	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
+	flatpak_info:		std::sync::Arc<std::path::PathBuf>,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
 	let state_directory = {
-		let mut path = data_dir.clone();
-		path.push(state_dir);
+		let mut path = xdg.data_home.to_path_buf();
+		path.push(&config.metadata.state_directory);
 		path
 	};
 
 	let kvm_spawn = tokio::spawn(
-		kvm::mount_kvm(device_allow)
+		kvm::mount_kvm(config.system.device_allow.clone())
 	);
 
 	let passwd_spawn = tokio::spawn(
@@ -327,14 +321,38 @@ async fn bind(
 		*/
 	];
 
+	if config.advanced.flatpak_env {
+		ret.push(
+			BindRule::Path {
+				source:	flatpak_info.to_path_buf(),
+				dest:	"/.flatpak-info".into(),
+				class: crate::bind::types::BindType::ReadOnly,
+			}
+		);
+
+		let info_runtime_path = {
+			let mut path = xdg.runtime.to_path_buf();
+			path.push(".flatpak-info");
+			path
+		};
+
+		ret.push(
+			BindRule::Path {
+				source:	flatpak_info.to_path_buf(),
+				dest:	info_runtime_path,
+				class: crate::bind::types::BindType::ReadOnly,
+			}
+		);
+	};
+
 	{
 		let mut overlay_source = vec![
 			std::path::PathBuf::from("/usr/bin"),
 			std::path::PathBuf::from("/usr/lib/portable/overlay-usr"),
 		];
-		if overlay_bin {
+		if config.exec.overlay {
 			let mut path = std::path::PathBuf::from("/usr/lib/portable/info");
-			path.push(&app_id);
+			path.push(&config.metadata.sandbox_id);
 			path.push("bin");
 			overlay_source.push(
 				path
@@ -351,7 +369,7 @@ async fn bind(
 
 	// systemd notify socket
 	{
-		let mut notify_path = xdg_runtime.as_path().to_path_buf();
+		let mut notify_path = xdg.runtime.to_path_buf();
 		notify_path.push("systemd");
 		notify_path.push("notify");
 		ret.push(

@@ -6,6 +6,8 @@
 	implement different functions and are generally controlled via Cargo feature switches.
 
 	Every subsystem has a unique struct to pass along information.
+
+	The Init info struct is also returned along with bind rules.
 */
 pub trait GenerateBind {
 	fn bind(self) -> impl std::future::Future<Output = Result<super::types::BindRules, Self::BindError>> + Send;
@@ -16,36 +18,28 @@ pub trait GenerateBind {
 pub async fn generate_bindrules(
 	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
-	xdg_runtime:		std::path::PathBuf,
-	data_dir:		std::path::PathBuf,
-	state_dir:		String,
-	overlay_bin:		bool,
-	device_allow:		Vec<crate::config::config_definition::DeviceAllow>,
-	app_id:			String,
-
+	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
+	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	logger:			crate::logger::LogSender,
-
-	allow_x11:		bool,
-	home:			std::path::PathBuf,
 	env:			crate::envs::holder::HoldChannel,
 	instance_id:		String,
+	flatpak_info_path:	std::sync::Arc<std::path::PathBuf>,
 
+	runtime_opts:		std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
+
+	dbus_conn:		zbus::Connection,
 )
--> Result<super::types::BindRules, BindError> {
-	let xdg_runtime = std::sync::Arc::new(xdg_runtime);
+-> Result<(super::types::BindRules, crate::ipc::init::info::InitInfo), BindError> {
 
 	let mut workers = vec![];
 
 	{
 		let system_bind = system::SystemBind {
+			config:			config.clone(),
 			portable_runtime:	portable_runtime.clone(),
 			document_mount:		document_mount,
-			xdg_runtime:		xdg_runtime.clone(),
-			data_dir:		data_dir,
-			state_dir:		state_dir,
-			overlay_bin:		overlay_bin,
-			device_allow:		device_allow.clone(),
-			app_id:			app_id.clone(),
+			xdg:			xdg.clone(),
+			flatpak_info:		flatpak_info_path,
 		};
 
 		workers.push(
@@ -65,7 +59,7 @@ pub async fn generate_bindrules(
 		let mut all_gpus = false;
 		let mut bind_cam = false;
 		let mut bind_input = false;
-		for allow in device_allow {
+		for allow in &config.system.device_allow {
 			match allow {
 				DeviceAllow::DiscreteGPU	=> {
 					all_gpus = true
@@ -100,14 +94,13 @@ pub async fn generate_bindrules(
 	};
 	{
 		let display_bind = display::Display {
-			logger:			logger,
-			home:			home,
-			runtime_dir:		xdg_runtime.clone(),
+			xdg:			xdg.clone(),
+			logger:			logger.clone(),
 			env:			env,
 			portable_runtime:	portable_runtime,
-			app_id:			app_id,
+			app_id:			config.metadata.sandbox_id.to_string(),
 			instance_id:		instance_id,
-			x11:			allow_x11,
+			x11:			config.privacy.x11_compat,
 			/*
 				We don't have a dedicated Wayland configuration now
 				It will be enabled on session type detection
@@ -139,8 +132,39 @@ pub async fn generate_bindrules(
 			)
 		);
 	};
+	{
+		let translator = crate::bind::translate::Delta::get(
+			&config,
+			&xdg,
+		).await;
 
-	unimplemented!();
+		let user_bind = user::UserBind {
+			translator:	translator,
+			xdg:		xdg.clone(),
+			config:		config.clone(),
+		};
+		workers.push(
+			tokio::spawn(
+				async {
+					user_bind
+						.bind()
+						.await
+						.map_err(BindError::UserBindError)
+				}
+			)
+		);
+	};
+
+	let (expose_rules, forward_map) = {
+		user::forward_file(
+			&runtime_opts.file_expose,
+			runtime_opts.bus_activation,
+			&dbus_conn,
+			&config.metadata.sandbox_id,
+			logger,
+		)
+		.await
+	};
 
 	let mut ret = vec![];
 
@@ -154,7 +178,47 @@ pub async fn generate_bindrules(
 		);
 	};
 
-	Ok(ret)
+	ret.extend(expose_rules);
+
+	let init_info = crate::ipc::init::info::InitInfo {
+		extra_files:		forward_map,
+		inhibit_suspend:	config.system.conduct_inhibit,
+		flatpak_info:		config.advanced.flatpak_env,
+		lockdown:		config.privacy.lockdown,
+		allow_debug:		config.advanced.allow_debug,
+		target_exec:		{
+			if runtime_opts.bus_activation {
+				if config.dbus_activation.enable {
+					config.dbus_activation.target.to_owned()
+				} else {
+					return Err(
+						BindError::ActivationNotAllowed
+					);
+				}
+			} else {
+				config.exec.target.to_owned()
+			}
+		},
+		target_args:		{
+			let mut base = if runtime_opts.bus_activation {
+				if config.dbus_activation.enable {
+					config.dbus_activation.arguments.to_owned()
+				} else {
+					return Err(
+						BindError::ActivationNotAllowed
+					);
+				}
+			} else {
+				config.exec.arguments.to_owned()
+			};
+			base.extend(runtime_opts.app_args.to_owned());
+			base
+		},
+		uclamp_min:		0,
+		uclamp_max:		config.system.uclamp_max,
+	};
+
+	Ok((ret, init_info))
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -170,6 +234,12 @@ pub enum BindError {
 
 	#[error("Could not mask certain paths: {0:#?}")]
 	MaskError(mask::MaskError),
+
+	#[error("Could not bind user paths: {0:#?}")]
+	UserBindError(user::UserBindError),
+
+	#[error("D-Bus activation was requested while not enabled in configuration")]
+	ActivationNotAllowed,
 
 	#[error("Could not spawn bind task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),

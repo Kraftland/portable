@@ -71,8 +71,6 @@ pub struct BusExec {
 	pub target:		String,
 	#[serde(alias = "arguments")]
 	pub arguments:		Vec<String>,
-	#[serde(alias = "overlay")]
-	pub overlay:		bool,
 }
 
 impl Default for BusExec {
@@ -81,7 +79,6 @@ impl Default for BusExec {
 			enable: false,
 			target: String::new(),
 			arguments: vec![],
-			overlay: false,
 		}
 	}
 }
@@ -107,7 +104,7 @@ pub struct SysMgmt {
 	#[serde(alias = "inhibitOnBehalf")]
 	pub conduct_inhibit:	bool,
 
-	pub uclamp_max:		u16,
+	pub uclamp_max:		u8,
 
 	#[serde(alias = "deviceAllow")]
 	#[serde(deserialize_with = "deserialise_device_allow")]
