@@ -6,7 +6,7 @@
 pub async fn add_full(
 	paths:		&Vec<std::path::PathBuf>,
 	dbus_conn:	&zbus::Connection,
-	app_id:		String,
+	app_id:		&str,
 ) -> Result<Vec<std::path::PathBuf>, DocumentError> {
 	let mut fds = vec![];
 
