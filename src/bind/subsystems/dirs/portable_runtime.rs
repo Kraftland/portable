@@ -9,16 +9,16 @@ pub struct PortableRuntime {
 
 impl super::RuntimePathsTrait for PortableRuntime {
 	fn new(
-		config:		&crate::config::Config,
-		xdg:		&crate::xdg::XdgDirs,
-		instance_id:	&str,
+		config:		std::sync::Arc<crate::config::config_definition::Config>,
+		xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
+		instance_id:	std::sync::Arc<String>,
 	)	->
 			Self
 	{
 		let mut path = std::path::PathBuf::from(&xdg.runtime);
 		path.push("portable");
 		path.push(&config.metadata.sandbox_id);
-		path.push(instance_id);
+		path.push(instance_id.as_str());
 		Self { path: std::sync::Arc::new(path) }
 	}
 

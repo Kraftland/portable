@@ -11,9 +11,9 @@ pub struct FlatpakRuntime {
 
 impl super::RuntimePathsTrait for FlatpakRuntime {
 	fn new(
-		config:		&crate::config::Config,
-		xdg:		&crate::xdg::XdgDirs,
-		instance_id:	&str,
+		config:		std::sync::Arc<crate::config::config_definition::Config>,
+		xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
+		instance_id:	std::sync::Arc<String>,
 	)	->
 			Self
 	{
@@ -27,7 +27,7 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 		tmp_path.push("tmp");
 
 		let mut instance_path = std::path::PathBuf::from(&base_path);
-		instance_path.push(instance_id);
+		instance_path.push(instance_id.as_str());
 
 		Self {
 			appid_path:	std::sync::Arc::new(appid_path),

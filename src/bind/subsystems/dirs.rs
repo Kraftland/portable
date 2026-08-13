@@ -9,9 +9,9 @@ pub trait RuntimePathsTrait: Sized {
 		Create a new runtime path for type
 	*/
 	fn new(
-		config:		&crate::config::Config,
-		xdg:		&crate::xdg::XdgDirs,
-		instance_id:	&str,
+		config:		std::sync::Arc<crate::config::config_definition::Config>,
+		xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
+		instance_id:	std::sync::Arc<String>,
 	)	->
 		Self;
 
