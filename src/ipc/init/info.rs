@@ -50,3 +50,51 @@ pub struct InitInfo {
 	*/
 	pub uclamp_max:		u8,
 }
+
+impl InitInfo {
+	/**
+		Publish the info for Init to read.
+	*/
+	pub async fn publish(self, bus: zbus::Connection) -> zbus::Result<()> {
+		bus.object_server().at(
+			"/top/kimiblock/portable/daemon",
+			self,
+		).await?;
+		Ok(())
+	}
+}
+
+#[zbus::interface(
+	name	= "top.kimiblock.portable.InitInfo",
+)]
+impl InitInfo {
+	#[zbus(
+		name = "GetInfo",
+		property(
+			emits_changed_signal = "const"
+		),
+	)]
+	fn get(&self) -> (
+		std::collections::HashMap<String, String>,
+		bool,
+		bool,
+		bool,
+		bool,
+		&str,
+		&Vec<String>,
+		u8,
+		u8,
+	) {
+		(
+			self.extra_files.clone(),
+			self.inhibit_suspend,
+			self.flatpak_info,
+			self.lockdown,
+			self.allow_debug,
+			&self.target_exec,
+			&self.target_args,
+			self.uclamp_min,
+			self.uclamp_max,
+		)
+	}
+}
