@@ -3,7 +3,7 @@
 */
 pub async fn generate(
 	config:		std::sync::Arc<crate::config::config_definition::Config>,
-	instance_id:	std::sync::Arc<str>,
+	instance_id:	std::sync::Arc<String>,
 	xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 ) -> String {
 	let mut content = String::new();
