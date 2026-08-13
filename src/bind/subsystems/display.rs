@@ -20,7 +20,7 @@ pub struct Display {
 	pub logger:		crate::logger::LogSender,
 	pub env:		crate::envs::holder::HoldChannel,
 
-	pub portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	pub portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	pub app_id:		String,
 	pub instance_id:	String,
 
@@ -99,7 +99,7 @@ async fn bind(
 	logger:			crate::logger::LogSender,
 	env:			crate::envs::holder::HoldChannel,
 
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	app_id:			String,
 	instance_id:		String,
 

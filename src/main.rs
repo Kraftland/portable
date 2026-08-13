@@ -56,6 +56,9 @@ enum StartError {
 	#[error("Could not create Documents Portal path: {0:#?}")]
 	DocumentRuntimePathError(bind::subsystems::dirs::documents::DocumentError),
 
+	#[error("Could not start D-Bus proxy: {0:#?}")]
+	ProxyError(bind::bus::proxies::StartProxyError),
+
 	#[error("Could not generate bind rules: {0:#?}")]
 	BindError(bind::subsystems::BindError),
 }
@@ -377,26 +380,35 @@ async fn run(
 
 	let (portable_runtime, document) = {
 		(
-			portable_runtime_spawn.await.map_err(StartError::SpawnError)??,
+			std::sync::Arc::new(
+				portable_runtime_spawn
+					.await
+					.map_err(StartError::SpawnError)
+					?
+					?
+			),
 			document_spawn.await.map_err(StartError::SpawnError)??,
 		)
 	};
 
 	#[cfg(feature = "flatpak")]
-	let flatpak_runtime = flatpak_runtime_spawn
-		.await
-		.map_err(StartError::SpawnError)
-		?
-		?;
+	let flatpak_runtime = std::sync::Arc::new(
+		flatpak_runtime_spawn
+			.await
+			.map_err(StartError::SpawnError)
+			?
+			?
+	);
 
 	let flatpak_info_spawn = {
 		let portable_clone = portable_runtime.clone();
 		let config_clone = config.clone();
 		let instance_clone = instance_id.clone();
 		let xdg_clone = xdg_dirs.clone();
+		let flatpak_runtime = flatpak_runtime.clone();
 		tokio::spawn(
 				async {
-					Ok(std::sync::Arc::new(
+					Ok(
 						bind::flatpak_info::create(
 							config_clone,
 							instance_clone,
@@ -408,14 +420,35 @@ async fn run(
 						)
 						.await
 						.map_err(StartError::FlatpakInfoError)?
-					)
 				)
 			}
 		)
 	};
 
+	let flatpak_info = std::sync::Arc::new(
+		flatpak_info_spawn
+			.await
+			.map_err(StartError::SpawnError)
+			?
+			?
+	);
 
-	let (bind_rules, init_info) = bind::subsystems::generate_bindrules(
+	let bus_binds = tokio::spawn(
+		bind::bus::proxies::start_proxies(
+			log_tx.clone(),
+			config.clone(),
+			stop_tx.clone(),
+			portable_runtime.clone(),
+			dbus_conn.clone(),
+			envs_tx.clone(),
+			#[cfg(feature = "flatpak")]
+			flatpak_runtime,
+			#[cfg(feature = "flatpak")]
+			flatpak_info.clone(),
+		)
+	);
+
+	let (mut bind_rules, init_info) = bind::subsystems::generate_bindrules(
 		portable_runtime,
 		document,
 		xdg_dirs,
@@ -423,13 +456,22 @@ async fn run(
 		log_tx.clone(),
 		envs_tx,
 		instance_id.to_string(),
-		flatpak_info_spawn.await.map_err(StartError::SpawnError)??,
+		flatpak_info.clone(),
 		runtime_opts,
 		dbus_conn.clone(),
 	)
 		.await
 		.map_err(StartError::BindError)
 		?;
+
+	bind_rules.extend(
+		bus_binds
+			.await
+			.map_err(StartError::SpawnError)
+			?
+			.map_err(StartError::ProxyError)
+			?,
+	);
 
 	/*
 		Stop, or termination is handled by stop_worker, we sleep forever here to prevent bus being dropped

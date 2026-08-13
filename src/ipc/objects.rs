@@ -23,33 +23,6 @@ impl Info {
 	}
 }
 
-pub struct AuxStart {
-	pub started:	std::sync::atomic::AtomicBool,
-}
-
-#[interface (name = "top.kimiblock.portable.AuxStart")]
-impl AuxStart {
-	#[zbus(name = "RequestStart1")]
-	pub async fn start_v1 (
-		&self,
-		custom_target:	bool,
-		target_exec:	String,
-		args_append:	bool,
-		arguments:	Vec<String>,
-		extra_files:	std::collections::HashMap<String, String>,
-		envs:		std::collections::HashMap<String, String>,
-	) -> zbus::zvariant::OwnedFd {
-		loop {
-			if ! self.started.load(std::sync::atomic::Ordering::Relaxed) {
-				tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-			} else {
-				break;
-			}
-		}
-		unimplemented!()
-	}
-}
-
 pub struct Controller {
 	pub stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 }

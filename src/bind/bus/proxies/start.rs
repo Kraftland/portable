@@ -10,7 +10,7 @@ pub enum StartProxyError {
 }
 
 impl Proxy {
-	async fn start(self)	-> Result<(), StartProxyError> {
+	pub async fn start(self)	-> Result<(), StartProxyError> {
 		use command_fds::{CommandFdExt, FdMapping};
 		use crate::bind::types::ToCmdline;
 

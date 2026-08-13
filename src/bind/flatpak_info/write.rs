@@ -5,10 +5,10 @@
 */
 pub async fn write(
 	content:		String,
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 
 	#[cfg(feature = "flatpak")]
-	flatpak_runtime:	crate::bind::subsystems::dirs::flatpak::FlatpakRuntime,
+	flatpak_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::flatpak::FlatpakRuntime>,
 ) -> Result<std::path::PathBuf, super::FlatpakInfoError> {
 	use crate::bind::subsystems::dirs::RuntimePathsTrait;
 	use tokio::io::AsyncWriteExt;

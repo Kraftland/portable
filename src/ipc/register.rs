@@ -42,15 +42,6 @@ pub async fn connect(stop_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>)
 	let builder = builder
 		.serve_at(
 			"/top/kimiblock/portable/daemon",
-			super::objects::AuxStart {
-				started: std::sync::atomic::AtomicBool::new(false)
-			}
-		)
-		.map_err(RegisterError::ServeObjectError)
-		?;
-	let builder = builder
-		.serve_at(
-			"/top/kimiblock/portable/daemon",
 			super::objects::Controller {stop_tx: stop_tx},
 		)
 		.map_err(RegisterError::ServeObjectError)

@@ -16,7 +16,7 @@ pub trait GenerateBind {
 }
 
 pub async fn generate_bindrules(
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	config:			std::sync::Arc<crate::config::config_definition::Config>,

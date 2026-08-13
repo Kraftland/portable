@@ -10,17 +10,16 @@ mod portal_allowlist;
 	The flatpak info file will always be under Portable's runtime directory, named flatpak-info
 */
 pub struct Proxy {
-	logger:		crate::logger::LogSender,
-	proxy_path:	std::path::PathBuf,
-	mpris_names:	Vec<String>,
-	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-	app_id:		String,
-	kde_status:	bool,
-	classic_notif:	bool,
-	inhibit:	bool,
-	status_fd:	Option<std::os::fd::OwnedFd>,
+	pub logger:		crate::logger::LogSender,
+	pub proxy_path:		std::path::PathBuf,
+	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
 
-	portable_dir:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	pub stop_token:		Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+
+	#[cfg(feature = "flatpak")]
+	pub status_fd:		Option<std::os::fd::OwnedFd>,
+	#[cfg(feature = "flatpak")]
+	pub flatpak_info:		std::path::PathBuf,
 }
 
 impl crate::bind::bus::StartProxy for Proxy {
@@ -32,15 +31,12 @@ impl crate::bind::bus::StartProxy for Proxy {
 		compile_rules(
 			self.logger,
 			self.proxy_path,
-			self.mpris_names,
+			self.config,
 			self.stop_token,
-
-			self.app_id,
-			self.kde_status,
-			self.classic_notif,
-			self.inhibit,
+			#[cfg(feature = "flatpak")]
 			self.status_fd,
-			self.portable_dir,
+			#[cfg(feature = "flatpak")]
+			self.flatpak_info,
 		).await
 	}
 
@@ -53,14 +49,12 @@ use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	proxy_path:	std::path::PathBuf,
-	mpris_names:	Vec<String>,
+	config:		std::sync::Arc<crate::config::config_definition::Config>,
 	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-	app_id:		String,
-	kde_status:	bool,
-	classic_notif:	bool,
-	inhibit:	bool,
+	#[cfg(feature = "flatpak")]
 	status_fd:	Option<std::os::fd::OwnedFd>,
-	portable_dir:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	#[cfg(feature = "flatpak")]
+	flatpak_info:	std::path::PathBuf,
 ) -> Result<crate::bind::bus::Proxy, ProxyError> {
 	let bus_address = tokio::spawn(get_session_bus_address());
 
@@ -73,26 +67,20 @@ async fn compile_rules(
 
 	let bus_access_spawn = tokio::spawn(
 		generate_bus_rules(
-			String::from(app_id),
-			kde_status,
-			mpris_names,
-			classic_notif,
-			inhibit,
+			config.metadata.sandbox_id.to_string(),
+			config.advanced.allow_kde_status,
+			config.advanced.mpris_names.clone(),
+			config.privacy.classic_notif,
+			config.system.allow_inhibit,
 		),
 	);
-
-	#[cfg(feature = "flatpak")]
-	let flatpak_info_path = {
-		use crate::bind::subsystems::dirs::RuntimePathsTrait;
-		portable_dir.path()
-	};
 
 	let sandbox_rules = tokio::spawn(
 		generate_sandbox_rules(
 			proxy_path.clone(),
 
 			#[cfg(feature = "flatpak")]
-			flatpak_info_path,
+			flatpak_info,
 		),
 	);
 
@@ -129,6 +117,7 @@ async fn compile_rules(
 			proxy_address:		proxy_address,
 			bind_lifetime:		stop_token,
 			sloppy_names:		false,
+			#[cfg(feature = "flatpak")]
 			json_status_file:	status_fd,
 			app_sandbox:		Some(app_sandbox_rules),
 			envs:			{

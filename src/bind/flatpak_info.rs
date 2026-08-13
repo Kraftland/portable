@@ -18,10 +18,10 @@ pub async fn create(
 	instance_id:		std::sync::Arc<String>,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 
-	portable_runtime:	crate::bind::subsystems::dirs::portable_runtime::PortableRuntime,
+	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 
 	#[cfg(feature = "flatpak")]
-	flatpak_runtime:	crate::bind::subsystems::dirs::flatpak::FlatpakRuntime,
+	flatpak_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::flatpak::FlatpakRuntime>,
 ) -> Result<std::path::PathBuf, FlatpakInfoError> {
 	let content_string = content::generate(config, instance_id, xdg).await;
 	write::write(content_string, portable_runtime, flatpak_runtime).await
