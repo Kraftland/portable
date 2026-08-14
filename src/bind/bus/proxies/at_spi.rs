@@ -46,7 +46,16 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 				.map_err(AtspiError::IOError)
 				?;
 
-			path.push("bus");
+			let socket_name = match host_address.file_name() {
+				Some(v)	=> v,
+				None	=> {
+					return Err(
+						AtspiError::NoParentDirectory
+					);
+				}
+			};
+
+			path.push(socket_name);
 			path
 		};
 
