@@ -101,11 +101,11 @@ impl Proxy {
 					let stop_channel = v;
 					let result = child.wait().await;
 					match result {
-						Ok(_)	=> {
+						Ok(v)	=> {
 							let _ = self.logger.send(
 								crate::logger::LogMessage {
 									level: crate::logger::LogLevel::Debug,
-									message: format!("D-Bus proxy exited"),
+									message: format!("D-Bus proxy exited: {:?}", v.code()),
 								},
 							).await;
 							stop_channel
@@ -132,6 +132,29 @@ impl Proxy {
 				Ok(())
 			}
 			None	=> {
+				tokio::spawn(async move {
+					let result = child.wait().await;
+					match result {
+						Ok(v)	=> {
+							let _ = self.logger.send(
+								crate::logger::LogMessage {
+									level: crate::logger::LogLevel::Debug,
+									message: format!("D-Bus proxy exited: {:?}", v.code()),
+								},
+							).await;
+						}
+						Err(e)	=> {
+							let _ = self.logger.send(
+								crate::logger::LogMessage {
+									level: crate::logger::LogLevel::Fatal,
+									message: format!(
+										"D-Bus proxy failed: {e:#?}",
+									),
+								}
+							).await;
+						}
+					}
+				});
 				Ok(())
 			}
 		}
