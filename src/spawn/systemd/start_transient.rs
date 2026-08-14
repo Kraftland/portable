@@ -160,7 +160,7 @@ async fn generate_properties(
 				let (argv0, cmd) = super::cmdline::cmdline(spawn.clone()).await;
 
 				let flags = vec![
-					"no-setuid",
+					"no-setuid".to_string(),
 				];
 
 				let native_tuple = (argv0, cmd, flags);
@@ -245,20 +245,6 @@ async fn generate_properties(
 		(
 			String::from("ExitType"),
 			OwnedValue::from(Str::from("cgroup")),
-		)
-	);
-
-	vec.push(
-		(
-			String::from("SuccessExitStatus"),
-			{
-				let kill_signals: (Vec<i32>, Vec<i32>) = (vec![9], vec![15]);
-				let value = zbus::zvariant::Value::from(kill_signals);
-				value
-					.try_into()
-					.map_err(StartAppError::PropertiesError)
-					?
-			}
 		)
 	);
 
