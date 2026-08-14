@@ -121,20 +121,6 @@ pub enum GPUVendor {
 	Others,
 }
 
-fn map_to_vendor(vendor_string: &std::ffi::OsStr, device: &udev::Device) -> GPUVendor {
-	let string = vendor_string.to_str().unwrap_or("unknown");
-	match string {
-		"0x8086"	=> {GPUVendor::Intel}
-		"0x10de"	=> {
-			GPUVendor::NVIDIA {
-				driver: nvidia::NVIDIADriver::get(device),
-			}
-		}
-		"0x1002"	=> {GPUVendor::AMD}
-		_		=> {GPUVendor::Others}
-	}
-}
-
 /**
 	Eumerates all graphics cards (and renderer nodes, paired together) as vectors of udev devices
 	See GPUDevice struct for more details

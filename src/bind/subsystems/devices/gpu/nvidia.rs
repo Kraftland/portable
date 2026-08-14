@@ -54,9 +54,27 @@ pub enum NVIDIADriver {
 
 impl NVIDIADriver {
 	pub fn get(device: &udev::Device)	-> Self {
+		// eprintln!("Device {0:?} has driver {1:?}", device.syspath(), device.driver());
 		let driver = match device.driver() {
-			Some(v)	=> {v}
-			None	=> {return NVIDIADriver::Unknown { driver: None };}
+			Some(v)	=> {v.to_owned()}
+			None	=> {
+				let parent = match device.parent() {
+					Some(v)	=> {v}
+					None	=> {
+						return NVIDIADriver::Unknown {
+							driver: None,
+						};
+					}
+				};
+				match parent.driver() {
+					Some(v)	=> {v.to_owned()}
+					None	=> {
+						return NVIDIADriver::Unknown {
+							driver: None,
+						};
+					}
+				}
+			}
 		};
 		match driver.to_str() {
 			Some("nvidia")	=> NVIDIADriver::Proprietary,
