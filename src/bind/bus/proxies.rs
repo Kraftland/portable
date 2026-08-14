@@ -1,6 +1,6 @@
-pub mod session;
+mod session;
 pub mod start;
-pub mod at_spi;
+mod at_spi;
 
 /**
 	Start the D-Bus session bus and a11y bus proxies.
@@ -40,21 +40,17 @@ pub async fn start_proxies(
 			std::os::fd::OwnedFd::from(file.into_std().await)
 		};
 
-		let proxy_path = {
-			use crate::bind::subsystems::dirs::RuntimePathsTrait;
-			let mut path = portable_dir.path();
-			path.push("session_bus");
-			path
-		};
-
-		let proxy = session::Proxy {
+		let proxy = session::SessionProxy {
 			logger:		logger.clone(),
-			proxy_path:	proxy_path,
 			config:		config.clone(),
 			stop_token:	Some(stop_tx.clone()),
+			portable_dir:	portable_dir.clone(),
 
 			#[cfg(feature = "flatpak")]
 			status_fd:	Some(status_fd),
+			#[cfg(not(feature = "flatpak"))]
+			status_fd:	None,
+
 			#[cfg(feature = "flatpak")]
 			flatpak_info:	flatpak_info.to_path_buf(),
 		};
@@ -154,6 +150,9 @@ pub async fn start_proxies(
 
 #[derive(thiserror::Error, Debug)]
 pub enum StartProxyError {
+	#[error("I/O error: {0:#?}")]
+	IOError(std::io::Error),
+
 	#[error("Could not create bwrapinfo.json: {0:#?}")]
 	BwInfoError(std::io::Error),
 

@@ -11,6 +11,14 @@ pub enum StartProxyError {
 
 impl Proxy {
 	pub async fn start(self)	-> Result<(), StartProxyError> {
+		#[cfg(debug_assertions)]
+		let _ = self.logger.send(
+			crate::logger::LogMessage {
+				level: crate::logger::LogLevel::Debug,
+				message: format!("Starting D-Bus proxy: {:#?}", &self),
+			},
+		).await;
+
 		use command_fds::{CommandFdExt, FdMapping};
 		use crate::bind::types::ToCmdline;
 
@@ -60,7 +68,7 @@ impl Proxy {
 			cmdline.push("--".into());
 			cmdline.push("xdg-dbus-proxy".into());
 			cmdline.push(self.bus_address.clone());
-			cmdline.push(self.proxy_address);
+			cmdline.push(self.proxy_socket.to_string_lossy().to_string());
 			cmdline.push("--filter".into());
 
 			if self.sloppy_names {
@@ -83,7 +91,7 @@ impl Proxy {
 		let _ = self.logger.send(
 			crate::logger::LogMessage {
 				level: crate::logger::LogLevel::Debug,
-				message: format!("Started D-Bus proxy for {}", self.bus_address),
+				message: format!("Started D-Bus proxy {:#?}", &self.bus_address),
 			},
 		).await;
 

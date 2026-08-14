@@ -23,6 +23,13 @@ pub async fn get_sandbox(
 ) -> Result<crate::bind::types::BindRules, super::AtspiError> {
 	use crate::bind::types::BindRule;
 
+	let proxy_parent_dir = match proxy_socket.parent() {
+		Some(v)	=> {v.to_path_buf()}
+		None	=> {
+			return Err(super::AtspiError::NoParentDirectory);
+		}
+	};
+
 	let ret = vec![
 		BindRule::Symlink {
 			source: "/usr/lib64".into(),
@@ -50,8 +57,8 @@ pub async fn get_sandbox(
 		},
 
 		BindRule::Path {
-			source: proxy_socket.clone(),
-			dest: proxy_socket.clone(),
+			source: proxy_parent_dir.to_path_buf(),
+			dest: proxy_parent_dir,
 			class: crate::bind::types::BindType::ReadWrite,
 		},
 		BindRule::Path {

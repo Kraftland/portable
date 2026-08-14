@@ -3,26 +3,26 @@
 */
 
 mod portal_allowlist;
+mod address;
+mod sandbox;
 
 /**
 	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy
 
 	The flatpak info file will always be under Portable's runtime directory, named flatpak-info
 */
-pub struct Proxy {
+pub struct SessionProxy {
 	pub logger:		crate::logger::LogSender,
-	pub proxy_path:		std::path::PathBuf,
 	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
-
 	pub stop_token:		Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
-
+	pub portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
 	pub status_fd:		Option<std::os::fd::OwnedFd>,
 	#[cfg(feature = "flatpak")]
 	pub flatpak_info:		std::path::PathBuf,
 }
 
-impl crate::bind::bus::StartProxy for Proxy {
+impl crate::bind::bus::StartProxy for SessionProxy {
 
 	async fn new(
 			self
@@ -30,9 +30,9 @@ impl crate::bind::bus::StartProxy for Proxy {
 	{
 		compile_rules(
 			self.logger,
-			self.proxy_path,
 			self.config,
 			self.stop_token,
+			self.portable_dir,
 			#[cfg(feature = "flatpak")]
 			self.status_fd,
 			#[cfg(feature = "flatpak")]
@@ -48,9 +48,9 @@ impl crate::bind::bus::StartProxy for Proxy {
 use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
-	proxy_path:	std::path::PathBuf,
 	config:		std::sync::Arc<crate::config::config_definition::Config>,
 	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
 	status_fd:	Option<std::os::fd::OwnedFd>,
 	#[cfg(feature = "flatpak")]
@@ -58,12 +58,9 @@ async fn compile_rules(
 ) -> Result<crate::bind::bus::Proxy, ProxyError> {
 	let bus_address = tokio::spawn(get_session_bus_address());
 
-	let proxy_address = {
-		let addr = proxy_path.as_os_str().to_string_lossy();
-		let mut path = String::from("unix:path=");
-		path.push_str(&addr);
-		path
-	};
+	let (proxy_socket_path, app_sandbox) = address::get_address_with_sandbox(portable_dir)
+		.await
+		?;
 
 	let bus_access_spawn = tokio::spawn(
 		generate_bus_rules(
@@ -76,25 +73,13 @@ async fn compile_rules(
 	);
 
 	let sandbox_rules = tokio::spawn(
-		generate_sandbox_rules(
-			proxy_path.clone(),
+		sandbox::generate_sandbox_rules(
+			proxy_socket_path.to_path_buf(),
 
 			#[cfg(feature = "flatpak")]
 			flatpak_info,
 		),
 	);
-
-	let app_sandbox_rules = {
-		use crate::bind::types::BindRule;
-
-		vec![
-			BindRule::Path {
-				source: proxy_path.clone(),
-				dest: "/run/session_bus".into(),
-				class: crate::bind::types::BindType::ReadWrite,
-			}
-		]
-	};
 
 	Ok(
 		crate::bind::bus::Proxy {
@@ -113,18 +98,18 @@ async fn compile_rules(
 							.map_err(ProxyError::SpawnError)
 							?
 							?,
-			logger: logger,
-			proxy_address:		proxy_address,
+			logger:			logger,
+			proxy_socket:		proxy_socket_path,
 			bind_lifetime:		stop_token,
 			sloppy_names:		false,
 			#[cfg(feature = "flatpak")]
 			json_status_file:	status_fd,
-			app_sandbox:		Some(app_sandbox_rules),
+			app_sandbox:		Some(app_sandbox),
 			envs:			{
 				let mut map = std::collections::HashMap::new();
 				map.insert(
 					"DBUS_SESSION_BUS_ADDRESS".to_string(),
-					"/run/session_bus".to_string(),
+					"/run/session_bus/bus".to_string(),
 				);
 				Some(map)
 			},
@@ -492,86 +477,17 @@ async fn get_session_bus_address() -> Result<String, ProxyError> {
 	Ok(env)
 }
 
-async fn generate_sandbox_rules(
-	proxy_path:	std::path::PathBuf,
 
-	#[cfg(feature = "flatpak")]
-	info_path:	std::path::PathBuf,
-) -> Result<crate::bind::types::BindRules, ProxyError> {
-	let mut rules = vec![
-		BindRule::Symlink {
-			source: "/usr/lib64".into(),
-			dest: "/lib64".into(),
-		},
-		BindRule::Path {
-			source: "/usr/lib".into(),
-			dest: "/usr/lib".into(),
-			class: crate::bind::types::BindType::ReadOnly,
-		},
-		BindRule::Path {
-			source: "/usr/lib64".into(),
-			dest: "/usr/lib64".into(),
-			class: crate::bind::types::BindType::ReadOnly,
-		},
-		BindRule::Path {
-			source: "/usr/bin".into(),
-			dest: "/usr/bin".into(),
-			class: crate::bind::types::BindType::ReadOnly,
-		},
-		// BindRule::Path {
-		// 	source: "/usr/share".into(),
-		// 	dest: "/usr/share".into(),
-		// 	class: crate::bind::types::BindType::ReadOnly,
-		// },
-		BindRule::Path {
-			source: "/usr/bin".into(),
-			dest: "/usr/bin".into(),
-			class: crate::bind::types::BindType::ReadOnly,
-		},
-
-		BindRule::Path {
-			source: proxy_path.clone(),
-			dest: proxy_path,
-			class: crate::bind::types::BindType::ReadWrite,
-		},
-	];
-
-	#[cfg(feature = "flatpak")]
-	{
-		rules.push(
-			BindRule::Path {
-				source: info_path,
-				dest: std::path::PathBuf::from("/.flatpak-info"),
-				class: crate::bind::types::BindType::ReadOnly,
-			}
-		);
-	}
-
-	{
-		let env = std::env::var("DBUS_SESSION_BUS_ADDRESS")
-			.map_err(ProxyError::AddressUnknownError)
-			?;
-		let path = env.strip_prefix("unix:path=");
-		match path {
-			Some(v)	=> {
-				rules.push(
-					BindRule::Path {
-						source: std::path::PathBuf::from(v),
-						dest: std::path::PathBuf::from(v),
-						class: crate::bind::types::BindType::ReadWrite,
-					}
-				);
-			}
-			None	=> {}
-		}
-	};
-
-	Ok(rules)
-}
 
 use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ProxyError {
+	#[error("I/O error: {0:#?}")]
+	IOError(std::io::Error),
+
+	#[error("No parent directory")]
+	NoParentDirectory,
+
 	#[error("Could not start D-Bus proxy for session bus: invalid address: {0:#?}")]
 	AddressUnknownError(std::env::VarError),
 
