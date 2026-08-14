@@ -11,7 +11,7 @@ pub use systemd::start_transient::*;
 
 pub trait Start {
 	fn start(
-		&self,
+		self,
 		dbus_conn:	&zbus::Connection,
 	// ) -> Result<(), crate::spawn::StartAppError>;
 	) -> impl std::future::Future<Output = Result<(), crate::spawn::StartAppError>> + Send;
@@ -29,7 +29,7 @@ pub struct Spawn {
 	fs_rules:	crate::bind::types::BindRules,
 	logger:		crate::logger::LogSender,
 	envs:		crate::envs::holder::HoldChannel,
-	home:		std::path::PathBuf,
+	sandbox_home:	std::path::PathBuf,
 	slave_pts:	console::PtsName,
 }
 
