@@ -22,7 +22,7 @@ pub mod console;
 pub mod instance_id;
 
 pub struct Spawn {
-	pub app_id:		String,
+	pub config:		std::sync::Arc<crate::config::Config>,
 
 	/// Instance ID
 	pub uid:		String,

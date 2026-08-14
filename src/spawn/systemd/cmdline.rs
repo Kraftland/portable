@@ -23,7 +23,7 @@ pub async fn cmdline(spawn: std::sync::Arc<crate::spawn::Spawn>) -> (String, Vec
 
 	cmd.push("--".into());
 	cmd.push("/usr/lib/portable/helper/helper".into());
-	cmd.push(spawn.app_id.to_string());
+	cmd.push(spawn.config.metadata.sandbox_id.to_string());
 
 	(argv0, cmd)
 }

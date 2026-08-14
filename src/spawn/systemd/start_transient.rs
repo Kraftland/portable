@@ -36,7 +36,7 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			?;
 
 		let unit_name = ServiceName::new(
-			&spawn.app_id,
+			&spawn.config.metadata.sandbox_id,
 			&spawn.uid,
 		).await;
 		let properties = generate_properties(
@@ -189,7 +189,7 @@ async fn generate_properties(
 			String::from("Description"),
 			OwnedValue::from(Str::from({
 				let mut desc = String::from("Portable sandbox: ");
-				desc.push_str(&spawn.app_id);
+				desc.push_str(&spawn.config.metadata.sandbox_id);
 				desc
 			}))
 		),
@@ -295,7 +295,7 @@ async fn generate_properties(
 	vec.push(
 		(
 			String::from("SyslogIdentifier"),
-			OwnedValue::from(Str::from(&spawn.app_id)),
+			OwnedValue::from(Str::from(&spawn.config.metadata.sandbox_id)),
 		)
 	);
 
