@@ -27,7 +27,9 @@ impl DocumentsMountPoint {
 			?;
 		let path = String::from_utf8(bytes)
 			.map_err(DocumentError::TranslateError)
-			?;
+			?
+			.trim_end_matches('\0')
+			.to_string();
 		let mut per_app_path = std::path::PathBuf::from(path);
 
 		let public_path = per_app_path.clone();
