@@ -473,7 +473,7 @@ async fn generate_properties(
 		(
 			"SystemCallFilter".into(),
 			{
-				let whitelist = false;
+				let is_whitelist = false;
 				let deny_list = vec![
 					"@clock",
 					"@cpu-emulation",
@@ -483,12 +483,9 @@ async fn generate_properties(
 					"@reboot",
 					"@swap",
 				];
-				let array = zbus::zvariant::Array::from(deny_list);
 
-				let array_val = zbus::zvariant::Value::from(array);
-				zbus::zvariant::Structure::from(
-					(zbus::zvariant::Value::from(whitelist), array_val),
-				)
+				let native_tuple = (is_whitelist, deny_list);
+				zbus::zvariant::Value::from(native_tuple)
 					.try_into()
 					.map_err(StartAppError::PropertiesError)
 					?
