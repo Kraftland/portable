@@ -22,14 +22,14 @@ pub mod console;
 pub mod instance_id;
 
 pub struct Spawn {
-	app_id:		String,
+	pub app_id:		String,
 
 	/// Instance ID
-	uid:		String,
-	fs_rules:	crate::bind::types::BindRules,
-	logger:		crate::logger::LogSender,
-	envs:		crate::envs::holder::HoldChannel,
-	sandbox_home:	std::path::PathBuf,
-	slave_pts:	console::PtsName,
+	pub uid:		String,
+	pub fs_rules:		crate::bind::types::BindRules,
+	pub logger:		crate::logger::LogSender,
+	pub stop:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	pub envs:		crate::envs::holder::HoldChannel,
+	pub sandbox_home:	std::path::PathBuf,
 }
 

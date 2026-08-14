@@ -11,6 +11,9 @@ pub enum StartAppError {
 
 	#[error("Could not generate properties for Manager: envs error: {0:#?}")]
 	EnvsError(crate::envs::holder::EnvError),
+
+	#[error("Could not start app: pts allocation error: {0:#?}")]
+	StreamError(super::stream::StreamError),
 }
 
 
@@ -22,6 +25,11 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 	) -> Result<(), crate::spawn::StartAppError> {
 		let spawn = std::sync::Arc::new(self);
 
+		let pts = super::stream::setup(spawn.stop.to_owned())
+			.await
+			.map_err(StartAppError::StreamError)
+			?;
+
 		let proxy = zbus_systemd::systemd1::ManagerProxy::new(dbus_conn)
 			.await
 			.map_err(StartAppError::ManagerProxyError)
@@ -32,7 +40,8 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&spawn.uid,
 		).await;
 		let properties = generate_properties(
-			spawn.clone()
+			spawn.clone(),
+			pts,
 		).await?;
 
 		proxy.start_transient_unit(
@@ -92,6 +101,7 @@ impl ServiceName {
 */
 async fn generate_properties(
 	spawn:		std::sync::Arc<crate::spawn::Spawn>,
+	slave_pts:	crate::spawn::console::PtsName,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(spawn.envs.clone()));
 
@@ -101,7 +111,7 @@ async fn generate_properties(
 		*/
 		(
 			String::from("TTYPath"),
-			OwnedValue::from(Str::from(spawn.slave_pts.to_owned())),
+			OwnedValue::from(Str::from(slave_pts)),
 		),
 		(
 			String::from("StandardInput"),

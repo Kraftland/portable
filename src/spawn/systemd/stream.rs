@@ -27,12 +27,46 @@ pub async fn setup(
 	// Output thread
 	let output_thread = tokio::spawn(stream_out(reader));
 
+
+
 	// Input thread
 	let input_thread = tokio::spawn(stream_in(writer));
+
+	tokio::spawn(
+		async move {
+			tokio::select! {
+				_out	= output_thread		=> {}
+				_input	= input_thread		=> {}
+			}
+
+			match stop_tx.send(
+				crate::stop::StopLevel::Normal,
+			).await {
+				Ok(_)	=> {}
+				Err(e)	=> {eprintln!("Failed sending stop signal: {e:#?}")}
+			};
+		}
+	);
+	Ok(pty.slave_name)
 }
 
 async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
-	let mut buffer = [0u8, 4096];
+	use std::os::fd::AsRawFd;
+
+	let sigwinch = tokio::signal::unix::signal(
+		tokio::signal::unix::SignalKind::window_change(),
+	);
+
+	let mut sigwinch = match sigwinch {
+		Ok(v)	=> {v}
+		Err(e)	=> {return Err(StreamError::WinchError(e));}
+	};
+
+	nix::ioctl_read_bad!(ioctl_get_winsize, nix::libc::TIOCGWINSZ, nix::libc::winsize);
+	nix::ioctl_write_ptr_bad!(ioctl_set_winsize, nix::libc::TIOCSWINSZ, nix::libc::winsize);
+
+
+	let mut buffer = [0u8, 255];
 	let mut stdin = {
 		use std::os::fd::AsFd;
 		let stdin = std::io::stdin()
@@ -47,8 +81,43 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	use tokio::io::AsyncWriteExt;
 	use tokio::io::AsyncReadExt;
 
+
 	loop {
-		match stdin.read(&mut buffer).await {
+		let signal = tokio::select! {
+			input	=	stdin.read(&mut buffer)	=> {input}
+			_	=	sigwinch.recv()		=> {
+				let winsize = unsafe {
+					let mut size: nix::libc::winsize = std::mem::zeroed();
+					match ioctl_get_winsize(nix::libc::STDIN_FILENO, &mut size) {
+						Ok(_)	=> {(size.ws_col, size.ws_row)}
+						Err(_)	=> {continue;}
+					}
+				};
+
+				let size = nix::libc::winsize {
+					ws_row:		winsize.1,
+					ws_col:		winsize.0,
+					ws_xpixel:	0,
+					ws_ypixel:	0,
+				};
+				let result = unsafe {
+					ioctl_set_winsize(stdin.as_raw_fd(), &size)
+				};
+
+				match result {
+					Ok(_)	=> {}
+					Err(e)	=> {
+						return Err(
+							StreamError::ConsoleIOError(e.into())
+						);
+					}
+				};
+
+				continue;
+			}
+		};
+
+		match signal {
 			Ok(0)	=> {return Ok(());}
 			Ok(v)	=> {
 				tokio_file.write(&buffer[..v])
@@ -69,7 +138,7 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 }
 
 async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
-	let mut buffer = [0u8, 4096];
+	let mut buffer = [0u8, 255];
 	let mut stdout = std::io::stdout();
 	let mut tokio_file = tokio::fs::File::from_std(file);
 	use tokio::io::AsyncReadExt;
@@ -115,6 +184,9 @@ pub enum StreamError {
 
 	#[error("Error converting Stdin: {0:#?}")]
 	StdinConvertError(std::io::Error),
+
+	#[error("Error subscribing to SIGWINCH signal: {0:#?}")]
+	WinchError(std::io::Error),
 
 	#[error("Error during console I/O: {0:#?}")]
 	ConsoleIOError(std::io::Error),

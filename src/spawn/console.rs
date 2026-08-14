@@ -19,7 +19,7 @@ pub enum PtyError {
 }
 
 impl PtyPair {
-	async fn new() -> Result<Self, PtyError> {
+	pub fn new() -> Result<Self, PtyError> {
 		let pair = nix::pty::openpty(None, None)
 			.map_err(PtyError::NewPtyError)
 			?;
