@@ -68,16 +68,17 @@ pub async fn add_full(
 			.map_err(DocumentError::MountTypeError)
 			?;
 
-		String::from_utf8(bytes)
+		let path = String::from_utf8(bytes)
 			.map_err(DocumentError::MountNotUTF8)
-			?
+			?;
+		path.trim_end_matches('\0').to_string()
 	};
 
 	let mut ret = vec![];
 
 	for doc in doc_ids {
 		let mut path = std::path::PathBuf::from(&prefix);
-		path.push(doc);
+		path.push(doc.trim_end_matches('\0'));
 		ret.push(path);
 	};
 
