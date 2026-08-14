@@ -14,6 +14,9 @@ pub enum StartAppError {
 
 	#[error("Could not start app: pts allocation error: {0:#?}")]
 	StreamError(super::stream::StreamError),
+
+	#[error("Could not start app: systemd error: {0:#?}")]
+	SystemdStartError(zbus::Error),
 }
 
 
@@ -61,7 +64,10 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 				https://systemd.io/CONTROL_GROUP_INTERFACE/
 			*/
 			vec![],
-		).await;
+		)
+			.await
+			.map_err(StartAppError::SystemdStartError)
+			?;
 
 
 

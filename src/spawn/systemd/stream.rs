@@ -35,16 +35,22 @@ pub async fn setup(
 	tokio::spawn(
 		async move {
 			tokio::select! {
-				_out	= output_thread		=> {}
-				_input	= input_thread		=> {}
+				_out	= output_thread		=> {
+					#[cfg(debug_assertions)]
+					println!("Output thread stopped");
+				}
+				_input	= input_thread		=> {
+					#[cfg(debug_assertions)]
+					println!("Input thread stopped");
+				}
 			}
 
-			match stop_tx.send(
-				crate::stop::StopLevel::Normal,
-			).await {
-				Ok(_)	=> {}
-				Err(e)	=> {eprintln!("Failed sending stop signal: {e:#?}")}
-			};
+			// match stop_tx.send(
+			// 	crate::stop::StopLevel::Normal,
+			// ).await {
+			// 	Ok(_)	=> {}
+			// 	Err(e)	=> {eprintln!("Failed sending stop signal: {e:#?}")}
+			// };
 		}
 	);
 	Ok(pty.slave_name)

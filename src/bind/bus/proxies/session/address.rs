@@ -14,6 +14,9 @@ pub async fn get_address_with_sandbox(
 				.await
 				.map_err(super::ProxyError::IOError)
 				?;
+
+			println!("Created bus proxy parent: {0:?}", path);
+
 			path
 		};
 
