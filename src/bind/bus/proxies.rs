@@ -87,26 +87,33 @@ pub async fn start_proxies(
 			flatpak_info:		flatpak_info.to_path_buf(),
 		};
 
-		let mut proxy_obj = a11y_proxy
+
+
+		match a11y_proxy
 			.new()
 			.await
 			.map_err(StartProxyError::AtspiProxyObjectError)
-			?;
-
-		let bind = match proxy_obj.app_sandbox {
-			Some(v)	=> {
-				proxy_obj.app_sandbox = None;
-				v
+			{
+			Ok(mut v)	=> {
+				let bind = v.app_sandbox.unwrap_or(vec![]);
+				v.app_sandbox = None;
+				(
+					bind,
+					tokio::spawn(
+						v.start()
+					),
+				)
 			}
-			None	=> {vec![]}
-		};
-
-		(
-			bind,
-			tokio::spawn(
-				proxy_obj.start()
-			),
-		)
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not start a11y proxy: {e:#?}"),
+					},
+				).await;
+				(vec![], tokio::spawn(async {Ok(())}))
+			}
+		}
 	};
 
 	let mut rules = vec![];
@@ -131,6 +138,7 @@ pub async fn start_proxies(
 		}
 	};
 
+	// println!("Starting a11y bus");
 	match a11y_spawn.await.map_err(StartProxyError::SpawnError)? {
 		Ok(_)	=> {
 			rules.extend(a11y_bind);

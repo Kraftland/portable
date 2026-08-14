@@ -1,17 +1,4 @@
-/**
-	Publish rules for host sandbox
-*/
-pub async fn app(
-	proxy_socket:	&std::path::PathBuf,
-) -> crate::bind::types::BindRules {
-	use crate::bind::types::BindRule;
-	vec![
-		BindRule::Symlink {
-			source: std::path::PathBuf::from(proxy_socket),
-			dest: "/run/at-spi".into(),
-		},
-	]
-}
+
 
 /**
 	Publish rules for the D-Bus proxy

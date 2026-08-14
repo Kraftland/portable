@@ -31,6 +31,14 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 			name
 		};
 
+		#[cfg(debug_assertions)]
+		let _ = self.logger.send(
+			crate::logger::LogMessage {
+				level: crate::logger::LogLevel::Debug,
+				message: format!("Got a11y bus address: {0:?}", &host_address_formatted),
+			}
+		).await;
+
 		let proxy_socket_dir = {
 			use crate::bind::subsystems::dirs::RuntimePathsTrait;
 			let mut path = self.portable_runtime.path();
