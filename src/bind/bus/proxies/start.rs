@@ -108,10 +108,9 @@ impl Proxy {
 									message: format!("D-Bus proxy exited: {:?}", v.code()),
 								},
 							).await;
-							stop_channel
+							let _ = stop_channel
 								.send(crate::stop::StopLevel::Normal)
-								.await
-								.expect("Could not send stop signal");
+								.await;
 						}
 						Err(e)	=> {
 							let _ = self.logger.send(
@@ -122,10 +121,9 @@ impl Proxy {
 									),
 								}
 							).await;
-							stop_channel
+							let _ = stop_channel
 								.send(crate::stop::StopLevel::Error(1))
-								.await
-								.expect("Could not send stop signal");
+								.await;
 						}
 					}
 				});
