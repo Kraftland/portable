@@ -1,8 +1,7 @@
 /*
 	Scan /dev/ for nvidia device nodes that aren't in udev database
-	This function needs spawn_blocking for std I/O
 */
-async fn get_nvidia_devices(
+pub fn get_nvidia_devices(
 	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 ) -> Vec<std::path::PathBuf> {
 	use crate::logger::LogMessage;
@@ -12,12 +11,12 @@ async fn get_nvidia_devices(
 		match dir {
 			Ok(v)	=> {v}
 			Err(e)	=> {
-				let _ = logger.send(
+				let _ = logger.blocking_send(
 					LogMessage {
 						level: LogLevel::Warn,
 						message: format!("Could not read /dev: {e:#?}"),
 					}
-				).await;
+				);
 				return vec![];
 			}
 		}
@@ -33,12 +32,12 @@ async fn get_nvidia_devices(
 				}
 			}
 			Err(e)	=> {
-				let _ = logger.send(
+				let _ = logger.blocking_send(
 					LogMessage {
 						level: LogLevel::Warn,
 						message: format!("Could not read /dev entry: {e:#?}"),
 					}
-				).await;
+				);
 			}
 		}
 	};

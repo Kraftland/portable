@@ -79,7 +79,15 @@ pub async fn generate_bind_rules(
 					// TODO: what about nouveau's modules?
 				}
 				super::nvidia::NVIDIADriver::Proprietary		=> {
-
+					for path in super::nvidia::get_nvidia_devices(&logger) {
+						tx.send(
+							BindRule::Path {
+								source: path.to_path_buf(),
+								dest: path.to_path_buf(),
+								class: crate::bind::types::BindType::Device,
+							}
+						).expect("Could not send rules for NVIDIA device");
+					};
 				}
 				super::nvidia::NVIDIADriver::Unknown { driver }	=> {
 					let _ = logger.send(
