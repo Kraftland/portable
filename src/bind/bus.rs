@@ -3,23 +3,28 @@ pub mod proxies;
 pub mod documents;
 
 /**
-	Note that proxy_path is in form of:
-		unix:path=<proxy_path>/bus
-	to workaround an issue with bind-mounting non-existent files
-
-	The proxy directory must exist beforehand.
+	Note that proxy_socket's parent must exist before starting the D-Bus proxy
 
 	The public struct proxy is used to define rules and sandboxing layer for xdg-dbus-proxy.
 
 	To influence the core sandbox binding logic, the app_sandbox field can be
 	implemented. It can affect environment variables and filesystem bindings.
 */
+#[derive(Debug)]
 pub struct Proxy {
 	pub sandbox:		crate::bind::types::BindRules,
 	pub bus_access:		Vec<rules::BusAccessLevel>,
+	/**
+		Maps to $DBUS_SESSION_ADDRESS format
+	*/
 	pub bus_address:	String,
 	pub logger:		crate::logger::LogSender,
-	pub proxy_address:	String,
+	/**
+		Designates the socket for proxy to listen on.
+
+		WARNING: you should expose the parent directory manually
+	*/
+	pub proxy_socket:	std::path::PathBuf,
 
 	/**
 		Internally maps to --sloppy-names, makes all unique names visible

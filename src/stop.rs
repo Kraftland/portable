@@ -61,14 +61,14 @@ pub async fn stop_worker(
 			_	=	tokio::signal::ctrl_c()		=> {
 				#[cfg(debug_assertions)]
 				println!("Shutting down on SIGINT...");
-
+				shutdown(pre_funcs, post_funcs, false).await;
 				break;
 			}
 			_	=	sigterm.recv()			=> {
 
 				#[cfg(debug_assertions)]
 				println!("Shutting down on SIGTERM...");
-
+				shutdown(pre_funcs, post_funcs, false).await;
 				break;
 			}
 		};

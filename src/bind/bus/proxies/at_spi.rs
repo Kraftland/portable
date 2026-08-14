@@ -31,17 +31,61 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 			name
 		};
 
-		let proxy_socket_path = {
+		#[cfg(debug_assertions)]
+		let _ = self.logger.send(
+			crate::logger::LogMessage {
+				level: crate::logger::LogLevel::Debug,
+				message: format!("Got a11y bus address: {0:?}", &host_address_formatted),
+			}
+		).await;
+
+		let proxy_socket_dir = {
 			use crate::bind::subsystems::dirs::RuntimePathsTrait;
 			let mut path = self.portable_runtime.path();
 			path.push("at-spi");
 			path
 		};
 
-		let proxy_address = {
-			let mut name = String::from("unix:path=");
-			name.push_str(&proxy_socket_path.as_os_str().to_string_lossy());
-			name
+		let proxy_socket_path = {
+			let mut path = proxy_socket_dir.clone();
+
+			tokio::fs::create_dir_all(&path)
+				.await
+				.map_err(AtspiError::IOError)
+				?;
+
+			let socket_name = match host_address.file_name() {
+				Some(v)	=> v,
+				None	=> {
+					return Err(
+						AtspiError::NoParentDirectory
+					);
+				}
+			};
+
+			path.push(socket_name);
+			path
+		};
+
+		let host_sandbox_rules = {
+			use crate::bind::types::BindRule;
+
+			vec![
+				BindRule::Path {
+					source: proxy_socket_dir.to_path_buf(),
+					dest: {
+						match host_address.to_path_buf().parent() {
+							Some(v)	=> v.to_path_buf(),
+							None	=> {
+								return Err(
+									AtspiError::NoParentDirectory,
+								);
+							}
+						}
+					},
+					class: crate::bind::types::BindType::ReadOnly,
+				}
+			]
 		};
 
 		let sandbox_rules = sandbox::get_sandbox(
@@ -58,11 +102,11 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 				bus_access:		bus_rules.await.map_err(AtspiError::SpawnError)??,
 				bus_address:		host_address_formatted,
 				logger:			self.logger,
-				proxy_address:		proxy_address,
+				proxy_socket:		proxy_socket_path,
 				sloppy_names:		true,
 				bind_lifetime:		None,
 				json_status_file:	None,
-				app_sandbox:		Some(sandbox::app(&proxy_socket_path).await),
+				app_sandbox:		Some(host_sandbox_rules),
 				envs:			None,
 			}
 		)
@@ -73,6 +117,12 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 
 #[derive(Debug, thiserror::Error)]
 pub enum AtspiError {
+	#[error("Could not start D-Bus proxy for a11y bus: no parent directory")]
+	NoParentDirectory,
+
+	#[error("Could not start D-Bus proxy for a11y bus: I/O error: {0:#?}")]
+	IOError(std::io::Error),
+
 	#[error("Could not start D-Bus proxy for a11y bus: invalid bus name: {0:#?}")]
 	InvalidBusNameError(crate::bind::bus::rules::BusNameError),
 

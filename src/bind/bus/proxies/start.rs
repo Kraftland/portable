@@ -11,6 +11,14 @@ pub enum StartProxyError {
 
 impl Proxy {
 	pub async fn start(self)	-> Result<(), StartProxyError> {
+		#[cfg(debug_assertions)]
+		let _ = self.logger.send(
+			crate::logger::LogMessage {
+				level: crate::logger::LogLevel::Debug,
+				message: format!("Starting D-Bus proxy: {:#?}", &self),
+			},
+		).await;
+
 		use command_fds::{CommandFdExt, FdMapping};
 		use crate::bind::types::ToCmdline;
 
@@ -60,7 +68,7 @@ impl Proxy {
 			cmdline.push("--".into());
 			cmdline.push("xdg-dbus-proxy".into());
 			cmdline.push(self.bus_address.clone());
-			cmdline.push(self.proxy_address);
+			cmdline.push(self.proxy_socket.to_string_lossy().to_string());
 			cmdline.push("--filter".into());
 
 			if self.sloppy_names {
@@ -83,7 +91,7 @@ impl Proxy {
 		let _ = self.logger.send(
 			crate::logger::LogMessage {
 				level: crate::logger::LogLevel::Debug,
-				message: format!("Started D-Bus proxy for {}", self.bus_address),
+				message: format!("Started D-Bus proxy {:#?}", &self.bus_address),
 			},
 		).await;
 
@@ -93,17 +101,16 @@ impl Proxy {
 					let stop_channel = v;
 					let result = child.wait().await;
 					match result {
-						Ok(_)	=> {
+						Ok(v)	=> {
 							let _ = self.logger.send(
 								crate::logger::LogMessage {
 									level: crate::logger::LogLevel::Debug,
-									message: format!("D-Bus proxy exited"),
+									message: format!("D-Bus proxy exited: {:?}", v.code()),
 								},
 							).await;
-							stop_channel
+							let _ = stop_channel
 								.send(crate::stop::StopLevel::Normal)
-								.await
-								.expect("Could not send stop signal");
+								.await;
 						}
 						Err(e)	=> {
 							let _ = self.logger.send(
@@ -114,16 +121,38 @@ impl Proxy {
 									),
 								}
 							).await;
-							stop_channel
+							let _ = stop_channel
 								.send(crate::stop::StopLevel::Error(1))
-								.await
-								.expect("Could not send stop signal");
+								.await;
 						}
 					}
 				});
 				Ok(())
 			}
 			None	=> {
+				tokio::spawn(async move {
+					let result = child.wait().await;
+					match result {
+						Ok(v)	=> {
+							let _ = self.logger.send(
+								crate::logger::LogMessage {
+									level: crate::logger::LogLevel::Debug,
+									message: format!("D-Bus proxy exited: {:?}", v.code()),
+								},
+							).await;
+						}
+						Err(e)	=> {
+							let _ = self.logger.send(
+								crate::logger::LogMessage {
+									level: crate::logger::LogLevel::Fatal,
+									message: format!(
+										"D-Bus proxy failed: {e:#?}",
+									),
+								}
+							).await;
+						}
+					}
+				});
 				Ok(())
 			}
 		}

@@ -1,17 +1,4 @@
-/**
-	Publish rules for host sandbox
-*/
-pub async fn app(
-	proxy_socket:	&std::path::PathBuf,
-) -> crate::bind::types::BindRules {
-	use crate::bind::types::BindRule;
-	vec![
-		BindRule::Symlink {
-			source: std::path::PathBuf::from(proxy_socket),
-			dest: "/run/at-spi".into(),
-		},
-	]
-}
+
 
 /**
 	Publish rules for the D-Bus proxy
@@ -22,6 +9,13 @@ pub async fn get_sandbox(
 	flatpak_info:	std::path::PathBuf,
 ) -> Result<crate::bind::types::BindRules, super::AtspiError> {
 	use crate::bind::types::BindRule;
+
+	let proxy_parent_dir = match proxy_socket.parent() {
+		Some(v)	=> {v.to_path_buf()}
+		None	=> {
+			return Err(super::AtspiError::NoParentDirectory);
+		}
+	};
 
 	let ret = vec![
 		BindRule::Symlink {
@@ -50,8 +44,8 @@ pub async fn get_sandbox(
 		},
 
 		BindRule::Path {
-			source: proxy_socket.clone(),
-			dest: proxy_socket.clone(),
+			source: proxy_parent_dir.to_path_buf(),
+			dest: proxy_parent_dir,
 			class: crate::bind::types::BindType::ReadWrite,
 		},
 		BindRule::Path {

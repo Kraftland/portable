@@ -13,8 +13,6 @@ pub trait Start {
 	fn start(
 		&self,
 		dbus_conn:	&zbus::Connection,
-		exec_target:	String,
-		exec_arguments:	Vec<String>,
 	// ) -> Result<(), crate::spawn::StartAppError>;
 	) -> impl std::future::Future<Output = Result<(), crate::spawn::StartAppError>> + Send;
 }
@@ -24,8 +22,6 @@ pub mod console;
 pub mod instance_id;
 
 pub struct Spawn {
-	target:		String,
-	arguments:	Vec<String>,
 	app_id:		String,
 
 	/// Instance ID
@@ -36,3 +32,4 @@ pub struct Spawn {
 	home:		std::path::PathBuf,
 	slave_pts:	console::PtsName,
 }
+
