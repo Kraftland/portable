@@ -320,13 +320,6 @@ async fn generate_properties(
 
 	vec.push(
 		(
-			String::from("PrivatePIDs"),
-			OwnedValue::from(true),
-		)
-	);
-
-	vec.push(
-		(
 			String::from("ProtectClock"),
 			OwnedValue::from(true),
 		)
