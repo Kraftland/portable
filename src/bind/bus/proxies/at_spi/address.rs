@@ -27,5 +27,8 @@ pub async fn get_address(conn: zbus::Connection) -> Result<std::path::PathBuf, s
 	gen_async = true,
 )]
 trait GetAddress {
+	#[zbus(
+		name	= "GetAddress",
+	)]
 	async fn get(&self) -> zbus::Result<String>;
 }
