@@ -19,8 +19,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 	async fn start(
 		&self,
 		dbus_conn:	&zbus::Connection,
-		exec_target:	String,
-		exec_arguments:	Vec<String>,
 	) -> Result<(), crate::spawn::StartAppError> {
 		let proxy = zbus_systemd::systemd1::ManagerProxy::new(dbus_conn)
 			.await
@@ -34,8 +32,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 		let properties = generate_properties(
 			&self.app_id,
 			self.envs.to_owned(),
-			&exec_target,
-			exec_arguments,
 			self.home.to_owned(),
 			self.slave_pts.to_owned(),
 		).await?;

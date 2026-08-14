@@ -13,8 +13,6 @@ pub trait Start {
 	fn start(
 		&self,
 		dbus_conn:	&zbus::Connection,
-		exec_target:	String,
-		exec_arguments:	Vec<String>,
 	// ) -> Result<(), crate::spawn::StartAppError>;
 	) -> impl std::future::Future<Output = Result<(), crate::spawn::StartAppError>> + Send;
 }
