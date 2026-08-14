@@ -44,8 +44,6 @@ impl crate::bind::bus::StartProxy for SessionProxy {
 
 }
 
-
-use crate::bind::types::BindRule;
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	config:		std::sync::Arc<crate::config::config_definition::Config>,

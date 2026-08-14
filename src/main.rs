@@ -64,6 +64,9 @@ enum StartError {
 
 	#[error("Could not publish info for Init: {0:#?}")]
 	InitPublishError(zbus::Error),
+
+	#[error("Could not spawn sandbox: {0:#?}")]
+	SpawnSandboxError(spawn::StartAppError),
 }
 
 #[tokio::main]
@@ -489,7 +492,7 @@ async fn run(
 		?;
 
 
-	let spawn_struct = {
+	{
 		let spawn_struct = spawn::Spawn {
 			config:		config.clone(),
 			uid:		instance_id.to_string(),
@@ -503,7 +506,12 @@ async fn run(
 				state_dir
 			}
 		};
-	};
+		use spawn::Start;
+		spawn_struct.start(&dbus_conn)
+	}
+		.await
+		.map_err(StartError::SpawnSandboxError)
+		?;
 
 	/*
 		Stop, or termination is handled by stop_worker, we sleep forever here to prevent bus being dropped
