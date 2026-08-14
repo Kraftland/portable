@@ -80,7 +80,7 @@ pub enum BusAccessLevel {
 use crate::bind::types::ToCmdline;
 
 impl ToCmdline for Vec<BusAccessLevel> {
-	async fn to_cmdline(self)	-> Vec<String> {
+	async fn to_cmdline(&self)	-> Vec<String> {
 		let mut ret = vec![];
 
 		for rule in self {

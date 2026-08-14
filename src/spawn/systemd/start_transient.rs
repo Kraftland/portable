@@ -17,23 +17,22 @@ pub enum StartAppError {
 #[cfg(feature = "systemd")]
 impl crate::spawn::Start for crate::spawn::Spawn {
 	async fn start(
-		&self,
+		self,
 		dbus_conn:	&zbus::Connection,
 	) -> Result<(), crate::spawn::StartAppError> {
+		let spawn = std::sync::Arc::new(self);
+
 		let proxy = zbus_systemd::systemd1::ManagerProxy::new(dbus_conn)
 			.await
 			.map_err(StartAppError::ManagerProxyError)
 			?;
 
 		let unit_name = ServiceName::new(
-			&self.app_id,
-			&self.uid,
+			&spawn.app_id,
+			&spawn.uid,
 		).await;
 		let properties = generate_properties(
-			&self.app_id,
-			self.envs.to_owned(),
-			self.home.to_owned(),
-			self.slave_pts.to_owned(),
+			spawn.clone()
 		).await?;
 
 		proxy.start_transient_unit(
@@ -92,12 +91,9 @@ impl ServiceName {
 	I hate their docs. What a genius and brilliant move to hide those!
 */
 async fn generate_properties(
-	app_id:		&str,
-	envs:		crate::envs::holder::HoldChannel,
-	home:		std::path::PathBuf,
-	slave_pts:	crate::spawn::console::PtsName,
+	spawn:		std::sync::Arc<crate::spawn::Spawn>,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
-	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(envs));
+	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(spawn.envs.clone()));
 
 	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![
 		/*
@@ -105,7 +101,7 @@ async fn generate_properties(
 		*/
 		(
 			String::from("TTYPath"),
-			OwnedValue::from(Str::from(slave_pts)),
+			OwnedValue::from(Str::from(spawn.slave_pts.to_owned())),
 		),
 		(
 			String::from("StandardInput"),
@@ -139,15 +135,13 @@ async fn generate_properties(
 			*/
 			String::from("ExecStartEx"),
 			{
-				let exec_target = "/usr/lib/portable/helper/helper";
-
-				let args = vec![String::from(exec_target), String::from(app_id)];
+				let (argv0, cmd) = super::cmdline::cmdline(spawn.clone()).await;
 
 				let flags = vec![
 					"no-setuid",
 				];
 
-				let native_tuple = (String::from(exec_target), args, flags);
+				let native_tuple = (argv0, cmd, flags);
 
 				let array = vec![native_tuple];
 
@@ -185,7 +179,7 @@ async fn generate_properties(
 			String::from("Description"),
 			OwnedValue::from(Str::from({
 				let mut desc = String::from("Portable sandbox: ");
-				desc.push_str(app_id);
+				desc.push_str(&spawn.app_id);
 				desc
 			}))
 		),
@@ -291,7 +285,7 @@ async fn generate_properties(
 	vec.push(
 		(
 			String::from("SyslogIdentifier"),
-			OwnedValue::from(Str::from(app_id)),
+			OwnedValue::from(Str::from(&spawn.app_id)),
 		)
 	);
 
@@ -509,7 +503,7 @@ async fn generate_properties(
 
 				{
 					let mut home_env = String::from("HOME=");
-					home_env.push_str(&home.to_string_lossy());
+					home_env.push_str(&spawn.sandbox_home.to_string_lossy());
 					environment.push(home_env);
 				};
 
