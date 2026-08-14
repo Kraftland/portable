@@ -26,6 +26,46 @@ pub async fn setup(
 
 	// Output thread
 	let output_thread = tokio::spawn(stream_out(reader));
+
+	// Input thread
+	let input_thread = tokio::spawn(stream_in(writer));
+}
+
+async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
+	let mut buffer = [0u8, 4096];
+	let mut stdin = {
+		use std::os::fd::AsFd;
+		let stdin = std::io::stdin()
+			.as_fd()
+			.try_clone_to_owned()
+			.map_err(StreamError::StdinConvertError)
+			?;
+		tokio::fs::File::from_std(stdin.into())
+	};
+
+	let mut tokio_file = tokio::fs::File::from_std(file);
+	use tokio::io::AsyncWriteExt;
+	use tokio::io::AsyncReadExt;
+
+	loop {
+		match stdin.read(&mut buffer).await {
+			Ok(0)	=> {return Ok(());}
+			Ok(v)	=> {
+				tokio_file.write(&buffer[..v])
+					.await
+					.map_err(StreamError::ConsoleIOError)
+					?;
+					tokio_file
+						.flush()
+						.await
+						.map_err(StreamError::ConsoleIOError)
+						?;
+			}
+			Err(e)	=> {
+				return Err(StreamError::ConsoleIOError(e));
+			}
+		}
+	}
 }
 
 async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
@@ -72,6 +112,9 @@ pub enum StreamError {
 
 	#[error("Error cloning master fd: {0:#?}")]
 	CloneFdError(std::io::Error),
+
+	#[error("Error converting Stdin: {0:#?}")]
+	StdinConvertError(std::io::Error),
 
 	#[error("Error during console I/O: {0:#?}")]
 	ConsoleIOError(std::io::Error),
