@@ -24,8 +24,6 @@ pub mod console;
 pub mod instance_id;
 
 pub struct Spawn {
-	target:		String,
-	arguments:	Vec<String>,
 	app_id:		String,
 
 	/// Instance ID
@@ -36,3 +34,4 @@ pub struct Spawn {
 	home:		std::path::PathBuf,
 	slave_pts:	console::PtsName,
 }
+

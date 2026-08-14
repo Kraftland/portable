@@ -98,8 +98,6 @@ impl ServiceName {
 async fn generate_properties(
 	app_id:		&str,
 	envs:		crate::envs::holder::HoldChannel,
-	exec_target:	&String,
-	exec_arguments:	Vec<String>,
 	home:		std::path::PathBuf,
 	slave_pts:	crate::spawn::console::PtsName,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
@@ -145,17 +143,15 @@ async fn generate_properties(
 			*/
 			String::from("ExecStartEx"),
 			{
-				let mut args = vec![];
-				args.push(exec_target.clone());
-				for arg in exec_arguments {
-					args.push(arg);
-				};
+				let exec_target = "/usr/lib/portable/helper/helper";
+
+				let args = vec![String::from(exec_target), String::from(app_id)];
 
 				let flags = vec![
 					"no-setuid",
 				];
 
-				let native_tuple = (exec_target, args, flags);
+				let native_tuple = (String::from(exec_target), args, flags);
 
 				let array = vec![native_tuple];
 
