@@ -10,10 +10,6 @@ install -vDm755 \
 	"lib/init/target/release/init" \
 	"${installPrefix}/usr/lib/portable/helper/helper"
 
-install -vDm755 \
-	"lib/daemon/portable-daemon" \
-	"${installPrefix}/usr/bin/portable"
-
 install -vDm644 \
 	"lib/flatpak-info" \
 	-t \
