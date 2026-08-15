@@ -1,6 +1,7 @@
 mod passwd;
 mod nsswitch;
 mod kvm;
+mod resolv;
 
 /**
 	The system bind subsystem
@@ -14,6 +15,8 @@ pub struct SystemBind {
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 
 	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
+
+	pub logger:			crate::logger::LogSender,
 }
 
 impl super::GenerateBind for SystemBind {
@@ -24,6 +27,7 @@ impl super::GenerateBind for SystemBind {
 			self.document_mount,
 			self.xdg,
 			self.flatpak_info,
+			self.logger,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -40,6 +44,7 @@ async fn bind(
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	flatpak_info:		std::sync::Arc<std::path::PathBuf>,
+	logger:			crate::logger::LogSender,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
@@ -52,6 +57,8 @@ async fn bind(
 	let kvm_spawn = tokio::spawn(
 		kvm::mount_kvm(config.system.device_allow.clone())
 	);
+
+	let resolv_spawn = tokio::spawn(resolv::mount(logger.clone()));
 
 	let passwd_spawn = tokio::spawn(
 		passwd::generate(
@@ -66,6 +73,15 @@ async fn bind(
 	use crate::bind::subsystems::dirs::RuntimePathsTrait;
 	use crate::bind::types::BindRule;
 	let mut ret = vec![
+		/*
+			/etc mounts
+		*/
+		BindRule::Path {
+			source:	"/etc".into(),
+			dest:	"/etc".into(),
+			class:	crate::bind::types::BindType::ReadOnly,
+		},
+
 		BindRule::VirtualFS {
 			dest:	"/host".into(),
 			class:	crate::bind::types::VirtualFS::Tmpfs {
@@ -281,20 +297,6 @@ async fn bind(
 			source:	document_mount.path_per_app(),
 			dest:	document_mount.path(),
 			class:	crate::bind::types::BindType::ReadWrite,
-		},
-
-		/*
-			/etc mounts
-		*/
-		BindRule::Path {
-			source:	"/etc".into(),
-			dest:	"/etc".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
-		},
-		BindRule::Path {
-			source:	"/etc/resolv.conf".into(),
-			dest:	"/etc/resolv.conf".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
 		},
 		BindRule::Path {
 			source:	{
@@ -529,6 +531,12 @@ async fn bind(
 			}
 		);
 	};
+
+	ret.extend(
+		resolv_spawn
+			.await
+			.map_err(SystemBindError::SpawnError)?
+	);
 
 	ret.extend(
 		kvm_spawn
