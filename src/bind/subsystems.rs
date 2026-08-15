@@ -224,7 +224,7 @@ pub async fn generate_bindrules(
 				key: "PS1".into(),
 				value: {
 					let mut ps1 = String::new();
-					ps1.push_str("⭃ 🗃 Portable: ");
+					ps1.push_str("╰─>Portable: ");
 					ps1.push_str(&config.metadata.sandbox_id);
 					ps1.push_str("·👻 ➵ ");
 					ps1
