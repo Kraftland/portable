@@ -100,5 +100,16 @@ pub async fn generate_bind_rules(
 			).await;
 		}
 	};
+
+	ret.extend(
+		crate::bind::subsystems::devices::bind_udev_device(gpu.nodes.card_node)
+			.await
+	);
+
+	ret.extend(
+		crate::bind::subsystems::devices::bind_udev_device(gpu.nodes.render_node)
+			.await
+	);
+
 	ret
 }
