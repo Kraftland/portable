@@ -35,6 +35,7 @@
 - Portable now utilises the wp-security-context-v1 protocol to provide a secure way of window identification
 - Secondary instances are now streaming to the console via PTY, and will automatically re-scale their terminal size
 - It is now possible to disable certain components of Portable by subsystem.
+- Fixed a bug causing secondary instances to stuck while calling prohibited system calls.
 
 
 # 18.0 - Lawn
