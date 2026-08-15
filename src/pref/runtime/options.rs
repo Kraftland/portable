@@ -3,9 +3,10 @@ pub struct RuntimeOpts {
 		File forwarding
 	*/
 	pub file_expose:	Vec<FileExposurePreference>,
-	pub Action:		Action,
+	pub action:		Action,
 	pub app_args:		ApplicationArguments,
 	pub bus_activation:	bool,
+	pub debug_shell:	bool,
 }
 
 pub type ApplicationArguments = Vec<String>;
@@ -21,9 +22,7 @@ pub type ApplicationArguments = Vec<String>;
 	and said actions should be handled in the cmdline module
 */
 pub enum Action {
-	Normal {
-		debug_shell:	bool,
-	},
+	Normal,
 	ShareFile,
 	ShareDir,
 	OpenHome,

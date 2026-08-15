@@ -195,8 +195,8 @@ async fn run(
 			.map_err(StartError::RuntimeOptError)?
 	);
 
-	match &runtime_opts.Action {
-		pref::runtime::options::Action::Normal { debug_shell: _ }	=> {}
+	match &runtime_opts.action {
+		pref::runtime::options::Action::Normal				=> {}
 		pref::runtime::options::Action::ShareFile			=> {
 			use portable_daemon::pref::runtime::cmdline::share_file;
 			share_file::share_path_with_helper(

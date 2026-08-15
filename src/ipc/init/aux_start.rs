@@ -27,11 +27,15 @@ pub async fn start(
 	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 ) -> Result<(), AuxStartError> {
 	let args = {
-		let mut args = config.exec.arguments.to_owned();
-		args.extend(
-			runtime_opts.app_args.to_owned()
-		);
-		args
+		if runtime_opts.debug_shell {
+			vec![String::from("-i")]
+		} else {
+			let mut args = config.exec.arguments.to_owned();
+			args.extend(
+				runtime_opts.app_args.to_owned()
+			);
+			args
+		}
 	};
 
 	let init_name = {
@@ -40,7 +44,13 @@ pub async fn start(
 		name
 	};
 
-	let exec = config.exec.target.to_owned();
+	let exec = {
+		if runtime_opts.debug_shell {
+			String::from("bash")
+		} else {
+			config.exec.target.to_owned()
+		}
+	};
 
 	let proxy = IPCProxy::new(
 		bus,

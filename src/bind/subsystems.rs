@@ -193,7 +193,6 @@ pub async fn generate_bindrules(
 		stop_tx:		stop_tx,
 		stop_func:		stop_func,
 		target_exec:		{
-			use crate::pref::runtime::options::Action;
 			if runtime_opts.bus_activation {
 				if config.dbus_activation.enable {
 					config.dbus_activation.target.to_owned()
@@ -203,14 +202,7 @@ pub async fn generate_bindrules(
 					);
 				}
 			} else {
-				let debug_shell = match runtime_opts.Action {
-					Action::Normal { debug_shell }	=> {debug_shell}
-					_				=> {
-						return Err(BindError::ActionError);
-					}
-				};
-
-				if debug_shell {
+				if runtime_opts.debug_shell {
 					String::from("bash")
 				} else {
 					config.exec.target.to_owned()
@@ -230,15 +222,8 @@ pub async fn generate_bindrules(
 				config.exec.arguments.to_owned()
 			};
 			base.extend(runtime_opts.app_args.to_owned());
-			use crate::pref::runtime::options::Action;
-			let debug_shell = match runtime_opts.Action {
-					Action::Normal { debug_shell }	=> {debug_shell}
-					_				=> {
-						return Err(BindError::ActionError);
-					}
-			};
 
-			if debug_shell {
+			if runtime_opts.debug_shell {
 				vec!["-i".to_string()]
 			} else {
 				base
