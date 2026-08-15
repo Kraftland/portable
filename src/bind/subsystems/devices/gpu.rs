@@ -121,16 +121,6 @@ pub async fn gputest_print_all_devices(
 	format!("{res:#?}")
 }
 
-fn path_exists(path: &std::path::PathBuf) -> bool {
-	match std::fs::exists(path) {
-		Ok(v)	=> v,
-		Err(_)	=> false,
-	}
-}
-
-
-
-
 #[derive(Debug, Clone)]
 struct GPUDevice {
 	card_node:	udev::Device,
