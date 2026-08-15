@@ -226,7 +226,7 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 
 
 	{
-		let devpath = std::path::PathBuf::from(device.devpath());
+		let devpath = std::path::PathBuf::from(device.syspath());
 		let path = std::path::PathBuf::from("/sys");
 		let path = path.join(devpath);
 		ret.push(

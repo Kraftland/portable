@@ -97,7 +97,7 @@ pub async fn scan(
 				);
 			};
 		}
-	}
+	};
 
 	for worker in workers {
 		rules.extend(
