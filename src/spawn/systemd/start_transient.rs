@@ -14,6 +14,9 @@ pub enum StartAppError {
 
 	#[error("Could not start app: pts allocation error: {0:#?}")]
 	StreamError(super::stream::StreamError),
+
+	#[error("Could not start app: systemd error: {0:#?}")]
+	SystemdStartError(zbus::Error),
 }
 
 
@@ -36,13 +39,19 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			?;
 
 		let unit_name = ServiceName::new(
-			&spawn.app_id,
+			&spawn.config.metadata.sandbox_id,
 			&spawn.uid,
 		).await;
 		let properties = generate_properties(
 			spawn.clone(),
 			pts,
 		).await?;
+
+		proxy
+			.subscribe()
+			.await
+			.map_err(StartAppError::ManagerProxyError)
+			?;
 
 		proxy.start_transient_unit(
 			unit_name.inner().await.to_string(),
@@ -55,7 +64,10 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 				https://systemd.io/CONTROL_GROUP_INTERFACE/
 			*/
 			vec![],
-		).await;
+		)
+			.await
+			.map_err(StartAppError::SystemdStartError)
+			?;
 
 
 
@@ -148,7 +160,7 @@ async fn generate_properties(
 				let (argv0, cmd) = super::cmdline::cmdline(spawn.clone()).await;
 
 				let flags = vec![
-					"no-setuid",
+					"no-setuid".to_string(),
 				];
 
 				let native_tuple = (argv0, cmd, flags);
@@ -189,7 +201,7 @@ async fn generate_properties(
 			String::from("Description"),
 			OwnedValue::from(Str::from({
 				let mut desc = String::from("Portable sandbox: ");
-				desc.push_str(&spawn.app_id);
+				desc.push_str(&spawn.config.metadata.sandbox_id);
 				desc
 			}))
 		),
@@ -238,20 +250,6 @@ async fn generate_properties(
 
 	vec.push(
 		(
-			String::from("SuccessExitStatus"),
-			{
-				let kill_signals: (Vec<i32>, Vec<i32>) = (vec![9], vec![15]);
-				let value = zbus::zvariant::Value::from(kill_signals);
-				value
-					.try_into()
-					.map_err(StartAppError::PropertiesError)
-					?
-			}
-		)
-	);
-
-	vec.push(
-		(
 			String::from("NotifyAccess"),
 			OwnedValue::from(Str::from("all")),
 		)
@@ -295,20 +293,13 @@ async fn generate_properties(
 	vec.push(
 		(
 			String::from("SyslogIdentifier"),
-			OwnedValue::from(Str::from(&spawn.app_id)),
+			OwnedValue::from(Str::from(&spawn.config.metadata.sandbox_id)),
 		)
 	);
 
 	vec.push(
 		(
 			String::from("PrivateIPC"),
-			OwnedValue::from(true),
-		)
-	);
-
-	vec.push(
-		(
-			String::from("PrivatePIDs"),
 			OwnedValue::from(true),
 		)
 	);
@@ -482,7 +473,7 @@ async fn generate_properties(
 		(
 			"SystemCallFilter".into(),
 			{
-				let whitelist = false;
+				let is_whitelist = false;
 				let deny_list = vec![
 					"@clock",
 					"@cpu-emulation",
@@ -492,12 +483,9 @@ async fn generate_properties(
 					"@reboot",
 					"@swap",
 				];
-				let array = zbus::zvariant::Array::from(deny_list);
 
-				let array_val = zbus::zvariant::Value::from(array);
-				zbus::zvariant::Structure::from(
-					(zbus::zvariant::Value::from(whitelist), array_val),
-				)
+				let native_tuple = (is_whitelist, deny_list);
+				zbus::zvariant::Value::from(native_tuple)
 					.try_into()
 					.map_err(StartAppError::PropertiesError)
 					?

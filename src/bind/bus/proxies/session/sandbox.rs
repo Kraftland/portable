@@ -14,34 +14,26 @@ pub async fn generate_sandbox_rules(
 	};
 
 	let mut rules = vec![
+		BindRule::Path {
+			source:	"/usr".into(),
+			dest:	"/usr".into(),
+			class:	crate::bind::types::BindType::ReadOnly,
+		},
 		BindRule::Symlink {
-			source: "/usr/lib64".into(),
-			dest: "/lib64".into(),
+			source:	"/usr/lib".into(),
+			dest:	"/lib".into(),
 		},
-		BindRule::Path {
-			source: "/usr/lib".into(),
-			dest: "/usr/lib".into(),
-			class: crate::bind::types::BindType::ReadOnly,
+		BindRule::Symlink {
+			source:	"/usr/lib".into(),
+			dest:	"/lib64".into(),
 		},
-		BindRule::Path {
-			source: "/usr/lib64".into(),
-			dest: "/usr/lib64".into(),
-			class: crate::bind::types::BindType::ReadOnly,
+		BindRule::Symlink {
+			source:	"/usr/bin".into(),
+			dest:	"/bin".into(),
 		},
-		BindRule::Path {
-			source: "/usr/bin".into(),
-			dest: "/usr/bin".into(),
-			class: crate::bind::types::BindType::ReadOnly,
-		},
-		// BindRule::Path {
-		// 	source: "/usr/share".into(),
-		// 	dest: "/usr/share".into(),
-		// 	class: crate::bind::types::BindType::ReadOnly,
-		// },
-		BindRule::Path {
-			source: "/usr/bin".into(),
-			dest: "/usr/bin".into(),
-			class: crate::bind::types::BindType::ReadOnly,
+		BindRule::Symlink {
+			source:	"/usr/bin".into(),
+			dest:	"/sbin".into(),
 		},
 
 		BindRule::Path {

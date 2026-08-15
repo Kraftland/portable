@@ -64,6 +64,9 @@ enum StartError {
 
 	#[error("Could not publish info for Init: {0:#?}")]
 	InitPublishError(zbus::Error),
+
+	#[error("Could not spawn sandbox: {0:#?}")]
+	SpawnSandboxError(spawn::StartAppError),
 }
 
 #[tokio::main]
@@ -454,10 +457,10 @@ async fn run(
 	let (mut bind_rules, init_info) = bind::subsystems::generate_bindrules(
 		portable_runtime,
 		document,
-		xdg_dirs,
-		config,
+		xdg_dirs.clone(),
+		config.clone(),
 		log_tx.clone(),
-		envs_tx,
+		envs_tx.clone(),
 		instance_id.to_string(),
 		flatpak_info.clone(),
 		runtime_opts,
@@ -486,6 +489,28 @@ async fn run(
 		.map_err(StartError::SpawnError)
 		?
 		.map_err(StartError::InitPublishError)
+		?;
+
+
+	{
+		let spawn_struct = spawn::Spawn {
+			config:		config.clone(),
+			uid:		instance_id.to_string(),
+			fs_rules:	bind_rules,
+			logger:		log_tx,
+			stop:		stop_tx,
+			envs:		envs_tx,
+			sandbox_home:	{
+				let mut state_dir = xdg_dirs.data_home.to_path_buf();
+				state_dir.push(&config.metadata.state_directory);
+				state_dir
+			}
+		};
+		use spawn::Start;
+		spawn_struct.start(&dbus_conn)
+	}
+		.await
+		.map_err(StartError::SpawnSandboxError)
 		?;
 
 	/*

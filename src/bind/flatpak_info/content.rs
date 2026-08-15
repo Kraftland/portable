@@ -12,7 +12,7 @@ pub async fn generate(
 		content.push_str("[Application]");
 		content.push_str("\n");
 		content.push_str("name=");
-		content.push_str(&config.metadata.display_name);
+		content.push_str(&config.metadata.sandbox_id);
 		content.push_str("\n");
 		content.push_str("runtime=runtime/org.kraftland.host/x86_64/12252019");
 		content.push_str("\n");
@@ -26,7 +26,7 @@ pub async fn generate(
 		content.push_str("instance-path=");
 		let state_dir = {
 			let mut path = xdg.data_home.to_path_buf();
-			path.push(&config.metadata.display_name);
+			path.push(&config.metadata.state_directory);
 			path
 		};
 		content.push_str(&state_dir.to_string_lossy());
@@ -53,6 +53,7 @@ pub async fn generate(
 		content.push_str("\n");
 		content.push_str("extra-args=--usb-list=;--filesystem=");
 		content.push_str(&state_dir.to_string_lossy());
+		content.push_str(";");
 		content.push_str("\n");
 	};
 	{

@@ -40,6 +40,7 @@ pub async fn generate_bindrules(
 			document_mount:		document_mount,
 			xdg:			xdg.clone(),
 			flatpak_info:		flatpak_info_path,
+			logger:			logger.clone(),
 		};
 
 		workers.push(
