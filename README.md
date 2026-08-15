@@ -44,9 +44,7 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 1. **Running untrusted code is never safe, sandboxing does not change this.**
 2. On KDE Plasma window grouping may not work properly unless your desktop file name exactly matches certain arguments.
 	- This is an [KWin issue](https://bugs.kde.org/show_bug.cgi?id=502309)
-3. Due to some desktop portal implementations being insecure (without requiring user consent), feature(s) may only be available on GNOME:
-	- Location Portal
-4. Portable acts like Flatpak, to trick XDG Desktop Portal.
+3. Portable acts like Flatpak, to trick XDG Desktop Portal.
 	- The correct way for this situation is to specify another sandboxing engine in XDP, which I have a PoC [here](https://github.com/Kimiblock/xdg-desktop-portal/commit/199c0934035789986b98738b01b15edf0443d675)
 		- I barely understand C at all! Please help if you will.
 	- The other possibly "correct way" is to wait until [busd#34](https://github.com/dbus2/busd/issues/34), and XDP's implementation.
@@ -61,13 +59,9 @@ Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-
   <br>
 </h1>
 
----
-
 # Transient sandbox
 
 See [bawn](https://github.com/Kimiblock/bawn) for the successor of Portable Pools.
-
----
 
 # How to package?
 
@@ -81,13 +75,13 @@ See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
 
 Start portable with environment variable `PORTABLE_CONF`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${PORTABLE_CONF}`. It searches for each of them respectively.
 
-- Debugging output can be enabled using a environment variable `PORTABLE_LOGGING=debug`
+- Debugging output can be enabled by building with debug assertions (debug builds).
 
 ### Debugging
 
 #### Entering sandbox
 
-To manually execute programs instead of following the `launchTarget` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
+To manually execute programs instead of following the `exec.target` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
 
 # Code of Conduct
 
