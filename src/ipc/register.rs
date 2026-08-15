@@ -66,7 +66,7 @@ pub async fn register(
 	let mut name = String::from("top.kimiblock.portable.");
 	name.push_str(&app_id);
 
-	match conn.request_name(name).await {
+	match conn.request_name_with_flags(name, zbus::fdo::RequestNameFlags::DoNotQueue.into()).await {
 		Ok(_)	=> {
 			Ok(RegisterStatus::Primary)
 		}

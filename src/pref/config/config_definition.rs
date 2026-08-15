@@ -104,7 +104,6 @@ pub struct SysMgmt {
 	#[serde(alias = "inhibitOnBehalf")]
 	pub conduct_inhibit:	bool,
 
-	#[serde(alias = "uclamp")]
 	pub uclamp_max:		u32,
 
 	#[serde(alias = "deviceAllow")]

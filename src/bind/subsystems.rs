@@ -21,6 +21,7 @@ pub async fn generate_bindrules(
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	logger:			crate::logger::LogSender,
+	stop_tx:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 	stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
 	env:			crate::envs::holder::HoldChannel,
 	instance_id:		String,
@@ -98,7 +99,7 @@ pub async fn generate_bindrules(
 		let display_bind = display::Display {
 			xdg:			xdg.clone(),
 			logger:			logger.clone(),
-			env:			env,
+			env:			env.clone(),
 			portable_runtime:	portable_runtime,
 			app_id:			config.metadata.sandbox_id.to_string(),
 			instance_id:		instance_id,
@@ -168,6 +169,100 @@ pub async fn generate_bindrules(
 		.await
 	};
 
+	// Previously in miscEnvs
+	{
+		if config.advanced.qt5_compat {
+			env.send(
+				crate::envs::holder::EnvMessage::Add {
+					key: "QT_QPA_PLATFORMTHEME".into(),
+					value: "xdgdesktopportal".into(),
+				}
+			)
+				.await
+				.map_err(BindError::EnvError)
+				?
+		}
+
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "GDK_DEBUG".into(),
+				value: "portals".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "GTK_USE_PORTAL".into(),
+				value: "1".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "QT_AUTO_SCREEN_SCALE_FACTOR".into(),
+				value: "1".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "QT_ENABLE_HIGHDPI_SCALING".into(),
+				value: "1".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "PS1".into(),
+				value: {
+					let mut ps1 = String::new();
+					ps1.push_str("🗃  ╰─>Portable: ");
+					ps1.push_str(&config.metadata.sandbox_id);
+					ps1.push_str("·👻 ➵ ");
+					ps1
+				},
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "GDK_DEBUG".into(),
+				value: "portals".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "GDK_DEBUG".into(),
+				value: "portals".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+		env.send(
+			crate::envs::holder::EnvMessage::Add {
+				key: "GDK_DEBUG".into(),
+				value: "portals".into(),
+			}
+		)
+			.await
+			.map_err(BindError::EnvError)
+			?;
+	}
+
 	let mut ret = vec![];
 
 	for worker in workers {
@@ -189,9 +284,9 @@ pub async fn generate_bindrules(
 		lockdown:		config.privacy.lockdown,
 		allow_debug:		config.advanced.allow_debug,
 		logger:			logger.clone(),
+		stop_tx:		stop_tx,
 		stop_func:		stop_func,
 		target_exec:		{
-			use crate::pref::runtime::options::Action;
 			if runtime_opts.bus_activation {
 				if config.dbus_activation.enable {
 					config.dbus_activation.target.to_owned()
@@ -201,14 +296,7 @@ pub async fn generate_bindrules(
 					);
 				}
 			} else {
-				let debug_shell = match runtime_opts.Action {
-					Action::Normal { debug_shell }	=> {debug_shell}
-					_				=> {
-						return Err(BindError::ActionError);
-					}
-				};
-
-				if debug_shell {
+				if runtime_opts.debug_shell {
 					String::from("bash")
 				} else {
 					config.exec.target.to_owned()
@@ -228,15 +316,8 @@ pub async fn generate_bindrules(
 				config.exec.arguments.to_owned()
 			};
 			base.extend(runtime_opts.app_args.to_owned());
-			use crate::pref::runtime::options::Action;
-			let debug_shell = match runtime_opts.Action {
-					Action::Normal { debug_shell }	=> {debug_shell}
-					_				=> {
-						return Err(BindError::ActionError);
-					}
-			};
 
-			if debug_shell {
+			if runtime_opts.debug_shell {
 				vec!["-i".to_string()]
 			} else {
 				base
@@ -274,6 +355,9 @@ pub enum BindError {
 
 	#[error("Could not spawn bind task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not send environment variables: {0:#?}")]
+	EnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
 }
 
 #[cfg(feature = "audio")]

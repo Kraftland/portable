@@ -67,6 +67,12 @@ enum StartError {
 
 	#[error("Could not spawn sandbox: {0:#?}")]
 	SpawnSandboxError(spawn::StartAppError),
+
+	#[error("Could not start auxiliary instance: {0:#?}")]
+	AuxStartError(ipc::init::aux_start::AuxStartError),
+
+	#[error("Could not wake up application via tray: {0:#?}")]
+	TrayError(ipc::init::tray::WakeError),
 }
 
 #[tokio::main]
@@ -192,8 +198,8 @@ async fn run(
 			.map_err(StartError::RuntimeOptError)?
 	);
 
-	match &runtime_opts.Action {
-		pref::runtime::options::Action::Normal { debug_shell: _ }	=> {}
+	match &runtime_opts.action {
+		pref::runtime::options::Action::Normal				=> {}
 		pref::runtime::options::Action::ShareFile			=> {
 			use portable_daemon::pref::runtime::cmdline::share_file;
 			share_file::share_path_with_helper(
@@ -281,9 +287,26 @@ async fn run(
 			.map_err(StartError::LogError)
 			?;
 
-			stop_tx.send(stop::StopLevel::Normal);
+			if ! config.advanced.tray_wake {
+				ipc::init::aux_start::start(
+					runtime_opts,
+					config,
+					&dbus_conn,
+					log_tx.clone(),
+					stop_func,
+					stop_tx,
+				)
+					.await
+					.map_err(StartError::AuxStartError)
+					?;
+			} else {
+				ipc::init::tray::wake(config, &dbus_conn)
+					.await
+					.map_err(StartError::TrayError)
+					?;
+			}
 
-			unimplemented!();
+
 
 			return Ok(());
 		}
@@ -460,6 +483,7 @@ async fn run(
 		xdg_dirs.clone(),
 		config.clone(),
 		log_tx.clone(),
+		stop_tx.clone(),
 		stop_func,
 		envs_tx.clone(),
 		instance_id.to_string(),

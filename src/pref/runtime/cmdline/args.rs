@@ -14,7 +14,8 @@ pub async fn parse(logger: crate::logger::LogSender)
 	let mut file_forwarding: bool = false;
 	let mut bus_activate: bool = false;
 	let mut expose_files: Vec<FileExposurePreference> = vec![];
-	let mut start_mode: Action = Action::Normal {debug_shell: false};
+	let mut start_mode: Action = Action::Normal;
+	let mut debug_shell: bool = false;
 	let mut application_args = vec![];
 
 	let mut skip_counter = 0;
@@ -75,7 +76,7 @@ pub async fn parse(logger: crate::logger::LogSender)
 				start_mode = Action::Quit
 			}
 			"debug-shell" | "--debug-shell"		=> {
-				start_mode = Action::Normal { debug_shell: true }
+				debug_shell = true
 			}
 			"share-file" | "share-files" | "--share-file" | "--share-files"
 								=> {
@@ -116,9 +117,10 @@ pub async fn parse(logger: crate::logger::LogSender)
 	Ok(
 		crate::pref::runtime::options::RuntimeOpts {
 			file_expose: 	expose_files,
-			Action:		start_mode,
+			action:		start_mode,
 			app_args:	application_args,
 			bus_activation:	bus_activate,
+			debug_shell:	debug_shell,
 		},
 	)
 }

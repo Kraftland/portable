@@ -107,7 +107,12 @@ async fn generate_properties(
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(spawn.envs.clone()));
 
-	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![];
+	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![
+		(
+			String::from("WorkingDirectory"),
+			OwnedValue::from(Str::from(spawn.sandbox_home.to_string_lossy()))
+		)
+	];
 
 	use zbus::zvariant::{OwnedValue, Str};
 
