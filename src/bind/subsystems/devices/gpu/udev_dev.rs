@@ -1,4 +1,4 @@
-pub async fn get_vendor(device: udev::Device) -> super::GPUVendor {
+pub async fn get_vendor(device: &udev::Device) -> super::GPUVendor {
 	match device.attribute_value("vendor") {
 		Some(v)	=> {
 			return map_to_vendor(v, &device)
