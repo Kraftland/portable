@@ -2,6 +2,10 @@ use thiserror::Error;
 
 use crate::bind::types::BindRule;
 
+mod enumerate;
+mod associate;
+mod get_info;
+
 pub mod nvidia;
 pub mod prime;
 mod bind;
@@ -23,19 +27,21 @@ pub enum GPUError {
 
 
 
+
+/**
+	The public function scan implements the GPU binding subsystem
+*/
 pub async fn scan(
 	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 	all_gpus:	bool,
 ) -> Result<Vec<BindRule>, GPUError> {
 
 	// Block NVIDIA mounts first
-	let nv_modules_mount = tokio::task::spawn_blocking(|| {
-		nvidia::nvidia_module_mounts(true)
-	});
+	let nv_modules_mount = tokio::task::spawn(nvidia::nvidia_module_mounts(true));
 
 
 	let devices = {
-		match enumerate_gpus(&logger).await {
+		match enumerate::enumerate(&logger).await {
 			Ok(v)	=> {v}
 			Err(e)	=> {
 				let _ = logger.send(
@@ -65,16 +71,41 @@ pub async fn scan(
 		}
 	};
 
-	if all_gpus {
-		for gpu in devices {
-			rules.extend(bind::generate_bind_rules(gpu, &logger).await);
-		};
-	} else {
-		for gpu in devices {
-			if gpu.boot_display {
-				rules.extend(bind::generate_bind_rules(gpu, &logger).await);
-			}
+	let mut workers = vec![];
+
+	match all_gpus {
+		true	=> {
+			for gpu in devices {
+				let logger = logger.clone();
+				workers.push(
+					tokio::spawn(
+						bind::generate_bind_rules(gpu, logger)
+					)
+				);
+			};
 		}
+		false	=> {
+			for gpu in devices {
+				if ! gpu.boot_display {
+					continue;
+				};
+				let logger = logger.clone();
+				workers.push(
+					tokio::spawn(
+						bind::generate_bind_rules(gpu, logger)
+					)
+				);
+			};
+		}
+	};
+
+	for worker in workers {
+		rules.extend(
+			worker
+				.await
+				.map_err(GPUError::Spawn)
+				?
+		);
 	}
 
 
@@ -86,24 +117,14 @@ pub async fn scan(
 pub async fn gputest_print_all_devices(
 	tx: &tokio::sync::mpsc::Sender<crate::logger::LogMessage>
 ) -> String {
-	let res = enumerate_gpus(&tx).await.unwrap();
+	let res = enumerate::enumerate(&tx).await.unwrap();
 	format!("{res:#?}")
 }
 
-fn path_exists(path: &std::path::PathBuf) -> bool {
-	match std::fs::exists(path) {
-		Ok(v)	=> v,
-		Err(_)	=> false,
-	}
-}
-
-
-
-
 #[derive(Debug, Clone)]
 struct GPUDevice {
-	card_node:	Option<udev::Device>,
-	render_node:	Option<udev::Device>,
+	card_node:	udev::Device,
+	render_node:	udev::Device,
 }
 
 #[derive(Debug)]
@@ -121,308 +142,3 @@ pub enum GPUVendor {
 	Others,
 }
 
-/**
-	Eumerates all graphics cards (and renderer nodes, paired together) as vectors of udev devices
-	See GPUDevice struct for more details
-	Errors needs to be handled gracefully.
-*/
-async fn enumerate_gpus(
-	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-) -> Result<Vec<GPUInfo>, GPUError> {
-	let devices = crate::bind::subsystems::devices::enumerate(
-		super::Filter::SubsystemWithDevtype {
-			subsystem: "drm".to_string(),
-			devtype: "drm_minor".to_string(),
-		},
-	)
-		.await
-		.map_err(GPUError::Enumerate)
-		?;
-
-	let _ = logger.send(
-		crate::logger::LogMessage {
-			level: crate::logger::LogLevel::Debug,
-			message: format!("Udev returned {} cards and nodes", devices.len())
-		},
-	).await;
-
-	let devices = associate_card_render(devices, logger).await;
-
-	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-	let tracker = tokio_util::task::TaskTracker::new();
-
-	for dev in devices {
-		let tx_clone = tx.clone();
-		let log_clone = logger.clone();
-		// let dev_clone = dev.clone();
-		tracker.spawn(async move {
-			// let dev = dev.to_owned();
-			if dev.card_node.is_none() || dev.render_node.is_none() {
-				let _ = log_clone.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not identify GPU: {:?}", dev)
-					}
-				).await;
-				return;
-			};
-
-			// Unwrap is then safe
-
-			let vendor_spawn = tokio::task::spawn(
-				udev_dev::get_vendor(dev.render_node.clone().unwrap())
-			);
-
-			let boot_display = {
-				let sysname = dev.card_node.as_ref().unwrap().sysname();
-				match device_is_boot_display(&dev.card_node.as_ref().unwrap()) {
-					Ok(v)	=> {
-						let _ = log_clone.send(
-							crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Debug,
-							message: format!(
-								"{:?} is a boot display: {}",
-								sysname,
-								v,
-							) }
-						).await;
-						v
-					}
-					Err(e)	=> {
-						match e {
-							GPUError::InvalidBootVGA(_)	=> {
-								false
-							}
-
-							_				=> {
-								let _ = log_clone.send(
-									crate::logger::LogMessage {
-									level: crate::logger::LogLevel::Warn,
-									message: format!(
-						"Could not determine boot display status for {:?}: {:#?}",
-						sysname,
-						e,
-										)
-									}
-								).await;
-								false
-							}
-						}
-
-					}
-				}
-			};
-
-			let vendor = {
-				let vendor = vendor_spawn.await;
-				match vendor {
-					Ok(v)	=> {v}
-					Err(e)	=> {
-						let _ = log_clone.send(
-							crate::logger::LogMessage {
-								level: crate::logger::LogLevel::Warn,
-								message: format!(
-									"Could not parse GPU vendor: {:?}",
-									e,
-								),
-							}
-						).await;
-
-						GPUVendor::Others
-					}
-				}
-			};
-
-			let _ = tx_clone.send(
-				GPUInfo {
-					boot_display:	boot_display,
-					vendor:		vendor,
-					nodes:		dev,
-				}
-			);
-		});
-	};
-
-	tracker.close();
-	tracker.wait().await;
-
-	rx.close();
-
-	let mut ret = vec![];
-
-	loop {
-		match rx.recv().await {
-			Some(v)	=> {
-				ret.push(v);
-			}
-			None	=> {
-				break;
-			}
-		}
-	}
-	Ok(ret)
-}
-
-/**
-	Associates the card device with renderer, using the GPUDevice struct above
-	Internally uses the ID_PATH approach just like the previous impl
-*/
-async fn associate_card_render(
-	devices:	Vec<udev::Device>,
-	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
-) -> Vec<GPUDevice> {
-	// The map is for holding (card, renderer)
-	let mut map: std::collections::HashMap
-		<std::ffi::OsString, (Option<udev::Device>, Option<udev::Device>)>
-		= std::collections::HashMap::new();
-	for dev in devices {
-		let id_path = {
-			match dev.property_value("ID_PATH") {
-				Some(v)	=> {
-					v
-				}
-				None	=> {
-					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!("GPU {:?} does not have ID_PATH property", dev.sysname())
-						}
-					).await;
-					continue;
-				}
-			}
-		};
-
-		let device_type = match card_type(&dev).await {
-			Some(v)	=> {v}
-			None	=> {
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!("GPU {:?} has unknown type", dev.sysname())
-				};
-				continue;
-			}
-		};
-
-		if map.contains_key(id_path) {
-			// unwrap is safe here
-			let mut value = map.get(id_path).unwrap().to_owned();
-			let updated = match device_type {
-				NodeType::Card		=> {
-					value.0 = Some(dev.to_owned());
-					value
-				}
-				NodeType::Renderer	=> {
-					value.1 = Some(dev.to_owned());
-					value
-				}
-			};
-			map.insert(id_path.into(), updated.clone());
-		} else {
-			map.insert(
-				id_path.into(),
-				match device_type {
-					NodeType::Card		=> {
-						(Some(dev), None)
-					}
-					NodeType::Renderer	=> {
-						(None, Some(dev))
-					}
-				},
-			);
-		};
-	};
-	let mut ret = vec![];
-	for (_k, v) in map {
-		let _ = logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Debug,
-				message: format!(
-					"Bound GPU card {:?} to renderer node {:?}",
-					v.0,
-					v.1,
-				)
-			}
-		).await;
-		ret.push(
-			GPUDevice {
-				card_node:	v.0,
-				render_node:	v.1
-			}
-		);
-	};
-	ret
-}
-
-enum NodeType {
-	Card,
-	Renderer,
-}
-
-async fn card_type (device: &udev::Device) -> Option<NodeType> {
-	let sys_name = device.sysname();
-	let sys_name = match sys_name.to_str() {
-		Some(v)	=> {v}
-		None	=> {return None}
-	};
-
-	if sys_name.starts_with("card") {
-		return Some(NodeType::Card)
-	} else if sys_name.starts_with("render") {
-		return Some(NodeType::Renderer);
-	} else {
-		return None;
-	}
-}
-
-/*
-	Check if a device is connected to boot display.
-	There is a udev attribute boot_display implemented in
-		https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/drm_sysfs.c
-	Which can be more reliable and faster than querying device connector status ourselves.
-	The attribute is exported within DEVPATH/boot_display when true
-
-	The error needs to be handled gracefully.
-
-	We will see whether this wakes up discrete GPU, if it does, then read the file manually
-*/
-fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, GPUError> {
-	let boot_display_attr_value = card_device.attribute_value("boot_display");
-	match boot_display_attr_value {
-		Some(v)	=> {
-			if v == "1" {
-				return Ok(true)
-			} else {
-				return Err(
-					GPUError::InvalidBootDisplay(format!("{v:?}"))
-				);
-			}
-		}
-		None	=> {}
-	};
-
-	let parent_device = {
-		let parent_device = card_device.parent();
-		match parent_device {
-			Some(v)	=> {v}
-			None	=> {
-				return Ok(false);
-			}
-		}
-	};
-
-	match parent_device.attribute_value("boot_vga") {
-		Some(v)	=> {
-			if v == "1" {
-				Ok(true)
-			} else {
-				Err(
-					GPUError::InvalidBootVGA(format!("{v:?}"))
-				)
-			}
-		}
-		None	=> {
-			Ok(false)
-		}
-	}
-}

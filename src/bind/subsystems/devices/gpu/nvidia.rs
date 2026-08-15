@@ -86,9 +86,11 @@ impl NVIDIADriver {
 
 
 /**
-	This needs spawn_blocking
+	Block or mount NVIDIA module paths
+
+	When blocked, prevents accidental discrete GPU wake up.
 */
-pub fn nvidia_module_mounts(block: bool) -> Vec<crate::bind::types::BindRule> {
+pub async fn nvidia_module_mounts(block: bool) -> Vec<crate::bind::types::BindRule> {
 	use crate::bind::types::BindRule;
 	let paths = vec![
 		"/sys/module/nvidia",
@@ -101,7 +103,7 @@ pub fn nvidia_module_mounts(block: bool) -> Vec<crate::bind::types::BindRule> {
 	let mut ret = vec![];
 
 	for path in paths {
-		if ! super::path_exists(&path.into()) {
+		if ! tokio::fs::try_exists(path).await.unwrap_or(false) {
 			continue;
 		}
 		match block {
