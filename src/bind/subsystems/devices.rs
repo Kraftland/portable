@@ -185,32 +185,54 @@ pub async fn enumerate(filter: Filter) -> Result<Vec<udev::Device>, EnumerateErr
 	Ok(ret)
 }
 
+/**
+	Bind device links
+*/
+fn bind_devlinks(devlinks: Option<&std::ffi::OsStr>)
+-> Vec<crate::bind::types::BindRule> {
+	let devlinks = match devlinks {
+		Some(v)	=> v,
+		None	=> {return vec![];}
+	};
+
+	let devlinks = match devlinks.to_str() {
+		Some(v)	=> v,
+		None	=> return vec![]
+	};
+
+	if devlinks.is_empty() {
+		return vec![];
+	}
+
+	let mut ret = vec![];
+
+	for devlink in devlinks.split(" ") {
+		if devlink.is_empty() {
+			continue;
+		}
+		ret.push(
+			crate::bind::types::BindRule::Path {
+				source:	std::path::PathBuf::from(devlink),
+				dest:	std::path::PathBuf::from(devlink),
+				class:	crate::bind::types::BindType::Device,
+			}
+		);
+	};
+
+	ret
+}
+
 async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindRule> {
 	use crate::bind::types::BindType;
 	use crate::bind::types::BindRule;
 
 	let mut ret = vec![];
 
-	{
-		let devlink = device
-			.property_value("DEVLINKS")
-			.unwrap_or(std::ffi::OsStr::new(""))
-			.to_os_string();
-
-		let devlinks_string = devlink
-			.to_str()
-			.unwrap_or("");
-
-		for link in devlinks_string.split(" ") {
-			ret.push(
-				BindRule::Path {
-					source: std::path::PathBuf::from(link),
-					dest: std::path::PathBuf::from(link),
-					class: BindType::Device,
-				},
-			);
-		};
-	};
+	ret.extend(
+		bind_devlinks(
+			device.property_value("DEVLINKS"),
+		)
+	);
 
 	match device.devnode() {
 		Some(v)	=> {
