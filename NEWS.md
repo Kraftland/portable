@@ -33,6 +33,8 @@
 - The PulseAudio server is being parsed rather than assuming default path
 - The PulseAudio server is activated before starting sandbox
 - Portable now utilises the wp-security-context-v1 protocol to provide a secure way of window identification
+- Secondary instances are now streaming to the console via PTY, and will automatically re-scale their terminal size
+- It is now possible to disable certain components of Portable by subsystem.
 
 
 # 18.0 - Lawn
