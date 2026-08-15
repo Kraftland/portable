@@ -26,7 +26,7 @@ pub async fn generate(
 		content.push_str("instance-path=");
 		let state_dir = {
 			let mut path = xdg.data_home.to_path_buf();
-			path.push(&config.metadata.display_name);
+			path.push(&config.metadata.state_directory);
 			path
 		};
 		content.push_str(&state_dir.to_string_lossy());
