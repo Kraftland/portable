@@ -80,7 +80,7 @@ async fn main() {
 	let log_tx = {
 		let stop_clone = stop_sig_tx.clone();
 		let (log_tx, log_rx) = tokio::sync::mpsc::channel(5);
-		tokio::spawn(logger::logger(log_rx, stop_func_tx.clone(), stop_clone));
+		tokio::spawn(logger::logger(log_rx, stop_clone));
 		log_tx
 	};
 

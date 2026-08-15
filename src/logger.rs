@@ -14,7 +14,6 @@ pub type LogSender = tokio::sync::mpsc::Sender<LogMessage>;
 
 pub async fn logger (
 	mut log_rx: tokio::sync::mpsc::Receiver<LogMessage>,
-	stop_func_tx: tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
 	stop_sig_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 )
 {
@@ -33,28 +32,7 @@ pub async fn logger (
 		};
 
 		match thread {
-			Some(v)	=> {
-
-			let func = Box::new(move || {
-							use std::os::fd::AsFd;
-							match nix::sys::termios::tcsetattr(
-								std::io::stdin().as_fd(),
-								nix::sys::termios::SetArg::TCSANOW,
-								&v,
-							) {
-								Ok(_)	=> {}
-								Err(e)	=> {
-									eprintln!("Could not restore console state: {e:#?}")
-								}
-							}
-						});
-
-				stop_func_tx.send(
-					crate::stop::StopFunc {
-						layer: crate::stop::FunctionLayer::Pre,
-						function: func,
-					},
-				).await.expect("Could not request termination inhibitor");
+			Some(_)	=> {
 				true
 			}
 			None	=> {
