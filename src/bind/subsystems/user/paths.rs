@@ -20,12 +20,10 @@ pub async fn bind(
 			dest: sandbox_home.clone(),
 			class: crate::bind::types::BindType::ReadWrite,
 		},
-		/*
-			We are using symlink here to avoid screwing up and exposing preferences
-		*/
-		BindRule::Symlink {
+		BindRule::Path {
 			source:	sandbox_home,
 			dest:	xdg_home.to_path_buf(),
+			class:	crate::bind::types::BindType::ReadWrite,
 		},
 	];
 
