@@ -11,7 +11,9 @@ Portable is a sandbox framework targeted for Desktop usage and offers ease of us
 
 - Does not have mount points under /usr/bin, and use a supported fs of OverlayFS (NOT BcacheFS)
 
-This is the rewrite of the original Portable. For the legacy version, see `legacy` branch.
+This is a rewrite of a rewrite of Portable!
+- For the legacy Go version, see `legacy-go` branch.
+- For the original Bash version, see `legacy` branch.
 
 Portable has companion projects for packaging and sandboxing:
 | Project       | Descripton      |
