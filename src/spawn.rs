@@ -21,6 +21,8 @@ pub mod rng;
 pub mod console;
 pub mod instance_id;
 
+pub mod stream;
+
 pub struct Spawn {
 	pub config:		std::sync::Arc<crate::config::Config>,
 

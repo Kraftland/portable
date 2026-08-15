@@ -252,6 +252,17 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.DBus.Properties.*".into(),
 			object_path: "/top/kimiblock/portable/daemon".into(),
 		},
+		BusAccessLevel::Call {
+			bus_name: {
+				let mut name = String::from("top.kimiblock.portable.");
+				name.push_str(&app_id);
+				BusName::try_from(name)
+					.map_err(ProxyError::InvalidBusNameError)
+					?
+			},
+			method: "top.kimiblock.portable.InitInfo.*".into(),
+			object_path: "/top/kimiblock/portable/daemon".into(),
+		},
 
 		// Calling StatusNotifier endpoints
 		BusAccessLevel::Call {

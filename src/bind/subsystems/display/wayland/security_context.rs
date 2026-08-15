@@ -127,7 +127,7 @@ async fn listen_context(
 	tokio::spawn(async move {
 		let _fd = close_fd_hold;
 		loop {
-			tokio::time::sleep(std::time::Duration::MAX);
+			tokio::time::sleep(std::time::Duration::MAX).await;
 		}
 	});
 

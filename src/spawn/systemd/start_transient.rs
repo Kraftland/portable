@@ -12,9 +12,6 @@ pub enum StartAppError {
 	#[error("Could not generate properties for Manager: envs error: {0:#?}")]
 	EnvsError(crate::envs::holder::EnvError),
 
-	#[error("Could not start app: pts allocation error: {0:#?}")]
-	StreamError(super::stream::StreamError),
-
 	#[error("Could not start app: systemd error: {0:#?}")]
 	SystemdStartError(zbus::Error),
 }
@@ -28,11 +25,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 	) -> Result<(), crate::spawn::StartAppError> {
 		let spawn = std::sync::Arc::new(self);
 
-		let pts = super::stream::setup(spawn.stop.to_owned())
-			.await
-			.map_err(StartAppError::StreamError)
-			?;
-
 		let proxy = zbus_systemd::systemd1::ManagerProxy::new(dbus_conn)
 			.await
 			.map_err(StartAppError::ManagerProxyError)
@@ -44,7 +36,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 		).await;
 		let properties = generate_properties(
 			spawn.clone(),
-			pts,
 		).await?;
 
 		proxy
@@ -113,31 +104,10 @@ impl ServiceName {
 */
 async fn generate_properties(
 	spawn:		std::sync::Arc<crate::spawn::Spawn>,
-	slave_pts:	crate::spawn::console::PtsName,
 ) -> Result<Vec<(String, zbus::zvariant::OwnedValue)>, StartAppError> {
 	let envs_poll = tokio::spawn(crate::envs::holder::retrieve(spawn.envs.clone()));
 
-	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![
-		/*
-			TTYPath is a string, we get the name from console module
-		*/
-		(
-			String::from("TTYPath"),
-			OwnedValue::from(Str::from(slave_pts)),
-		),
-		(
-			String::from("StandardInput"),
-			OwnedValue::from(Str::from("tty")),
-		),
-		(
-			String::from("StandardOutput"),
-			OwnedValue::from(Str::from("tty")),
-		),
-		(
-			String::from("StandardError"),
-			OwnedValue::from(Str::from("tty")),
-		),
-	];
+	let mut vec: Vec<(String, zbus::zvariant::OwnedValue)> = vec![];
 
 	use zbus::zvariant::{OwnedValue, Str};
 

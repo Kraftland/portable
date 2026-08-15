@@ -9,13 +9,26 @@
 		and stop channel get a value sent.
 */
 pub async fn setup(
-	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
-) -> Result<crate::spawn::console::PtsName, StreamError> {
+	logger:		crate::logger::LogSender,
+	stop_func:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+) -> Result<std::os::fd::OwnedFd, StreamError> {
 	let pty = crate::spawn::console::PtyPair::new()
 		.map_err(StreamError::PtyAllocError)
 		?;
 
-	raw_mode()?;
+	match raw_mode(stop_func).await {
+		Ok(_)	=> {}
+		Err(e)	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!(
+						"Could not put console into RAW mode: {e:#?}",
+					),
+				}
+			).await;
+		}
+	}
 
 	let (reader, writer) = {
 		use std::os::fd::OwnedFd;
@@ -53,7 +66,7 @@ pub async fn setup(
 			// };
 		}
 	);
-	Ok(pty.slave_name)
+	Ok(pty.slave)
 }
 
 async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
@@ -168,13 +181,27 @@ async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
 	}
 }
 
-fn raw_mode() -> Result<(), StreamError> {
+async fn raw_mode(
+	stop_func:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+) -> Result<(), StreamError> {
 	let stdin = std::io::stdin();
-	let mut termios = nix::sys::termios::tcgetattr(stdin)
+	let mut termios = nix::sys::termios::tcgetattr(&stdin)
 		.map_err(StreamError::ObtainTermiosError)
 		?;
 	nix::sys::termios::cfmakeraw(&mut termios);
-	Ok(())
+
+	nix::sys::termios::tcsetattr(stdin, nix::sys::termios::SetArg::TCSANOW, &termios)
+		.map_err(StreamError::RawError)
+		?;
+
+	stop_func.send(
+		crate::stop::StopFunc {
+			layer: crate::stop::FunctionLayer::Pre,
+			function: Box::new(|| {}),
+		}
+	)
+		.await
+		.map_err(StreamError::GuardError)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -196,4 +223,10 @@ pub enum StreamError {
 
 	#[error("Error during console I/O: {0:#?}")]
 	ConsoleIOError(std::io::Error),
+
+	#[error("Error putting console into RAW mode: {0:#?}")]
+	RawError(nix::Error),
+
+	#[error("Error setting console guard: {0:#?}")]
+	GuardError(tokio::sync::mpsc::error::SendError<crate::stop::StopFunc>),
 }
