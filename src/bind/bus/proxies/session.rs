@@ -107,7 +107,7 @@ async fn compile_rules(
 				let mut map = std::collections::HashMap::new();
 				map.insert(
 					"DBUS_SESSION_BUS_ADDRESS".to_string(),
-					"/run/session_bus/bus".to_string(),
+					"unix:path=/run/session_bus/bus".to_string(),
 				);
 				Some(map)
 			},
