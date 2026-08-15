@@ -241,10 +241,6 @@ pub async fn generate_bindrules(
 		},
 		uclamp_min:		0,
 		uclamp_max:		config.system.uclamp_max,
-		pty_fd:			crate::spawn::stream::setup()
-						.await
-						.map_err(BindError::PtyError)
-						?
 	};
 
 	Ok((ret, init_info))
@@ -252,9 +248,6 @@ pub async fn generate_bindrules(
 
 #[derive(thiserror::Error, Debug)]
 pub enum BindError {
-	#[error("Could not setup pty: {0:#?}")]
-	PtyError(crate::spawn::stream::StreamError),
-
 	#[error("Could not bind system paths: {0:#?}")]
 	SystemBindError(system::SystemBindError),
 

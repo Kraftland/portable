@@ -49,11 +49,6 @@ pub struct InitInfo {
 		It is clamped between 0 and 100, as per cgroup v2 specifications.
 	*/
 	pub uclamp_max:		u32,
-
-	/**
-		the file descriptor for initial pty streaming
-	*/
-	pub pty_fd:		std::os::fd::OwnedFd,
 }
 
 impl InitInfo {
