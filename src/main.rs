@@ -70,6 +70,9 @@ enum StartError {
 
 	#[error("Could not start auxiliary instance: {0:#?}")]
 	AuxStartError(ipc::init::aux_start::AuxStartError),
+
+	#[error("Could not wake up application via tray: {0:#?}")]
+	TrayError(ipc::init::tray::WakeError),
 }
 
 #[tokio::main]
@@ -295,9 +298,12 @@ async fn run(
 				)
 					.await
 					.map_err(StartError::AuxStartError)
-					?
+					?;
 			} else {
-				unimplemented!()
+				ipc::init::tray::wake(config, &dbus_conn)
+					.await
+					.map_err(StartError::TrayError)
+					?;
 			}
 
 
