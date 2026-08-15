@@ -40,32 +40,15 @@ pub async fn associate(
 			}
 		};
 
-		match map.get(id_path) {
-			Some(v)	=> {
-				match dev_type {
-					NodeType::Card		=> {
-						v.to_owned().0 = Some(device.to_owned())
-					}
-					NodeType::Renderer	=> {
-						v.to_owned().1 = Some(device.to_owned())
-					}
-				};
-				map.insert(id_path.into(), v.to_owned());
+		let entry = map.entry(id_path.into()).or_insert((None, None));
+		match dev_type {
+			NodeType::Card		=> {
+				entry.0 = Some(device)
 			}
-			None	=> {
-				map.insert(
-					id_path.into(),
-					match dev_type {
-						NodeType::Card		=> {
-							(Some(device), None)
-						}
-						NodeType::Renderer	=> {
-							(None, Some(device))
-						}
-					},
-				);
+			NodeType::Renderer	=> {
+				entry.1 = Some(device)
 			}
-		}
+		};
 	};
 
 	let mut ret = vec![];

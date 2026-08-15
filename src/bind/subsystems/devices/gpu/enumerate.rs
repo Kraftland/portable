@@ -8,8 +8,8 @@ pub async fn enumerate(
 ) -> Result<Vec<super::GPUInfo>, super::GPUError> {
 	let devices = crate::bind::subsystems::devices::enumerate(
 		crate::bind::subsystems::devices::Filter::SubsystemWithDevtype {
-			subsystem: "drm".to_string(),
-			devtype: "drm_minor".to_string(),
+			subsystem:	"drm".to_string(),
+			devtype:	"drm_minor".to_string(),
 		},
 	)
 		.await
