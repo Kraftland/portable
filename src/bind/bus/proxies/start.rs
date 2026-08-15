@@ -36,7 +36,10 @@ impl Proxy {
 
 		builder.kill_on_drop(true);
 
-		let mut cmdline = vec!["--unshare-all".to_string()];
+		let mut cmdline = vec![
+			"--unshare-all".to_string(),
+			"--die-with-parent".to_string(),
+		];
 
 
 		match self.json_status_file {
