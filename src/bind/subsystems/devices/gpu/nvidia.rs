@@ -86,7 +86,9 @@ impl NVIDIADriver {
 
 
 /**
-	This needs spawn_blocking
+	Block or mount NVIDIA module paths
+
+	When blocked, prevents accidental discrete GPU wake up.
 */
 pub async fn nvidia_module_mounts(block: bool) -> Vec<crate::bind::types::BindRule> {
 	use crate::bind::types::BindRule;
