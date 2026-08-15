@@ -8,9 +8,7 @@
 	After which, streaming happens on different threads, until the console is exhausted
 		and stop channel get a value sent.
 */
-pub async fn setup(
-	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
-) -> Result<crate::spawn::console::PtsName, StreamError> {
+pub async fn setup() -> Result<std::os::fd::OwnedFd, StreamError> {
 	let pty = crate::spawn::console::PtyPair::new()
 		.map_err(StreamError::PtyAllocError)
 		?;
@@ -53,7 +51,7 @@ pub async fn setup(
 			// };
 		}
 	);
-	Ok(pty.slave_name)
+	Ok(pty.slave)
 }
 
 async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {

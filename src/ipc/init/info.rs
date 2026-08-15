@@ -49,6 +49,11 @@ pub struct InitInfo {
 		It is clamped between 0 and 100, as per cgroup v2 specifications.
 	*/
 	pub uclamp_max:		u32,
+
+	/**
+		the file descriptor for initial pty streaming
+	*/
+	pub pty_fd:		std::os::fd::OwnedFd,
 }
 
 impl InitInfo {
@@ -96,5 +101,23 @@ impl InitInfo {
 			self.uclamp_min,
 			self.uclamp_max,
 		)
+	}
+
+	#[zbus(
+		name	= "StreamPty",
+	)]
+	async fn stream(&self) -> zbus::fdo::Result<zbus::zvariant::OwnedFd> {
+		use crate::spawn::stream;
+
+		match stream::setup().await {
+			Ok(v)	=> {Ok(v.into())}
+			Err(e)	=> {
+				Err(
+					zbus::fdo::Error::Failed(
+						format!("{e:#?}")
+					)
+				)
+			}
+		}
 	}
 }
