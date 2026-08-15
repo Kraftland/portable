@@ -82,6 +82,7 @@ pub async fn generate_bindrules(
 			bind_camera:	bind_cam,
 			bind_input:	bind_input,
 			logger:		logger.clone(),
+			envs:		env.clone(),
 		};
 
 		workers.push(
