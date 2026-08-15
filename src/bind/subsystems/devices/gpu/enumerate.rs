@@ -22,4 +22,30 @@ pub async fn enumerate(
 			message: format!("Enumerated {} cards and renderers", devices.len()),
 		}
 	).await;
+
+	let gpus = super::associate::associate(devices, &logger).await;
+
+	let mut info_workers = vec![];
+
+	for gpu in gpus {
+		info_workers.push(
+			tokio::spawn(
+				super::get_info::get(gpu)
+			)
+		);
+	};
+
+	let mut ret = vec![];
+
+	for worker in info_workers {
+		ret.push(
+			worker
+				.await
+				.map_err(super::GPUError::Spawn)
+				?
+				?
+		);
+	};
+
+	Ok(ret)
 }
