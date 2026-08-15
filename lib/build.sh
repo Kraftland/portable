@@ -35,8 +35,6 @@ git submodule update --init --recursive
 
 buildRust .
 
-buildGo ./lib/daemon
-
 buildRust ./lib/init
 
 buildGo ./lib/open-ng
