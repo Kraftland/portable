@@ -12,7 +12,7 @@ pub async fn generate(
 		content.push_str("[Application]");
 		content.push_str("\n");
 		content.push_str("name=");
-		content.push_str(&config.metadata.display_name);
+		content.push_str(&config.metadata.sandbox_id);
 		content.push_str("\n");
 		content.push_str("runtime=runtime/org.kraftland.host/x86_64/12252019");
 		content.push_str("\n");
