@@ -52,6 +52,7 @@ pub struct InitInfo {
 
 	pub logger:		crate::logger::LogSender,
 	pub stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	pub stop_tx:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 }
 
 impl InitInfo {
@@ -107,7 +108,11 @@ impl InitInfo {
 	async fn stream(&self) -> zbus::fdo::Result<zbus::zvariant::OwnedFd> {
 		use crate::spawn::stream;
 
-		match stream::setup(self.logger.clone(), self.stop_func.clone()).await {
+		match stream::setup(
+			self.logger.clone(),
+			self.stop_func.clone(),
+			self.stop_tx.clone(),
+		).await {
 			Ok(v)	=> {Ok(v.into())}
 			Err(e)	=> {
 				Err(

@@ -67,6 +67,9 @@ enum StartError {
 
 	#[error("Could not spawn sandbox: {0:#?}")]
 	SpawnSandboxError(spawn::StartAppError),
+
+	#[error("Could not start auxiliary instance: {0:#?}")]
+	AuxStartError(ipc::init::aux_start::AuxStartError),
 }
 
 #[tokio::main]
@@ -281,9 +284,23 @@ async fn run(
 			.map_err(StartError::LogError)
 			?;
 
-			stop_tx.send(stop::StopLevel::Normal);
+			if ! config.advanced.tray_wake {
+				ipc::init::aux_start::start(
+					runtime_opts,
+					config,
+					&dbus_conn,
+					log_tx.clone(),
+					stop_func,
+					stop_tx,
+				)
+					.await
+					.map_err(StartError::AuxStartError)
+					?
+			} else {
+				unimplemented!()
+			}
 
-			unimplemented!();
+
 
 			return Ok(());
 		}
@@ -460,6 +477,7 @@ async fn run(
 		xdg_dirs.clone(),
 		config.clone(),
 		log_tx.clone(),
+		stop_tx.clone(),
 		stop_func,
 		envs_tx.clone(),
 		instance_id.to_string(),

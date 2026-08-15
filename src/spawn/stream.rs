@@ -11,6 +11,7 @@
 pub async fn setup(
 	logger:		crate::logger::LogSender,
 	stop_func:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 ) -> Result<std::os::fd::OwnedFd, StreamError> {
 	let pty = crate::spawn::console::PtyPair::new()
 		.map_err(StreamError::PtyAllocError)
@@ -58,12 +59,12 @@ pub async fn setup(
 				}
 			}
 
-			// match stop_tx.send(
-			// 	crate::stop::StopLevel::Normal,
-			// ).await {
-			// 	Ok(_)	=> {}
-			// 	Err(e)	=> {eprintln!("Failed sending stop signal: {e:#?}")}
-			// };
+			match stop_tx.send(
+				crate::stop::StopLevel::Normal,
+			).await {
+				Ok(_)	=> {}
+				Err(e)	=> {eprintln!("Failed sending stop signal: {e:#?}")}
+			};
 		}
 	);
 	Ok(pty.slave)

@@ -21,6 +21,7 @@ pub async fn generate_bindrules(
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	logger:			crate::logger::LogSender,
+	stop_tx:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 	stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
 	env:			crate::envs::holder::HoldChannel,
 	instance_id:		String,
@@ -189,6 +190,7 @@ pub async fn generate_bindrules(
 		lockdown:		config.privacy.lockdown,
 		allow_debug:		config.advanced.allow_debug,
 		logger:			logger.clone(),
+		stop_tx:		stop_tx,
 		stop_func:		stop_func,
 		target_exec:		{
 			use crate::pref::runtime::options::Action;
