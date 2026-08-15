@@ -34,6 +34,7 @@ pub enum GPUError {
 pub async fn scan(
 	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 	all_gpus:	bool,
+	envs:		crate::envs::holder::HoldChannel,
 ) -> Result<Vec<BindRule>, GPUError> {
 
 	// Block NVIDIA mounts first
@@ -77,6 +78,7 @@ pub async fn scan(
 		true	=> {
 			for gpu in devices {
 				let logger = logger.clone();
+				prime::prime_offload_envs(&gpu.vendor, &envs).await;
 				workers.push(
 					tokio::spawn(
 						bind::generate_bind_rules(gpu, logger)

@@ -18,6 +18,7 @@ pub struct Devices {
 	pub bind_camera:	bool,
 	pub bind_input:		bool,
 	pub logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	pub envs:		crate::envs::holder::HoldChannel,
 }
 
 impl super::GenerateBind for Devices {
@@ -33,6 +34,7 @@ impl super::GenerateBind for Devices {
 					gpu::scan(
 						logger_clone,
 						self.all_gpus,
+						self.envs,
 					)
 					.await
 					.map_err(DeviceError::GPUError)

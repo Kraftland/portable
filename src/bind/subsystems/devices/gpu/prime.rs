@@ -1,8 +1,7 @@
 use super::GPUVendor;
-use super::GPUInfo;
 use super::nvidia;
 
-async fn prime_offload_envs(
+pub async fn prime_offload_envs(
 	vendor: &GPUVendor,
 	env_tx: &crate::envs::holder::HoldChannel,
 ) {
@@ -57,36 +56,4 @@ async fn prime_offload_envs(
 			).await.expect("Could not set offload envs");
 		}
 	}
-}
-
-/*
-	Determines which graphics card to use.
-	Automatically sets PRIME offload envs via prime_offload_envs()
-*/
-async fn determine_active_gpus(
-	all_gpus:	&bool,
-	gpus:		Vec<GPUInfo>,
-	env_tx:		&crate::envs::holder::HoldChannel,
-) -> Vec<GPUInfo> {
-	match all_gpus {
-		true	=> {
-			for gpu in &gpus {
-				if gpu.boot_display {
-					continue;
-				};
-				prime_offload_envs(&gpu.vendor, &env_tx).await;
-			};
-			return gpus
-		}
-		false	=> {}
-	};
-	let mut ret = vec![];
-
-	for gpu in gpus {
-		if gpu.boot_display {
-			ret.push(gpu);
-		}
-	};
-
-	ret
 }
