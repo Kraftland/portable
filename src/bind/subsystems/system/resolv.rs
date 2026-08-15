@@ -23,7 +23,7 @@ pub async fn mount(
 			}
 		).await;
 
-		let dest = match tokio::fs::read_link("/etc/resolv.conf").await {
+		let dest = match tokio::fs::canonicalize("/etc/resolv.conf").await {
 			Ok(v)	=> {v}
 			Err(e)	=> {
 				let _ = logger.send(
