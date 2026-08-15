@@ -12,11 +12,6 @@ install -vDm755 \
 
 install -vDm755 \
 	"lib/daemon/portable-daemon" \
-	-t \
-	"${installPrefix}/usr/lib/portable/daemon/"
-
-install -vDm755 \
-	"lib/daemon/portable-daemon" \
 	"${installPrefix}/usr/bin/portable"
 
 install -vDm644 \
@@ -60,6 +55,10 @@ install -vDm755 \
 	"target/release/gputest" \
 	-t \
 	"${installPrefix}/usr/lib/portable/"
+
+install -vDm755 \
+	"target/release/portable-daemon" \
+	"${installPrefix}/usr/bin/portable"
 
 install -t "${installPrefix}/usr/share/portable" -Dm755 "share"/*
 
