@@ -95,6 +95,8 @@ pub async fn generate_bindrules(
 			)
 		);
 	};
+
+	#[cfg(feature = "display")]
 	{
 		let display_bind = display::Display {
 			xdg:			xdg.clone(),
@@ -122,6 +124,27 @@ pub async fn generate_bindrules(
 			)
 		);
 	};
+
+	#[cfg(feature = "audio")]
+	{
+		let audio_bind = audio::Audio {
+			logger:		logger.clone(),
+			runtime_dir:	xdg.runtime.to_path_buf(),
+			env:		env.clone(),
+		};
+
+		workers.push(
+			tokio::spawn(
+				async {
+					audio_bind
+						.bind()
+						.await
+						.map_err(BindError::AudioError)
+				}
+			)
+		);
+	};
+
 	{
 		let mask_bind = mask::Mask {};
 		workers.push(
@@ -337,6 +360,9 @@ pub enum BindError {
 
 	#[error("Could not bind devices: {0:#?}")]
 	DeviceBindError(devices::DeviceError),
+
+	#[error("Could not bind audio service: {0:#?}")]
+	AudioError(audio::PulseError),
 
 	#[error("Could not bind display sockets: {0:#?}")]
 	DisplayBindError(display::DisplayError),

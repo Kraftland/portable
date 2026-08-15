@@ -4,9 +4,9 @@ pub mod pulse;
 pub use pulse::*;
 
 pub struct Audio {
-	logger:		crate::logger::LogSender,
-	runtime_dir:	std::path::PathBuf,
-	env:		crate::envs::holder::HoldChannel,
+	pub logger:		crate::logger::LogSender,
+	pub runtime_dir:	std::path::PathBuf,
+	pub env:		crate::envs::holder::HoldChannel,
 }
 
 
