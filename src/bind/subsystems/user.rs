@@ -25,7 +25,6 @@ impl super::GenerateBind for UserBind {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
 		let mut binds = paths::bind(
 			self.xdg.data_home.to_path_buf(),
-			self.xdg.home.clone(),
 			&self.config.metadata.state_directory,
 		).await?;
 
