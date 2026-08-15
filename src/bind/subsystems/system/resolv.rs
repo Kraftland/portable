@@ -38,8 +38,8 @@ pub async fn mount(
 
 		vec![
 			crate::bind::types::BindRule::Path {
-				source:	dest,
-				dest:	"/etc/resolv.conf".into(),
+				source:	dest.to_path_buf(),
+				dest:	dest,
 				class:	crate::bind::types::BindType::ReadOnly,
 			}
 		]
