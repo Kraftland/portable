@@ -187,43 +187,38 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 	use crate::bind::types::BindType;
 	use crate::bind::types::BindRule;
 
-	let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+	let mut ret = vec![];
 
-	let tracker = tokio_util::task::TaskTracker::new();
+	{
+		let devlink = device
+			.property_value("DEVLINKS")
+			.unwrap_or(std::ffi::OsStr::new(""))
+			.to_os_string();
 
-	let devlink = device
-		.property_value("DEVLINKS")
-		.unwrap_or(std::ffi::OsStr::new(""))
-		.to_os_string();
-	let tx_clone = tx.clone();
-	// DEVLINKS are space separated strings
-	let _ = tracker.spawn(async move	{
 		let devlinks_string = devlink
 			.to_str()
 			.unwrap_or("");
 
 		for link in devlinks_string.split(" ") {
-			tx_clone.send(
-				crate::bind::types::BindRule::Path {
+			ret.push(
+				BindRule::Path {
 					source: std::path::PathBuf::from(link),
 					dest: std::path::PathBuf::from(link),
 					class: BindType::Device,
 				},
-			)
-			.expect("Error while sending rule to channel");
+			);
 		};
-	});
+	};
 
 	match device.devnode() {
 		Some(v)	=> {
-			tx.send(
-				crate::bind::types::BindRule::Path {
+			ret.push(
+				BindRule::Path {
 					source: v.to_path_buf(),
 					dest: v.to_path_buf(),
 					class: BindType::Device,
 				}
-			)
-			.expect("Error while sending rule to channel");
+			);
 		}
 		None	=> {}
 	};
@@ -234,31 +229,14 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 		let devpath = std::path::PathBuf::from(device.devpath());
 		let path = std::path::PathBuf::from("/sys");
 		let path = path.join(devpath);
-		tx.send(
+		ret.push(
 			BindRule::Path {
 				source: path.clone(),
 				dest: path,
 				class: BindType::Device,
 			},
-		)
-			.expect("Error while sending rule to channel");
+		);
 	};
-
-	tracker.wait().await;
-	rx.close();
-	let mut ret = vec![];
-
-
-	loop {
-		match rx.recv().await {
-			Some(v)	=> {
-				ret.push(v);
-			}
-			None	=> {
-				break;
-			}
-		}
-	}
 
 	ret
 }
