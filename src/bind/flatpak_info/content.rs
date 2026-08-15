@@ -53,6 +53,7 @@ pub async fn generate(
 		content.push_str("\n");
 		content.push_str("extra-args=--usb-list=;--filesystem=");
 		content.push_str(&state_dir.to_string_lossy());
+		content.push_str(";");
 		content.push_str("\n");
 	};
 	{
