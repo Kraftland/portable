@@ -185,7 +185,11 @@ impl ToCmdline for BindRules {
 								Some(v)	=> {
 									ret.push("--size".into());
 									let size = v * 1024 * 1024;
-									ret.push(size.to_string());
+									if size == 0 {
+										ret.push("1".to_string());
+									} else {
+										ret.push(size.to_string());
+									}
 								}
 								None	=> {}
 							};
