@@ -34,6 +34,25 @@ pub async fn holder(
 
 	let mut envs_map: HashMap<String, String> = HashMap::new();
 
+	match std::env::var("XDG_ACTIVATION_TOKEN") {
+		Ok(v)	=> {
+			match v.split_once("=") {
+				Some((k, v))	=> {
+					envs_map.insert(k.into(), v.into());
+				}
+				None		=> {}
+			}
+		}
+		Err(e)	=> {
+			let _ = log_tx.send(
+				LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!("Could not forward XDG_ACTIVATION_TOKEN: {e:#?}"),
+				}
+			).await;
+		}
+	};
+
 	loop {
 		let msg = tokio::select! {
 			msg	= rx.recv()	=> {msg}
