@@ -49,6 +49,9 @@ pub struct InitInfo {
 		It is clamped between 0 and 100, as per cgroup v2 specifications.
 	*/
 	pub uclamp_max:		u32,
+
+	pub logger:		crate::logger::LogSender,
+	pub stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
 }
 
 impl InitInfo {
@@ -104,7 +107,7 @@ impl InitInfo {
 	async fn stream(&self) -> zbus::fdo::Result<zbus::zvariant::OwnedFd> {
 		use crate::spawn::stream;
 
-		match stream::setup().await {
+		match stream::setup(self.logger.clone(), self.stop_func.clone()).await {
 			Ok(v)	=> {Ok(v.into())}
 			Err(e)	=> {
 				Err(

@@ -460,6 +460,7 @@ async fn run(
 		xdg_dirs.clone(),
 		config.clone(),
 		log_tx.clone(),
+		stop_func,
 		envs_tx.clone(),
 		instance_id.to_string(),
 		flatpak_info.clone(),

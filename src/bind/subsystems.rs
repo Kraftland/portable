@@ -21,6 +21,7 @@ pub async fn generate_bindrules(
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	logger:			crate::logger::LogSender,
+	stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
 	env:			crate::envs::holder::HoldChannel,
 	instance_id:		String,
 	flatpak_info_path:	std::sync::Arc<std::path::PathBuf>,
@@ -162,7 +163,7 @@ pub async fn generate_bindrules(
 			runtime_opts.bus_activation,
 			&dbus_conn,
 			&config.metadata.sandbox_id,
-			logger,
+			logger.clone(),
 		)
 		.await
 	};
@@ -187,6 +188,8 @@ pub async fn generate_bindrules(
 		flatpak_info:		config.advanced.flatpak_env,
 		lockdown:		config.privacy.lockdown,
 		allow_debug:		config.advanced.allow_debug,
+		logger:			logger.clone(),
+		stop_func:		stop_func,
 		target_exec:		{
 			use crate::pref::runtime::options::Action;
 			if runtime_opts.bus_activation {
