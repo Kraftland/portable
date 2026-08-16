@@ -36,10 +36,6 @@ pub async fn connect(stop_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>)
 	let builder = builder
 		.replace_existing_names(false);
 	let builder = builder
-		.serve_at("/top/kimiblock/portable/daemon", super::objects::Info)
-		.map_err(RegisterError::ServeObjectError)
-		?;
-	let builder = builder
 		.serve_at(
 			"/top/kimiblock/portable/daemon",
 			super::objects::Controller {stop_tx: stop_tx},
