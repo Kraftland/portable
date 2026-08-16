@@ -11,14 +11,9 @@ pub fn get() -> std::collections::HashMap<String, String> {
 	];
 
 	for env in envs {
-		match std::env::var(env) {
+		match std::env::var(&env) {
 			Ok(v)	=> {
-				match v.split_once("=") {
-					Some((k, v))	=> {
-						map.insert(k.into(), v.into());
-					}
-					None		=> {}
-				}
+				map.insert(env.into(), v.into());
 			}
 			Err(_)	=> {}
 		}

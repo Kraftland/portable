@@ -1,5 +1,3 @@
-mod envs;
-
 #[zbus::proxy(
 	interface	= "top.kimiblock.Portable.Init",
 	default_path	= "/top/kimiblock/portable/init",
@@ -73,13 +71,23 @@ pub async fn start(
 		.await
 	};
 
+	let env_var = crate::envs::forward::get();
+
+	#[cfg(debug_assertions)]
+	let _ = logger.send(
+		crate::logger::LogMessage {
+			level:		crate::logger::LogLevel::Debug,
+			message: format!("Forawrding variables: {env_var:#?}"),
+		}
+	).await;
+
 	proxy.request_start(
 		true,
 		exec,
 		false,
 		args,
 		forward_map,
-		envs::get(),
+		env_var,
 		crate::spawn::stream::setup(logger, stop_func, stop_tx)
 			.await
 			.map_err(AuxStartError::ConsoleError)
