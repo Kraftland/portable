@@ -86,7 +86,7 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	nix::ioctl_write_ptr_bad!(ioctl_set_winsize, nix::libc::TIOCSWINSZ, nix::libc::winsize);
 
 
-	let mut buffer = [0u8, 255];
+	let mut buffer = [0u8; 1024];
 	let mut stdin = {
 		use std::os::fd::AsFd;
 		let stdin = std::io::stdin()
@@ -158,7 +158,7 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 }
 
 async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
-	let mut buffer = [0u8, 255];
+	let mut buffer = [0u8; 1024];
 	let mut stdout = std::io::stdout();
 	let mut tokio_file = tokio::fs::File::from_std(file);
 	use tokio::io::AsyncReadExt;
