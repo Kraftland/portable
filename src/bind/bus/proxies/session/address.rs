@@ -28,11 +28,17 @@ pub async fn get_address_with_sandbox(
 
 		let host_sandbox = vec![
 			crate::bind::types::BindRule::Path {
-				source: proxy_parent_path,
+				source: proxy_parent_path.to_path_buf(),
 				dest: "/run/session_bus".into(),
 				class: crate::bind::types::BindType::ReadOnly,
+			},
+			crate::bind::types::BindRule::Symlink {
+				source:	"/run/session_bus/bus".into(),
+				dest:	"/run/sessionBus".into(),
 			}
 		];
+
+
 
 		Ok((proxy_socket, host_sandbox))
 }

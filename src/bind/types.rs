@@ -17,6 +17,10 @@ pub enum BindRule {
 		dest:		std::path::PathBuf,
 		class:		BindType,
 	},
+
+	/**
+		Create a symlink at DEST with target SRC
+	*/
 	Symlink {
 		source:		std::path::PathBuf,
 		dest:		std::path::PathBuf,
