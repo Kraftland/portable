@@ -102,14 +102,26 @@ pub async fn generate_bind_rules(
 	};
 
 	ret.extend(
-		crate::bind::subsystems::devices::bind_udev_device(gpu.nodes.card_node)
+		crate::bind::subsystems::devices::bind_udev_device(&gpu.nodes.card_node)
 			.await
 	);
 
 	ret.extend(
-		crate::bind::subsystems::devices::bind_udev_device(gpu.nodes.render_node)
+		crate::bind::subsystems::devices::bind_udev_device(&gpu.nodes.render_node)
 			.await
 	);
+
+	match &gpu.nodes.card_node.parent() {
+		Some(v)	=> {
+			ret.extend(
+				crate::bind::subsystems::devices::bind_udev_device(&v)
+					.await
+			);
+		}
+		None	=> {}
+	}
+
+
 
 	ret
 }
