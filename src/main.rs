@@ -315,6 +315,10 @@ async fn run(
 					.await
 					.map_err(StartError::TrayError)
 					?;
+				stop_tx.send(stop::StopLevel::Normal)
+					.await
+					.map_err(StartError::StopError)
+					?;
 			}
 
 
