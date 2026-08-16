@@ -79,6 +79,7 @@ pub async fn generate_bindrules(
 
 		let device_bind = devices::Devices {
 			all_gpus:	all_gpus,
+			zink:		config.advanced.use_zink,
 			bind_camera:	bind_cam,
 			bind_input:	bind_input,
 			logger:		logger.clone(),

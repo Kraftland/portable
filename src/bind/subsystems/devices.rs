@@ -15,6 +15,7 @@ mod input;
 #[derive(Debug)]
 pub struct Devices {
 	pub all_gpus:		bool,
+	pub zink:		bool,
 	pub bind_camera:	bool,
 	pub bind_input:		bool,
 	pub logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
@@ -35,6 +36,7 @@ impl super::GenerateBind for Devices {
 						logger_clone,
 						self.all_gpus,
 						self.envs,
+						self.zink,
 					)
 					.await
 					.map_err(DeviceError::GPUError)
