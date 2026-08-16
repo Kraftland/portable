@@ -23,6 +23,9 @@ pub enum GPUError {
 
 	#[error("Could not enumerate GPUs: spawn error: {0:#?}")]
 	Spawn(tokio::task::JoinError),
+
+	#[error("Could not send zink envs: {0:#?}")]
+	EnvsError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
 }
 
 
@@ -35,6 +38,7 @@ pub async fn scan(
 	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 	all_gpus:	bool,
 	envs:		crate::envs::holder::HoldChannel,
+	zink:		bool,
 ) -> Result<Vec<BindRule>, GPUError> {
 
 	// Block NVIDIA mounts first
@@ -73,6 +77,62 @@ pub async fn scan(
 	};
 
 	let mut workers = vec![];
+
+	if zink {
+		for dev in &devices {
+			match dev.vendor {
+				GPUVendor::NVIDIA { driver: _ }	=> {
+					envs.send(
+						crate::envs::holder::EnvMessage::Add {
+							key: "__GLX_VENDOR_LIBRARY_NAME".into(),
+							value: "mesa".into()
+						}
+					)
+						.await
+						.map_err(GPUError::EnvsError)
+						?;
+					envs.send(
+						crate::envs::holder::EnvMessage::Add {
+							key: "MESA_LOADER_DRIVER_OVERRIDE".into(),
+							value: "zink".into()
+						}
+					)
+						.await
+						.map_err(GPUError::EnvsError)
+						?;
+					envs.send(
+						crate::envs::holder::EnvMessage::Add {
+							key: "GALLIUM_DRIVER".into(),
+							value: "zink".into()
+						}
+					)
+						.await
+						.map_err(GPUError::EnvsError)
+						?;
+					envs.send(
+						crate::envs::holder::EnvMessage::Add {
+							key: "LIBGL_KOPPER_DRI2".into(),
+							value: "1".into()
+						}
+					)
+						.await
+						.map_err(GPUError::EnvsError)
+						?;
+					envs.send(
+						crate::envs::holder::EnvMessage::Add {
+							key: "__EGL_VENDOR_LIBRARY_FILENAMES".into(),
+							value: "/usr/share/glvnd/egl_vendor.d/50_mesa.json".into()
+						}
+					)
+						.await
+						.map_err(GPUError::EnvsError)
+						?;
+					break;
+				}
+				_				=> {}
+			}
+		};
+	}
 
 	match all_gpus {
 		true	=> {
