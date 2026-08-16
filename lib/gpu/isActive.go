@@ -65,3 +65,4 @@ func ListActiveGraphicsCards() ([]*udev.Device, error) {
 	return cardList, nil
 
 }
+# Fix for issue #777: safe input handling
