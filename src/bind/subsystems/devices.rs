@@ -224,7 +224,7 @@ fn bind_devlinks(devlinks: Option<&std::ffi::OsStr>)
 	ret
 }
 
-async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindRule> {
+async fn bind_udev_device(device: &udev::Device) -> Vec<crate::bind::types::BindRule> {
 	use crate::bind::types::BindType;
 	use crate::bind::types::BindRule;
 
@@ -253,12 +253,10 @@ async fn bind_udev_device(device: udev::Device) -> Vec<crate::bind::types::BindR
 
 	{
 		let devpath = std::path::PathBuf::from(device.syspath());
-		let path = std::path::PathBuf::from("/sys");
-		let path = path.join(devpath);
 		ret.push(
 			BindRule::Path {
-				source: path.clone(),
-				dest: path,
+				source: devpath.to_path_buf(),
+				dest: devpath.to_path_buf(),
 				class: BindType::Device,
 			},
 		);

@@ -64,7 +64,7 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 	};
 
 	for device in devices {
-		ret.extend(super::bind_udev_device(device).await);
+		ret.extend(super::bind_udev_device(&device).await);
 	};
 
 	Ok(crate::bind::types::DeDupRules::dedup(ret))
