@@ -299,6 +299,17 @@ async fn run(
 					.await
 					.map_err(StartError::AuxStartError)
 					?;
+
+				#[cfg(debug_assertions)]
+				log_tx.send(
+					logger::LogMessage {
+						level: logger::LogLevel::Debug,
+						message: format!("Requested AuxStart"),
+					},
+				)
+				.await
+				.map_err(StartError::LogError)
+				?;
 			} else {
 				ipc::init::tray::wake(config, &dbus_conn)
 					.await
