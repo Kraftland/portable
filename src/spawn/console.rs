@@ -5,9 +5,8 @@
 	Master descriptor is capable of resizing and stuff, but needs to handle manually.
 */
 pub struct PtyPair {
-	pub master:		nix::pty::PtyMaster,
+	pub master:		std::os::fd::OwnedFd,
 	pub slave:		std::os::fd::OwnedFd,
-	pub slave_name:		PtsName,
 }
 
 pub type PtsName = String;
@@ -24,16 +23,9 @@ impl PtyPair {
 			.map_err(PtyError::NewPtyError)
 			?;
 
-		// Scary!
-		let master = unsafe {
-			nix::pty::PtyMaster::from_owned_fd(pair.master)
-		};
-
 		Ok(
 			PtyPair {
-				slave_name:	nix::pty::ptsname_r(&master)
-							.map_err(PtyError::NewPtyError)?,
-				master:		master,
+				master:		pair.master,
 				slave:		pair.slave,
 			},
 		)

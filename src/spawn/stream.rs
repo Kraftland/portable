@@ -32,16 +32,13 @@ pub async fn setup(
 	}
 
 	let (reader, writer) = {
-		use std::os::fd::OwnedFd;
-		let fd = OwnedFd::from(pty.master);
+		let fd = pty.master;
 		let file = std::fs::File::from(fd);
 		(file.try_clone().map_err(StreamError::CloneFdError)?, file)
 	};
 
 	// Output thread
 	let output_thread = tokio::spawn(stream_out(reader));
-
-
 
 	// Input thread
 	let input_thread = tokio::spawn(stream_in(writer));
