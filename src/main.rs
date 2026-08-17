@@ -321,7 +321,7 @@ async fn run(
 					?;
 			}
 
-
+			std::future::pending::<()>().await;
 
 			return Ok(());
 		}
