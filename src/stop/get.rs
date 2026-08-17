@@ -13,10 +13,10 @@
 */
 
 pub struct Stop {
-	pre_cancel:	tokio_util::sync::CancellationToken,
-	post_cancel:	tokio_util::sync::CancellationToken,
+	pub pre_cancel:		tokio_util::sync::CancellationToken,
+	pub post_cancel:	tokio_util::sync::CancellationToken,
 
-	stop_funcs:	tokio::sync::Mutex<Vec<StopMessage>>,
+	pub stop_funcs:		tokio::sync::mpsc::UnboundedSender<StopMessage>,
 }
 
 /**
@@ -33,46 +33,55 @@ pub enum StopMessage {
 
 #[derive(Debug, thiserror::Error)]
 pub enum StopError {
+	#[error("Could not send stop_func: {0:#?}")]
+	SendError(tokio::sync::mpsc::error::SendError<StopMessage>),
 }
 
 impl Stop {
 	/**
 		new() creates a new instance of Stop struct
-
-		It also sets up a background thread to handle incoming requests.
 	*/
-	pub async fn new() -> std::sync::Arc<Self> {
-		std::sync::Arc::new(
-			Self {
-				pre_cancel:	tokio_util::sync::CancellationToken::new(),
-				post_cancel:	tokio_util::sync::CancellationToken::new(),
-				stop_funcs:	tokio::sync::Mutex::new(vec![])
-			}
+	pub async fn new() -> (std::sync::Arc<Self>, tokio::sync::mpsc::UnboundedReceiver<StopMessage>) {
+		let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+
+		(
+			std::sync::Arc::new(
+				Self {
+					pre_cancel:	tokio_util::sync::CancellationToken::new(),
+					post_cancel:	tokio_util::sync::CancellationToken::new(),
+					stop_funcs:	tx,
+				}
+			),
+			rx
 		)
 	}
 
 	/**
 		Add a task to the pre pool
 	*/
-	pub async fn add_pre(self, task: tokio::task::JoinHandle<Result<(), StopError>>) {
-		let mut inner = self
+	pub async fn add_pre(self, task: tokio::task::JoinHandle<Result<(), StopError>>)
+		-> Result<(), StopError> {
+		self
 			.stop_funcs
-			.lock()
-			.await;
-
-		inner.push(
-			StopMessage::Prepare { task: task }
-		);
+			.clone()
+			.send(
+				StopMessage::Prepare {
+					task: task,
+				},
+			)
+			.map_err(StopError::SendError)
 	}
 
-	pub async fn add_post(self, task: tokio::task::JoinHandle<Result<(), StopError>>) {
-		let mut inner = self
+	pub async fn add_post(self, task: tokio::task::JoinHandle<Result<(), StopError>>)
+		-> Result<(), StopError> {
+		self
 			.stop_funcs
-			.lock()
-			.await;
-
-		inner.push(
-			StopMessage::Post { task: task }
-		);
+			.clone()
+			.send(
+				StopMessage::Post {
+					task: task,
+				},
+			)
+			.map_err(StopError::SendError)
 	}
 }
