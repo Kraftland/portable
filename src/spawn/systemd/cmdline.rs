@@ -12,8 +12,12 @@ pub async fn cmdline(spawn: std::sync::Arc<crate::spawn::Spawn>) -> (String, Vec
 		String::from("bwrap"),
 		String::from("--new-session"),
 		String::from("--unshare-all"),
-		String::from("--share-net"),
 	];
+
+	if spawn.config.network.allow_network {
+		cmd.push(String::from("--share-net"));
+	};
+
 	cmd.extend(
 		spawn
 			.fs_rules
