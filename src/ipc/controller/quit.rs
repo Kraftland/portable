@@ -8,6 +8,7 @@ pub async fn stop_app(app_id: &str, bus: &zbus::Connection) -> Result<(), StopEr
 		let mut name = String::new();
 		name.push_str("top.kimiblock.portable.");
 		name.push_str(app_id);
+		name
 	};
 
 	let proxy = IPCProxy::new(bus, name)
