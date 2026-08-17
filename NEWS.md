@@ -36,6 +36,7 @@
 - Secondary instances are now streaming to the console via PTY, and will automatically re-scale their terminal size
 - It is now possible to disable certain components of Portable by subsystem.
 - Fixed a bug causing secondary instances to stuck while calling prohibited system calls.
+- Each instance now has a new session. Console is given as controlling terminal. Fixes various shell implementations not launching.
 
 
 # 18.0 - Lawn
