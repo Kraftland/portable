@@ -51,8 +51,9 @@ pub struct InitInfo {
 	pub uclamp_max:		u32,
 
 	pub logger:		crate::logger::LogSender,
-	pub stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
-	pub stop_tx:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+
+	pub cancen_token:	tokio_util::sync::CancellationToken,
+	pub stop:		std::sync::Arc<crate::stop::Stop>,
 }
 
 impl InitInfo {
@@ -110,8 +111,8 @@ impl InitInfo {
 
 		match stream::setup(
 			self.logger.clone(),
-			self.stop_func.clone(),
-			self.stop_tx.clone(),
+			self.cancen_token.clone(),
+			self.stop.clone(),
 		).await {
 			Ok(v)	=> {Ok(v.into())}
 			Err(e)	=> {

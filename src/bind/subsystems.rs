@@ -7,7 +7,9 @@
 
 	Every subsystem has a unique struct to pass along information.
 
-	The Init info struct is also returned along with bind rules.
+	The Init info struct is returned along with bind rules.
+
+	Also, there is a cancel_token used to signal session bus exit, or bus-requested exit.
 */
 pub trait GenerateBind {
 	fn bind(self) -> impl std::future::Future<Output = Result<super::types::BindRules, Self::BindError>> + Send;
@@ -21,8 +23,7 @@ pub async fn generate_bindrules(
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	config:			std::sync::Arc<crate::config::config_definition::Config>,
 	logger:			crate::logger::LogSender,
-	stop_tx:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
-	stop_func:		tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	stop:			std::sync::Arc<crate::stop::Stop>,
 	env:			crate::envs::holder::HoldChannel,
 	instance_id:		String,
 	flatpak_info_path:	std::sync::Arc<std::path::PathBuf>,
@@ -32,6 +33,8 @@ pub async fn generate_bindrules(
 	dbus_conn:		zbus::Connection,
 )
 -> Result<(super::types::BindRules, crate::ipc::init::info::InitInfo), BindError> {
+
+	let cancel_token = tokio_util::sync::CancellationToken::new();
 
 	let mut workers = vec![];
 
@@ -309,8 +312,8 @@ pub async fn generate_bindrules(
 		lockdown:		config.privacy.lockdown,
 		allow_debug:		config.advanced.allow_debug,
 		logger:			logger.clone(),
-		stop_tx:		stop_tx,
-		stop_func:		stop_func,
+		stop:			stop,
+		cancen_token:		cancel_token.clone(),
 		target_exec:		{
 			if runtime_opts.bus_activation {
 				if config.dbus_activation.enable {
