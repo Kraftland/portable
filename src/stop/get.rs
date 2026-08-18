@@ -41,6 +41,9 @@ pub enum StopError {
 
 	#[error("Could not remove directory: {0:#?}")]
 	RemoveFsError(std::io::Error),
+
+	#[error("Bus error: {0:#?}")]
+	BusError(zbus::Error),
 }
 
 impl Stop {
