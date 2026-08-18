@@ -19,6 +19,9 @@ pub enum SecurityContextError {
 
 	#[error("Error creating listen_fd: {0:#?}")]
 	ListenFdError(std::io::Error),
+
+	#[error("I/O error: {0:#?}")]
+	IOError(std::io::Error),
 }
 
 /**
@@ -156,12 +159,18 @@ async fn listen_context(
 		&mut wayland_conn,
 	);
 
+	wayland_conn
+		.async_flush()
+		.await
+		.map_err(SecurityContextError::IOError)
+		?;
+
 	// Hold the fd until sandbox exits
 	tokio::spawn(async move {
 		let _fd = close_fd_hold;
-		let _conn = wayland_conn;
-		loop {
-			tokio::time::sleep(std::time::Duration::MAX).await;
+		let mut conn = wayland_conn;
+		while conn.async_recv_events().await.is_ok() {
+
 		}
 	});
 
