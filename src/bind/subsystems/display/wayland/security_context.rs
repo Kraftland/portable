@@ -79,14 +79,13 @@ pub async fn create_context(
 	};
 
 	let context_fd: std::os::fd::OwnedFd = {
-		let file = tokio::fs::OpenOptions::new()
-			.write(true)
-			.create_new(true)
-			.mode(0o700)
-			.open(&security_context_path)
-			.await.map_err(SecurityContextError::ListenFdError)
-			?;
-		file.into_std().await.into()
+		tokio::net::UnixListener::bind(&security_context_path)
+			.map_err(SecurityContextError::ListenFdError)
+			?
+			.into_std()
+			.map_err(SecurityContextError::ListenFdError)
+			?
+			.into()
 	};
 
 	listen_context(context_fd, conn, app_id, instance_id).await?;
@@ -110,18 +109,30 @@ async fn listen_context(
 	instance_id:	String,
 
 ) -> Result<(), SecurityContextError> {
-	let ctx_manager =
-		wayland_conn.bind_singleton
-		::<wayrs_protocols::security_context_v1::wp_security_context_manager_v1::WpSecurityContextManagerV1> (1)
-		.map_err(SecurityContextError::BindManagerErr)
-		?;
+	let ctx_manager = {
+		wayland_conn
+			.async_roundtrip().await
+			.map_err(SecurityContextError::SetBlockingRoundtripErr)
+			?;
+
+		use wayrs_protocols::
+			security_context_v1::
+			wp_security_context_manager_v1::
+			WpSecurityContextManagerV1;
+
+		let manager = wayland_conn.bind_singleton::<WpSecurityContextManagerV1>(..=1)
+			.map_err(SecurityContextError::BindManagerErr)
+			?;
+
+		manager
+	};
 
 	/*
 		close_fd is a FD that will signal hangup when the compositor should
 			stop accepting new connections on listen_fd.
 	*/
-	let (close_fd_hold, close_fd_compositor) = {
-		std::os::unix::net::UnixStream::pair()
+	let (close_fd_r, close_fd_w) = {
+		std::io::pipe()
 			.map_err(SecurityContextError::CloseFdError)
 			?
 	};
@@ -130,7 +141,7 @@ async fn listen_context(
 		.create_listener(
 			&mut wayland_conn,
 			listen_fd,
-			close_fd_compositor.into(),
+			close_fd_r.into(),
 		);
 
 	let sandbox_engine_id = std::ffi::CString::new("top.kimiblock.portable")
@@ -159,11 +170,7 @@ async fn listen_context(
 		&mut wayland_conn,
 	);
 
-	wayland_conn
-		.async_flush()
-		.await
-		.map_err(SecurityContextError::IOError)
-		?;
+	ctx_manager.destroy(&mut wayland_conn);
 
 	wayland_conn
 		.blocking_roundtrip()
@@ -172,10 +179,10 @@ async fn listen_context(
 
 	// Hold the fd until sandbox exits
 	tokio::spawn(async move {
-		let _fd = close_fd_hold;
-		let mut conn = wayland_conn;
-		while conn.async_recv_events().await.is_ok() {
-
+		let _fd = close_fd_w;
+		let _conn = wayland_conn;
+		loop {
+			tokio::time::sleep(std::time::Duration::from_hours(240)).await
 		}
 	});
 
@@ -188,12 +195,8 @@ async fn listen_context(
 	The latter seems to fix flaky sockets.
 */
 async fn connect_socket() -> Result<wayrs_client::Connection<()>, SecurityContextError> {
-	let mut conn = wayrs_client::Connection::connect()
+	let conn = wayrs_client::Connection::connect()
 		.map_err(SecurityContextError::ConnectError)
-		?;
-	conn
-		.blocking_roundtrip()
-		.map_err(SecurityContextError::SetBlockingRoundtripErr)
 		?;
 	Ok(conn)
 }
