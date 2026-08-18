@@ -13,7 +13,8 @@ pub struct LogMessage {
 pub type LogSender = tokio::sync::mpsc::Sender<LogMessage>;
 
 pub async fn logger (
-	mut log_rx: tokio::sync::mpsc::Receiver<LogMessage>,
+	mut log_rx:	tokio::sync::mpsc::Receiver<LogMessage>,
+	stop_token:	tokio_util::sync::CancellationToken,
 )
 {
 	let is_terminal = {
@@ -85,13 +86,16 @@ pub async fn logger (
 
 	loop {
 		let msg = tokio::select! {
-			log_msg = log_rx.recv()	=> {
+			log_msg = log_rx.recv()			=> {
 				match log_msg {
 					Some(v)	=> v,
 					None	=> {
 						return;
 					}
 				}
+			}
+			_	= stop_token.cancelled()	=> {
+				return ;
 			}
 		};
 
