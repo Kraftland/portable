@@ -450,11 +450,12 @@ async fn run(
 			?
 	);
 
+	let proxy_cancel = tokio_util::sync::CancellationToken::new();
 	let bus_binds = tokio::spawn(
 		bind::bus::proxies::start_proxies(
 			log_tx.clone(),
 			config.clone(),
-			stop_tx.clone(),
+			proxy_cancel.clone(),
 			portable_runtime.clone(),
 			dbus_conn.clone(),
 			envs_tx.clone(),
@@ -527,10 +528,11 @@ async fn run(
 
 	tokio::select! {
 		_	=	bus_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
 			log_tx.send(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
-					message:	format!("Quit requested from D-Bus"),
+					message:	format!("Quit requested: D-Bus controller"),
 				}
 			)
 				.await
@@ -538,10 +540,23 @@ async fn run(
 				?;
 		}
 		_	=	subsystem_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
 			log_tx.send(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
-					message:	format!("Quit requested from Console stream"),
+					message:	format!("Quit requested: Console stream ended"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+		_	=	proxy_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested: D-Bus died"),
 				}
 			)
 				.await
