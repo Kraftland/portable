@@ -32,11 +32,9 @@ pub struct Proxy {
 	pub sloppy_names:	bool,
 
 	/**
-		Whether to kill the sandbox once the proxy dies
-
-		Specifies a stop token when needed
+		Specify a cancel token to call when the proxy finishes.
 	*/
-	pub bind_lifetime:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	pub cancen_token:	Option<tokio_util::sync::CancellationToken>,
 	pub json_status_file:	Option<std::os::fd::OwnedFd>,
 
 	/**

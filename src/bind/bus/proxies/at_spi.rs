@@ -104,7 +104,7 @@ impl crate::bind::bus::StartProxy for AtspiProxy {
 				logger:			self.logger,
 				proxy_socket:		proxy_socket_path,
 				sloppy_names:		true,
-				bind_lifetime:		None,
+				cancen_token:		None,
 				json_status_file:	None,
 				app_sandbox:		Some(host_sandbox_rules),
 				envs:			None,
