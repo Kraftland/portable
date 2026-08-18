@@ -34,6 +34,9 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&spawn.config.metadata.sandbox_id,
 			&spawn.uid,
 		).await;
+
+		let escaped_unit_name = super::escape::unit_name(&unit_name.name);
+
 		let properties = generate_properties(
 			spawn.clone(),
 		).await?;
@@ -217,9 +220,15 @@ async fn generate_properties(
 	);
 
 	vec.push(
+		/*
+			We can safely consider the sandbox dead if bubblewrap exits
+
+			KillMode will handle the rest of processes
+		*/
+
 		(
 			String::from("ExitType"),
-			OwnedValue::from(Str::from("cgroup")),
+			OwnedValue::from(Str::from("main")),
 		)
 	);
 
