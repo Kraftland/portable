@@ -38,9 +38,6 @@ impl super::RuntimePathsTrait for PortableRuntime {
 					async move {
 						cancel_token.cancelled().await;
 
-						#[cfg(debug_assertions)]
-						println!("Firing after cancel_token...");
-
 						tokio::fs::remove_dir_all(
 							remove_path
 						)

@@ -20,6 +20,9 @@ pub enum StartAppError {
 
 	#[error("Could not generate object path for Manager: {0:#?}")]
 	ObjectPathError(zbus::zvariant::Error),
+
+	#[error("Could not send stop command: {0:#?}")]
+	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopMessage>),
 }
 
 
@@ -40,6 +43,43 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&spawn.config.metadata.sandbox_id,
 			&spawn.uid,
 		).await;
+
+		{
+			let stop = spawn.stop.pre_parent.child_token();
+			let conn = dbus_conn.clone();
+			let systemd_prefix = zbus::zvariant::ObjectPath::try_from(
+				"/org/freedesktop/systemd1/unit",
+			)
+				.map_err(StartAppError::ObjectPathError)
+				?;
+
+			let object_path = zbus_systemd::bus_path_encode(&systemd_prefix, &unit_name.name);
+
+			spawn.stop.stop_funcs.send(
+				crate::stop::StopMessage::Prepare {
+					task:	tokio::spawn(async move {
+						let proxy = zbus_systemd::systemd1::UnitProxy::new(
+							&conn,
+							object_path,
+						)
+							.await
+							.map_err(crate::stop::StopError::BusError)
+							?;
+
+						stop.cancelled().await;
+
+						proxy.stop("replace".to_string())
+							.await
+							.map_err(crate::stop::StopError::BusError)
+							?;
+
+						Ok(())
+					}),
+				}
+			)
+				.map_err(StartAppError::StopError)
+				?
+		};
 
 		let properties = generate_properties(
 			spawn.clone(),

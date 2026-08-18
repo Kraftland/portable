@@ -300,6 +300,13 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
+			method: "org.fcitx.Fcitx.InputContext1.*".into(),
+			object_path: "/inputmethod/*".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
 			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
 			object_path: "/org/freedesktop/portal/inputmethod".into(),
 		},
@@ -310,6 +317,13 @@ async fn generate_bus_rules(
 				?,
 			method: "org.freedesktop.IBus.Portal.*".into(),
 			object_path: "/org/freedesktop/IBus".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "*".into(),
+			object_path: "/org/freedesktop/IBus/*".into(),
 		},
 
 		// Call FileManager1
