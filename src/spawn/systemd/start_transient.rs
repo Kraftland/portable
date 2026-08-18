@@ -17,6 +17,9 @@ pub enum StartAppError {
 
 	#[error("Could not wait for job removal: {0:#?}")]
 	SubscribeRemoveError(zbus::Error),
+
+	#[error("Could not generate object path for Manager: {0:#?}")]
+	ObjectPathError(zbus::zvariant::Error),
 }
 
 
@@ -38,19 +41,27 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&spawn.uid,
 		).await;
 
-		let escaped_unit_name = super::escape::unit_name(&unit_name.name);
-		super::wait::wait(
-			&dbus_conn,
-			escaped_unit_name,
-			spawn.cancen_token.clone(),
-		)
-			.await
-			.map_err(StartAppError::SubscribeRemoveError)
-			?;
-
 		let properties = generate_properties(
 			spawn.clone(),
 		).await?;
+
+		{
+			let systemd_prefix = zbus::zvariant::ObjectPath::try_from("/org/freedesktop/systemd1/unit")
+				.map_err(StartAppError::ObjectPathError)
+				?;
+
+			let object_path = zbus_systemd::bus_path_encode(&systemd_prefix, &unit_name.name);
+
+			super::wait::wait(
+				&dbus_conn,
+				object_path,
+				spawn.cancen_token.clone(),
+				spawn.logger.clone(),
+			)
+				.await
+				.map_err(StartAppError::SubscribeRemoveError)
+				?;
+		};
 
 		proxy
 			.subscribe()
