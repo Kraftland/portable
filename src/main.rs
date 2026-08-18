@@ -17,7 +17,7 @@ enum StartError {
 	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
 
 	#[error("Could not contact stop worker: {0:#?}")]
-	StopError(tokio::sync::mpsc::error::SendError<stop::StopLevel>),
+	StopError(tokio::sync::mpsc::error::SendError<stop::StopMessage>),
 
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
@@ -77,20 +77,17 @@ enum StartError {
 
 #[tokio::main]
 async fn main() {
-	let (stop_func_tx, stop_func_rx) = tokio::sync::mpsc::channel(5);
-	let (stop_sig_tx, stop_sig_rx) = tokio::sync::mpsc::channel(1);
-	let stop_worker = {
-		tokio::spawn(stop::stop_worker(stop_func_rx, stop_sig_rx))
-	};
+	let (stop_object, stop_drainer) = stop::Stop::new().await;
+
+
 
 	let log_tx = {
-		let stop_clone = stop_sig_tx.clone();
 		let (log_tx, log_rx) = tokio::sync::mpsc::channel(5);
-		tokio::spawn(logger::logger(log_rx, stop_clone));
+		tokio::spawn(logger::logger(log_rx));
 		log_tx
 	};
 
-	match run(log_tx.clone(), stop_sig_tx, stop_func_tx).await {
+	match run(log_tx.clone(), stop_object.clone()).await {
 		Ok(_)	=> {}
 		Err(e)	=> {
 			log_tx.send(
@@ -100,14 +97,20 @@ async fn main() {
 				},
 			).await.unwrap();
 		}
-	}
-	let _ = stop_worker.await;
+	};
+
+	stop::worker::stop(
+		stop_drainer,
+		stop_object.pre_cancel.clone(),
+		stop_object.post_cancel.clone(),
+	).await;
+
+
 }
 
 async fn run(
 	log_tx:		logger::LogSender,
-	stop_tx:	tokio::sync::mpsc::Sender<stop::StopLevel>,
-	stop_func:	tokio::sync::mpsc::Sender<stop::StopFunc>,
+	stop_obj:	std::sync::Arc<stop::Stop>,
 ) -> Result<(), StartError> {
 	let runtime_opts_spawn = {
 		tokio::spawn(portable_daemon::pref::runtime::cmdline::parse(log_tx.clone()))
@@ -115,8 +118,8 @@ async fn run(
 
 	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 	let bus_spawn = {
-		let stop_clone = stop_tx.clone();
-		tokio::spawn(ipc::register::connect(stop_clone))
+		let token = tokio_util::sync::CancellationToken::new();
+		(tokio::spawn(ipc::register::connect(token.clone())), token)
 	};
 
 	log_tx.send(
@@ -154,10 +157,12 @@ async fn run(
 	);
 
 
-	let dbus_conn = bus_spawn
+	let dbus_conn = bus_spawn.0
 		.await
 		.map_err(StartError::SpawnError)?
 		.map_err(StartError::BusError)?;
+
+	let bus_cancel = bus_spawn.1;
 
 	let bus_spawn = {
 		let bus = dbus_conn.clone();
@@ -209,11 +214,6 @@ async fn run(
 			).await
 			.map_err(StartError::ShareError)
 			?;
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::ShareDir			=> {
@@ -225,11 +225,6 @@ async fn run(
 			).await
 			.map_err(StartError::ShareError)
 			?;
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::Quit				=> {
@@ -242,29 +237,14 @@ async fn run(
 				.await
 				.map_err(StartError::StopControllerError)
 				?;
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::OpenHome			=> {
 			unimplemented!();
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::ResetDocs			=> {
 			unimplemented!();
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 	}
@@ -320,8 +300,6 @@ async fn run(
 					.map_err(StartError::StopError)
 					?;
 			}
-
-			std::future::pending::<()>().await;
 
 			return Ok(());
 		}
@@ -553,15 +531,18 @@ async fn run(
 		.map_err(StartError::SpawnSandboxError)
 		?;
 
-	/*
-		Stop, or termination is handled by stop_worker, we sleep forever here to prevent bus being dropped
-		TODO: remove this after implementing spawner
-	*/
-	std::future::pending::<()>().await;
-
-
-	// stop_worker
-	// 	.await
-	// 	.map_err(StartError::StopWaitError)?;
+	tokio::select! {
+		_	=	bus_cancel.cancelled()	=> {
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested from D-Bus"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+	}
 	Ok(())
 }

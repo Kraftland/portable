@@ -30,7 +30,8 @@ pub struct Spawn {
 	pub uid:		String,
 	pub fs_rules:		crate::bind::types::BindRules,
 	pub logger:		crate::logger::LogSender,
-	pub stop:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	pub stop:		std::sync::Arc<crate::stop::Stop>,
+	pub cancen_token:	tokio_util::sync::CancellationToken,
 	pub envs:		crate::envs::holder::HoldChannel,
 	pub sandbox_home:	std::path::PathBuf,
 }

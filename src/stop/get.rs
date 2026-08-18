@@ -38,6 +38,9 @@ pub enum StopError {
 
 	#[error("Could not restore console: {0:#?}")]
 	RestoreConsoleError(nix::Error),
+
+	#[error("Could not remove directory: {0:#?}")]
+	RemoveFsError(std::io::Error),
 }
 
 impl Stop {
