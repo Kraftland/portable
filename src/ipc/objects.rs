@@ -3,15 +3,13 @@ use zbus::interface;
 pub struct Info;
 
 pub struct Controller {
-	pub stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	pub cancel_token:	tokio_util::sync::CancellationToken,
 }
 
 #[interface (name = "top.kimiblock.Portable.Controller")]
 impl Controller {
 	#[zbus(name = "Stop")]
 	pub async fn stop(&self) {
-		self.stop_tx.send(crate::stop::StopLevel::Normal)
-			.await
-			.expect("Could not send stop signal");
+		self.cancel_token.cancel();
 	}
 }

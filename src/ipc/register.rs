@@ -25,8 +25,12 @@ pub enum RegisterError {
 	Connect to the session bus and publish services
 
 	Must be done before register to handle multi-instance and certain commamdline flags
+
+	Cancel token is used for Controller to process stop requests
 */
-pub async fn connect(stop_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>)
+pub async fn connect(
+	cancel_token:	tokio_util::sync::CancellationToken,
+)
 -> Result<zbus::Connection, RegisterError> {
 	let builder = zbus::connection::Builder::session()
 		.map_err(RegisterError::BuildConnectionError)
@@ -38,7 +42,9 @@ pub async fn connect(stop_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>)
 	let builder = builder
 		.serve_at(
 			"/top/kimiblock/portable/daemon",
-			super::objects::Controller {stop_tx: stop_tx},
+			super::objects::Controller {
+				cancel_token:	cancel_token
+			},
 		)
 		.map_err(RegisterError::ServeObjectError)
 		?;
