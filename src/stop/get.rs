@@ -35,6 +35,9 @@ pub enum StopMessage {
 pub enum StopError {
 	#[error("Could not send stop_func: {0:#?}")]
 	SendError(tokio::sync::mpsc::error::SendError<StopMessage>),
+
+	#[error("Could not restore console: {0:#?}")]
+	RestoreConsoleError(nix::Error),
 }
 
 impl Stop {
