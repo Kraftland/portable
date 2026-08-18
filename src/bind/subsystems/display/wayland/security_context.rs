@@ -41,7 +41,7 @@ pub async fn create_context(
 		?;
 
 	let supports_security_context = {
-		let protocol = std::ffi::CString::new("security-context-v1")
+		let protocol = std::ffi::CString::new("wp_security_context_manager_v1")
 			.map_err(SecurityContextError::CStringError)
 			?;
 		let globals = conn.globals();
@@ -123,14 +123,6 @@ async fn listen_context(
 			?
 	};
 
-	// Hold the fd until sandbox exits
-	tokio::spawn(async move {
-		let _fd = close_fd_hold;
-		loop {
-			tokio::time::sleep(std::time::Duration::MAX).await;
-		}
-	});
-
 	let listener = ctx_manager
 		.create_listener(
 			&mut wayland_conn,
@@ -163,6 +155,16 @@ async fn listen_context(
 	listener.commit(
 		&mut wayland_conn,
 	);
+
+	// Hold the fd until sandbox exits
+	tokio::spawn(async move {
+		let _fd = close_fd_hold;
+		let _conn = wayland_conn;
+		loop {
+			tokio::time::sleep(std::time::Duration::MAX).await;
+		}
+	});
+
 	Ok(())
 }
 
