@@ -321,12 +321,12 @@ async fn run(
 
 	#[cfg(feature = "flatpak")]
 	let flatpak_runtime_spawn = {
-		let stop_clone = stop_func.clone();
 		use bind::subsystems::dirs::RuntimePathsTrait;
 		use bind::subsystems::dirs::flatpak::FlatpakRuntime;
 		let config_clone = config.clone();
 		let xdg_clone = xdg_dirs.clone();
 		let instance_id_clone = instance_id.clone();
+		let stop_clone = stop_obj.clone();
 		tokio::spawn(
 				async move {
 					let runtime = FlatpakRuntime::new(
@@ -348,7 +348,7 @@ async fn run(
 		portable_runtime_spawn,
 		document_spawn,
 	) = {
-		let stop_clone = stop_func.clone();
+		let stop_clone = stop_obj.clone();
 		use bind::subsystems::dirs::RuntimePathsTrait;
 		use bind::subsystems::dirs::portable_runtime::PortableRuntime;
 		use bind::subsystems::dirs::documents;
