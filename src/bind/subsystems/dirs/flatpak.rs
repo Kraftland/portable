@@ -36,7 +36,7 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 		}
 	}
 
-	async fn create_path(&self, stop: tokio::sync::mpsc::Sender<crate::stop::StopFunc>)	->
+	async fn create_path(&self, stop: std::sync::Arc<crate::stop::Stop>)	->
 			Result<(), Self::RuntimePathError>
 	{
 
@@ -45,38 +45,50 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 			.await
 			.map_err(Error::CreateError)?;
 		let path_clone = self.appid_path.to_path_buf();
-		stop.send(
-			crate::stop::StopFunc {
-				layer: crate::stop::FunctionLayer::Pre,
-				function: Box::new(|| {
-					match std::fs::remove_dir_all(path_clone) {
-						Ok(_)	=> {}
-						Err(e)	=> {
-							eprintln!("Could not remove runtime directory: {e:#?}")
-						}
-					};
-				}),
-			},
-		).await.map_err(Error::StopError)?;
+
+		let pre_cancel = stop.pre_cancel.clone();
+
+		stop.stop_funcs.send(
+			crate::stop::StopMessage::Prepare {
+				task:	tokio::spawn(
+					async move {
+						pre_cancel.cancelled().await;
+
+						tokio::fs::remove_dir_all(
+							path_clone
+						)
+							.await
+							.map_err(crate::stop::StopError::RemoveFsError)
+					}
+				),
+			}
+		)
+			.map_err(Error::StopError)
+			?;
 
 
 		tokio::fs::create_dir_all(self.instance_path.as_path())
 			.await
 			.map_err(Error::CreateError)?;
 		let path_clone = self.instance_path.to_path_buf();
-		stop.send(
-			crate::stop::StopFunc {
-				layer: crate::stop::FunctionLayer::Pre,
-				function: Box::new(|| {
-					match std::fs::remove_dir_all(path_clone) {
-						Ok(_)	=> {}
-						Err(e)	=> {
-							eprintln!("Could not remove runtime directory: {e:#?}")
-						}
-					};
-				}),
-			},
-		).await.map_err(Error::StopError)?;
+		let pre_cancel = stop.pre_cancel.clone();
+		stop.stop_funcs.send(
+			crate::stop::StopMessage::Prepare {
+				task:	tokio::spawn(
+					async move {
+						pre_cancel.cancelled().await;
+
+						tokio::fs::remove_dir_all(
+							path_clone
+						)
+							.await
+							.map_err(crate::stop::StopError::RemoveFsError)
+					}
+				),
+			}
+		)
+			.map_err(Error::StopError)
+			?;
 
 		Ok(())
 	}
@@ -97,6 +109,6 @@ pub enum Error {
 	CreateError(std::io::Error),
 
 	#[error("Could not contact stop worker: {0:#?}")]
-	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopFunc>),
+	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopMessage>),
 }
 
