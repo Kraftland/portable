@@ -16,9 +16,6 @@ enum StartError {
 	#[error("Could not contact logging thread: {0:#?}")]
 	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
 
-	#[error("Could not contact stop worker: {0:#?}")]
-	StopError(tokio::sync::mpsc::error::SendError<stop::StopMessage>),
-
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
 
@@ -466,7 +463,7 @@ async fn run(
 		)
 	);
 
-	let (mut bind_rules, init_info, subsystem_cancel) = bind::subsystems::generate_bindrules(
+	let (mut bind_rules, init_info, _subsystem_cancel) = bind::subsystems::generate_bindrules(
 		portable_runtime,
 		document,
 		xdg_dirs.clone(),
@@ -505,14 +502,17 @@ async fn run(
 		?;
 
 
-	{
+	let spawn_cancel = {
+		let cancel_token = tokio_util::sync::CancellationToken::new();
+
 		let spawn_struct = spawn::Spawn {
 			config:		config.clone(),
 			uid:		instance_id.to_string(),
 			fs_rules:	bind_rules,
-			logger:		log_tx,
-			stop:		stop_tx,
+			logger:		log_tx.clone(),
+			stop:		stop_obj.clone(),
 			envs:		envs_tx,
+			cancen_token:	cancel_token.clone(),
 			sandbox_home:	{
 				let mut state_dir = xdg_dirs.data_home.to_path_buf();
 				state_dir.push(&config.metadata.state_directory);
@@ -520,11 +520,13 @@ async fn run(
 			}
 		};
 		use spawn::Start;
-		spawn_struct.start(&dbus_conn)
-	}
-		.await
-		.map_err(StartError::SpawnSandboxError)
-		?;
+		spawn_struct
+			.start(&dbus_conn)
+			.await
+			.map_err(StartError::SpawnSandboxError)
+			?;
+		cancel_token
+	};
 
 	tokio::select! {
 		_	=	bus_cancel.cancelled()	=> {
@@ -539,24 +541,42 @@ async fn run(
 				.map_err(StartError::LogError)
 				?;
 		}
-		_	=	subsystem_cancel.cancelled()	=> {
-			#[cfg(debug_assertions)]
-			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	format!("Quit requested: Console stream ended"),
-				}
-			)
-				.await
-				.map_err(StartError::LogError)
-				?;
-		}
+
+		/*
+			This is problematic. Should the first invocation be finished and
+				other instances remaining, this will cause them to be killed too
+		*/
+		// _	=	subsystem_cancel.cancelled()	=> {
+		// 	#[cfg(debug_assertions)]
+		// 	log_tx.send(
+		// 		logger::LogMessage {
+		// 			level:		logger::LogLevel::Debug,
+		// 			message:	format!("Quit requested: Console stream ended"),
+		// 		}
+		// 	)
+		// 		.await
+		// 		.map_err(StartError::LogError)
+		// 		?;
+		// }
 		_	=	proxy_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
 					message:	format!("Quit requested: D-Bus died"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
+		_	=	spawn_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested: sandbox finished"),
 				}
 			)
 				.await
