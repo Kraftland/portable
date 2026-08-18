@@ -218,10 +218,14 @@ async fn raw_mode(
 		.map_err(StreamError::RawError)
 		?;
 
+	let cancel_token = stop.pre_cancel.clone();
+
 	stop.stop_funcs.send(
 		crate::stop::StopMessage::Prepare {
 			task:	tokio::task::spawn_local(
 				async move {
+					cancel_token.cancelled();
+
 					nix::sys::termios::tcsetattr(
 						stdin,
 						nix::sys::termios::SetArg::TCSANOW,
