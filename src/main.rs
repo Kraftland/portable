@@ -273,8 +273,7 @@ async fn run(
 					config,
 					&dbus_conn,
 					log_tx.clone(),
-					stop_func,
-					stop_tx,
+					stop_obj.clone(),
 				)
 					.await
 					.map_err(StartError::AuxStartError)
@@ -294,10 +293,6 @@ async fn run(
 				ipc::init::tray::wake(config, &dbus_conn)
 					.await
 					.map_err(StartError::TrayError)
-					?;
-				stop_tx.send(stop::StopLevel::Normal)
-					.await
-					.map_err(StartError::StopError)
 					?;
 			}
 
