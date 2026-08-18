@@ -128,7 +128,10 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 					let mut size: nix::libc::winsize = std::mem::zeroed();
 					match ioctl_get_winsize(nix::libc::STDIN_FILENO, &mut size) {
 						Ok(_)	=> {(size.ws_col, size.ws_row)}
-						Err(_)	=> {continue;}
+						Err(e)	=> {
+							eprintln!("Could not get console size: {e:#?}");
+							continue;
+						}
 					}
 				};
 
