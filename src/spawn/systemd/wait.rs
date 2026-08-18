@@ -17,13 +17,6 @@ pub async fn wait(
 			while let Ok(message) = proxy.receive_job_removed_with_args(
 				&vec![(2, escaped_name.as_str())]
 			).await {
-				#[cfg(debug_assertions)]
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Debug,
-						message: format!("Unit exited: {:#?}", message),
-					}
-				).await;
 				break;
 			}
 			cancel_token.cancel();
