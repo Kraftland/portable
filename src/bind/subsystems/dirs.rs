@@ -18,7 +18,10 @@ pub trait RuntimePathsTrait: Sized {
 	/**
 		Create the inner path
 	*/
-	fn create_path(&self, stop_func: tokio::sync::mpsc::Sender<crate::stop::StopFunc>) ->
+	fn create_path(
+		&self,
+		stop:	std::sync::Arc<crate::stop::Stop>
+	) ->
 		impl std::future::Future<Output = Result<(), Self::RuntimePathError>> + Send;
 
 	fn path(&self) -> std::path::PathBuf;
