@@ -12,7 +12,7 @@ pub async fn wait(
 		?;
 
 	let bus_name = zbus::names::BusName::try_from(init_name)
-		.map_err(super::AuxStartError::AliveNameError)
+		.map_err(super::AuxStartError::InitNameError)
 		?;
 
 	let mut stream = proxy
