@@ -24,7 +24,7 @@ pub async fn check(
 	};
 
 	let init_version = match proxy.version().await {
-		Ok(v)	=> {v.to_string()}
+		Ok(v)	=> {v}
 		Err(e)	=> {
 			let _ = logger.send(
 				crate::logger::LogMessage {
@@ -71,5 +71,5 @@ trait IPC {
 	)]
 	fn version(
 		&self,
-	) -> zbus::Result<u32>;
+	) -> zbus::Result<String>;
 }
