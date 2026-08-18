@@ -81,7 +81,7 @@ pub async fn install_desktop_file(
 			crate::stop::StopMessage::Prepare {
 				task:	tokio::spawn(
 					async move {
-						token.cancelled();
+						token.cancelled().await;
 
 						tokio::fs::remove_file(file_path)
 							.await
