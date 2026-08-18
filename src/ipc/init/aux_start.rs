@@ -17,7 +17,19 @@ trait IPC {
 		envs:		std::collections::HashMap<String, String>,
 		pty:		zbus::zvariant::OwnedFd,
 	) -> zbus::Result<()>;
+
+	#[zbus(name = "AuxStart3Silent")]
+	async fn request_start_silent(
+		&self,
+		custom_target:	bool,
+		target_exec:	String,
+		args_append:	bool,
+		arguments:	Vec<String>,
+		extra_files:	std::collections::HashMap<String, String>,
+		envs:		std::collections::HashMap<String, String>,
+	) -> zbus::Result<()>;
 }
+
 
 pub async fn start(
 	runtime_opts:	std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
@@ -91,28 +103,41 @@ pub async fn start(
 		}
 	).await;
 
-	let cancel_token = tokio_util::sync::CancellationToken::new();
 
-	proxy.request_start(
-		true,
-		exec,
-		false,
-		args,
-		forward_map,
-		env_var,
-		crate::spawn::stream::setup(logger, cancel_token.clone(), stop)
+
+	if crate::bind::subsystems::console::is_terminal() {
+		let cancel_token = tokio_util::sync::CancellationToken::new();
+		proxy.request_start(
+			true,
+			exec,
+			false,
+			args,
+			forward_map,
+			env_var,
+			crate::spawn::stream::setup(logger, cancel_token.clone(), stop)
+				.await
+				.map_err(AuxStartError::ConsoleError)
+				?
+				.into(),
+		)
 			.await
-			.map_err(AuxStartError::ConsoleError)
-			?
-			.into(),
-	)
-		.await
-		.map_err(AuxStartError::RemoteError)
-		?;
+			.map_err(AuxStartError::RemoteError)
+			?;
 
-	tokio::select! {
-		_	=	cancel_token.cancelled()	=> {}
-	};
+		cancel_token.cancelled().await;
+	} else {
+		proxy.request_start_silent(
+			true,
+			exec,
+			false,
+			args,
+			forward_map,
+			env_var,
+		)
+			.await
+			.map_err(AuxStartError::RemoteError)
+			?;
+	}
 
 	Ok(())
 
