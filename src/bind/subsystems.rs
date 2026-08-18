@@ -1,3 +1,4 @@
+pub mod console;
 
 /**
 	A generic trait for other subsystems to implement binding generation
@@ -357,6 +358,7 @@ pub async fn generate_bindrules(
 		},
 		uclamp_min:		0,
 		uclamp_max:		config.system.uclamp_max,
+		console:		console::is_terminal(),
 	};
 
 	Ok((ret, init_info, cancel_token))
