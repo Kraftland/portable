@@ -1,3 +1,6 @@
+mod alive;
+mod version;
+
 #[zbus::proxy(
 	interface	= "top.kimiblock.Portable.Init",
 	default_path	= "/top/kimiblock/portable/init",
@@ -40,6 +43,14 @@ pub async fn start(
 		name.push_str(".Portable.Helper");
 		name
 	};
+
+	alive::wait(&bus, &init_name).await?;
+
+	version::check(
+		&bus,
+		&init_name,
+		logger.clone(),
+	).await;
 
 	let exec = {
 		if runtime_opts.debug_shell {
@@ -117,4 +128,14 @@ pub enum AuxStartError {
 
 	#[error("Remote error: {0:#?}")]
 	RemoteError(zbus::Error),
+
+	#[error("Failed determine if Init is alive: {0:#?}")]
+	AliveError(zbus::Error),
+	#[error("Failed determine if Init is alive: {0:#?}")]
+	AliveFdoError(zbus::fdo::Error),
+	#[error("Error creating init name: {0:#?}")]
+	InitNameError(zbus::names::Error),
+
+	#[error("Init died")]
+	RemoteDiedError,
 }
