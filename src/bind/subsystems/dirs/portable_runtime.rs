@@ -22,28 +22,36 @@ impl super::RuntimePathsTrait for PortableRuntime {
 		Self { path: std::sync::Arc::new(path) }
 	}
 
-	async fn create_path(&self, stop: tokio::sync::mpsc::Sender<crate::stop::StopFunc>)	->
+	async fn create_path(&self, stop: std::sync::Arc<crate::stop::Stop>)	->
 			Result<(), Self::RuntimePathError>
 	{
 		tokio::fs::create_dir_all(self.path.clone().as_path())
 			.await
 			.map_err(Error::CreateError)?;
 
-		let remove_path = self.path.clone();
+		let remove_path = self.path.to_path_buf();
+		let cancel_token = stop.pre_parent.child_token();
 
-		stop.send(
-			crate::stop::StopFunc {
-				layer: crate::stop::FunctionLayer::Pre,
-				function: Box::new(move || {
-					match std::fs::remove_dir_all(remove_path.as_path()) {
-						Ok(_)	=> {}
-						Err(e)	=> {
-							eprintln!("Could not remove runtime directory: {e:#?}")
-						}
-					};
-				}),
-			},
-		).await.map_err(Error::StopError)?;
+		stop.stop_funcs.send(
+			crate::stop::StopMessage::Prepare {
+				task:	tokio::spawn(
+					async move {
+						cancel_token.cancelled().await;
+
+						#[cfg(debug_assertions)]
+						println!("Firing after cancel_token...");
+
+						tokio::fs::remove_dir_all(
+							remove_path
+						)
+							.await
+							.map_err(crate::stop::StopError::RemoveFsError)
+					}
+				),
+			}
+		)
+			.map_err(Error::StopError)
+			?;
 
 		Ok(())
 	}
@@ -64,6 +72,6 @@ pub enum Error {
 	CreateError(std::io::Error),
 
 	#[error("Could not contact stop worker: {0:#?}")]
-	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopFunc>),
+	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopMessage>),
 }
 

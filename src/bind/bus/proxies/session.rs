@@ -14,7 +14,7 @@ mod sandbox;
 pub struct SessionProxy {
 	pub logger:		crate::logger::LogSender,
 	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
-	pub stop_token:		Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	pub cancel_token:	tokio_util::sync::CancellationToken,
 	pub portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
 	pub status_fd:		Option<std::os::fd::OwnedFd>,
@@ -31,7 +31,7 @@ impl crate::bind::bus::StartProxy for SessionProxy {
 		compile_rules(
 			self.logger,
 			self.config,
-			self.stop_token,
+			self.cancel_token,
 			self.portable_dir,
 			#[cfg(feature = "flatpak")]
 			self.status_fd,
@@ -47,7 +47,7 @@ impl crate::bind::bus::StartProxy for SessionProxy {
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
 	config:		std::sync::Arc<crate::config::config_definition::Config>,
-	stop_token:	Option<tokio::sync::mpsc::Sender<crate::stop::StopLevel>>,
+	cancel_token:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
 	status_fd:	Option<std::os::fd::OwnedFd>,
@@ -98,7 +98,7 @@ async fn compile_rules(
 							?,
 			logger:			logger,
 			proxy_socket:		proxy_socket_path,
-			bind_lifetime:		stop_token,
+			cancen_token:		Some(cancel_token),
 			sloppy_names:		false,
 			#[cfg(feature = "flatpak")]
 			json_status_file:	status_fd,

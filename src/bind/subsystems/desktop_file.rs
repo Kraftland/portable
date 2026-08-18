@@ -4,7 +4,7 @@
 	Utilises fixed metadata, and removes the file on shutdown.
 */
 pub async fn install_desktop_file(
-	stop_channel:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	stop:		std::sync::Arc<crate::stop::Stop>,
 	logger:		crate::logger::LogSender,
 
 	app_id:		String,
@@ -74,33 +74,36 @@ pub async fn install_desktop_file(
 		}
 	};
 
-	let res = stop_channel.send(
-		crate::stop::StopFunc {
-			layer: crate::stop::FunctionLayer::Pre,
-			function: Box::new(|| {
-				match std::fs::remove_file(file_path) {
-					Ok(_)	=> {}
-					Err(e)	=> {
-						eprintln!("{e:#?}")
-					}
-				};
-			}),
-		},
-	)
-		.await;
+	{
+		let token = stop.pre_parent.child_token();
 
-	match res {
-		Ok(_)	=> {}
-		Err(e)	=> {
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not send to stop channel: {e:#?}"),
-				}
-			).await;
-			return;
+		let res = stop.stop_funcs.send(
+			crate::stop::StopMessage::Prepare {
+				task:	tokio::spawn(
+					async move {
+						token.cancelled().await;
+
+						tokio::fs::remove_file(file_path)
+							.await
+							.map_err(crate::stop::StopError::RemoveFsError)
+					}
+				),
+			}
+		);
+
+		match res {
+			Ok(_)	=> {}
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not send to stop channel: {e:#?}"),
+					}
+				).await;
+				return;
+			}
 		}
-	}
+	};
 
 	use tokio::io::AsyncWriteExt;
 

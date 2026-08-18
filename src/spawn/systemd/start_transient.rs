@@ -14,6 +14,12 @@ pub enum StartAppError {
 
 	#[error("Could not start app: systemd error: {0:#?}")]
 	SystemdStartError(zbus::Error),
+
+	#[error("Could not wait for job removal: {0:#?}")]
+	SubscribeRemoveError(zbus::Error),
+
+	#[error("Could not generate object path for Manager: {0:#?}")]
+	ObjectPathError(zbus::zvariant::Error),
 }
 
 
@@ -34,9 +40,28 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			&spawn.config.metadata.sandbox_id,
 			&spawn.uid,
 		).await;
+
 		let properties = generate_properties(
 			spawn.clone(),
 		).await?;
+
+		{
+			let systemd_prefix = zbus::zvariant::ObjectPath::try_from("/org/freedesktop/systemd1/unit")
+				.map_err(StartAppError::ObjectPathError)
+				?;
+
+			let object_path = zbus_systemd::bus_path_encode(&systemd_prefix, &unit_name.name);
+
+			super::wait::wait(
+				&dbus_conn,
+				object_path,
+				spawn.cancen_token.clone(),
+				spawn.logger.clone(),
+			)
+				.await
+				.map_err(StartAppError::SubscribeRemoveError)
+				?;
+		};
 
 		proxy
 			.subscribe()
@@ -59,11 +84,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			.await
 			.map_err(StartAppError::SystemdStartError)
 			?;
-
-
-
-
-
 		Ok(())
 	}
 }
@@ -217,9 +237,15 @@ async fn generate_properties(
 	);
 
 	vec.push(
+		/*
+			We can safely consider the sandbox dead if bubblewrap exits
+
+			KillMode will handle the rest of processes
+		*/
+
 		(
 			String::from("ExitType"),
-			OwnedValue::from(Str::from("cgroup")),
+			OwnedValue::from(Str::from("main")),
 		)
 	);
 

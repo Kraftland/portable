@@ -14,7 +14,6 @@ pub type LogSender = tokio::sync::mpsc::Sender<LogMessage>;
 
 pub async fn logger (
 	mut log_rx: tokio::sync::mpsc::Receiver<LogMessage>,
-	stop_sig_tx: tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
 )
 {
 	let is_terminal = {
@@ -109,7 +108,6 @@ pub async fn logger (
 			}
 			LogLevel::Fatal => {
 				eprintln!("{}\t{}", fatal_fmt, msg.message);
-				stop_sig_tx.send(crate::stop::StopLevel::Error(1)).await.unwrap();
 			}
 		}
 	}

@@ -98,10 +98,9 @@ impl Proxy {
 			},
 		).await;
 
-		match self.bind_lifetime {
-			Some(v)	=> {
+		match self.cancen_token {
+			Some(token)	=> {
 				tokio::spawn(async move {
-					let stop_channel = v;
 					let result = child.wait().await;
 					match result {
 						Ok(v)	=> {
@@ -111,9 +110,6 @@ impl Proxy {
 									message: format!("D-Bus proxy exited: {:?}", v.code()),
 								},
 							).await;
-							let _ = stop_channel
-								.send(crate::stop::StopLevel::Normal)
-								.await;
 						}
 						Err(e)	=> {
 							let _ = self.logger.send(
@@ -124,11 +120,9 @@ impl Proxy {
 									),
 								}
 							).await;
-							let _ = stop_channel
-								.send(crate::stop::StopLevel::Error(1))
-								.await;
 						}
-					}
+					};
+					token.cancel();
 				});
 				Ok(())
 			}

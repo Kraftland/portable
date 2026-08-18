@@ -1,9 +1,3 @@
-/*
-	Application spawning is designed to be init-independent here
-	While we will only support systemd with feature systemd for now, it is possible to implement
-	the "Start" trait and StartAppError error enum with other init systems
-*/
-
 #[cfg(feature = "systemd")]
 pub mod systemd;
 #[cfg(feature = "systemd")]
@@ -23,6 +17,14 @@ pub mod instance_id;
 
 pub mod stream;
 
+/**
+	Application spawning is designed to be init-independent here
+
+	While we will only support systemd with feature systemd for now, it is possible to implement
+	the "Start" trait and StartAppError error enum with other init systems
+
+	Cancel token is called when the application exits
+*/
 pub struct Spawn {
 	pub config:		std::sync::Arc<crate::config::Config>,
 
@@ -30,7 +32,8 @@ pub struct Spawn {
 	pub uid:		String,
 	pub fs_rules:		crate::bind::types::BindRules,
 	pub logger:		crate::logger::LogSender,
-	pub stop:		tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	pub stop:		std::sync::Arc<crate::stop::Stop>,
+	pub cancen_token:	tokio_util::sync::CancellationToken,
 	pub envs:		crate::envs::holder::HoldChannel,
 	pub sandbox_home:	std::path::PathBuf,
 }

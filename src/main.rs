@@ -16,9 +16,6 @@ enum StartError {
 	#[error("Could not contact logging thread: {0:#?}")]
 	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
 
-	#[error("Could not contact stop worker: {0:#?}")]
-	StopError(tokio::sync::mpsc::error::SendError<stop::StopLevel>),
-
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
 
@@ -77,21 +74,18 @@ enum StartError {
 
 #[tokio::main]
 async fn main() {
-	let (stop_func_tx, stop_func_rx) = tokio::sync::mpsc::channel(5);
-	let (stop_sig_tx, stop_sig_rx) = tokio::sync::mpsc::channel(1);
-	let stop_worker = {
-		tokio::spawn(stop::stop_worker(stop_func_rx, stop_sig_rx))
-	};
+	let (stop_object, stop_drainer) = stop::Stop::new().await;
+
+
 
 	let log_tx = {
-		let stop_clone = stop_sig_tx.clone();
 		let (log_tx, log_rx) = tokio::sync::mpsc::channel(5);
-		tokio::spawn(logger::logger(log_rx, stop_clone));
+		tokio::spawn(logger::logger(log_rx));
 		log_tx
 	};
 
-	match run(log_tx.clone(), stop_sig_tx, stop_func_tx).await {
-		Ok(_)	=> {}
+	let success = match run(log_tx.clone(), stop_object.clone()).await {
+		Ok(_)	=> {true}
 		Err(e)	=> {
 			log_tx.send(
 				logger::LogMessage {
@@ -99,15 +93,21 @@ async fn main() {
 					message: format!("{e:#?}"),
 				},
 			).await.unwrap();
+			false
 		}
-	}
-	let _ = stop_worker.await;
+	};
+
+	stop::worker::stop(
+		stop_drainer,
+		stop_object.pre_parent.clone(),
+		stop_object.post_cancel.clone(),
+		success,
+	).await;
 }
 
 async fn run(
 	log_tx:		logger::LogSender,
-	stop_tx:	tokio::sync::mpsc::Sender<stop::StopLevel>,
-	stop_func:	tokio::sync::mpsc::Sender<stop::StopFunc>,
+	stop_obj:	std::sync::Arc<stop::Stop>,
 ) -> Result<(), StartError> {
 	let runtime_opts_spawn = {
 		tokio::spawn(portable_daemon::pref::runtime::cmdline::parse(log_tx.clone()))
@@ -115,8 +115,8 @@ async fn run(
 
 	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
 	let bus_spawn = {
-		let stop_clone = stop_tx.clone();
-		tokio::spawn(ipc::register::connect(stop_clone))
+		let token = tokio_util::sync::CancellationToken::new();
+		(tokio::spawn(ipc::register::connect(token.clone())), token)
 	};
 
 	log_tx.send(
@@ -154,10 +154,12 @@ async fn run(
 	);
 
 
-	let dbus_conn = bus_spawn
+	let dbus_conn = bus_spawn.0
 		.await
 		.map_err(StartError::SpawnError)?
 		.map_err(StartError::BusError)?;
+
+	let bus_cancel = bus_spawn.1;
 
 	let bus_spawn = {
 		let bus = dbus_conn.clone();
@@ -209,11 +211,6 @@ async fn run(
 			).await
 			.map_err(StartError::ShareError)
 			?;
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::ShareDir			=> {
@@ -225,11 +222,6 @@ async fn run(
 			).await
 			.map_err(StartError::ShareError)
 			?;
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::Quit				=> {
@@ -242,29 +234,14 @@ async fn run(
 				.await
 				.map_err(StartError::StopControllerError)
 				?;
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::OpenHome			=> {
 			unimplemented!();
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::ResetDocs			=> {
 			unimplemented!();
-
-			stop_tx.send(stop::StopLevel::Normal)
-				.await
-				.map_err(StartError::StopError)
-				?;
 			return Ok(());
 		}
 	}
@@ -293,8 +270,7 @@ async fn run(
 					config,
 					&dbus_conn,
 					log_tx.clone(),
-					stop_func,
-					stop_tx,
+					stop_obj.clone(),
 				)
 					.await
 					.map_err(StartError::AuxStartError)
@@ -315,13 +291,7 @@ async fn run(
 					.await
 					.map_err(StartError::TrayError)
 					?;
-				stop_tx.send(stop::StopLevel::Normal)
-					.await
-					.map_err(StartError::StopError)
-					?;
 			}
-
-
 
 			return Ok(());
 		}
@@ -348,12 +318,12 @@ async fn run(
 
 	#[cfg(feature = "flatpak")]
 	let flatpak_runtime_spawn = {
-		let stop_clone = stop_func.clone();
 		use bind::subsystems::dirs::RuntimePathsTrait;
 		use bind::subsystems::dirs::flatpak::FlatpakRuntime;
 		let config_clone = config.clone();
 		let xdg_clone = xdg_dirs.clone();
 		let instance_id_clone = instance_id.clone();
+		let stop_clone = stop_obj.clone();
 		tokio::spawn(
 				async move {
 					let runtime = FlatpakRuntime::new(
@@ -375,7 +345,7 @@ async fn run(
 		portable_runtime_spawn,
 		document_spawn,
 	) = {
-		let stop_clone = stop_func.clone();
+		let stop_clone = stop_obj.clone();
 		use bind::subsystems::dirs::RuntimePathsTrait;
 		use bind::subsystems::dirs::portable_runtime::PortableRuntime;
 		use bind::subsystems::dirs::documents;
@@ -477,11 +447,12 @@ async fn run(
 			?
 	);
 
+	let proxy_cancel = tokio_util::sync::CancellationToken::new();
 	let bus_binds = tokio::spawn(
 		bind::bus::proxies::start_proxies(
 			log_tx.clone(),
 			config.clone(),
-			stop_tx.clone(),
+			proxy_cancel.clone(),
 			portable_runtime.clone(),
 			dbus_conn.clone(),
 			envs_tx.clone(),
@@ -492,14 +463,13 @@ async fn run(
 		)
 	);
 
-	let (mut bind_rules, init_info) = bind::subsystems::generate_bindrules(
+	let (mut bind_rules, init_info, _subsystem_cancel) = bind::subsystems::generate_bindrules(
 		portable_runtime,
 		document,
 		xdg_dirs.clone(),
 		config.clone(),
 		log_tx.clone(),
-		stop_tx.clone(),
-		stop_func,
+		stop_obj.clone(),
 		envs_tx.clone(),
 		instance_id.to_string(),
 		flatpak_info.clone(),
@@ -532,14 +502,17 @@ async fn run(
 		?;
 
 
-	{
+	let spawn_cancel = {
+		let cancel_token = tokio_util::sync::CancellationToken::new();
+
 		let spawn_struct = spawn::Spawn {
 			config:		config.clone(),
 			uid:		instance_id.to_string(),
 			fs_rules:	bind_rules,
-			logger:		log_tx,
-			stop:		stop_tx,
+			logger:		log_tx.clone(),
+			stop:		stop_obj.clone(),
 			envs:		envs_tx,
+			cancen_token:	cancel_token.clone(),
 			sandbox_home:	{
 				let mut state_dir = xdg_dirs.data_home.to_path_buf();
 				state_dir.push(&config.metadata.state_directory);
@@ -547,21 +520,69 @@ async fn run(
 			}
 		};
 		use spawn::Start;
-		spawn_struct.start(&dbus_conn)
+		spawn_struct
+			.start(&dbus_conn)
+			.await
+			.map_err(StartError::SpawnSandboxError)
+			?;
+		cancel_token
+	};
+
+	tokio::select! {
+		_	=	bus_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested: D-Bus controller"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
+		/*
+			This is problematic. Should the first invocation be finished and
+				other instances remaining, this will cause them to be killed too
+		*/
+		// _	=	subsystem_cancel.cancelled()	=> {
+		// 	#[cfg(debug_assertions)]
+		// 	log_tx.send(
+		// 		logger::LogMessage {
+		// 			level:		logger::LogLevel::Debug,
+		// 			message:	format!("Quit requested: Console stream ended"),
+		// 		}
+		// 	)
+		// 		.await
+		// 		.map_err(StartError::LogError)
+		// 		?;
+		// }
+		_	=	proxy_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested: D-Bus died"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
+		_	=	spawn_cancel.cancelled()	=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested: sandbox finished"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
 	}
-		.await
-		.map_err(StartError::SpawnSandboxError)
-		?;
-
-	/*
-		Stop, or termination is handled by stop_worker, we sleep forever here to prevent bus being dropped
-		TODO: remove this after implementing spawner
-	*/
-	std::future::pending::<()>().await;
-
-
-	// stop_worker
-	// 	.await
-	// 	.map_err(StartError::StopWaitError)?;
 	Ok(())
 }

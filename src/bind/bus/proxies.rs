@@ -6,11 +6,13 @@ mod at_spi;
 	Start the D-Bus session bus and a11y bus proxies.
 
 	Failures to the a11y bus are not critical.
+
+	The session_cancel token is used to signal session bus proxy has exited.
 */
 pub async fn start_proxies(
 	logger:		crate::logger::LogSender,
 	config:		std::sync::Arc<crate::config::config_definition::Config>,
-	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	session_cancel:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	bus_conn:	zbus::Connection,
 
@@ -43,7 +45,7 @@ pub async fn start_proxies(
 		let proxy = session::SessionProxy {
 			logger:		logger.clone(),
 			config:		config.clone(),
-			stop_token:	Some(stop_tx.clone()),
+			cancel_token:	session_cancel,
 			portable_dir:	portable_dir.clone(),
 
 			#[cfg(feature = "flatpak")]
