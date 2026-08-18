@@ -54,6 +54,13 @@ pub struct InitInfo {
 
 	pub cancen_token:	tokio_util::sync::CancellationToken,
 	pub stop:		std::sync::Arc<crate::stop::Stop>,
+
+	/**
+		Whether or not the current invocation is connected to a terminal
+
+		Avoids I/O error
+	*/
+	pub console:		bool,
 }
 
 impl InitInfo {
@@ -89,6 +96,7 @@ impl InitInfo {
 		&Vec<String>,
 		u32,
 		u32,
+		bool,
 	) {
 		(
 			self.extra_files.clone(),
@@ -100,6 +108,7 @@ impl InitInfo {
 			&self.target_args,
 			self.uclamp_min,
 			self.uclamp_max,
+			self.console,
 		)
 	}
 
