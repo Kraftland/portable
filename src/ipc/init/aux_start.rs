@@ -21,8 +21,7 @@ pub async fn start(
 	config:		std::sync::Arc<crate::config::Config>,
 	bus:		&zbus::Connection,
 	logger:		crate::logger::LogSender,
-	stop_func:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
-	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	stop:		std::sync::Arc<crate::stop::Stop>,
 ) -> Result<(), AuxStartError> {
 	let args = {
 		if runtime_opts.debug_shell {
@@ -77,9 +76,11 @@ pub async fn start(
 	let _ = logger.send(
 		crate::logger::LogMessage {
 			level:		crate::logger::LogLevel::Debug,
-			message: format!("Forawrding variables: {env_var:#?}"),
+			message: format!("Forwarding variables: {env_var:#?}"),
 		}
 	).await;
+
+	let cancel_token = tokio_util::sync::CancellationToken::new();
 
 	proxy.request_start(
 		true,
@@ -88,7 +89,7 @@ pub async fn start(
 		args,
 		forward_map,
 		env_var,
-		crate::spawn::stream::setup(logger, stop_func, stop_tx)
+		crate::spawn::stream::setup(logger, cancel_token.clone(), stop)
 			.await
 			.map_err(AuxStartError::ConsoleError)
 			?
@@ -96,6 +97,13 @@ pub async fn start(
 	)
 		.await
 		.map_err(AuxStartError::RemoteError)
+		?;
+
+	tokio::select! {
+		_	=	cancel_token.cancelled()	=> {}
+	};
+
+	Ok(())
 
 }
 
