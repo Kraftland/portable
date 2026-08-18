@@ -68,7 +68,7 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 
 						stop.cancelled().await;
 
-						proxy.stop("control-group".to_string())
+						proxy.stop("replace".to_string())
 							.await
 							.map_err(crate::stop::StopError::BusError)
 							?;
