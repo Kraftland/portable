@@ -165,6 +165,11 @@ async fn listen_context(
 		.map_err(SecurityContextError::IOError)
 		?;
 
+	wayland_conn
+		.blocking_roundtrip()
+		.map_err(SecurityContextError::SetBlockingRoundtripErr)
+		?;
+
 	// Hold the fd until sandbox exits
 	tokio::spawn(async move {
 		let _fd = close_fd_hold;
