@@ -83,15 +83,7 @@ pub async fn setup(
 			output_thread.abort();
 			input_thread.abort();
 
-			match stop_tx.send(
-				crate::stop::StopLevel::Normal,
-			).await {
-				Ok(_)	=> {}
-				Err(e)	=> {
-					eprintln!("Failed sending stop signal: {e:#?}");
-					// panic!("{e:#?}")
-				}
-			};
+			cancel_token.cancel();
 		}
 	);
 	Ok(pty.slave)
