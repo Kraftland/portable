@@ -46,7 +46,7 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 			.map_err(Error::CreateError)?;
 		let path_clone = self.appid_path.to_path_buf();
 
-		let pre_cancel = stop.pre_cancel.clone();
+		let pre_cancel = stop.pre_parent.child_token();
 
 		stop.stop_funcs.send(
 			crate::stop::StopMessage::Prepare {
@@ -71,7 +71,7 @@ impl super::RuntimePathsTrait for FlatpakRuntime {
 			.await
 			.map_err(Error::CreateError)?;
 		let path_clone = self.instance_path.to_path_buf();
-		let pre_cancel = stop.pre_cancel.clone();
+		let pre_cancel = stop.pre_parent.child_token();
 		stop.stop_funcs.send(
 			crate::stop::StopMessage::Prepare {
 				task:	tokio::spawn(

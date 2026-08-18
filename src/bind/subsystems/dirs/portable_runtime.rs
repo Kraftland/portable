@@ -30,13 +30,16 @@ impl super::RuntimePathsTrait for PortableRuntime {
 			.map_err(Error::CreateError)?;
 
 		let remove_path = self.path.to_path_buf();
-		let cancel_token = stop.pre_cancel.clone();
+		let cancel_token = stop.pre_parent.child_token();
 
 		stop.stop_funcs.send(
 			crate::stop::StopMessage::Prepare {
 				task:	tokio::spawn(
 					async move {
 						cancel_token.cancelled().await;
+
+						#[cfg(debug_assertions)]
+						println!("Firing after cancel_token...");
 
 						tokio::fs::remove_dir_all(
 							remove_path

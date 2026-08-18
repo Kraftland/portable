@@ -75,7 +75,7 @@ pub async fn install_desktop_file(
 	};
 
 	{
-		let token = stop.pre_cancel.clone();
+		let token = stop.pre_parent.child_token();
 
 		let res = stop.stop_funcs.send(
 			crate::stop::StopMessage::Prepare {

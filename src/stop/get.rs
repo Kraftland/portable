@@ -13,7 +13,7 @@
 */
 
 pub struct Stop {
-	pub pre_cancel:		tokio_util::sync::CancellationToken,
+	pub pre_parent:		tokio_util::sync::CancellationToken,
 	pub post_cancel:	tokio_util::sync::CancellationToken,
 
 	pub stop_funcs:		tokio::sync::mpsc::UnboundedSender<StopMessage>,
@@ -53,7 +53,7 @@ impl Stop {
 		(
 			std::sync::Arc::new(
 				Self {
-					pre_cancel:	tokio_util::sync::CancellationToken::new(),
+					pre_parent:	tokio_util::sync::CancellationToken::new(),
 					post_cancel:	tokio_util::sync::CancellationToken::new(),
 					stop_funcs:	tx,
 				}

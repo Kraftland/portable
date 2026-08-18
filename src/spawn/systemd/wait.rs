@@ -5,7 +5,6 @@
 pub async fn wait(
 	conn:		&zbus::Connection,
 	escaped_name:	super::escape::UnitName,
-	logger:		crate::logger::LogSender,
 	cancel_token:	tokio_util::sync::CancellationToken,
 ) -> Result<(), zbus::Error> {
 	let proxy = ManagerProxyProxy::new(&conn)
@@ -14,12 +13,12 @@ pub async fn wait(
 
 	tokio::spawn(
 		async move {
-			while let Ok(message) = proxy.receive_job_removed_with_args(
+			while let Ok(_message) = proxy.receive_job_removed_with_args(
 				&vec![(2, escaped_name.as_str())]
 			).await {
 				break;
 			}
-			cancel_token.cancel();
+			//cancel_token.cancel();
 		}
 	);
 

@@ -84,8 +84,8 @@ async fn main() {
 		log_tx
 	};
 
-	match run(log_tx.clone(), stop_object.clone()).await {
-		Ok(_)	=> {}
+	let success = match run(log_tx.clone(), stop_object.clone()).await {
+		Ok(_)	=> {true}
 		Err(e)	=> {
 			log_tx.send(
 				logger::LogMessage {
@@ -93,16 +93,16 @@ async fn main() {
 					message: format!("{e:#?}"),
 				},
 			).await.unwrap();
+			false
 		}
 	};
 
 	stop::worker::stop(
 		stop_drainer,
-		stop_object.pre_cancel.clone(),
+		stop_object.pre_parent.clone(),
 		stop_object.post_cancel.clone(),
+		success,
 	).await;
-
-
 }
 
 async fn run(

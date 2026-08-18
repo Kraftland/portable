@@ -218,11 +218,12 @@ async fn raw_mode(
 		.map_err(StreamError::RawError)
 		?;
 
-	let cancel_token = stop.pre_cancel.clone();
+	let cancel_token = stop.pre_parent.child_token();
 
 	stop.stop_funcs.send(
 		crate::stop::StopMessage::Prepare {
-			task:	tokio::task::spawn_local(
+			task:	tokio::spawn(
+
 				async move {
 					cancel_token.cancelled().await;
 
@@ -232,6 +233,7 @@ async fn raw_mode(
 						&termios_clone,
 					).map_err(crate::stop::StopError::RestoreConsoleError)
 				},
+
 			),
 		}
 	)

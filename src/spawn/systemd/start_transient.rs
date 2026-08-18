@@ -42,7 +42,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 		super::wait::wait(
 			&dbus_conn,
 			escaped_unit_name,
-			spawn.logger.clone(),
 			spawn.cancen_token.clone(),
 		)
 			.await

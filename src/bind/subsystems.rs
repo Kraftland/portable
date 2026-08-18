@@ -9,7 +9,7 @@
 
 	The Init info struct is returned along with bind rules.
 
-	Also, there is a cancel_token used to signal session bus exit, or bus-requested exit.
+	Also, there is a cancel_token used to signal console stream complete, or bus-requested exit.
 */
 pub trait GenerateBind {
 	fn bind(self) -> impl std::future::Future<Output = Result<super::types::BindRules, Self::BindError>> + Send;
