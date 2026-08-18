@@ -14,6 +14,9 @@ pub enum StartAppError {
 
 	#[error("Could not start app: systemd error: {0:#?}")]
 	SystemdStartError(zbus::Error),
+
+	#[error("Could not wait for job removal: {0:#?}")]
+	SubscribeRemoveError(zbus::Error),
 }
 
 
@@ -36,6 +39,15 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 		).await;
 
 		let escaped_unit_name = super::escape::unit_name(&unit_name.name);
+		super::wait::wait(
+			&dbus_conn,
+			escaped_unit_name,
+			spawn.logger.clone(),
+			spawn.cancen_token.clone(),
+		)
+			.await
+			.map_err(StartAppError::SubscribeRemoveError)
+			?;
 
 		let properties = generate_properties(
 			spawn.clone(),
@@ -62,11 +74,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 			.await
 			.map_err(StartAppError::SystemdStartError)
 			?;
-
-
-
-
-
 		Ok(())
 	}
 }
