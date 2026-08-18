@@ -5,20 +5,44 @@
 
 	The local console is set to RAW mode, restoration is handled by logging thread though.
 
-	After which, streaming happens on different threads, until the console is exhausted
-		and stop channel get a value sent.
+	After which, streaming happens on different threads.
+
+	The cancel token is used to signal that console streaming is complete
 */
 pub async fn setup(
 	logger:		crate::logger::LogSender,
-	stop_func:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
-	stop_tx:	tokio::sync::mpsc::Sender<crate::stop::StopLevel>,
+	cancel_token:	tokio_util::sync::CancellationToken,
+	stop_obj:	std::sync::Arc<crate::stop::Stop>,
 ) -> Result<std::os::fd::OwnedFd, StreamError> {
 	let pty = crate::spawn::console::PtyPair::new()
 		.map_err(StreamError::PtyAllocError)
 		?;
 
-	match raw_mode(stop_func).await {
-		Ok(_)	=> {}
+	#[cfg(debug_assertions)]
+	{
+		use std::os::fd::AsRawFd;
+		let _ = logger.send(
+		crate::logger::LogMessage {
+			level: crate::logger::LogLevel::Debug,
+			message: format!(
+				"Allocated pty master (fd:{0:?}) and slave (fd:{1:?})",
+					pty.master.as_raw_fd(),
+					pty.slave.as_raw_fd(),
+				),
+			}
+		).await;
+	};
+
+	match raw_mode(stop_obj).await {
+		Ok(_)	=> {
+			#[cfg(debug_assertions)]
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Debug,
+					message: format!("Successfully set console to raw mode"),
+				}
+			).await;
+		}
 		Err(e)	=> {
 			let _ = logger.send(
 				crate::logger::LogMessage {
@@ -38,29 +62,35 @@ pub async fn setup(
 	};
 
 	// Output thread
-	let output_thread = tokio::spawn(stream_out(reader));
+	let mut output_thread = tokio::spawn(stream_out(reader));
 
 	// Input thread
-	let input_thread = tokio::spawn(stream_in(writer));
+	let mut input_thread = tokio::spawn(stream_in(writer));
 
 	tokio::spawn(
 		async move {
 			tokio::select! {
-				_out	= output_thread		=> {
+				out	= &mut output_thread		=> {
 					#[cfg(debug_assertions)]
-					println!("Output thread stopped");
+					println!("Output thread stopped: {out:#?}");
 				}
-				_input	= input_thread		=> {
+				input	= &mut input_thread		=> {
 					#[cfg(debug_assertions)]
-					println!("Input thread stopped");
+					println!("Input thread stopped: {input:#?}");
 				}
 			}
+
+			output_thread.abort();
+			input_thread.abort();
 
 			match stop_tx.send(
 				crate::stop::StopLevel::Normal,
 			).await {
 				Ok(_)	=> {}
-				Err(e)	=> {eprintln!("Failed sending stop signal: {e:#?}")}
+				Err(e)	=> {
+					eprintln!("Failed sending stop signal: {e:#?}");
+					// panic!("{e:#?}")
+				}
 			};
 		}
 	);
@@ -97,7 +127,6 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	let mut tokio_file = tokio::fs::File::from_std(file);
 	use tokio::io::AsyncWriteExt;
 	use tokio::io::AsyncReadExt;
-
 
 	loop {
 		let signal = tokio::select! {
@@ -155,14 +184,14 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 }
 
 async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
-	let mut buffer = [0u8; 1024];
+	let mut buffer = [0u8; 4096];
 	let mut stdout = std::io::stdout();
 	let mut tokio_file = tokio::fs::File::from_std(file);
 	use tokio::io::AsyncReadExt;
 	use std::io::{Write};
 	loop {
 		match tokio_file.read(&mut buffer).await {
-			Ok(0)	=> {return Ok(())}
+			Ok(0)	=> {break;}
 			Ok(v)	=> {
 				stdout.write(&buffer[..v])
 					.map_err(StreamError::ConsoleIOError)
@@ -176,30 +205,42 @@ async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
 				return Err(StreamError::ConsoleIOError(e));
 			}
 		}
-	}
+	};
+
+	Ok(())
 }
 
 async fn raw_mode(
-	stop_func:	tokio::sync::mpsc::Sender<crate::stop::StopFunc>,
+	stop:	std::sync::Arc<crate::stop::Stop>,
 ) -> Result<(), StreamError> {
 	let stdin = std::io::stdin();
 	let mut termios = nix::sys::termios::tcgetattr(&stdin)
 		.map_err(StreamError::ObtainTermiosError)
 		?;
+
+	let termios_clone = termios.clone();
+
 	nix::sys::termios::cfmakeraw(&mut termios);
 
-	nix::sys::termios::tcsetattr(stdin, nix::sys::termios::SetArg::TCSANOW, &termios)
+	nix::sys::termios::tcsetattr(&stdin, nix::sys::termios::SetArg::TCSANOW, &termios)
 		.map_err(StreamError::RawError)
 		?;
 
-	stop_func.send(
-		crate::stop::StopFunc {
-			layer: crate::stop::FunctionLayer::Pre,
-			function: Box::new(|| {}),
+	stop.stop_funcs.send(
+		crate::stop::StopMessage::Prepare {
+			task:	tokio::task::spawn_local(
+				async move {
+					nix::sys::termios::tcsetattr(
+						stdin,
+						nix::sys::termios::SetArg::TCSANOW,
+						&termios_clone,
+					).map_err(crate::stop::StopError::RestoreConsoleError)
+				},
+			),
 		}
-	)
-		.await
-		.map_err(StreamError::GuardError)
+	);
+
+	Ok(())
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -224,7 +265,4 @@ pub enum StreamError {
 
 	#[error("Error putting console into RAW mode: {0:#?}")]
 	RawError(nix::Error),
-
-	#[error("Error setting console guard: {0:#?}")]
-	GuardError(tokio::sync::mpsc::error::SendError<crate::stop::StopFunc>),
 }
