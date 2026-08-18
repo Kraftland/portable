@@ -32,7 +32,11 @@ pub async fn generate_bindrules(
 
 	dbus_conn:		zbus::Connection,
 )
--> Result<(super::types::BindRules, crate::ipc::init::info::InitInfo), BindError> {
+-> Result<(
+	super::types::BindRules,
+	crate::ipc::init::info::InitInfo,
+	tokio_util::sync::CancellationToken,
+), BindError> {
 
 	let cancel_token = tokio_util::sync::CancellationToken::new();
 
@@ -355,7 +359,7 @@ pub async fn generate_bindrules(
 		uclamp_max:		config.system.uclamp_max,
 	};
 
-	Ok((ret, init_info))
+	Ok((ret, init_info, cancel_token))
 }
 
 #[derive(thiserror::Error, Debug)]

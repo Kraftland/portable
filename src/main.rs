@@ -465,14 +465,13 @@ async fn run(
 		)
 	);
 
-	let (mut bind_rules, init_info) = bind::subsystems::generate_bindrules(
+	let (mut bind_rules, init_info, subsystem_cancel) = bind::subsystems::generate_bindrules(
 		portable_runtime,
 		document,
 		xdg_dirs.clone(),
 		config.clone(),
 		log_tx.clone(),
-		stop_tx.clone(),
-		stop_func,
+		stop_obj.clone(),
 		envs_tx.clone(),
 		instance_id.to_string(),
 		flatpak_info.clone(),
@@ -532,6 +531,17 @@ async fn run(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
 					message:	format!("Quit requested from D-Bus"),
+				}
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+		_	=	subsystem_cancel.cancelled()	=> {
+			log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Debug,
+					message:	format!("Quit requested from Console stream"),
 				}
 			)
 				.await
