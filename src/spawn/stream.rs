@@ -224,7 +224,7 @@ async fn raw_mode(
 		crate::stop::StopMessage::Prepare {
 			task:	tokio::task::spawn_local(
 				async move {
-					cancel_token.cancelled();
+					cancel_token.cancelled().await;
 
 					nix::sys::termios::tcsetattr(
 						stdin,
@@ -234,9 +234,8 @@ async fn raw_mode(
 				},
 			),
 		}
-	);
-
-	Ok(())
+	)
+		.map_err(StreamError::StopError)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -261,4 +260,7 @@ pub enum StreamError {
 
 	#[error("Error putting console into RAW mode: {0:#?}")]
 	RawError(nix::Error),
+
+	#[error("Could not contact stop worker: {0:#?}")]
+	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopMessage>),
 }
