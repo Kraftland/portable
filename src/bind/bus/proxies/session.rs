@@ -334,6 +334,15 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.FileManager1.*".into(),
 			object_path: "/org/freedesktop/FileManager1".into(),
 		},
+
+		// Background Portal. We only allow SetStatus due to the dangerous nature of autostart
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.Background.SetStatus".into(),
+			object_path: "/org/freedesktop/portal/desktop".into(),
+		},
 	];
 
 	// MPRIS default names
