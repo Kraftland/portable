@@ -2,6 +2,7 @@ mod passwd;
 mod nsswitch;
 mod kvm;
 mod resolv;
+mod bin;
 
 /**
 	The system bind subsystem
@@ -56,6 +57,10 @@ async fn bind(
 
 	let kvm_spawn = tokio::spawn(
 		kvm::mount_kvm(config.system.device_allow.clone())
+	);
+
+	let bin_spawn = tokio::spawn(
+		bin::bind(config.clone())
 	);
 
 	let resolv_spawn = tokio::spawn(resolv::mount(logger.clone()));
@@ -347,28 +352,6 @@ async fn bind(
 		);
 	};
 
-	{
-		let mut overlay_source = vec![
-			std::path::PathBuf::from("/usr/bin"),
-			std::path::PathBuf::from("/usr/lib/portable/overlay-usr"),
-		];
-		if config.exec.overlay {
-			let mut path = std::path::PathBuf::from("/usr/lib/portable/info");
-			path.push(&config.metadata.sandbox_id);
-			path.push("bin");
-			overlay_source.push(
-				path
-			);
-		}
-		ret.push(
-			BindRule::Overlay {
-				sources: overlay_source,
-				dest: "/usr/bin".into(),
-				class: crate::bind::types::OverlayType::Ro,
-			}
-		);
-	};
-
 	// systemd notify socket
 	{
 		let mut notify_path = xdg.runtime.to_path_buf();
@@ -533,6 +516,15 @@ async fn bind(
 	};
 
 	ret.extend(
+		bin_spawn
+			.await
+			.map_err(SystemBindError::SpawnError)
+			?
+			.map_err(SystemBindError::BinError)
+			?
+	);
+
+	ret.extend(
 		resolv_spawn
 			.await
 			.map_err(SystemBindError::SpawnError)?
@@ -564,4 +556,7 @@ pub enum SystemBindError {
 
 	#[error("Could not mount kvm device: {0:#?}")]
 	KvmError(kvm::KvmError),
+
+	#[error("Could not mount binaries: {0:#?}")]
+	BinError(bin::BinError),
 }
