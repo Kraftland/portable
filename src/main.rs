@@ -70,6 +70,9 @@ enum StartError {
 
 	#[error("Could not wake up application via tray: {0:#?}")]
 	TrayError(ipc::init::tray::WakeError),
+
+	#[error("Could not reset app permission: {0:#?}")]
+	ResetError(pref::runtime::cmdline::ResetError),
 }
 
 #[tokio::main]
@@ -242,7 +245,29 @@ async fn run(
 			return Ok(());
 		}
 		pref::runtime::options::Action::ResetDocs			=> {
-			unimplemented!();
+
+			pref::runtime::cmdline::reset(
+				&config.metadata.sandbox_id,
+				&dbus_conn,
+			)
+				.await
+				.map_err(StartError::ResetError)
+				?;
+
+			log_tx.send(
+				logger::LogMessage {
+					level: logger::LogLevel::Info,
+					message: format!(
+						"Permission for {} ({}) has been revoked",
+						config.metadata.display_name,
+						config.metadata.sandbox_id,
+					),
+				},
+			)
+			.await
+			.map_err(StartError::LogError)
+			?;
+
 			return Ok(());
 		}
 	}

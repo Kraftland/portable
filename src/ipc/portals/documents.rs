@@ -37,7 +37,7 @@ pub async fn list(
 */
 pub async fn delete(
 	dbus_conn:	&zbus::Connection,
-	doc_ids:	Vec<&str>,
+	doc_ids:	Vec<String>,
 ) -> Result<(), DocumentError> {
 	let proxy = DocumentsPortalProxy::new(&dbus_conn)
 		.await
