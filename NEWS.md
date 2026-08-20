@@ -40,6 +40,7 @@
 - When starting the Primary and secondary instance at once, it is now much less likely to drop AuxStart message due to Init starting slow.
 - Warns about outdated version of Init
 - When starting Portable without a valid terminal, it will no longer allocate new pairs of pesudo-terminal
+- When using a supported desktop environment, Portable will display the sandbox status in _Background Apps_ area.
 
 
 # 18.0 - Lawn
