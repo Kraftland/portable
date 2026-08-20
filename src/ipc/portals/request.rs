@@ -21,7 +21,7 @@ pub type Token = String;
 pub async fn get_response(
 	bus:	&zbus::Connection,
 	sender:	&str,
-	token:	Token,
+	token:	&Token,
 ) -> zbus::Result<tokio::sync::oneshot::Receiver<zbus::Result<(PortalResponse, zbus::zvariant::OwnedValue)>>> {
 	let sender = {
 		let name = sender
