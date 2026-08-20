@@ -8,12 +8,8 @@ use std::collections::HashMap;
 */
 pub async fn forward_file(
 	expose_list:	&Vec<crate::pref::runtime::options::FileExposurePreference>,
-
-	forward_file:	bool,
-
 	dbus_conn:	&zbus::Connection,
 	app_id:		&str,
-
 	logger:		crate::logger::LogSender,
 ) -> (BindRules, HashMap<String, String>) {
 	if expose_list.len() > 0 {
@@ -89,7 +85,15 @@ pub async fn forward_file(
 
 	let mut pass_map = HashMap::new();
 
-	if path_list.len() > 0 && forward_file {
+	if path_list.len() > 0 {
+		#[cfg(debug_assertions)]
+		let _ = logger.send(
+			crate::logger::LogMessage {
+				level:		crate::logger::LogLevel::Debug,
+				message:	format!("Forwarding file via Portals: {:?}", &path_list),
+			}
+		).await;
+
 		let doc_ids = crate::ipc::portals::documents::add_full(
 			&path_list,
 			dbus_conn,
