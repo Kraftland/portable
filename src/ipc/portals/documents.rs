@@ -121,4 +121,10 @@ trait DocumentsPortal {
 		app_id:		&str,
 		permissions:	Vec<String>,
 	) -> zbus::Result<(Vec<String>, std::collections::HashMap<String, zbus::zvariant::OwnedValue>)>;
+
+	#[zbus(name = "List")]
+	async fn list(
+		&self,
+		app_id:		&str,
+	) -> zbus::Result<std::collections::HashMap<String, Vec<u8>>>;
 }
