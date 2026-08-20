@@ -86,6 +86,7 @@ pub async fn logger (
 
 	loop {
 		let msg = tokio::select! {
+			biased;
 			log_msg = log_rx.recv()			=> {
 				match log_msg {
 					Some(v)	=> v,
