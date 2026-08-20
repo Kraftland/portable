@@ -133,9 +133,19 @@ pub async fn add_full(
 
 	let mut ret = vec![];
 
-	for doc in doc_ids {
+	for (doc, original) in doc_ids.iter().zip(paths) {
 		let mut path = std::path::PathBuf::from(&prefix);
 		path.push(doc.trim_end_matches('\0'));
+
+		{
+			match original.file_name() {
+				Some(v)	=> {
+					path.push(v);
+				}
+				None	=> {}
+			};
+		};
+
 		ret.push(path);
 	};
 
