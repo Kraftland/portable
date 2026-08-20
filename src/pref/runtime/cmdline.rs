@@ -1,6 +1,9 @@
 mod bw_bind_par;
 mod args;
 pub mod share_file;
+mod permission_reset;
+
+pub use permission_reset::{reset, ResetError};
 
 /**
 	Parse the command line collection, it also handles some legacy environment variables.

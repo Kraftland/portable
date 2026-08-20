@@ -90,7 +90,8 @@ pub async fn parse(logger: crate::logger::LogSender)
 								=> {
 				start_mode = Action::OpenHome
 			}
-			"reset-document" | "reset-documents" | "--reset-document"
+			"reset-document" | "reset-documents" | "--reset-document" |
+			"--revoke-permission" | "--revoke-permissions"
 								=> {
 				start_mode = Action::ResetDocs
 			}
