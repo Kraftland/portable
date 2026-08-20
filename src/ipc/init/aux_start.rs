@@ -85,7 +85,6 @@ pub async fn start(
 	let (_expose_rules, forward_map) = {
 		user::forward_file(
 			&runtime_opts.file_expose,
-			runtime_opts.bus_activation,
 			&bus,
 			&config.metadata.sandbox_id,
 			logger.clone(),

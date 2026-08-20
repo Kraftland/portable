@@ -194,7 +194,6 @@ pub async fn generate_bindrules(
 	let (expose_rules, forward_map) = {
 		user::forward_file(
 			&runtime_opts.file_expose,
-			runtime_opts.bus_activation,
 			&dbus_conn,
 			&config.metadata.sandbox_id,
 			logger.clone(),
