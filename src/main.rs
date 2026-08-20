@@ -73,6 +73,9 @@ enum StartError {
 
 	#[error("Could not reset app permission: {0:#?}")]
 	ResetError(pref::runtime::cmdline::ResetError),
+
+	#[error("Could not open sandbox home: {0:#?}")]
+	OpenHomeError(zbus::Error),
 }
 
 #[tokio::main]
@@ -241,7 +244,14 @@ async fn run(
 			return Ok(());
 		}
 		pref::runtime::options::Action::OpenHome			=> {
-			unimplemented!();
+			pref::runtime::cmdline::open_home::open(
+				xdg_dirs,
+				&config.metadata.state_directory,
+				&dbus_conn,
+			)
+				.await
+				.map_err(StartError::OpenHomeError)
+				?;
 			return Ok(());
 		}
 		pref::runtime::options::Action::ResetDocs			=> {

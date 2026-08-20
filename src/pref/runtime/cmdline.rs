@@ -2,6 +2,7 @@ mod bw_bind_par;
 mod args;
 pub mod share_file;
 mod permission_reset;
+pub mod open_home;
 
 pub use permission_reset::{reset, ResetError};
 
