@@ -31,6 +31,31 @@ pub async fn list(
 }
 
 /**
+	Delete files in the document Store.
+
+	The file itself is not deleted.
+*/
+pub async fn delete(
+	dbus_conn:	&zbus::Connection,
+	doc_ids:	Vec<&str>,
+) -> Result<(), DocumentError> {
+	let proxy = DocumentsPortalProxy::new(&dbus_conn)
+		.await
+		.map_err(DocumentError::ProxyError)
+		?;
+
+	for file in doc_ids {
+		proxy
+			.delete(&file)
+			.await
+			.map_err(DocumentError::DeleteError)
+			?;
+	};
+
+	Ok(())
+}
+
+/**
 	Adds every file into the document storage, returns a series of dest paths
 
 	Caller can use .zip to iterate and make a connection between original paths and new paths
@@ -143,6 +168,9 @@ pub enum DocumentError {
 
 	#[error("Path is not UTF-8: {0:#?}")]
 	PathNotUTF8(std::string::FromUtf8Error),
+
+	#[error("Error deleting a file from document storage: {0:#?}")]
+	DeleteError(zbus::Error),
 }
 
 #[zbus::proxy(
@@ -165,4 +193,10 @@ trait DocumentsPortal {
 		&self,
 		app_id:		&str,
 	) -> zbus::Result<std::collections::HashMap<String, Vec<u8>>>;
+
+	#[zbus(name = "Delete")]
+	async fn delete(
+		&self,
+		doc_id:		&str,
+	) -> zbus::Result<()>;
 }
