@@ -1,5 +1,11 @@
 #[derive(Debug, thiserror::Error)]
-pub enum BinError {}
+pub enum BinError {
+	#[error("Error detecting overlay: {0:#?}")]
+	ExistError(std::io::Error),
+
+	#[error("Missing overlay")]
+	OverlayMissing,
+}
 
 pub async fn bind(conf: std::sync::Arc<crate::config::Config>)
 -> Result<crate::bind::types::BindRules, BinError> {
@@ -16,6 +22,13 @@ pub async fn bind(conf: std::sync::Arc<crate::config::Config>)
 		let mut path = std::path::PathBuf::from("/usr/lib/portable/info");
 		path.push(&conf.metadata.sandbox_id);
 		path.push("bin");
+
+		if ! path.try_exists().map_err(BinError::ExistError)? {
+			return Err(
+				BinError::OverlayMissing
+			);
+		}
+
 		overlay_source.push(
 			path
 		);
