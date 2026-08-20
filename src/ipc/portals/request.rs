@@ -10,4 +10,6 @@ trait Requests {
 		name	= "Response",
 	)]
 	async fn response(&self)	-> zbus::Result<(u32, zbus::zvariant::OwnedValue)>;
+
+	async fn close(&self)		-> zbus::Result<()>;
 }
