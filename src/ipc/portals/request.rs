@@ -58,7 +58,8 @@ pub async fn get_response(
 					Err(e)	=> {
 						tx.send(
 							Err(e)
-						);
+						)
+							.expect("Could not send result back");
 						return;
 					}
 				};
@@ -72,7 +73,8 @@ pub async fn get_response(
 					None	=> {
 						tx.send(
 							Err(zbus::Error::Failure("Empty stream".to_string()))
-						);
+						)
+							.expect("Could not send result back");
 						return;
 					}
 				};
@@ -82,7 +84,8 @@ pub async fn get_response(
 					Err(e)	=> {
 						tx.send(
 							Err(zbus::Error::Failure(format!("{e:#?}")))
-						);
+						)
+							.expect("Could not send result back");
 						return;
 					}
 				};
@@ -109,11 +112,13 @@ pub async fn get_response(
 							args.value,
 						)
 					)
-				);
+				)
+					.expect("Could not send result back");
 
 				proxy
 					.close()
-					.await;
+					.await
+					.expect("Could not close request object");
 			}
 		)
 
