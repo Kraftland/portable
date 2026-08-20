@@ -1,4 +1,36 @@
 /**
+	List the document storage of a specific application
+
+	Returns a hash map of document IDs and PathBuf, paired in order.
+*/
+pub async fn list(
+	dbus_conn:	&zbus::Connection,
+	app_id:		&str,
+) -> Result<std::collections::HashMap<String, std::path::PathBuf>, DocumentError> {
+	let proxy = DocumentsPortalProxy::new(&dbus_conn)
+		.await
+		.map_err(DocumentError::ProxyError)
+		?;
+
+	let documents = proxy
+		.list(app_id)
+		.await
+		.map_err(DocumentError::ListError)
+		?;
+
+	let mut map = std::collections::HashMap::with_capacity(documents.len());
+
+	for (k, v) in documents {
+		let path_string = String::try_from(v)
+			.map_err(DocumentError::PathNotUTF8)
+			?;
+		map.insert(k, std::path::PathBuf::from(path_string.trim_end_matches("\0")));
+	};
+
+	Ok(map)
+}
+
+/**
 	Adds every file into the document storage, returns a series of dest paths
 
 	Caller can use .zip to iterate and make a connection between original paths and new paths
@@ -105,6 +137,12 @@ pub enum DocumentError {
 
 	#[error("Type of mountpoint is not UTF-8: {0:#?}")]
 	MountNotUTF8(std::string::FromUtf8Error),
+
+	#[error("List error: {0:#?}")]
+	ListError(zbus::Error),
+
+	#[error("Path is not UTF-8: {0:#?}")]
+	PathNotUTF8(std::string::FromUtf8Error),
 }
 
 #[zbus::proxy(
