@@ -25,7 +25,7 @@ arguments = ["gtk4-demo", "--run=video_player"]
 overlay = false
 
 # D-Bus activation works by installing a service under /usr/share/dbus-1/services. It is used by UnifiedPush to process notifications without showing a window. You should modify the activation cmdline to call portable with "--dbus-activation" or use packer.
-[busActivation]
+[dbus_activation]
 # Whether or not to enable D-Bus activation. Defaults to false.
 enable = false
 
