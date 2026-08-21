@@ -42,12 +42,7 @@ pub struct Metadata {
 	pub display_name:	String,
 	#[serde(alias = "stateDirectory")]
 	pub state_directory:	String,
-
-	#[serde(default = "default_config_version")]
-	pub config_version:	usize,
 }
-
-fn default_config_version () -> usize {0}
 
 #[derive(Debug, Deserialize)]
 pub struct Exec {
