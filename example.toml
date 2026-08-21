@@ -40,34 +40,34 @@ target = "gtk4-demo"
 # arguments is the same as exec.arguments.
 arguments = ["--gapplication-service"]
 
-# The processes section defines how Portable tracks tasks.
-[processes]
-# Allows the app to run in the background. Use with caution because broken implementations may terminate the app even if it's in foreground.
-background = true
-
-# The system section controls general permission.
+# The system section controls general system-level permission.
 [system]
-# Whether or not an application can call Inhibit Portal to prevent automatic suspend. Defaults to false.
-inhibitSuspend = false
+# Whether or not an application can call Inhibit Portal to prevent suspend, log out or more.
+# Defaults to false.
+# Previously inhibitSuspend.
+allow_inhibit = false
 
 # Inhibit suspend and idle on behalf of applications. Requires system.inhibitSuspend being true
-inhibitOnBehalf = false
+# Previously inhibitOnBehalf.
+conduct_inhibit = false
 
+# An unsigned integer ranging from 0 to 100.
 # Specifies the "max" value of cgroup's cpu.uclamp property. This influences
-# 	frequency selection of schedutil and Energy / Capacity Aware scheduling.
+# 	frequency selection of schedutil and Energy / Capacity Aware scheduling on Heterogeneous CPUs.
 # Lower value yields more energy efficiency, while higher trades efficiency
 # 	for performance.
 # Defaults to 100, i.e. unlimited.
-uclamp = ""
+# Previously uclamp.
+uclamp_max = 100
 
 # A TOML slice that accepts string values.
 # Current possible values are: (dgpu, input, camera, kvm).
 #------------------------------------------------------------------------------#
-## dgpu (or gamemode): Expose all GPUs and prefer discrete graphics card.
+## dgpu (previously gamemode): Expose all GPUs and prefer discrete graphics card.
 ## By default,
-## 	Portable blocks any GPU except the integrated one
+## 	Portable blocks any GPU except the boot display
 ## 	to improve user experience and power consumption on hybrid systems.
-## This is not available when Power Profile is set to Power Saver.
+## This is now available even when Power Profile is set to Power Saver.
 #------------------------------------------------------------------------------#
 ## kvm: Enables access to the Kernel-based Virtual Machine (/dev/kvm), if any.
 #------------------------------------------------------------------------------#
@@ -78,10 +78,11 @@ uclamp = ""
 ## input: Allows applications to receive Input events.
 ## In addition, the kernel uinput device is made available for Steam Input.
 ## It is intended for Games to make use of Controllers,
-## 	but said permission might introduce input snooping if the device node
+## 	but said permission might introduce input snooping if file permissions
 ## 	for keyboards and mouses are messed up.
 #------------------------------------------------------------------------------#
-deviceAllow = []
+# Previously deviceAllow
+device_allow = []
 
 # The network section defines behaviour of Portable's network firewall. Requires netsock for filtering.
 [network]
