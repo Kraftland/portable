@@ -7,28 +7,10 @@
 #[derive(Debug)]
 pub enum BusAccessLevel {
 	/**
-		The name/ID is visible in the ListNames, ListActivatableNames etc.'s reply
-		The name's info, such as PID can be retrived
-	*/
-	See {
-		bus_name:	BusName,
-	},
-
-	/**
 		Allow the sandboxed app to take ownership of said bus name.
 		Very dangerous as it allows app to impersonate other services.
 	*/
 	OwnName {
-		bus_name:	BusName,
-	},
-
-	/**
-		The second most dangerous and open access type.
-		It allows the sandboxed application to talk with an outside service unfiltered.
-
-		Internally maps to xdg-dbus-proxy's TALK policy to prevent acquiring names
-	*/
-	WellknownName {
 		bus_name:	BusName,
 	},
 
@@ -94,11 +76,6 @@ impl ToCmdline for Vec<BusAccessLevel> {
 impl ToString for BusAccessLevel {
 	fn to_string(&self)	-> String {
 		match self {
-			BusAccessLevel::See { bus_name }	=> {
-				let mut cmdline = String::from("--see=");
-				cmdline.push_str(&bus_name.to_string());
-				cmdline
-			}
 			BusAccessLevel::Call { bus_name, method, object_path }
 								=> {
 				let mut cmdline = String::from("--call=");
@@ -122,12 +99,6 @@ impl ToString for BusAccessLevel {
 				cmdline.push_str(&method);
 				cmdline.push_str("@");
 				cmdline.push_str(&object_path);
-				cmdline
-			}
-			BusAccessLevel::WellknownName { bus_name }
-								=> {
-				let mut cmdline = String::from("--talk=");
-				cmdline.push_str(&bus_name.to_string());
 				cmdline
 			}
 		}

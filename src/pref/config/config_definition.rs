@@ -209,15 +209,18 @@ pub struct Privacy {
 
 	#[serde(alias = "pipeWire")]
 	pub pipewire:		bool,
+
+	pub push_notification:	bool,
 }
 
 impl Default for Privacy {
 	fn default() -> Self {
 		Self {
-			lockdown: false,
-			x11_compat: false,
-			classic_notif: false,
-			pipewire: false,
+			lockdown:		false,
+			x11_compat:		false,
+			classic_notif:		false,
+			pipewire:		false,
+			push_notification:	true,
 		}
 	}
 }
