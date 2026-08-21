@@ -186,9 +186,6 @@ pub struct Privacy {
 	#[serde(alias = "classicNotifications")]
 	pub classic_notif:	bool,
 
-	#[serde(alias = "pipeWire")]
-	pub pipewire:		bool,
-
 	pub push_notification:	bool,
 }
 
@@ -198,7 +195,6 @@ impl Default for Privacy {
 			lockdown:		false,
 			x11_compat:		false,
 			classic_notif:		false,
-			pipewire:		false,
 			push_notification:	true,
 		}
 	}
