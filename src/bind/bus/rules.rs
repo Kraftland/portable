@@ -15,16 +15,6 @@ pub enum BusAccessLevel {
 	},
 
 	/**
-		The second most dangerous and open access type.
-		It allows the sandboxed application to talk with an outside service unfiltered.
-
-		Internally maps to xdg-dbus-proxy's TALK policy to prevent acquiring names
-	*/
-	WellknownName {
-		bus_name:	BusName,
-	},
-
-	/**
 		Allow a sandboxed process to call certain methods on certain object paths
 	*/
 	Call {
@@ -109,12 +99,6 @@ impl ToString for BusAccessLevel {
 				cmdline.push_str(&method);
 				cmdline.push_str("@");
 				cmdline.push_str(&object_path);
-				cmdline
-			}
-			BusAccessLevel::WellknownName { bus_name }
-								=> {
-				let mut cmdline = String::from("--talk=");
-				cmdline.push_str(&bus_name.to_string());
 				cmdline
 			}
 		}

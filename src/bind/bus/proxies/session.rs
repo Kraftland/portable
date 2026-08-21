@@ -67,6 +67,7 @@ async fn compile_rules(
 			config.advanced.mpris_names.clone(),
 			config.privacy.classic_notif,
 			config.system.allow_inhibit,
+			config.privacy.push_notification,
 		),
 	);
 
@@ -123,6 +124,7 @@ async fn generate_bus_rules(
 	mpris_names:		Vec<String>,
 	classic_notif:		bool,
 	inhibit:		bool,
+	push_notification:	bool,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
@@ -146,15 +148,6 @@ async fn generate_bus_rules(
 					.map_err(ProxyError::InvalidBusNameError)
 					?
 			},
-		},
-
-		/*
-			TODO: We need to properly sandbox UnifiedPush distributors!
-		*/
-		BusAccessLevel::WellknownName {
-			bus_name: BusName::try_from("org.unifiedpush.Distributor.*")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
 		},
 
 		BusAccessLevel::Call {
@@ -390,6 +383,28 @@ async fn generate_bus_rules(
 			object_path: "/org/freedesktop/portal/desktop".into(),
 		},
 	];
+
+	if push_notification {
+		rules.push(
+			// UP may use different bus names, hence the wildcard here
+			BusAccessLevel::Call {
+				bus_name: BusName::try_from("org.unifiedpush.Distributor.*")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.unifiedpush.Distributor2.Register".into(),
+				object_path: "/org/unifiedpush/Distributor".into(),
+			},
+		);
+		rules.push(
+			BusAccessLevel::Call {
+				bus_name: BusName::try_from("org.unifiedpush.Distributor.*")
+					.map_err(ProxyError::InvalidBusNameError)
+					?,
+				method: "org.unifiedpush.Distributor2.Unregister".into(),
+				object_path: "/org/unifiedpush/Distributor".into(),
+			},
+		);
+	}
 
 	// MPRIS default names
 	{
