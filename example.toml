@@ -81,40 +81,34 @@ uclamp_max = 100
 ## 	but said permission might introduce input snooping if file permissions
 ## 	for keyboards and mouses are messed up.
 #------------------------------------------------------------------------------#
-# Previously deviceAllow
+# Previously deviceAllow.
 device_allow = []
 
-# The network section defines behaviour of Portable's network firewall. Requires netsock for filtering.
+# The network section defines behaviour of Portable's network firewall.
 [network]
 # Whether or not an application can use network interfaces. Defaults to true.
 enable = true
 
-# Whether or not to enable filtering on network packets. Defaults to false.
-filter = false
-
-# Destinations to deny. Only effective if netsock is running and listening on /run/netsock/control.sock. IP literals are resolved directly, while strings are mapped to IP addresses by the system resolver. A special string of "private" means private IPs. Note that :53 is allowed regardless to avoid breaking DNS. Defaults to none, meaning sandbox can connect to whatever address.
-filterDest = ["private"]
-
-# The privacy section defines several device exposure preference. By default, Portable does not allow apps to see physical devices. This includes discrete GPUs when gameMode is off, input devices, cameras, and all other PCI devices.
+# The privacy section defines several security and privacy preference.
 [privacy]
 # Lockdown is a set of rules
 # 	that aims to reduce the attack surface within a sandbox.
 # It enables many additional protections, including:
 # 	landlock as another layer of filesystem security,
 # 	blocks reparent of /, effectively prevents manipulation of mount points
-# 	extra seccomp filters
+# 	system call filtering in whitelist rather than blacklist
 # 	blocks user namespaces
-# 	prevents non-native system calls to be made
+# 	prevents non-native system calls to be made (e.g. X86 on X86_64 systems)
 lockdown = true
 
 # When false, prevents application from connecting to X server on Wayland. Defaults to true.
-x11 = true
+# Previously x11.
+x11_compat = true
 
-# When false, prevents application from connecting to legacy notifications endpoint. Defaults to true.
-classicNotifications = true
-
-# When true, allows application to connect to PipeWire server. Note that a proxy is set up to prevent privileged actions. Defaults to false.
-pipeWire = false
+# When false, prevents application from connecting to legacy notifications endpoint.
+# Defaults to true.
+# Previously classicNotifications
+classic_notif = false
 
 # Do not use. May break apps.
 [advanced]
