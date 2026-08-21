@@ -107,17 +107,45 @@ x11_compat = true
 
 # When false, prevents application from connecting to legacy notifications endpoint.
 # Defaults to true.
-# Previously classicNotifications
+# Previously classicNotifications.
 classic_notif = false
 
-# Do not use. May break apps.
+# Advanced configurations.
+# Changing from the default may break applications or increase the attack surface.
+# It is recommended to leave these fields as-is.
 [advanced]
-zink = false
-qt5Compat = true
-mprisName = []
-trayWake = false
-kDEStatus = true
-flatpakInfo = true
+# Use the zink OpenGL to Vulkan bridge on NVIDIA graphics.
+# May be used to mitigate rendering issues, but it comes with a performance hit.
+# Previously zink.
+use_zink = false
+
+# Applies workaround for Qt applications to use the XDG Desktop Portal.
+# May break theming.
+# Previously qt5Compat.
+qt5_compat = true
+
+# New applications SHOULD NOT use this.
+# A vector of extra MPRIS bus names to allow the application to own.
+# By default, Portable allows application to own org.mpris.MediaPlayer2.sandbox_id.
+# This is the default for newer applications.
+# For legacy applications,
+# 	specifying this allows owning "org.mpris.MediaPlayer2.<name>".
+# Previously mprisName.
+mpris_names = []
+
+# Wake the application via the StatusNotifierItem (system tray).
+# Previously trayWake.
+tray_wake = false
+
+# Allow the application to register status progression on KDE Plasma.
+# Previously kDEStatus.
+allow_kde_status = true
+
+# Mount a generated Flatpak Info to create a "Flatpak environment" for the sandbox.
+# Applications may not use XDG Desktop Portal without this.
+# Previously flatpakInfo.
+flatpak_env = true
 
 # Allows debugging syscalls to be made inside the sandbox. This has the potential to be exploited.
-debugging = false
+# Previously debugging.
+allow_debug = false
