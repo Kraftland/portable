@@ -17,10 +17,6 @@ pub struct Config {
 	pub dbus_activation:	BusExec,
 
 	#[serde(default)]
-	#[serde(alias = "processes")]
-	pub process:		ProcMgmt,
-
-	#[serde(default)]
 	pub system:		SysMgmt,
 
 	#[serde(default)]
@@ -75,18 +71,6 @@ impl Default for BusExec {
 			target: String::new(),
 			arguments: vec![],
 		}
-	}
-}
-
-#[derive(Debug,  Deserialize)]
-#[serde(default)]
-pub struct ProcMgmt {
-	pub background:		bool,
-}
-
-impl Default for ProcMgmt {
-	fn default() -> Self {
-		Self { background: true }
 	}
 }
 
