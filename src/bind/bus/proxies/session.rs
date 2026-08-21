@@ -281,11 +281,48 @@ async fn generate_bus_rules(
 			object_path: "/StatusNotifierWatcher".into(),
 		},
 
-		// Documents Portal, seems well sandboxed so we just expose the full name
-		BusAccessLevel::WellknownName {
+		// Documents Portal
+		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
+			method: "org.freedesktop.portal.Documents.*".into(),
+			object_path: "/org/freedesktop/portal/documents".into(),
+		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.Documents.*".into(),
+			object_path: "/org/freedesktop/portal/documents".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.FileTransfer.*".into(),
+			object_path: "/org/freedesktop/portal/documents".into(),
+		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.FileTransfer.*".into(),
+			object_path: "/org/freedesktop/portal/documents".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Properties.*".into(),
+			object_path: "/org/freedesktop/portal/documents".into(),
+		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Properties.*".into(),
+			object_path: "/org/freedesktop/portal/documents".into(),
 		},
 
 		// CreateInputContext for /inputmethod obj path
