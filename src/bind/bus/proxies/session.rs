@@ -219,12 +219,26 @@ async fn generate_bus_rules(
 		},
 
 		/*
-			TODO: We need to properly sandbox the global menu!
+			Global Menu
+
+			https://github.com/KDE/plasma-workspace/blob/master/appmenu/com.canonical.AppMenu.Registrar.xml
+
+			Note that we explicitly did not allow the GetMenuForWindow method
+				because it has the potential to peek running apps
 		*/
-		BusAccessLevel::WellknownName {
+		BusAccessLevel::Call {
 			bus_name: BusName::try_from("com.canonical.AppMenu.Registrar")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
+			method: "com.canonical.AppMenu.Registrar.RegisterWindow".into(),
+			object_path: "/org/freedesktop/portal/desktop/*".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("com.canonical.AppMenu.Registrar")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "com.canonical.AppMenu.Registrar.UnregisterWindow".into(),
+			object_path: "/org/freedesktop/portal/desktop/*".into(),
 		},
 
 		// Stop the sandbox
