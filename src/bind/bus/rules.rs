@@ -7,14 +7,6 @@
 #[derive(Debug)]
 pub enum BusAccessLevel {
 	/**
-		The name/ID is visible in the ListNames, ListActivatableNames etc.'s reply
-		The name's info, such as PID can be retrived
-	*/
-	See {
-		bus_name:	BusName,
-	},
-
-	/**
 		Allow the sandboxed app to take ownership of said bus name.
 		Very dangerous as it allows app to impersonate other services.
 	*/
@@ -94,11 +86,6 @@ impl ToCmdline for Vec<BusAccessLevel> {
 impl ToString for BusAccessLevel {
 	fn to_string(&self)	-> String {
 		match self {
-			BusAccessLevel::See { bus_name }	=> {
-				let mut cmdline = String::from("--see=");
-				cmdline.push_str(&bus_name.to_string());
-				cmdline
-			}
 			BusAccessLevel::Call { bus_name, method, object_path }
 								=> {
 				let mut cmdline = String::from("--call=");
