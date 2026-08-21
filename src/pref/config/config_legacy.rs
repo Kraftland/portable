@@ -55,7 +55,6 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 			sandbox_id: decoded_legacy_conf.app_id,
 			display_name: decoded_legacy_conf.friendly_name,
 			state_directory: decoded_legacy_conf.state_dir,
-			config_version: 10,
 		},
 		exec: Exec {
 			target: decoded_legacy_conf.target.0,
