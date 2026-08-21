@@ -156,11 +156,6 @@ async fn generate_bus_rules(
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
 		},
-		BusAccessLevel::See {
-			bus_name: BusName::try_from("org.a11y.Bus")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-		},
 
 		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.a11y.Bus")
