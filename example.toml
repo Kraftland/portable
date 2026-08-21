@@ -5,13 +5,16 @@
 [metadata]
 # This is your Application ID, avoid conflict. Should be a reversed DNS name.
 # If the author's DNS domain name contains hyphen/minus characters ('-'), which are not allowed in D-Bus interface names, they should be replaced by underscores. If the DNS domain name contains a digit immediately following a period ('.'), which is also not allowed in interface names), the interface name should add an underscore before that digit. For example, if the owner of 7-zip.org defined an interface for out-of-process plugins, it might be named org._7_zip.Plugin.
-appID = "org.example.App"
+# Previously appID.
+sandbox_id = "org.example.App"
 
-# This is a friendly name of an application. It should only contain ASCII characters and not spaces.
-friendlyName = "Example"
+# This is a display name of an application. It should only contain ASCII characters and not spaces.
+# Previously friendlyName.
+display_name = "Example"
 
 # This is the state directory of your application, relative to "XDG_DATA_HOME".
-stateDirectory = "Portable_Test"
+# Previously stateDirectory.
+state_directory = "Portable_Test"
 
 # The exec section defines how the underlying process is started.
 [exec]
