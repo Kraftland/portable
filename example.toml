@@ -18,7 +18,9 @@ state_directory = "Portable_Test"
 
 # The exec section defines how the underlying process is started.
 [exec]
-# target defines the program to start.
+# target defines the executable to start.
+# It is recommended to not use the full path, as the Overlay feature will automatically merge
+# 	application binaries with the underlying OS /usr/bin.
 target = "env"
 
 # arguments holds an array of arguments passed to the application, this is also used when starting secondary instances.
@@ -27,7 +29,7 @@ arguments = ["gtk4-demo", "--run=video_player"]
 # When enabled, lays the app private binaries on top /usr/bin, see doc/packager/08-binaries.md for more details. Requires the specific overlay directory to exist.
 overlay = false
 
-# D-Bus activation works by installing a service under /usr/share/dbus-1/services. It is used by UnifiedPush to process notifications without showing a window. You should modify the activation cmdline to call portable with "--dbus-activation" or use packer.
+# D-Bus activation works by installing a service under /usr/share/dbus-1/services. It is used by UnifiedPush for example to process notifications without showing a window. You should pass the "--dbus-activation" flag when building this package with Packer, internally it generates a D-Bus service that calls Portable with "--dbus-activation".
 [dbus_activation]
 # Whether or not to enable D-Bus activation. Defaults to false.
 enable = false
