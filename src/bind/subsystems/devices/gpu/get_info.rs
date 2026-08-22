@@ -52,7 +52,14 @@ fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, super::GPU
 		}
 	};
 
-	match parent_device.attribute_value("boot_vga") {
+	let boot_vga = match parent_device.attribute_value("boot_vga") {
+		Some(v)	=> v.to_str(),
+		None	=> return Ok(false),
+	};
+
+	match boot_vga {
+		Some("1")	=> Ok(true),
+		Some("0")	=> Ok(false),
 		Some(v)	=> {
 			if v == "1" {
 				Ok(true)
