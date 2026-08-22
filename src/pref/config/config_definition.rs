@@ -17,10 +17,6 @@ pub struct Config {
 	pub dbus_activation:	BusExec,
 
 	#[serde(default)]
-	#[serde(alias = "processes")]
-	pub process:		ProcMgmt,
-
-	#[serde(default)]
 	pub system:		SysMgmt,
 
 	#[serde(default)]
@@ -75,18 +71,6 @@ impl Default for BusExec {
 			target: String::new(),
 			arguments: vec![],
 		}
-	}
-}
-
-#[derive(Debug,  Deserialize)]
-#[serde(default)]
-pub struct ProcMgmt {
-	pub background:		bool,
-}
-
-impl Default for ProcMgmt {
-	fn default() -> Self {
-		Self { background: true }
 	}
 }
 
@@ -202,9 +186,6 @@ pub struct Privacy {
 	#[serde(alias = "classicNotifications")]
 	pub classic_notif:	bool,
 
-	#[serde(alias = "pipeWire")]
-	pub pipewire:		bool,
-
 	pub push_notification:	bool,
 }
 
@@ -214,7 +195,6 @@ impl Default for Privacy {
 			lockdown:		false,
 			x11_compat:		false,
 			classic_notif:		false,
-			pipewire:		false,
 			push_notification:	true,
 		}
 	}
