@@ -31,12 +31,25 @@ fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, super::GPU
 	let boot_display_attr_value = card_device.attribute_value("boot_display");
 	match boot_display_attr_value {
 		Some(v)	=> {
-			if v == "1" {
-				return Ok(true)
-			} else {
-				return Err(
-					super::GPUError::InvalidBootDisplay(format!("{v:?}"))
-				);
+			match v.to_str() {
+				Some("1")	=> {
+					return Ok(true);
+				}
+				Some("0")	=> {
+					return Ok(false);
+				}
+				Some(v)	=> {
+					return Err(
+						super::GPUError::InvalidBootDisplay(format!("{v:?}"))
+					)
+				}
+				None	=> {
+					return Err(
+						super::GPUError::InvalidBootDisplay(
+							format!("Non-UTF-8"),
+						)
+					)
+				}
 			}
 		}
 		None	=> {}
@@ -52,15 +65,18 @@ fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, super::GPU
 		}
 	};
 
-	match parent_device.attribute_value("boot_vga") {
+	let boot_vga = match parent_device.attribute_value("boot_vga") {
+		Some(v)	=> v.to_str(),
+		None	=> return Ok(false),
+	};
+
+	match boot_vga {
+		Some("1")	=> Ok(true),
+		Some("0")	=> Ok(false),
 		Some(v)	=> {
-			if v == "1" {
-				Ok(true)
-			} else {
-				Err(
-					super::GPUError::InvalidBootVGA(format!("{v:?}"))
-				)
-			}
+			Err(
+				super::GPUError::InvalidBootVGA(format!("{v:?}"))
+			)
 		}
 		None	=> {
 			Ok(false)
