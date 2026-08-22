@@ -165,6 +165,15 @@ async fn generate_bus_rules(
 			object_path: "/org/a11y/bus".into(),
 		},
 
+		// Portal notification broadcast
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.portal.Notification.*".into(),
+			object_path: "/org/freedesktop/portal/desktop".into(),
+		},
+
 		// Request interface
 		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
