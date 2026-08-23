@@ -55,10 +55,14 @@ pub async fn setup(
 		}
 	}
 
-	let (reader, writer) = {
+	let (reader, writer, resizer) = {
 		let fd = pty.master;
 		let file = std::fs::File::from(fd);
-		(file.try_clone().map_err(StreamError::CloneFdError)?, file)
+		(
+			file.try_clone().map_err(StreamError::CloneFdError)?,
+			file.try_clone().map_err(StreamError::CloneFdError)?,
+			file,
+		)
 	};
 
 	// Output thread
@@ -66,6 +70,9 @@ pub async fn setup(
 
 	// Input thread
 	let mut input_thread = tokio::spawn(stream_in(writer));
+
+	// Resize thread
+	let mut resize_thread = tokio::spawn(stream_resize(resizer.into()));
 
 	tokio::spawn(
 		async move {
@@ -78,6 +85,10 @@ pub async fn setup(
 					#[cfg(debug_assertions)]
 					println!("Input thread stopped: {input:#?}");
 				}
+				resize	= &mut resize_thread		=> {
+					#[cfg(debug_assertions)]
+					println!("Resize thread stopped: {resize:#?}");
+				}
 			}
 
 			output_thread.abort();
@@ -89,8 +100,11 @@ pub async fn setup(
 	Ok(pty.slave)
 }
 
-async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
+
+async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError> {
 	use std::os::fd::AsRawFd;
+	nix::ioctl_read_bad!(ioctl_get_winsize, nix::libc::TIOCGWINSZ, nix::libc::winsize);
+	nix::ioctl_write_ptr_bad!(ioctl_set_winsize, nix::libc::TIOCSWINSZ, nix::libc::winsize);
 
 	let sigwinch = tokio::signal::unix::signal(
 		tokio::signal::unix::SignalKind::window_change(),
@@ -101,10 +115,48 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 		Err(e)	=> {return Err(StreamError::WinchError(e));}
 	};
 
-	nix::ioctl_read_bad!(ioctl_get_winsize, nix::libc::TIOCGWINSZ, nix::libc::winsize);
-	nix::ioctl_write_ptr_bad!(ioctl_set_winsize, nix::libc::TIOCSWINSZ, nix::libc::winsize);
+	loop {
+		sigwinch.recv().await;
+		let winsize = unsafe {
+			let mut size: nix::libc::winsize = std::mem::zeroed();
+			match ioctl_get_winsize(nix::libc::STDIN_FILENO, &mut size) {
+				Ok(_)	=> {
+					#[cfg(feature = "term-resize-debug")]
+					println!(
+						"Window size changed: {} col, {} row",
+						&size.ws_col,
+						&size.ws_row,
+					);
+					(size.ws_col, size.ws_row)
+				}
+				Err(e)	=> {
+					eprintln!("Could not get console size: {e:#?}");
+					continue;
+				}
+			}
+		};
 
+		let size = nix::libc::winsize {
+			ws_row:		winsize.1,
+			ws_col:		winsize.0,
+			ws_xpixel:	0,
+			ws_ypixel:	0,
+		};
+		let result = unsafe {
+			ioctl_set_winsize(master_fd.as_raw_fd(), &size)
+		};
+		match result {
+			Ok(_)	=> {}
+			Err(e)	=> {
+				return Err(
+					StreamError::ConsoleIOError(e.into())
+				);
+			}
+		};
+	}
+}
 
+async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	let mut buffer = [0u8; 1024];
 	let mut stdin = {
 		use std::os::fd::AsFd;
@@ -121,44 +173,11 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	use tokio::io::AsyncReadExt;
 
 	loop {
-		let signal = tokio::select! {
-			input	=	stdin.read(&mut buffer)	=> {input}
-			_	=	sigwinch.recv()		=> {
-				let winsize = unsafe {
-					let mut size: nix::libc::winsize = std::mem::zeroed();
-					match ioctl_get_winsize(nix::libc::STDIN_FILENO, &mut size) {
-						Ok(_)	=> {(size.ws_col, size.ws_row)}
-						Err(e)	=> {
-							eprintln!("Could not get console size: {e:#?}");
-							continue;
-						}
-					}
-				};
+		let input = stdin
+			.read(&mut buffer)
+			.await;
 
-				let size = nix::libc::winsize {
-					ws_row:		winsize.1,
-					ws_col:		winsize.0,
-					ws_xpixel:	0,
-					ws_ypixel:	0,
-				};
-				let result = unsafe {
-					ioctl_set_winsize(stdin.as_raw_fd(), &size)
-				};
-
-				match result {
-					Ok(_)	=> {}
-					Err(e)	=> {
-						return Err(
-							StreamError::ConsoleIOError(e.into())
-						);
-					}
-				};
-
-				continue;
-			}
-		};
-
-		match signal {
+		match input {
 			Ok(0)	=> {return Ok(());}
 			Ok(v)	=> {
 				tokio_file.write(&buffer[..v])
