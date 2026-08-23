@@ -68,3 +68,6 @@ wayland	= ["dep:wayrs-client", "dep:wayrs-protocols", "display"]
 
 # Mimic Flatpak to host, required until appd lands
 flatpak = []
+
+[profile.release]
+lto = true
