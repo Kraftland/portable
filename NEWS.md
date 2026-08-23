@@ -3,6 +3,7 @@
 ## Breaking Changes:
 - Removed deprecated configuration fields, including `privacy.camera`, `privacy.input`, `system.gameMode` and `system.virtualization`. Please migrate to the unified device allow array. [#1034](https://github.com/Kraftland/portable/pull/1034)
 - Removed toggle for process tracking, it is now always enabled. [#1034](https://github.com/Kraftland/portable/pull/1034)
+- The `portable.env` file is no longer considered while passing environment variables. However, several Qt related variables will now be automatically forwarded.
 - Default configuration changes. [#1035](https://github.com/Kraftland/portable/pull/1035)
 	- KDE status indicator	-> `false`
 	- Classic Notifications	-> `false`

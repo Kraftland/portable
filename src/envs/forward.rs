@@ -8,6 +8,9 @@ pub fn get() -> std::collections::HashMap<String, String> {
 
 	let envs = vec![
 		"XDG_ACTIVATION_TOKEN",
+		"QT_AUTO_SCREEN_SCALE_FACTOR",
+		"QT_ENABLE_HIGHDPI_SCALING",
+		"QT_SCALE_FACTOR",
 	];
 
 	for env in envs {
