@@ -41,6 +41,9 @@ exclude = ["lib/init"]
 [features]
 default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input"]
 
+# Debug terminal window resize
+term-resize-debug = []
+
 # Audio support metaflag
 audio	= []
 # Build with PulseAudio support, with server address parsing and binding.
