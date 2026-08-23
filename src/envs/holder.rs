@@ -43,6 +43,10 @@ pub async fn holder(
 		};
 		match msg {
 			EnvMessage::Add { key, value }	=> {
+				match envs_map.contains_key(&key) {
+					true	=> {continue;}
+					false	=> {}
+				};
 				let _ = log_tx.send(
 					LogMessage {
 						level: crate::logger::LogLevel::Debug,
