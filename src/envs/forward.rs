@@ -11,6 +11,7 @@ pub fn get() -> std::collections::HashMap<String, String> {
 		"QT_AUTO_SCREEN_SCALE_FACTOR",
 		"QT_ENABLE_HIGHDPI_SCALING",
 		"QT_SCALE_FACTOR",
+		"TERM",
 	];
 
 	for env in envs {
