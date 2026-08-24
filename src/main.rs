@@ -1,7 +1,6 @@
 use portable_daemon::config;
 use portable_daemon::logger;
 use portable_daemon::stop;
-use portable_daemon::consts;
 use portable_daemon::xdg;
 use portable_daemon::envs;
 use portable_daemon::ipc;
@@ -129,7 +128,10 @@ async fn run(
 	log_tx.send(
 		logger::LogMessage {
 			level: logger::LogLevel::Info,
-			message: format!("Portable daemon version {}", consts::DAEMON_VERSION),
+			message: format!(
+				"Portable daemon version {}",
+				env!("CARGO_PKG_VERSION_MAJOR"),
+			),
 		},
 	)
 		.await
