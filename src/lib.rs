@@ -1,6 +1,5 @@
 pub mod logger;
 pub mod stop;
-pub mod consts;
 pub mod xdg;
 pub mod bind;
 pub mod envs;
