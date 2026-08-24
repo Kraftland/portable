@@ -144,7 +144,6 @@ async fn run(
 			level:		logger::LogLevel::Warn,
 			message:	format!(
 				"You are running a debug build of Portable",
-				env!("CARGO_PKG_VERSION_MAJOR"),
 			),
 		},
 	)
