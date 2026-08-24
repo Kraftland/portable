@@ -69,7 +69,7 @@ pub async fn load_user_envs(
 	};
 
 	for line in content.split("\n") {
-		match line.split_once("=") {
+		match line.trim().split_once("=") {
 			Some((k, v))	=> {
 				map.insert(k.to_string(), v.to_string());
 			}
