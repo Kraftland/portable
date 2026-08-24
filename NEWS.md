@@ -49,6 +49,12 @@
 
 ## Internal Changes
 
+### 20.beta.2
+#### Daemon
+* main: remove the consts module and read version from env! macro by @Kimiblock in https://github.com/Kraftland/portable/pull/1246
+* envs: skip lines starting with hashtag by @Kimiblock in https://github.com/Kraftland/portable/pull/1247
+* logger: revert debug assertions by @Kimiblock in https://github.com/Kraftland/portable/pull/1248
+
 ### 20.beta
 
 #### Daemon
