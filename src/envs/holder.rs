@@ -35,13 +35,25 @@ pub async fn holder(
 
 	let mut envs_map = super::forward::get();
 
-	match super::user::load_user_envs(&mut envs_map, xdg, config, &log_tx).await {
+	match super::user::load_user_envs(&mut envs_map, xdg.clone(), config.clone(), &log_tx).await {
 		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = log_tx.send(
 				LogMessage {
 					level:	crate::logger::LogLevel::Warn,
 					message: format!("Could not load portable.env: {e:#?}"),
+				}
+			).await;
+		}
+	};
+
+	match super::xdg::generate_xdg_envs(&mut envs_map, xdg, config).await {
+		Ok(_)	=> {}
+		Err(e)	=> {
+			let _ = log_tx.send(
+				LogMessage {
+					level:	crate::logger::LogLevel::Warn,
+					message: format!("Could not load XDG envs: {e:#?}"),
 				}
 			).await;
 		}
