@@ -136,13 +136,6 @@ async fn run(
 		.map_err(StartError::LogError)
 		?;
 
-	let envs_tx = {
-		let log_clone = log_tx.clone();
-		let (tx, rx) = envs::holder::new_channel().await;
-		tokio::spawn(envs::holder::holder(rx, log_clone.to_owned()));
-		tx
-	};
-
 	let xdg_dirs = std::sync::Arc::new(
 		xdg_dirs_spawn
 			.await
@@ -160,6 +153,21 @@ async fn run(
 		?
 	);
 
+	let envs_tx = {
+		let xdg = xdg_dirs.clone();
+		let config = config.clone();
+		let log_clone = log_tx.clone();
+		let (tx, rx) = envs::holder::new_channel().await;
+		tokio::spawn(
+			envs::holder::holder(
+				rx,
+				log_clone.to_owned(),
+				xdg,
+				config,
+			),
+		);
+		tx
+	};
 
 	let dbus_conn = bus_spawn.0
 		.await

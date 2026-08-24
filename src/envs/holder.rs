@@ -28,10 +28,24 @@ pub async fn new_channel() -> (HoldChannel, HoldChannelRx) {
 pub async fn holder(
 	mut rx: HoldChannelRx,
 	log_tx: crate::logger::LogSender,
+	xdg:	std::sync::Arc<crate::xdg::XdgDirs>,
+	config:	std::sync::Arc<crate::config::Config>,
 ) {
 	use crate::logger::LogMessage;
 
 	let mut envs_map = super::forward::get();
+
+	match super::user::load_user_envs(&mut envs_map, xdg, config, &log_tx).await {
+		Ok(_)	=> {}
+		Err(e)	=> {
+			let _ = log_tx.send(
+				LogMessage {
+					level:	crate::logger::LogLevel::Warn,
+					message: format!("Could not load portable.env: {e:#?}"),
+				}
+			).await;
+		}
+	};
 
 	loop {
 		let msg = tokio::select! {
