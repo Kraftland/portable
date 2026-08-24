@@ -42,8 +42,37 @@
 - Warns about outdated version of Init
 - When starting Portable without a valid terminal, it will no longer allocate new pairs of pesudo-terminal
 - When using a supported desktop environment, Portable will display the sandbox status in _Background Apps_ area.
+- The inappropriate ioctl error has been fixed and other shells like fish is now able to run without issue. Furthermore, you should now see TUI applications more "compliant" regarding input handling.
+- Sandboxed session bus cannot speculate host process via D-Bus. Obtaining information regarding the remote service (such as Machine ID, PID, credentials) are now prevented.
+- UnifiedPush support has been more locked down.
+- Portable now operates faster due to LTO usage.
 
 ## Internal Changes
+
+### 20.beta
+
+#### Daemon
+* ipc: fix file passthrough by @Kimiblock in https://github.com/Kraftland/portable/pull/1227
+* system subsystem: separate binary overlay binding by @Kimiblock in https://github.com/Kraftland/portable/pull/1228
+* bin: error out if overlay is missing by @Kimiblock in https://github.com/Kraftland/portable/pull/1229
+* Documents Portal: properly sandbox methods and interfaces by @Kimiblock in https://github.com/Kraftland/portable/pull/1230
+* session bus: harden AppMenu Registrar service by @Kimiblock in https://github.com/Kraftland/portable/pull/1231
+* a11y: disable the SEE policy for a11y service by @Kimiblock in https://github.com/Kraftland/portable/pull/1232
+* session: drop SEE and TALK policy, add UP support (once again) by @Kimiblock in https://github.com/Kraftland/portable/pull/1233
+* config: remove the version directive by @Kimiblock in https://github.com/Kraftland/portable/pull/1234
+* gpu: handle other boot_display values by @Kimiblock in https://github.com/Kraftland/portable/pull/1236
+* session bus: fix notification portal action invocation by @Kimiblock in https://github.com/Kraftland/portable/pull/1237
+* forward: forward QT_* variables by @Kimiblock in https://github.com/Kraftland/portable/pull/1239
+* cargo: enable LTO in release builds by @Kimiblock in https://github.com/Kraftland/portable/pull/1240
+* unbust terminal resize stream by @Kimiblock in https://github.com/Kraftland/portable/pull/1241
+* forward: pass through TERM variable by @Kimiblock in https://github.com/Kraftland/portable/pull/1242
+* config: rename fields per new configuration by @Kimiblock in https://github.com/Kraftland/portable/pull/1235
+* envs: port over the user environment overriding subsystem by @Kimiblock in https://github.com/Kraftland/portable/pull/1243
+* forward: remove QT related vars by @Kimiblock in https://github.com/Kraftland/portable/pull/1244
+
+
+#### Init
+* spawn: unset TERM on Direct invocation by @Kimiblock in https://github.com/Kraftland/portable-init/pull/68
 
 ### 20.alpha
 
