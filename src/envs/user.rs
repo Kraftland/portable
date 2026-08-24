@@ -69,6 +69,11 @@ pub async fn load_user_envs(
 	};
 
 	for line in content.split("\n") {
+		let line = line.trim();
+		if line.starts_with("#") {
+			continue;
+		};
+
 		match line.trim().split_once("=") {
 			Some((k, v))	=> {
 				map.insert(k.to_string(), v.to_string());

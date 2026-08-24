@@ -138,6 +138,20 @@ async fn run(
 		.map_err(StartError::LogError)
 		?;
 
+	#[cfg(debug_assertions)]
+	log_tx.send(
+		logger::LogMessage {
+			level:		logger::LogLevel::Warn,
+			message:	format!(
+				"You are running a debug build of Portable",
+				env!("CARGO_PKG_VERSION_MAJOR"),
+			),
+		},
+	)
+		.await
+		.map_err(StartError::LogError)
+		?;
+
 	let xdg_dirs = std::sync::Arc::new(
 		xdg_dirs_spawn
 			.await
