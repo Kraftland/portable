@@ -112,7 +112,7 @@ pub async fn generate_xdg_envs(
 		let mut desktop = sandbox_home.to_path_buf();
 		desktop.push("Public");
 		map.insert(
-			"XDG_DESKTOP_DIR".into(),
+			"XDG_PUBLICSHARE_DIR".into(),
 			desktop.to_string_lossy().to_string(),
 		);
 	};
