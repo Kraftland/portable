@@ -49,7 +49,6 @@ pub async fn logger (
 	};
 
 	let (
-		#[cfg(debug_assertions)]
 		debug_fmt,
 
 		info_fmt,
@@ -60,7 +59,6 @@ pub async fn logger (
 			match is_pups_day() {
 				true	=> {
 					(
-						#[cfg(debug_assertions)]
 						"\x1b[38;2;213;161;115m[Debug]\x1b[0m:",
 
 						"\x1b[38;2;213;161;115m[Info]\x1b[0m:",
@@ -70,7 +68,6 @@ pub async fn logger (
 				}
 				false	=> {
 					(
-						#[cfg(debug_assertions)]
 						"\x1b[38;2;125;241;118m[Debug]\x1b[0m:",
 
 						"\x1b[38;2;119;222;250m[Info]\x1b[0m:",
@@ -82,7 +79,6 @@ pub async fn logger (
 
 		} else {
 			(
-				#[cfg(debug_assertions)]
 				"[Debug]:",
 
 				"[Info]:",
