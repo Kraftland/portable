@@ -66,9 +66,6 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 			target: "".to_string(),
 			arguments: vec![],
 		},
-		process: ProcMgmt {
-			background: true,
-		},
 		system: SysMgmt {
 			allow_inhibit: false,
 			conduct_inhibit: false,
@@ -84,7 +81,6 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 			lockdown:		false,
 			x11_compat:		! decoded_legacy_conf.wayland,
 			classic_notif:		false,
-			pipewire:		false,
 			push_notification:	false,
 		},
 		advanced: Advanced {
