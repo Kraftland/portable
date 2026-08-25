@@ -29,6 +29,14 @@ pub async fn wake(
 			.map_err(WakeError::BusError)
 			?;
 
+		#[cfg(debug_assertions)]
+		let _ = log.send(
+			crate::logger::LogMessage {
+				level:		crate::logger::LogLevel::Debug,
+				message:	format!("Woke D-Bus remote: {name} with path {path}"),
+			}
+		).await;
+
 	};
 	Ok(())
 }
