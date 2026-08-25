@@ -17,17 +17,18 @@ pub async fn wake(
 		?;
 
 	for (name, path) in pairs {
-		wake::wake_name(&conn, &name, &path)
-			.await
-			.map_err(WakeError::BusError)
-			?;
 		#[cfg(debug_assertions)]
 		let _ = log.send(
 			crate::logger::LogMessage {
 				level:		crate::logger::LogLevel::Debug,
-				message:	format!("Woke D-Bus remote: {name} with path {path}"),
+				message:	format!("Waking D-Bus remote: {name} with path {path}"),
 			}
 		).await;
+		wake::wake_name(&conn, &name, &path)
+			.await
+			.map_err(WakeError::BusError)
+			?;
+
 	};
 	Ok(())
 }
