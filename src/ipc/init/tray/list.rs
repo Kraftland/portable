@@ -25,8 +25,14 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 				level:	crate::logger::LogLevel::Debug,
 				message: format!("Got D-Bus remote: {name}") }
 		).await;
-		match name.split_once("@") {
+		match name.split_once("/") {
 			Some((k, v))	=> {
+				let k = k.trim_end_matches("@");
+				let v = {
+					let mut pth = String::from("/");
+					pth.push_str(v);
+					pth
+				};
 
 				let bus_name = match zbus::names::BusName::try_from(k) {
 					Ok(v)	=> v,
@@ -63,7 +69,7 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 				let _ = log.send(
 					crate::logger::LogMessage {
 						level:		crate::logger::LogLevel::Debug,
-						message:	format!("Got D-Bus remote: {k} on {pid:?}"),
+						message:	format!("Built detect path: {dir:?}"),
 					}
 				).await;
 
@@ -80,10 +86,77 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 					continue;
 				}
 
+				#[cfg(debug_assertions)]
+				let _ = log.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Debug,
+						message:	format!("Got D-Bus remote: {k} on {pid:?}"),
+					}
+				).await;
 
 				ret.push((k.to_string(), v.to_string()));
 			}
 			None		=> {
+				let bus_name = match zbus::names::BusName::try_from(name.as_str()) {
+					Ok(v)	=> v,
+					Err(e)	=> {
+						return Err(zbus::fdo::Error::InvalidArgs(format!("{e:#?}")));
+					}
+				};
+				let creds = proxy_fdo
+					.get_connection_credentials(bus_name)
+					.await
+					?;
+				let pid = match creds.process_id() {
+					Some(v)	=> v,
+					None	=> {
+						return Err(
+							zbus::fdo::Error::InvalidArgs(
+								format!("No PID for {name}"),
+							),
+						);
+					}
+				};
+
+				let dir = {
+					let mut name = String::from("top.kimiblock.portable.");
+					name.push_str(&app_id);
+					let mut path = std::path::PathBuf::from("/proc");
+					path.push(&pid.to_string());
+					path.push("root");
+					path.push(&name);
+					path
+				};
+
+				#[cfg(debug_assertions)]
+				let _ = log.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Debug,
+						message:	format!("Built detect path: {dir:?}"),
+					}
+				).await;
+
+				if ! dir.exists() {
+					#[cfg(debug_assertions)]
+					let _ = log.send(
+						crate::logger::LogMessage {
+							level:		crate::logger::LogLevel::Debug,
+							message:	format!(
+								"D-Bus remote: {name} on {pid:?} does not match",
+							),
+						}
+					).await;
+					continue;
+				}
+
+				#[cfg(debug_assertions)]
+				let _ = log.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Debug,
+						message:	format!("Got D-Bus remote: {name} on {pid:?}"),
+					}
+				).await;
+
 				// Legacy style
 				ret.push(
 					(
