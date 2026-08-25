@@ -74,6 +74,7 @@ async fn compile_rules(
 	let sandbox_rules = tokio::spawn(
 		sandbox::generate_sandbox_rules(
 			proxy_socket_path.to_path_buf(),
+			config.metadata.sandbox_id.to_string(),
 
 			#[cfg(feature = "flatpak")]
 			flatpak_info,
