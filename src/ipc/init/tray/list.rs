@@ -19,6 +19,12 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 		?;
 
 	for name in names {
+		#[cfg(debug_assertions)]
+		let _ = log.send(
+			crate::logger::LogMessage {
+				level:	crate::logger::LogLevel::Debug,
+				message: format!("Got D-Bus remote: {name}") }
+		).await;
 		match name.split_once("@") {
 			Some((k, v))	=> {
 
