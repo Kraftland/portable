@@ -182,13 +182,6 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.portal.Request.*".into(),
 			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
 		},
-		BusAccessLevel::GetBroadcast {
-			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.freedesktop.portal.Request.*".into(),
-			object_path: "/org/freedesktop/portal/desktop/request/*".into(),
-		},
 
 		// Session interface
 		BusAccessLevel::Call {
@@ -198,11 +191,13 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.portal.Session.*".into(),
 			object_path: "/org/freedesktop/portal/desktop/session/*".into(),
 		},
+
+
 		BusAccessLevel::GetBroadcast {
 			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "org.freedesktop.portal.Session.*".into(),
+			method: "org.freedesktop.portal.*".into(),
 			object_path: "/org/freedesktop/portal/desktop/session/*".into(),
 		},
 
