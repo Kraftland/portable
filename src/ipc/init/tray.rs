@@ -1,3 +1,6 @@
+mod list;
+mod wake;
+
 /**
 	The wake function automatically wakes up the application via D-Bus StatusNotifier
 
@@ -6,35 +9,35 @@
 pub async fn wake(
 	config:		std::sync::Arc<crate::config::Config>,
 	conn:		&zbus::Connection,
+	log:		crate::logger::LogSender,
 ) -> Result<(), WakeError> {
-	let bus_name = {
-		let mut name = String::from(&config.metadata.sandbox_id);
-		name.push_str(".Portable.Helper");
-		name
-	};
-
-	let proxy = IPCProxy::new(conn, bus_name)
+	let pairs = list::list(&conn, &config.metadata.sandbox_id)
 		.await
-		.map_err(WakeError::BusError)
+		.map_err(WakeError::BusFdoError)
 		?;
 
-	proxy
-		.activate()
-		.await
-		.map_err(WakeError::BusError)
+	for (name, path) in pairs {
+		#[cfg(debug_assertions)]
+		let _ = log.send(
+			crate::logger::LogMessage {
+				level:		crate::logger::LogLevel::Debug,
+				message:	format!("Waking D-Bus remote: {name}"),
+			}
+		).await;
+
+		wake::wake_name(&conn, &name, &path)
+			.await
+			.map_err(WakeError::BusError)
+			?;
+	};
+	Ok(())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum WakeError {
 	#[error("Bus Error: {0:#?}")]
 	BusError(zbus::Error),
-}
 
-#[zbus::proxy(
-	interface	= "top.kimiblock.Portable.Init",
-	default_path	= "/top/kimiblock/portable/init",
-)]
-trait IPC {
-	#[zbus(name = "ActivateTray")]
-	async fn activate(&self) -> zbus::Result<()>;
+	#[error("Bus Error: {0:#?}")]
+	BusFdoError(zbus::fdo::Error),
 }
