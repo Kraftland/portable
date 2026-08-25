@@ -19,11 +19,11 @@ pub async fn detect_kind() -> InputMethodKind {
 			Err(_)	=> {continue;}
 		};
 
-		if var.starts_with("ibus") {
+		if var.contains("ibus") {
 			return InputMethodKind::IBus;
-		} else if var.starts_with("fcitx") {
+		} else if var.contains("fcitx") {
 			return InputMethodKind::Fcitx;
-		} else if var.starts_with("gcin") {
+		} else if var.contains("gcin") {
 			return InputMethodKind::Gcin;
 		}
 	};
