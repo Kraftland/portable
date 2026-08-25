@@ -337,7 +337,14 @@ async fn generate_bus_rules(
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
 			method: "*".into(),
-			object_path: "/".into(),
+			object_path: "/*".into(),
+		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "*".into(),
+			object_path: "/*".into(),
 		},
 		// iBus portal
 		BusAccessLevel::Call {
