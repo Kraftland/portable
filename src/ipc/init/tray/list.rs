@@ -69,7 +69,13 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 				ret.push((k.to_string(), v.to_string()));
 			}
 			None		=> {
-				continue;
+				// Legacy style
+				ret.push(
+					(
+						name,
+						"/StatusNotifierItem".to_string(),
+					)
+				);
 			}
 		};
 	};
