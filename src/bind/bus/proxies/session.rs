@@ -331,27 +331,13 @@ async fn generate_bus_rules(
 			object_path: "/org/freedesktop/portal/documents".into(),
 		},
 
-		// CreateInputContext for /inputmethod obj path
+		// Fcitx Portal, note that this is the only entry point to get MachineID
 		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
-			object_path: "/inputmethod".into(),
-		},
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.fcitx.Fcitx.InputContext1.*".into(),
-			object_path: "/inputmethod/*".into(),
-		},
-		BusAccessLevel::Call {
-			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
-				.map_err(ProxyError::InvalidBusNameError)
-				?,
-			method: "org.fcitx.Fcitx.InputMethod1.CreateInputContext".into(),
-			object_path: "/org/freedesktop/portal/inputmethod".into(),
+			method: "*".into(),
+			object_path: "/".into(),
 		},
 		// iBus portal
 		BusAccessLevel::Call {
