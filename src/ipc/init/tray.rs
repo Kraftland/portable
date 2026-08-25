@@ -11,7 +11,7 @@ pub async fn wake(
 	conn:		&zbus::Connection,
 	log:		crate::logger::LogSender,
 ) -> Result<(), WakeError> {
-	let pairs = list::list(&conn, &config.metadata.sandbox_id)
+	let pairs = list::list(&conn, &config.metadata.sandbox_id, &log)
 		.await
 		.map_err(WakeError::BusFdoError)
 		?;
