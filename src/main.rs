@@ -346,7 +346,7 @@ async fn run(
 				.map_err(StartError::LogError)
 				?;
 			} else {
-				ipc::init::tray::wake(config, &dbus_conn)
+				ipc::init::tray::wake(config, &dbus_conn, log_tx)
 					.await
 					.map_err(StartError::TrayError)
 					?;

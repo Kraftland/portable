@@ -1,6 +1,8 @@
 pub async fn generate_sandbox_rules(
 	proxy_path:	std::path::PathBuf,
 
+	app_id:		String,
+
 	#[cfg(feature = "flatpak")]
 	info_path:	std::path::PathBuf,
 ) -> Result<crate::bind::types::BindRules, super::ProxyError> {
@@ -14,6 +16,18 @@ pub async fn generate_sandbox_rules(
 	};
 
 	let mut rules = vec![
+		BindRule::VirtualFS {
+			dest:	{
+					let mut name = String::from("top.kimiblock.portable.");
+					name.push_str(&app_id);
+					name
+				}.into(),
+			class:	crate::bind::types::VirtualFS::Tmpfs {
+				size_mb:	Some(1),
+				perms:		None,
+			},
+		},
+
 		BindRule::Path {
 			source:	"/usr".into(),
 			dest:	"/usr".into(),
