@@ -62,6 +62,15 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 				).await;
 
 				if ! dir.exists() {
+					#[cfg(debug_assertions)]
+					let _ = log.send(
+						crate::logger::LogMessage {
+							level:		crate::logger::LogLevel::Debug,
+							message:	format!(
+								"D-Bus remote: {k} on {pid:?} does not match",
+							),
+						}
+					).await;
 					continue;
 				}
 
