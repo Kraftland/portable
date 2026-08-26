@@ -198,8 +198,8 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "org.freedesktop.portal.*".into(),
-			object_path: "/org/freedesktop/portal/desktop/session/*".into(),
+			method: "org.freedesktop.portal.Settings.SettingChanged".into(),
+			object_path: "/org/freedesktop/portal/desktop".into(),
 		},
 
 		// Properties interface
