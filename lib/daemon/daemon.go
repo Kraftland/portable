@@ -1385,7 +1385,6 @@ func genBwArg(
 		"-p", "ProtectKernelLogs=no",
 		"-p", "RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK",
 		"-p", "CapabilityBoundingSet=",
-		"-p", "RestrictSUIDSGID=false",
 		"-p", "LockPersonality=yes",
 		"-p", "RestrictRealtime=yes",
 		"-p", "ProtectProc=invisible",
