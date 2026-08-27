@@ -390,10 +390,16 @@ async fn generate_properties(
 		)
 	);
 
+
+	/*
+		This is false in order for bubblewrap to work correctly!
+
+		Since: bwrap 0.12.0
+	*/
 	vec.push(
 		(
 			String::from("RestrictSUIDSGID"),
-			OwnedValue::from(true),
+			OwnedValue::from(false),
 		)
 	);
 
