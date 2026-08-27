@@ -11,7 +11,6 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 			"/sys/class/leds",
 			"/sys/class/input",
 			"/sys/class/hidraw",
-			"/dev/input",
 			"/dev/uinput",
 		];
 		for path in paths {
