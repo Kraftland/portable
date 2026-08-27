@@ -579,7 +579,14 @@ async fn generate_properties(
 	);
 
 
-
+	if ! spawn.config.advanced.allow_debug {
+		vec.push(
+			(
+				"LimitCORE".into(),
+				zbus::zvariant::OwnedValue::from(std::u64::MIN),
+			)
+		);
+	};
 
 
 	/*
