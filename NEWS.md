@@ -49,6 +49,23 @@
 
 ## Internal Changes
 
+### 20.beta.3
+#### Daemon
+* envs: load XDG envs by @Kimiblock in https://github.com/Kraftland/portable/pull/1250
+* misc bug fixes by @Kimiblock in https://github.com/Kraftland/portable/pull/1251
+* misc fixes by @Kimiblock in https://github.com/Kraftland/portable/pull/1252
+* session: allow Fcitx portal calls by @Kimiblock in https://github.com/Kraftland/portable/pull/1254
+* tray fixes by @Kimiblock in https://github.com/Kraftland/portable/pull/1255
+* session bus: allow broadcast from the settings portal by @Kimiblock in https://github.com/Kraftland/portable/pull/1256
+* spawn: disable RestrictSUIDGUID for bubblewrap to work by @Kimiblock in https://github.com/Kraftland/portable/pull/1257
+* bump Init by @Kimiblock in https://github.com/Kraftland/portable/pull/1258
+
+#### Init
+* tray: return error when StatusNotifierWatcher is not running by @Kimiblock in https://github.com/Kraftland/portable-init/pull/69
+* ipc: remove TrayWake methods by @Kimiblock in https://github.com/Kraftland/portable-init/pull/70
+* seccomp: split list compilation into a module by @Kimiblock in https://github.com/Kraftland/portable-init/pull/71
+* rework seccomp system by @Kimiblock in https://github.com/Kraftland/portable-init/pull/72
+
 ### 20.beta.2
 #### Daemon
 * main: remove the consts module and read version from env! macro by @Kimiblock in https://github.com/Kraftland/portable/pull/1246
