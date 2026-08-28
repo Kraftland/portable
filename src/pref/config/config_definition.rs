@@ -199,6 +199,42 @@ pub enum Lockdown {
 	},
 }
 
+pub struct LockdownOptions {
+	pub seccomp_whitelist:	bool,
+	pub landlock:		bool,
+}
+
+impl Lockdown {
+	/**
+		Translate the current Lockdown enum to a fine-grained lockdown feature enablement.
+	*/
+	fn get_fine_grained(&self) -> LockdownOptions {
+		match self {
+			Lockdown::Global { enable }	=> {
+				if *enable {
+					LockdownOptions {
+						seccomp_whitelist:	true,
+						landlock:		true,
+					}
+				} else {
+					LockdownOptions {
+						seccomp_whitelist:	false,
+						landlock:		false,
+					}
+				}
+			}
+			Lockdown::FineGrained {
+				seccomp, landlock
+			}				=> {
+				LockdownOptions {
+					seccomp_whitelist:	*seccomp,
+					landlock:		*landlock,
+				}
+			}
+		}
+	}
+}
+
 impl Default for Lockdown {
 	fn default() -> Self {
 		Self::Global { enable: false }
