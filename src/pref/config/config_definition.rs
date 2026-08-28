@@ -204,8 +204,8 @@ pub struct LockdownOptions {
 	pub landlock:		bool,
 }
 
-impl From<LockdownConfig> for LockdownOptions {
-	fn from(value: LockdownConfig) -> Self {
+impl From<&LockdownConfig> for LockdownOptions {
+	fn from(value: &LockdownConfig) -> Self {
 		value.get_fine_grained()
 	}
 }

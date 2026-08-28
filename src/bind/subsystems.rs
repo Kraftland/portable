@@ -309,11 +309,19 @@ pub async fn generate_bindrules(
 
 	ret.extend(expose_rules);
 
+	let lockdown_options = {
+		use crate::config::config_definition::LockdownOptions;
+
+		let opts: LockdownOptions = LockdownOptions::from(&config.privacy.lockdown);
+		opts
+	};
+
 	let init_info = crate::ipc::init::info::InitInfo {
 		extra_files:		forward_map,
 		inhibit_suspend:	config.system.conduct_inhibit,
 		flatpak_info:		config.advanced.flatpak_env,
-		lockdown:		config.privacy.lockdown,
+		landlock:		lockdown_options.landlock,
+		seccomp_whitelist:	lockdown_options.seccomp_whitelist,
 		allow_debug:		config.advanced.allow_debug,
 		logger:			logger.clone(),
 		stop:			stop,
