@@ -191,7 +191,7 @@ pub struct Privacy {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum LockdownConfig {
+pub enum LockdownConfig {
 	Global	{ enable: bool },
 	FineGrained {
 		seccomp:	bool,
