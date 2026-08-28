@@ -216,7 +216,7 @@ impl LockdownConfig {
 	*/
 	fn get_fine_grained(&self) -> LockdownOptions {
 		match self {
-			Lockdown::Global { enable }	=> {
+			LockdownConfig::Global { enable }	=> {
 				if *enable {
 					LockdownOptions {
 						seccomp_whitelist:	true,
@@ -229,7 +229,7 @@ impl LockdownConfig {
 					}
 				}
 			}
-			Lockdown::FineGrained {
+			LockdownConfig::FineGrained {
 				seccomp, landlock
 			}				=> {
 				LockdownOptions {
@@ -241,7 +241,7 @@ impl LockdownConfig {
 	}
 }
 
-impl Default for Lockdown {
+impl Default for LockdownConfig {
 	fn default() -> Self {
 		Self::Global { enable: false }
 	}
@@ -250,7 +250,7 @@ impl Default for Lockdown {
 impl Default for Privacy {
 	fn default() -> Self {
 		Self {
-			lockdown:		Lockdown::default(),
+			lockdown:		LockdownConfig::default(),
 			x11_compat:		false,
 			classic_notif:		false,
 			push_notification:	true,
