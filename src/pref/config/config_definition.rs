@@ -178,7 +178,7 @@ pub enum NetworkFilterTarget {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Privacy {
-	pub lockdown:		Lockdown,
+	pub lockdown:		LockdownConfig,
 
 	#[serde(alias = "x11")]
 	pub x11_compat:		bool,
@@ -191,7 +191,7 @@ pub struct Privacy {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum Lockdown {
+enum LockdownConfig {
 	Global	{ enable: bool },
 	FineGrained {
 		seccomp:	bool,
@@ -204,7 +204,13 @@ pub struct LockdownOptions {
 	pub landlock:		bool,
 }
 
-impl Lockdown {
+impl From<LockdownConfig> for LockdownOptions {
+	fn from(value: LockdownConfig) -> Self {
+		value.get_fine_grained()
+	}
+}
+
+impl LockdownConfig {
 	/**
 		Translate the current Lockdown enum to a fine-grained lockdown feature enablement.
 	*/
