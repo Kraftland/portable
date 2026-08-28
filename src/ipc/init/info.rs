@@ -13,10 +13,8 @@ pub struct InitInfo {
 	pub inhibit_suspend:	bool,
 	pub flatpak_info:	bool,
 
-	/**
-		Lockdown is an alias of seccomp whitelist + landlock
-	*/
-	pub lockdown:		bool,
+	pub seccomp_whitelist:	bool,
+	pub landlock:		bool,
 
 	/**
 		Whether or not to allow a set of debugging syscalls
@@ -97,18 +95,20 @@ impl InitInfo {
 		u32,
 		u32,
 		bool,
+		bool,
 	) {
 		(
 			self.extra_files.clone(),
 			self.inhibit_suspend,
 			self.flatpak_info,
-			self.lockdown,
+			self.landlock,
 			self.allow_debug,
 			&self.target_exec,
 			&self.target_args,
 			self.uclamp_min,
 			self.uclamp_max,
 			self.console,
+			self.seccomp_whitelist,
 		)
 	}
 
