@@ -3,7 +3,6 @@
 ## Breaking Changes:
 - Removed deprecated configuration fields, including `privacy.camera`, `privacy.input`, `system.gameMode` and `system.virtualization`. Please migrate to the unified device allow array. [#1034](https://github.com/Kraftland/portable/pull/1034)
 - Removed toggle for process tracking, it is now always enabled. [#1034](https://github.com/Kraftland/portable/pull/1034)
-- The `portable.env` file is no longer considered while passing environment variables. However, several Qt related variables will now be automatically forwarded.
 - Default configuration changes. [#1035](https://github.com/Kraftland/portable/pull/1035)
 	- KDE status indicator	-> `false`
 	- Classic Notifications	-> `false`
@@ -13,6 +12,8 @@
 - Display protocol:
 	- The native display protocol will always be enabled
 	- Wayland socket is now mounted at `/run/wayland`
+- The lockdown section can now be controlled in a fine-grained fashion.
+- The primary GPU is now determined with boot display attribute value, rather than connector status. Allowing multi-GPU multi-head system to operate optimally ([#1072](https://github.com/Kraftland/portable/pull/1072))
 
 ## Improvements:
 - Implemented overlay execution for D-Bus activation
@@ -25,7 +26,6 @@
 - Properly handled channel send error in spawner
 - Properly handled OpenPty errors
 - The `io_uring_setup` system call is now allowed
-- The primary GPU is now determined with boot display attribute value, rather than connector status. Allowing multi-GPU multi-head system to operate optimally ([#1072](https://github.com/Kraftland/portable/pull/1072))
 - It is now less likely for Init to be stuck when running for a few days
 - Non-native system calls will now cause the thread to be killed, rather than returning ENOSYS silently.
 - The D-Bus proxy has been more properly restricted from other local processes.
