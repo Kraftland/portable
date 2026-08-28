@@ -178,6 +178,7 @@ pub enum NetworkFilterTarget {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Privacy {
+	// #[serde(default)]
 	pub lockdown:		LockdownConfig,
 
 	#[serde(alias = "x11")]
@@ -192,7 +193,7 @@ pub struct Privacy {
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum LockdownConfig {
-	Global	{ enable: bool },
+	Global	(bool),
 	FineGrained {
 		seccomp:	bool,
 		landlock:	bool,
@@ -216,8 +217,8 @@ impl LockdownConfig {
 	*/
 	fn get_fine_grained(&self) -> LockdownOptions {
 		match self {
-			LockdownConfig::Global { enable }	=> {
-				if *enable {
+			LockdownConfig::Global(v)	=> {
+				if *v {
 					LockdownOptions {
 						seccomp_whitelist:	true,
 						landlock:		true,
@@ -243,7 +244,7 @@ impl LockdownConfig {
 
 impl Default for LockdownConfig {
 	fn default() -> Self {
-		Self::Global { enable: false }
+		Self::FineGrained { seccomp: false, landlock: false }
 	}
 }
 
