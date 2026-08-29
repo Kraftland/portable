@@ -312,7 +312,7 @@ pub async fn generate_bindrules(
 	let lockdown_options = {
 		use crate::config::config_definition::LockdownOptions;
 
-		let opts: LockdownOptions = LockdownOptions::from(&config.privacy.lockdown);
+		let opts: LockdownOptions = LockdownOptions::from(&config.privacy.lockdown_options);
 		opts
 	};
 
