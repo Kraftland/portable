@@ -14,7 +14,22 @@ pub async fn setup(
 	cancel_token:	tokio_util::sync::CancellationToken,
 	stop_obj:	std::sync::Arc<crate::stop::Stop>,
 ) -> Result<std::os::fd::OwnedFd, StreamError> {
-	let pty = crate::spawn::console::PtyPair::new()
+	let (column, row) = match get_winsize() {
+		Ok((column, row))	=> {
+			(column, row)
+		}
+		Err(e)			=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Warn,
+					message:	format!("Could not get window size: {e:#?}"),
+				}
+			).await;
+			(80, 24)
+		}
+	};
+
+	let pty = crate::spawn::console::PtyPair::new(column, row)
 		.map_err(StreamError::PtyAllocError)
 		?;
 
