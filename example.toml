@@ -93,13 +93,17 @@ enable = true
 [privacy]
 # Lockdown is a set of rules
 # 	that aims to reduce the attack surface within a sandbox.
-# It enables many additional protections, including:
-# 	landlock as another layer of filesystem security,
+# It contains many additional protections
+
+# Previously lockdown (bool)
+[privacy.lockdown_options]
+# System call filtering in whitelist rather than blacklist
+# 	prevents non-native system calls to be made
+# 	(e.g. X86 on X86_64 systems)
+seccomp_whitelist = false
+# Landlock as another layer of filesystem security,
 # 	blocks reparent of /, effectively prevents manipulation of mount points
-# 	system call filtering in whitelist rather than blacklist
-# 	blocks user namespaces
-# 	prevents non-native system calls to be made (e.g. X86 on X86_64 systems)
-lockdown = true
+landlock = true
 
 # When false, prevents application from connecting to X server on Wayland. Defaults to true.
 # Previously x11.

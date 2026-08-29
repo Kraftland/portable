@@ -178,7 +178,9 @@ pub enum NetworkFilterTarget {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Privacy {
-	pub lockdown:		bool,
+	#[serde(default)]
+	#[serde(alias = "lockdown")]
+	pub lockdown_options:	LockdownConfig,
 
 	#[serde(alias = "x11")]
 	pub x11_compat:		bool,
@@ -189,10 +191,68 @@ pub struct Privacy {
 	pub push_notification:	bool,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum LockdownConfig {
+	Global	(bool),
+	FineGrained {
+		seccomp_whitelist:	bool,
+		landlock:		bool,
+	},
+}
+
+pub struct LockdownOptions {
+	pub seccomp_whitelist:	bool,
+	pub landlock:		bool,
+}
+
+impl From<&LockdownConfig> for LockdownOptions {
+	fn from(value: &LockdownConfig) -> Self {
+		value.get_fine_grained()
+	}
+}
+
+impl LockdownConfig {
+	/**
+		Translate the current Lockdown enum to a fine-grained lockdown feature enablement.
+	*/
+	fn get_fine_grained(&self) -> LockdownOptions {
+		match self {
+			LockdownConfig::Global(v)	=> {
+				if *v {
+					LockdownOptions {
+						seccomp_whitelist:	true,
+						landlock:		true,
+					}
+				} else {
+					LockdownOptions {
+						seccomp_whitelist:	false,
+						landlock:		false,
+					}
+				}
+			}
+			LockdownConfig::FineGrained {
+				seccomp_whitelist, landlock
+			}				=> {
+				LockdownOptions {
+					seccomp_whitelist:	*seccomp_whitelist,
+					landlock:		*landlock,
+				}
+			}
+		}
+	}
+}
+
+impl Default for LockdownConfig {
+	fn default() -> Self {
+		Self::FineGrained { seccomp_whitelist: false, landlock: false }
+	}
+}
+
 impl Default for Privacy {
 	fn default() -> Self {
 		Self {
-			lockdown:		false,
+			lockdown_options:	LockdownConfig::default(),
 			x11_compat:		false,
 			classic_notif:		false,
 			push_notification:	true,

@@ -78,7 +78,7 @@ pub async fn get_legacy_conf(path: &std::path::Path) -> Result<Config, LegacyCon
 			block_dest: vec![],
 		},
 		privacy: Privacy {
-			lockdown:		false,
+			lockdown_options:	super::config_definition::LockdownConfig::default(),
 			x11_compat:		! decoded_legacy_conf.wayland,
 			classic_notif:		false,
 			push_notification:	false,
