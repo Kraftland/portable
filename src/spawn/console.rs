@@ -18,8 +18,14 @@ pub enum PtyError {
 }
 
 impl PtyPair {
-	pub fn new() -> Result<Self, PtyError> {
-		let pair = nix::pty::openpty(None, None)
+	pub fn new(columns: u16, rows: u16) -> Result<Self, PtyError> {
+		let winsize = nix::pty::Winsize {
+			ws_row:		rows,
+			ws_col:		columns,
+			ws_xpixel:	0,
+			ws_ypixel:	0,
+		};
+		let pair = nix::pty::openpty(Some(&winsize), None)
 			.map_err(PtyError::NewPtyError)
 			?;
 
