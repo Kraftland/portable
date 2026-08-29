@@ -100,6 +100,33 @@ pub async fn setup(
 	Ok(pty.slave)
 }
 
+/**
+	Get the window size of stdin
+
+	Result is in (col, row)
+*/
+fn get_winsize() -> Result<(u16, u16), nix::Error> {
+	nix::ioctl_read_bad!(ioctl_get_winsize, nix::libc::TIOCGWINSZ, nix::libc::winsize);
+	nix::ioctl_write_ptr_bad!(ioctl_set_winsize, nix::libc::TIOCSWINSZ, nix::libc::winsize);
+
+	unsafe {
+			let mut size: nix::libc::winsize = std::mem::zeroed();
+			match ioctl_get_winsize(nix::libc::STDIN_FILENO, &mut size) {
+				Ok(_)	=> {
+					#[cfg(feature = "term-resize-debug")]
+					println!(
+						"Window size changed: {} col, {} row",
+						&size.ws_col,
+						&size.ws_row,
+					);
+					Ok((size.ws_col, size.ws_row))
+				}
+				Err(e)	=> {
+					return Err(e);
+				}
+			}
+	}
+}
 
 async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError> {
 	use std::os::fd::AsRawFd;
@@ -117,22 +144,11 @@ async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError
 
 	loop {
 		sigwinch.recv().await;
-		let winsize = unsafe {
-			let mut size: nix::libc::winsize = std::mem::zeroed();
-			match ioctl_get_winsize(nix::libc::STDIN_FILENO, &mut size) {
-				Ok(_)	=> {
-					#[cfg(feature = "term-resize-debug")]
-					println!(
-						"Window size changed: {} col, {} row",
-						&size.ws_col,
-						&size.ws_row,
-					);
-					(size.ws_col, size.ws_row)
-				}
-				Err(e)	=> {
-					eprintln!("Could not get console size: {e:#?}");
-					continue;
-				}
+		let winsize = match get_winsize() {
+			Ok(v)	=> v,
+			Err(e)	=> {
+				eprintln!("Could not get terminal dimentions: {e:#?}");
+				continue;
 			}
 		};
 
