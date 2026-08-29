@@ -18,7 +18,7 @@ pub enum PtyError {
 }
 
 impl PtyPair {
-	pub fn new(rows: u16, columns: u16) -> Result<Self, PtyError> {
+	pub fn new(columns: u16, rows: u16) -> Result<Self, PtyError> {
 		let winsize = nix::pty::Winsize {
 			ws_row:		rows,
 			ws_col:		columns,
