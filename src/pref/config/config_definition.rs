@@ -195,8 +195,8 @@ pub struct Privacy {
 pub enum LockdownConfig {
 	Global	(bool),
 	FineGrained {
-		seccomp:	bool,
-		landlock:	bool,
+		seccomp_whitelist:	bool,
+		landlock:		bool,
 	},
 }
 
@@ -231,10 +231,10 @@ impl LockdownConfig {
 				}
 			}
 			LockdownConfig::FineGrained {
-				seccomp, landlock
+				seccomp_whitelist, landlock
 			}				=> {
 				LockdownOptions {
-					seccomp_whitelist:	*seccomp,
+					seccomp_whitelist:	*seccomp_whitelist,
 					landlock:		*landlock,
 				}
 			}
@@ -244,7 +244,7 @@ impl LockdownConfig {
 
 impl Default for LockdownConfig {
 	fn default() -> Self {
-		Self::FineGrained { seccomp: false, landlock: false }
+		Self::FineGrained { seccomp_whitelist: false, landlock: false }
 	}
 }
 
