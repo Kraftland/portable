@@ -25,5 +25,4 @@ jobs:
       run: |
         cd lib/init
         cargo fetch --locked --target host-tuple
-        cargo build --frozen
         cargo build --frozen --release
