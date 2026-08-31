@@ -50,6 +50,19 @@
 
 ## Internal Changes
 
+### 20.beta.4
+
+#### Daemon
+* start_transient: disable core dumping unless debug mode is enabled by @Kimiblock in https://github.com/Kraftland/portable/pull/1262
+* don't manually bind /dev/input by @Kimiblock in https://github.com/Kraftland/portable/pull/1263
+* separate seccomp whitelist and landlock by @Kimiblock in https://github.com/Kraftland/portable/pull/1264
+* console: initialise pty dimentions on startup by @Kimiblock in https://github.com/Kraftland/portable/pull/1265
+* overlay-usr: mount lspci as true by @Kimiblock in https://github.com/Kraftland/portable/pull/1266
+* feat: private per-app machine-id by @Kimiblock in https://github.com/Kraftland/portable/pull/1267
+
+#### Init
+* split landlock and seccomp whitelisting by @Kimiblock in https://github.com/Kraftland/portable-init/pull/73
+
 ### 20.beta.3
 #### Daemon
 * envs: load XDG envs by @Kimiblock in https://github.com/Kraftland/portable/pull/1250
