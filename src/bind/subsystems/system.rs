@@ -3,6 +3,7 @@ mod nsswitch;
 mod kvm;
 mod resolv;
 mod bin;
+mod machine_id;
 
 /**
 	The system bind subsystem
@@ -54,6 +55,13 @@ async fn bind(
 		path.push(&config.metadata.state_directory);
 		path
 	};
+
+	let machine_id = tokio::spawn(
+		machine_id::bind(
+			config.clone(),
+			xdg.clone(),
+		),
+	);
 
 	let kvm_spawn = tokio::spawn(
 		kvm::mount_kvm(config.system.device_allow.clone())
@@ -525,6 +533,14 @@ async fn bind(
 	);
 
 	ret.extend(
+		machine_id
+			.await
+			.map_err(SystemBindError::SpawnError)
+			?
+			?
+	);
+
+	ret.extend(
 		resolv_spawn
 			.await
 			.map_err(SystemBindError::SpawnError)?
@@ -542,6 +558,9 @@ async fn bind(
 
 #[derive(thiserror::Error, Debug)]
 pub enum SystemBindError {
+	#[error("Error while generating machine-id: expected parent path to be Some")]
+	NoneParentForMachineID,
+
 	#[error("I/O error while reading path: {0:#?}")]
 	IOError(std::io::Error),
 
