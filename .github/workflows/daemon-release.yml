@@ -1,4 +1,4 @@
-name: Build daemon (debug)
+name: Build daemon (release)
 
 on:
   release:
@@ -25,4 +25,4 @@ jobs:
     - name: Build daemon (Debug)
       run: |
         cargo fetch --locked --target host-tuple
-        cargo build --frozen
+        cargo build --frozen --release
