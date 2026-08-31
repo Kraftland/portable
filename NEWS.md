@@ -14,6 +14,7 @@
 	- Wayland socket is now mounted at `/run/wayland`
 - The lockdown section can now be controlled in a fine-grained fashion.
 - The primary GPU is now determined with boot display attribute value, rather than connector status. Allowing multi-GPU multi-head system to operate optimally ([#1072](https://github.com/Kraftland/portable/pull/1072))
+- The machine-id used to reliably identify users has been randomised per-sandbox. Moreover, most D-Bus endpoints are locked down to avoid obtaining the true host ID, with the exception of Fcitx Portal.
 
 ## Improvements:
 - Implemented overlay execution for D-Bus activation
