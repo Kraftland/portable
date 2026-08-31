@@ -27,7 +27,7 @@ function buildRust() {
 	export RUSTUP_TOOLCHAIN=stable
 	export CARGO_TARGET_DIR=target
 	cargo fetch --locked --target host-tuple
-	cargo build --frozen --release --all-features
+	cargo build --frozen --release
 	cd "${currDir}"
 }
 
