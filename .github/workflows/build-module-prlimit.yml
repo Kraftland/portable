@@ -1,0 +1,26 @@
+name: Build submodule prlimit stub
+
+on:
+  release:
+    types: released
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'lib/daemon/go.mod'
+
+    - name: Initialise submodules
+      run: git submodule update --init --recursive
+
+    - name: Build
+      run: |
+        cd lib/prlimit-stub
+        go build
