@@ -1,3 +1,24 @@
+mod config;
+
+/**
+	LoggingConfig designates the initial configuration for logging thread.
+
+	It has a function get() implemented by config module.
+*/
+#[derive(Debug)]
+pub enum LoggingConfig {
+	Console {
+		colour:	Option<ColourVariant>,
+	},
+	Plain,
+}
+
+#[derive(Debug)]
+pub enum ColourVariant {
+	Normal,
+	Special,
+}
+
 pub enum LogLevel {
 	Debug,
 	Info,
