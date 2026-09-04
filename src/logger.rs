@@ -36,6 +36,7 @@ pub async fn logger (
 				true
 			}
 			None	=> {
+				#[cfg(debug_assertions)]
 				eprintln!("Could not detect terminal status");
 				false
 			}
