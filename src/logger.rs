@@ -8,7 +8,7 @@ mod config;
 #[derive(Debug)]
 pub enum LoggingConfig {
 	Console {
-		colour:	Option<ColourVariant>,
+		colour:	ColourVariant,
 	},
 	Plain,
 }
@@ -38,37 +38,7 @@ pub async fn logger (
 	stop_token:	tokio_util::sync::CancellationToken,
 )
 {
-	let is_terminal = {
-		let thread = tokio::task::spawn_blocking(
-			|| get_termios(),
-		)
-		.await;
-
-		let thread = match thread {
-			Ok(v)	=> {v}
-			Err(e)	=> {
-				eprintln!("Could not spawn task: {e:#?}");
-				panic!("{e:#?}")
-			}
-		};
-
-		match thread {
-			Some(_)	=> {
-				true
-			}
-			None	=> {
-				#[cfg(debug_assertions)]
-				eprintln!("Could not detect terminal status");
-				false
-			}
-		}
-	};
-
-	let allow_colour = {
-		let thread = tokio::task::spawn_blocking(|| {get_no_color_preference()})
-			.await.expect("Could not get colour preference:");
-		thread
-	};
+	let logging_config = LoggingConfig::get();
 
 	let (
 		debug_fmt,
@@ -77,36 +47,36 @@ pub async fn logger (
 		warn_fmt,
 		fatal_fmt,
 	) = {
-		if allow_colour && is_terminal {
-			match is_pups_day() {
-				true	=> {
-					(
-						"\x1b[38;2;213;161;115m[Debug]\x1b[0m:",
-
-						"\x1b[38;2;213;161;115m[Info]\x1b[0m:",
-						"\x1b[38;2;213;161;115m[Warn]\x1b[0m:",
-						"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
-					)
-				}
-				false	=> {
-					(
-						"\x1b[38;2;125;241;118m[Debug]\x1b[0m:",
-
-						"\x1b[38;2;119;222;250m[Info]\x1b[0m:",
-						"\x1b[38;2;255;209;59m[Warn]\x1b[0m:",
-						"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
-					)
+		match logging_config {
+			LoggingConfig::Plain	=> {
+				(
+					"[Debug]:",
+					"[Info]:",
+					"[Warn]:",
+					"[Fatal]:",
+				)
+			}
+			LoggingConfig::Console { colour }
+						=> {
+				match colour {
+					ColourVariant::Normal	=> {
+						(
+							"\x1b[38;2;125;241;118m[Debug]\x1b[0m:",
+							"\x1b[38;2;119;222;250m[Info]\x1b[0m:",
+							"\x1b[38;2;255;209;59m[Warn]\x1b[0m:",
+							"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
+						)
+					}
+					ColourVariant::Special	=> {
+						(
+							"\x1b[38;2;213;161;115m[Debug]\x1b[0m:",
+							"\x1b[38;2;213;161;115m[Info]\x1b[0m:",
+							"\x1b[38;2;213;161;115m[Warn]\x1b[0m:",
+							"\x1b[38;2;255;0;0m[Fatal]\x1b[0m:",
+						)
+					}
 				}
 			}
-
-		} else {
-			(
-				"[Debug]:",
-
-				"[Info]:",
-				"[Warn]:",
-				"[Fatal]:",
-			)
 		}
 	};
 
@@ -144,36 +114,4 @@ pub async fn logger (
 	}
 
 
-}
-
-fn is_pups_day() -> bool {
-	let time =jiff::Zoned::now();
-	if time.month() == 12 && time.day() == 25 {
-		true
-	} else {
-		false
-	}
-}
-
-fn get_termios() -> Option<nix::sys::termios::Termios> {
-	use std::os::fd::AsFd;
-	match nix::sys::termios::tcgetattr(std::io::stdin().as_fd()) {
-		Ok(v)	=> {
-			return Some(v);
-		}
-		Err(_)	=> {
-			return None;
-		}
-	}
-}
-
-fn get_no_color_preference() -> bool {
-	match std::env::var("NO_COLOR") {
-		Ok(_)	=> {
-			false
-		}
-		Err(_)	=> {
-			true
-		}
-	}
 }

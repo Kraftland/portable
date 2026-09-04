@@ -1,5 +1,5 @@
 impl super::LoggingConfig {
-	fn get() -> Self {
+	pub fn get() -> Self {
 		match is_terminal() {
 			true	=>	{}
 			false	=>	{
