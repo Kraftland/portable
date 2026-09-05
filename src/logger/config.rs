@@ -1,15 +1,24 @@
+/**
+	PlainReason describes the reason console was set to "Plain" mode
+*/
+#[derive(Debug)]
+pub enum PlainReason {
+	NotTerminal,
+	NoColorEnv,
+}
+
 impl super::LoggingConfig {
 	pub fn get() -> Self {
 		match is_terminal() {
 			true	=>	{}
 			false	=>	{
-				return Self::Plain;
+				return Self::Plain { reason: PlainReason::NotTerminal };
 			}
 		};
 		match is_colour() {
 			true	=> {}
 			false	=> {
-				return Self::Plain;
+				return Self::Plain { reason: PlainReason::NoColorEnv };
 			}
 		};
 
@@ -51,7 +60,7 @@ fn is_colour() -> bool {
 			}
 		}
 		Err(_)	=> {
-			false
+			true
 		}
 	}
 }
