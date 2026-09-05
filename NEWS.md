@@ -50,6 +50,18 @@
 
 ## Internal Changes
 
+### 20.rc
+
+#### Daemon
+* workflow: explicitly build debug / release version by @Kimiblock in https://github.com/Kraftland/portable/pull/1269
+* example config: fix parsing by @Kimiblock in https://github.com/Kraftland/portable/pull/1270
+* logger: don't print error on terminal status by @Kimiblock in https://github.com/Kraftland/portable/pull/1271
+* migrate logger configuration discovery to a separate module by @Kimiblock in https://github.com/Kraftland/portable/pull/1272
+
+#### Init
+* cargo: enable LTO for release profile by @Kimiblock in https://github.com/Kraftland/portable-init/pull/74
+* rust: build release in workflow too by @Kimiblock in https://github.com/Kraftland/portable-init/pull/75
+
 ### 20.beta.4
 
 #### Daemon
