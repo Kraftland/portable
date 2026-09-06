@@ -547,20 +547,18 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 		.map_err(ProxyError::CoreCountError)
 		?;
 
-	let mut counter: u8 = 0;
-	let mut pid: usize = threads - 1;
-	let mut ret = vec![];
 	let name_prefix = String::from("org.kde.StatusNotifierItem-");
+	let mut ret = vec![];
 
-	loop {
-		if counter > 10 {
-			return Ok(ret);
-		}
-		counter += 1;
+	let range: Vec<usize> = (threads..=threads + 20).collect();
 
-		let mut name = String::from(&name_prefix);
-		name.push_str(&pid.to_string());
-		name.push_str("-1");
+	for pid in range {
+		let name = {
+			let mut name = String::from(&name_prefix);
+			name.push_str(&pid.to_string());
+			name.push_str("-1");
+			name
+		};
 
 		ret.push(
 			BusAccessLevel::OwnName {
@@ -569,9 +567,8 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 					?,
 			}
 		);
-		pid += 1;
-	}
-
+	};
+	Ok(ret)
 }
 
 async fn get_session_bus_address() -> Result<String, ProxyError> {
