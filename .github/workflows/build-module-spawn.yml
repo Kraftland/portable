@@ -15,7 +15,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version-file: 'lib/daemon/go.mod'
+        go-version-file: 'lib/flatpak-spawn-stub/go.mod'
 
     - name: Initialise submodules
       run: git submodule update --init --recursive

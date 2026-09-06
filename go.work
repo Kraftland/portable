@@ -1,7 +1,6 @@
 go 1.26.4
 
 use (
-	./lib/daemon
 	./lib/flatpak-spawn-stub
 	./lib/gpu
 	./lib/open-ng
