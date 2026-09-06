@@ -50,6 +50,14 @@
 
 ## Internal Changes
 
+### 20.0
+#### Daemon
+* fix coloured output by @Kimiblock in https://github.com/Kraftland/portable/pull/1275
+* session bus: rework StatusNotifier proxy by @Kimiblock in https://github.com/Kraftland/portable/pull/1276
+* session bus: allow registering instance number up to 5 by @Kimiblock in https://github.com/Kraftland/portable/pull/1277
+* properly sandbox StatusNotifierWatcher bus name by @Kimiblock in https://github.com/Kraftland/portable/pull/1278
+* Remove legacy daemon by @Kimiblock in https://github.com/Kraftland/portable/pull/1274
+
 ### 20.rc
 
 #### Daemon
