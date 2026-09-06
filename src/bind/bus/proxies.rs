@@ -15,8 +15,8 @@ pub async fn start_proxies(
 	session_cancel:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	bus_conn:	zbus::Connection,
-
 	env:		crate::envs::holder::HoldChannel,
+	runtime_opts:	std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
 
 	#[cfg(feature = "flatpak")]
 	flatpak_dir:	std::sync::Arc<crate::bind::subsystems::dirs::flatpak::FlatpakRuntime>,
@@ -71,11 +71,15 @@ pub async fn start_proxies(
 			None	=> {vec![]}
 		};
 
+		let debug_log = {
+			runtime_opts.debug_shell
+		};
+
 		(
 			session_bind,
 			proxy_object.envs.clone().unwrap_or(std::collections::HashMap::new()),
 			tokio::spawn(
-				proxy_object.start()
+				proxy_object.start(debug_log)
 			),
 		)
 	};
@@ -102,7 +106,7 @@ pub async fn start_proxies(
 				(
 					bind,
 					tokio::spawn(
-						v.start()
+						v.start(false)
 					),
 				)
 			}

@@ -515,6 +515,7 @@ async fn run(
 			portable_runtime.clone(),
 			dbus_conn.clone(),
 			envs_tx.clone(),
+			runtime_opts.clone(),
 			#[cfg(feature = "flatpak")]
 			flatpak_runtime,
 			#[cfg(feature = "flatpak")]
