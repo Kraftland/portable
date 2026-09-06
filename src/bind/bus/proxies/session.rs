@@ -553,20 +553,24 @@ async fn generate_status_notifier_rules() -> Result<Vec<crate::bind::bus::rules:
 	let range: Vec<usize> = (threads..=threads + 20).collect();
 
 	for pid in range {
-		let name = {
-			let mut name = String::from(&name_prefix);
-			name.push_str(&pid.to_string());
-			name.push_str("-1");
-			name
-		};
+		let sub_instance_range: Vec<u8> = (1..=5).collect();
 
-		ret.push(
-			BusAccessLevel::OwnName {
-				bus_name: BusName::try_from(name)
+		for sub_instance in sub_instance_range {
+			let name = {
+				let mut name = String::from(&name_prefix);
+				name.push_str(&pid.to_string());
+				name.push_str("-");
+				name.push_str(&sub_instance.to_string());
+				name
+			};
+			ret.push(
+				BusAccessLevel::OwnName {
+					bus_name: BusName::try_from(name)
 					.map_err(ProxyError::InvalidBusNameError)
 					?,
-			}
-		);
+				}
+			);
+		};
 	};
 	Ok(ret)
 }
