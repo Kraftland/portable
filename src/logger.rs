@@ -10,7 +10,9 @@ pub enum LoggingConfig {
 	Console {
 		colour:	ColourVariant,
 	},
-	Plain,
+	Plain {
+		reason:	config::PlainReason,
+	},
 }
 
 #[derive(Debug)]
@@ -47,8 +49,9 @@ pub async fn logger (
 		warn_fmt,
 		fatal_fmt,
 	) = {
-		match logging_config {
-			LoggingConfig::Plain	=> {
+		match &logging_config {
+			LoggingConfig::Plain { reason: _ }
+						=> {
 				(
 					"[Debug]:",
 					"[Info]:",
@@ -79,6 +82,9 @@ pub async fn logger (
 			}
 		}
 	};
+
+	#[cfg(debug_assertions)]
+	println!("{}\tUsing logger configuration: {:#?}", &debug_fmt, &logging_config);
 
 	loop {
 		let msg = tokio::select! {

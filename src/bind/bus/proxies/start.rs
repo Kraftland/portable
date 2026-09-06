@@ -10,7 +10,7 @@ pub enum StartProxyError {
 }
 
 impl Proxy {
-	pub async fn start(self)	-> Result<(), StartProxyError> {
+	pub async fn start(self, log: bool)	-> Result<(), StartProxyError> {
 		#[cfg(debug_assertions)]
 		let _ = self.logger.send(
 			crate::logger::LogMessage {
@@ -73,6 +73,9 @@ impl Proxy {
 			cmdline.push(self.bus_address.clone());
 			cmdline.push(self.proxy_socket.to_string_lossy().to_string());
 			cmdline.push("--filter".into());
+			if log {
+				cmdline.push("--log".into());
+			};
 
 			if self.sloppy_names {
 				cmdline.push("--sloppy-names".into());
