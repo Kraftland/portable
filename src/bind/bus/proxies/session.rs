@@ -276,7 +276,21 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "*".into(),
+			method: "org.freedesktop.DBus.Introspectable.Introspect".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.kde.StatusNotifierWatcher.*".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Properties.*".into(),
 			object_path: "/StatusNotifierWatcher".into(),
 		},
 		// Receiving broadcast from StatusNotifier endpoints
@@ -284,7 +298,14 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "*".into(),
+			method: "org.kde.StatusNotifierWatcher.*".into(),
+			object_path: "/StatusNotifierWatcher".into(),
+		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.kde.StatusNotifierWatcher")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Properties.*".into(),
 			object_path: "/StatusNotifierWatcher".into(),
 		},
 
