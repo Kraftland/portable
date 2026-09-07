@@ -1,5 +1,19 @@
 # 20.0
 
+Portable Neoteny is our latest release for a fast, private and modern Linux desktop sandbox.
+
+Under the hood, a rewrite allows us to make new advancements, both in elegancy and performance. SECCOMP handling has also been reworked, including dedicated-thread support for unotify and better handling of non-native system calls. Those calls now terminate the offending thread instead of quietly returning `ENOSYS`.
+
+There’s also a pile of fixes around process spawning, initialization, channels, PTYs, and long-running sessions. Init is less likely to get stuck after running for days, panics are handled properly, and secondary instances should no longer hang when they hit prohibited system calls. Starting the primary and secondary instances together is more reliable too, even when Init is slow to start.
+
+TUI applications would also receive a major quality of life improvement. Console is now handled inside Portable via a unified way, fixing inappropriate ioctls for bash while allowing other shell programs like fish to operate normally. The terminal will now adjust it's size at real time, following your input precisely. There is no more distinctive "defects" on secondary instances. And Portable will now allocate pesudo-terminals on demand.
+
+Security continues to be our top-priority. Portable now supports the Wayland Security Context V1 protocol for compositors to limit privileged protocols from sandboxed applications. In addition to Wayland side of improvements, the D-Bus IPC access has also been tightened up. D-Bus proxies now have even more limited access to the host, and session bus would no longer allow querying peer information for the vast majority of services.
+
+If you are using a supported desktop environment, Portable will now display background status of applications. This allows you to see running instances at a glance.
+
+This release is dedicated to our puppet, may he rest in the heavenly world.
+
 ## Breaking Changes:
 - Removed deprecated configuration fields, including `privacy.camera`, `privacy.input`, `system.gameMode` and `system.virtualization`. Please migrate to the unified device allow array. [#1034](https://github.com/Kraftland/portable/pull/1034)
 - Removed toggle for process tracking, it is now always enabled. [#1034](https://github.com/Kraftland/portable/pull/1034)
@@ -44,11 +58,19 @@
 - When starting Portable without a valid terminal, it will no longer allocate new pairs of pesudo-terminal
 - When using a supported desktop environment, Portable will display the sandbox status in _Background Apps_ area.
 - The inappropriate ioctl error has been fixed and other shells like fish is now able to run without issue. Furthermore, you should now see TUI applications more "compliant" regarding input handling.
-- Sandboxed session bus cannot speculate host process via D-Bus. Obtaining information regarding the remote service (such as Machine ID, PID, credentials) are now prevented.
+- Sandboxed session bus cannot speculate host process via D-Bus. Obtaining information regarding the remote service (such as Machine ID, PID, credentials) are now prevented, except for Fcitx input portal that awaits more documentation.
 - UnifiedPush support has been more locked down.
 - Portable now operates faster due to LTO usage.
 
 ## Internal Changes
+
+### 20.0
+#### Daemon
+* fix coloured output by @Kimiblock in https://github.com/Kraftland/portable/pull/1275
+* session bus: rework StatusNotifier proxy by @Kimiblock in https://github.com/Kraftland/portable/pull/1276
+* session bus: allow registering instance number up to 5 by @Kimiblock in https://github.com/Kraftland/portable/pull/1277
+* properly sandbox StatusNotifierWatcher bus name by @Kimiblock in https://github.com/Kraftland/portable/pull/1278
+* Remove legacy daemon by @Kimiblock in https://github.com/Kraftland/portable/pull/1274
 
 ### 20.rc
 
