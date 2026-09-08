@@ -18,11 +18,22 @@ pub struct UserBind {
 	pub translator:	crate::bind::translate::Delta,
 	pub xdg:	std::sync::Arc<crate::xdg::XdgDirs>,
 	pub config:	std::sync::Arc<crate::config::config_definition::Config>,
+	pub env:	crate::envs::holder::HoldChannel,
+	pub logger:	crate::logger::LogSender,
+	pub bus:	zbus::Connection,
 }
 
 
 impl super::GenerateBind for UserBind {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
+		let xcursor_spawn = tokio::spawn(
+			theming::xcursor::forward_xcursor(
+				self.env,
+				self.logger,
+				self.bus,
+			)
+		);
+
 		let mut binds = paths::bind(
 			self.xdg.data_home.to_path_buf(),
 			&self.config.metadata.state_directory,
@@ -35,6 +46,12 @@ impl super::GenerateBind for UserBind {
 				self.xdg.data_home.to_path_buf(),
 			).await?,
 		);
+
+		xcursor_spawn
+			.await
+			.map_err(UserBindError::TokioSpawnError)
+			?
+			?;
 
 		Ok(binds)
 	}
@@ -55,4 +72,13 @@ pub enum UserBindError {
 
 	#[error("Error spawning Zenity: {0:#?}")]
 	ZenitySpawnError(std::io::Error),
+
+	#[error("Error spawning tokio thread: {0:#?}")]
+	TokioSpawnError(tokio::task::JoinError),
+
+	#[error("Error forwarding environment variable: {0:#?}")]
+	ForwardEnvsError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
+
+	#[error("Error converting obtained cursor variant to String: {0:#?}")]
+	CursorVariantStringError(zbus::zvariant::Error),
 }
