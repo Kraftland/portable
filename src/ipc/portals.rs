@@ -3,3 +3,4 @@ pub mod documents;
 pub mod open_uri;
 
 pub mod request;
+pub mod settings;
