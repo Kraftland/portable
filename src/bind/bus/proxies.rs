@@ -71,8 +71,12 @@ pub async fn start_proxies(
 			None	=> {vec![]}
 		};
 
+		#[cfg(debug_assertions)]
+		let debug_log = runtime_opts.debug_shell;
+
+		#[cfg(not(debug_assertions))]
 		let debug_log = {
-			runtime_opts.debug_shell
+			false
 		};
 
 		(
