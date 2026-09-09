@@ -36,8 +36,8 @@ See [Docs](https://github.com/Kraftland/portable/blob/master/doc/Why%20Portable.
 		- Only selected free/OSS apps
 		- Updates faster
 	- Portable for Arch
-		- Configure paru to use [portable-arch](https://github.com/Kraftland/portable-arch): https://github.com/Kraftland/portable-arch
-		- Current support status (as of 30 Nov 2025): 29 packages in repo.
+		- Configure your system to use [portable-arch](https://github.com/Kraftland/portable-arch): https://github.com/Kraftland/portable-arch
+		- Current support status (as of 09 Sep 2026): 37 packages in repo.
 
 # Limitations:
 
@@ -73,7 +73,7 @@ See [Docs](https://github.com/Kraftland/portable/tree/master/doc)
 
 ## Starting portable
 
-Start portable with environment variable `PORTABLE_CONF`, which can be 1) the appID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${PORTABLE_CONF}`. It searches for each of them respectively.
+Start portable with environment variable `PORTABLE_CONF`, which can be 1) the ID of the sandbox, 2) an absolute path (if exists), 3) a file name interpreted as `$(pwd)/${PORTABLE_CONF}`. It searches for each of them respectively.
 
 - Debugging output can be enabled by building with debug assertions (debug builds).
 
@@ -82,6 +82,10 @@ Start portable with environment variable `PORTABLE_CONF`, which can be 1) the ap
 #### Entering sandbox
 
 To manually execute programs instead of following the `exec.target` config, start portable with argument `--actions debug-shell`. This will open a bash prompt and gives you full control of the sandbox environment.
+
+#### D-Bus
+
+When debug-shell is enabled on a debug build of Portable, D-Bus proxy will log to the standard output of primary instance.
 
 # Code of Conduct
 
