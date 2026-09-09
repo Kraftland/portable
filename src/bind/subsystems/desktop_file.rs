@@ -7,13 +7,22 @@ pub async fn install_desktop_file(
 	stop:		std::sync::Arc<crate::stop::Stop>,
 	logger:		crate::logger::LogSender,
 
-	app_id:		String,
+	config:		std::sync::Arc<crate::config::config_definition::Config>,
 
-	data_home:	std::path::PathBuf,
-	data_dirs:	Vec<std::path::PathBuf>,
+	xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 ) {
-	match has_desktop_file(data_dirs, &app_id).await {
-		Ok(true)	=> {}
+	match has_desktop_file(&xdg.data_dirs, &config.metadata.sandbox_id).await {
+		Ok(true)	=> {
+			#[cfg(debug_assertions)]
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Debug,
+					message:	format!("Found desktop file"),
+				}
+			).await;
+
+			return ;
+		}
 		Ok(false)	=> {}
 		Err(e)		=> {
 			let _ = logger.send(
@@ -26,31 +35,29 @@ pub async fn install_desktop_file(
 		}
 	};
 
-	let mut file_name = String::from(&app_id);
-	file_name.push_str(".desktop");
+	let desktop_file_path = {
+		let mut file_name = String::from(&config.metadata.sandbox_id);
+		file_name.push_str(".desktop");
 
-	let mut dir_path = {
-		let mut path = data_home;
+		let mut path = xdg.data_home.to_path_buf();
 		path.push("applications");
 
+		match tokio::fs::create_dir_all(&path).await {
+			Ok(_)	=> {}
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level: crate::logger::LogLevel::Warn,
+						message: format!("Could not create applications directory: {e:#?}"),
+					}
+				).await;
+				return;
+			}
+		}
+
+		path.push(&file_name);
+
 		path
-	};
-
-
-	let file_path = match std::fs::create_dir_all(&dir_path) {
-		Ok(_)	=> {
-			dir_path.push(file_name);
-			dir_path
-		}
-		Err(e)	=> {
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not create applications directory: {e:#?}"),
-				}
-			).await;
-			return;
-		}
 	};
 
 	let file = tokio::fs::OpenOptions::new()
@@ -58,7 +65,7 @@ pub async fn install_desktop_file(
 		.write(true)
 		.create_new(true)
 		.mode(0o700)
-		.open(&file_path)
+		.open(&desktop_file_path)
 		.await;
 
 	let mut file = match file {
@@ -83,7 +90,7 @@ pub async fn install_desktop_file(
 					async move {
 						token.cancelled().await;
 
-						tokio::fs::remove_file(file_path)
+						tokio::fs::remove_file(desktop_file_path)
 							.await
 							.map_err(crate::stop::StopError::RemoveFsError)
 					}
@@ -107,7 +114,7 @@ pub async fn install_desktop_file(
 
 	use tokio::io::AsyncWriteExt;
 
-	match file.write(generate_file_content(&app_id).await.as_bytes()).await {
+	match file.write(generate_file_content(&config.metadata.sandbox_id).await.as_bytes()).await {
 		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = logger.send(
@@ -149,7 +156,7 @@ async fn generate_file_content(app_id: &str) -> String {
 }
 
 async fn has_desktop_file(
-	data_dirs:	Vec<std::path::PathBuf>,
+	data_dirs:	&Vec<std::path::PathBuf>,
 	app_id:		&str,
 ) -> Result<bool, InstallDesktopFileError> {
 	for path in data_dirs {
