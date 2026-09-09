@@ -13,7 +13,17 @@ pub async fn install_desktop_file(
 	data_dirs:	Vec<std::path::PathBuf>,
 ) {
 	match has_desktop_file(data_dirs, &app_id).await {
-		Ok(true)	=> {}
+		Ok(true)	=> {
+			#[cfg(debug_assertions)]
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Debug,
+					message:	format!("Found desktop file for {app_id}"),
+				}
+			).await;
+
+			return ;
+		}
 		Ok(false)	=> {}
 		Err(e)		=> {
 			let _ = logger.send(
