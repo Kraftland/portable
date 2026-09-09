@@ -1,3 +1,13 @@
+# Dev
+
+## Internal Changes
+### HEAD
+#### Daemon
+- The XCURSOR_THEME is now set automatically, obtained via GTK Portal if available
+
+#### Init
+- Allowed the capset system call
+
 # 20.0
 
 Portable Neoteny is our latest release for a fast, private and modern Linux desktop sandbox.
