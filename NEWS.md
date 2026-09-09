@@ -1,12 +1,14 @@
 # Dev
 
+## Notable Improvements
+- Chromium-based application will now work with full lockdown hardening with their internal sandbox.
+
 ## Internal Changes
 ### HEAD
 #### Daemon
-- The XCURSOR_THEME is now set automatically, obtained via GTK Portal if available
 
 #### Init
-- Allowed the capset system call
+
 
 # 20.0
 
