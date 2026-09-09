@@ -5,7 +5,8 @@
 #### Daemon
 - The XCURSOR_THEME is now set automatically, obtained via GTK Portal if available
 
-####
+#### Init
+- Allowed the capset system call
 
 # 20.0
 
