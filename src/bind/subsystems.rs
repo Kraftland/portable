@@ -178,6 +178,9 @@ pub async fn generate_bindrules(
 			translator:	translator,
 			xdg:		xdg.clone(),
 			config:		config.clone(),
+			bus:		dbus_conn.clone(),
+			env:		env.clone(),
+			logger:		logger.clone(),
 		};
 		workers.push(
 			tokio::spawn(

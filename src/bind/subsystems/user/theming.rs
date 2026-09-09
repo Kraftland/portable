@@ -1,3 +1,5 @@
+pub mod xcursor;
+
 pub async fn bind(
 	translator:	crate::bind::translate::Delta,
 	xdg_config:	std::path::PathBuf,
