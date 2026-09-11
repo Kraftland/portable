@@ -409,7 +409,7 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "*".into(),
+			method: "org.freedesktop.IBus.InputContext.*".into(),
 			object_path: "/org/freedesktop/IBus/*".into(),
 		},
 
@@ -547,7 +547,7 @@ async fn generate_bus_rules(
 				bus_name: BusName::try_from("org.kde.JobViewServer")
 					.map_err(ProxyError::InvalidBusNameError)
 					?,
-				method: "org.kde.JobViewServer=org.kde.JobViewV3.terminate".into(),
+				method: "org.kde.JobViewV3.terminate".into(),
 				object_path: "/org/kde/notificationmanager/jobs/*".into(),
 			}
 		);
