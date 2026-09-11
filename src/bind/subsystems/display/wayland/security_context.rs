@@ -43,35 +43,6 @@ pub async fn create_context(
 		.await
 		?;
 
-	let supports_security_context = {
-		let protocol = std::ffi::CString::new("wp_security_context_manager_v1")
-			.map_err(SecurityContextError::CStringError)
-			?;
-		let globals = conn.globals();
-
-		let mut security_context: bool = false;
-
-		for global in globals {
-			if global.interface == protocol {
-				security_context = true
-			} else {
-				continue;
-			}
-		}
-
-		security_context
-	};
-
-	if ! supports_security_context {
-		let _ = logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Warn,
-				message: format!("Compositor does not support security-context-v1"),
-			},
-		).await;
-		return Ok(original_socket);
-	};
-
 	let security_context_path = {
 		let mut path = portable_runtime.path();
 		path.push("wayland");
@@ -88,10 +59,32 @@ pub async fn create_context(
 			.into()
 	};
 
-	listen_context(context_fd, conn, app_id, instance_id).await?;
+	match listen_context(context_fd, conn, app_id, instance_id).await {
+		Ok(_)	=> {
+			#[cfg(debug_assertions)]
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Debug,
+					message: format!(
+						"Compositor supports wp_security_context_manager_v1",
+					),
+				},
+			).await;
 
-
-	Ok(security_context_path)
+			Ok(security_context_path)
+		}
+		Err(e)	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level: crate::logger::LogLevel::Warn,
+					message: format!(
+						"Could not enable wp_security_context_manager_v1: {e:?}",
+					),
+				},
+			).await;
+			Ok(original_socket)
+		}
+	}
 }
 
 async fn listen_context(
@@ -195,8 +188,15 @@ async fn listen_context(
 	The latter seems to fix flaky sockets.
 */
 async fn connect_socket() -> Result<wayrs_client::Connection<()>, SecurityContextError> {
-	let conn = wayrs_client::Connection::connect()
+	let mut conn = wayrs_client::Connection::connect()
 		.map_err(SecurityContextError::ConnectError)
+		?;
+
+	conn
+		.async_roundtrip()
+		.await
+		.map_err(SecurityContextError::IOError)
 		?;
 	Ok(conn)
 }
+
