@@ -353,21 +353,50 @@ async fn generate_bus_rules(
 			object_path: "/org/freedesktop/portal/documents".into(),
 		},
 
-		// Fcitx Portal, note that this is the only entry point to get MachineID
+		// Fcitx Portal
 		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
-			method: "*".into(),
-			object_path: "/*".into(),
+			method: "org.fcitx.Fcitx.InputMethod1.*".into(),
+			object_path: "/inputmethod".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.fcitx.Fcitx.InputMethod1.*".into(),
+			object_path: "/org/freedesktop/portal/inputmethod".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.fcitx.Fcitx.InputContext1.*".into(),
+			object_path: "/inputcontext/*".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.fcitx.Fcitx.InputContext1.*".into(),
+			object_path: "/org/freedesktop/portal/inputcontext/*".into(),
 		},
 		BusAccessLevel::GetBroadcast {
 			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
 			method: "*".into(),
-			object_path: "/*".into(),
+			object_path: "/inputcontext/*".into(),
 		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.Fcitx")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "*".into(),
+			object_path: "/org/freedesktop/portal/inputcontext/*".into(),
+		},
+
 		// iBus portal
 		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
