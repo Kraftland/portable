@@ -56,7 +56,10 @@ async fn compile_rules(
 ) -> Result<crate::bind::bus::Proxy, ProxyError> {
 	let bus_address = tokio::spawn(get_session_bus_address());
 
-	let (proxy_socket_path, app_sandbox) = address::get_address_with_sandbox(portable_dir)
+	let (proxy_socket_path, app_sandbox) = address::get_address_with_sandbox(
+		portable_dir,
+		&logger,
+	)
 		.await
 		?;
 
