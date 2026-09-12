@@ -2,6 +2,8 @@
 
 ## Notable Improvements
 - Chromium-based application will now work with full lockdown hardening with their internal sandbox.
+- Fixed a bug causing Portable to not recognise `wp_security_context_manager_v1` on KWin and Niri
+- XCURSOR_THEME is now set accordingly for legacy applications not utilising the cursor shape protocol
 
 ## Internal Changes
 ### HEAD
