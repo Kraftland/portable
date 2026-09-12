@@ -1,4 +1,4 @@
-# Dev
+# 20.1
 
 ## Notable Improvements
 - Chromium-based application will now work with full lockdown hardening with their internal sandbox.
@@ -6,11 +6,24 @@
 - XCURSOR_THEME is now set accordingly for legacy applications not utilising the cursor shape protocol
 
 ## Internal Changes
-### HEAD
-#### Daemon
+### Daemon
+* bus: guard debug logging behind debug build by @Kimiblock in https://github.com/Kraftland/portable/pull/1280
+* portals: support the read_one method in Settings Portal by @Kimiblock in https://github.com/Kraftland/portable/pull/1281
+* user subsystem: try to set the XCURSOR environment variable by @Kimiblock in https://github.com/Kraftland/portable/pull/1282
+* update docs by @Kimiblock in https://github.com/Kraftland/portable/pull/1283
+* init: update by @Kimiblock in https://github.com/Kraftland/portable/pull/1284
+* subsystems: generate stub .desktop file by @Kimiblock in https://github.com/Kraftland/portable/pull/1285
+* bump init by @Kimiblock in https://github.com/Kraftland/portable/pull/1286
+* update readme by @Kimiblock in https://github.com/Kraftland/portable/pull/1287
+* session bus: sandbox the iBus portal to prohibit Peer calls by @Kimiblock in https://github.com/Kraftland/portable/pull/1289
+* fix job termination on KDE Plasma by @Kimiblock in https://github.com/Kraftland/portable/pull/1290
+* session bus: further sandbox the Fcitx portal by @Kimiblock in https://github.com/Kraftland/portable/pull/1288
+* display subsystem: simplify Wayland security context by @Kimiblock in https://github.com/Kraftland/portable/pull/1291
 
-#### Init
-
+### Init
+* seccomp: allow capset by @Kimiblock in https://github.com/Kraftland/portable-init/pull/76
+* Reapply "inhibit: inhibit idle rather than suspend" by @Kimiblock in https://github.com/Kraftland/portable-init/pull/77
+* don't intercept chroot calls by @Kimiblock in https://github.com/Kraftland/portable-init/pull/78
 
 # 20.0
 
