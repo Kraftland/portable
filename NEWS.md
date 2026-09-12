@@ -19,6 +19,7 @@
 * fix job termination on KDE Plasma by @Kimiblock in https://github.com/Kraftland/portable/pull/1290
 * session bus: further sandbox the Fcitx portal by @Kimiblock in https://github.com/Kraftland/portable/pull/1288
 * display subsystem: simplify Wayland security context by @Kimiblock in https://github.com/Kraftland/portable/pull/1291
+* get_address_with_sandbox: guard bus parent behind debug logging in https://github.com/Kraftland/portable/pull/1293
 
 ### Init
 * seccomp: allow capset by @Kimiblock in https://github.com/Kraftland/portable-init/pull/76
