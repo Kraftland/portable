@@ -374,17 +374,6 @@ async fn bind(
 		);
 	};
 
-	// Global fontconfig cache
-	if tokio::fs::try_exists("/var/cache/fontconfig").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/var/cache/fontconfig".into(),
-				dest:	"/var/cache/fontconfig".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-
 	// Mount the /dev/null pesudo device
 	if tokio::fs::try_exists("/dev/null").await.map_err(SystemBindError::IOError)? {
 		ret.push(
