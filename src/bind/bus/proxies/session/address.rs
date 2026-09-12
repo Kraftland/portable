@@ -3,6 +3,7 @@
 */
 pub async fn get_address_with_sandbox(
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
+	logger:		&crate::logger::LogSender,
 )
 -> Result<(std::path::PathBuf, crate::bind::types::BindRules), super::ProxyError> {
 
@@ -15,7 +16,13 @@ pub async fn get_address_with_sandbox(
 				.map_err(super::ProxyError::IOError)
 				?;
 
-			println!("Created bus proxy parent: {0:?}", path);
+			#[cfg(debug_assertions)]
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Debug,
+					message:	format!("Created bus proxy parent: {0:?}", path)
+				}
+			).await;
 
 			path
 		};
