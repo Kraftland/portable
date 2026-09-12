@@ -4,6 +4,7 @@
 - Chromium-based application will now work with full lockdown hardening with their internal sandbox.
 - Fixed a bug causing Portable to not recognise `wp_security_context_manager_v1` on KWin and Niri
 - XCURSOR_THEME is now set accordingly for legacy applications not utilising the cursor shape protocol
+- Fixed warnings regarding empty lines in `portable.env`
 
 ## Internal Changes
 ### Daemon
@@ -20,6 +21,7 @@
 * session bus: further sandbox the Fcitx portal by @Kimiblock in https://github.com/Kraftland/portable/pull/1288
 * display subsystem: simplify Wayland security context by @Kimiblock in https://github.com/Kraftland/portable/pull/1291
 * get_address_with_sandbox: guard bus parent behind debug logging in https://github.com/Kraftland/portable/pull/1293
+* user envs: a few fixes in https://github.com/Kraftland/portable/pull/1294
 
 ### Init
 * seccomp: allow capset by @Kimiblock in https://github.com/Kraftland/portable-init/pull/76
