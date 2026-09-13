@@ -102,15 +102,6 @@ impl InitInfo {
 		bool,
 		bool,
 	)> {
-		if self.initialised.load(std::sync::atomic::Ordering::Relaxed) {
-			return Err(
-				zbus::fdo::Error::LimitsExceeded(
-					"GetInfo should only be called once".into(),
-				),
-			);
-		};
-
-		self.initialised.store(true, std::sync::atomic::Ordering::SeqCst);
 
 		Ok((
 			self.extra_files.clone(),
@@ -125,6 +116,57 @@ impl InitInfo {
 			self.console,
 			self.seccomp_whitelist,
 		))
+	}
+
+	#[zbus(
+		name	= "GetPID",
+	)]
+	async fn pid(
+		&self,
+		#[zbus(
+			header
+		)]
+		header:	zbus::message::Header<'_>,
+		#[zbus(connection)]
+		conn:	&zbus::Connection,
+	) -> zbus::fdo::Result<u32> {
+		if self.initialised.load(std::sync::atomic::Ordering::Relaxed) {
+			return Err(
+				zbus::fdo::Error::LimitsExceeded(
+					"GetInfo should only be called once".into(),
+				),
+			);
+		};
+
+		self.initialised.store(true, std::sync::atomic::Ordering::SeqCst);
+
+		let sender = match header.sender() {
+			Some(v)	=> v,
+			None	=> {
+				return Err(
+					zbus::fdo::Error::Failed(
+						String::from("Sender is None")
+					)
+				);
+			}
+		};
+
+		let proxy = zbus::fdo::DBusProxy::new(conn)
+			.await
+			?;
+
+		proxy.get_connection_unix_process_id(
+			match sender.as_str().try_into() {
+				Ok(v)	=> v,
+				Err(e)	=> {
+					return Err(
+						zbus::fdo::Error::Failed(
+							format!("Could not convert unique name: {e:?}")
+						)
+					);
+				}
+			},
+		).await
 	}
 
 	#[zbus(
