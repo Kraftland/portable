@@ -59,6 +59,11 @@ pub struct InitInfo {
 		Avoids I/O error
 	*/
 	pub console:		bool,
+
+	/**
+		Atomic bool to prevent double initialisation
+	*/
+	pub initialised:	std::sync::atomic::AtomicBool,
 }
 
 impl InitInfo {
@@ -84,7 +89,7 @@ impl InitInfo {
 			emits_changed_signal = "const"
 		),
 	)]
-	async fn get(&self) -> (
+	async fn get(&self) -> zbus::fdo::Result<(
 		std::collections::HashMap<String, String>,
 		bool,
 		bool,
@@ -96,8 +101,18 @@ impl InitInfo {
 		u32,
 		bool,
 		bool,
-	) {
-		(
+	)> {
+		if self.initialised.load(std::sync::atomic::Ordering::Relaxed) {
+			return Err(
+				zbus::fdo::Error::LimitsExceeded(
+					"GetInfo should only be called once".into(),
+				),
+			);
+		};
+
+		self.initialised.store(true, std::sync::atomic::Ordering::SeqCst);
+
+		Ok((
 			self.extra_files.clone(),
 			self.inhibit_suspend,
 			self.flatpak_info,
@@ -109,7 +124,7 @@ impl InitInfo {
 			self.uclamp_max,
 			self.console,
 			self.seccomp_whitelist,
-		)
+		))
 	}
 
 	#[zbus(
