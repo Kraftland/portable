@@ -9,6 +9,8 @@ pub fn get() -> std::collections::HashMap<String, String> {
 	let envs = vec![
 		"XDG_ACTIVATION_TOKEN",
 		"TERM",
+		"XCURSOR_THEME",
+		"XCURSOR_SIZE",
 	];
 
 	for env in envs {
