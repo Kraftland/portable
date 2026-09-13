@@ -133,7 +133,7 @@ impl InitInfo {
 		if self.initialised.load(std::sync::atomic::Ordering::Relaxed) {
 			return Err(
 				zbus::fdo::Error::LimitsExceeded(
-					"GetInfo should only be called once".into(),
+					"GetPID should only be called once".into(),
 				),
 			);
 		};
