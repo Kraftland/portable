@@ -1,33 +1,12 @@
-
+mod types;
 /**
-	PermissionType designates a specific permission
+	PermissionType designates a specific permission.
+
+	Various useful functions are implemented in the types module.
+	Such as the table and type method.
 */
 pub enum PermissionType {
 	ScreenShot,
-}
-
-impl PermissionType {
-	/**
-		Translate the given PermissionType to table name for Portal calls
-	*/
-	fn table(&self) -> &str {
-		match self {
-			Self::ScreenShot	=> {
-				"screenshot"
-			}
-		}
-	}
-
-	/**
-		Translate the given PermissionType to id (objects) for Portal calls
-	*/
-	fn id(&self) -> &str {
-		match self {
-			Self::ScreenShot	=> {
-				"screenshot"
-			}
-		}
-	}
 }
 
 /**
