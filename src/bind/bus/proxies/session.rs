@@ -415,6 +415,13 @@ async fn generate_bus_rules(
 			method: "org.freedesktop.IBus.InputContext.*".into(),
 			object_path: "/org/freedesktop/IBus/*".into(),
 		},
+		BusAccessLevel::GetBroadcast {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.IBus.InputContext.*".into(),
+			object_path: "/org/freedesktop/IBus/*".into(),
+		},
 
 		// Call FileManager1
 		BusAccessLevel::Call {
