@@ -280,7 +280,7 @@ async fn run(
 		pref::runtime::options::Action::ResetDocs			=> {
 
 			pref::runtime::cmdline::reset(
-				&config.metadata.sandbox_id,
+				std::sync::Arc::new(config.metadata.sandbox_id.to_owned()),
 				&dbus_conn,
 			)
 				.await

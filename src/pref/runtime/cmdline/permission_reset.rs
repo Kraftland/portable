@@ -4,9 +4,21 @@
 	Currently it only removes file permission.
 */
 pub async fn reset(
-	app_id:	&str,
+	app_id:	std::sync::Arc<String>,
 	bus:	&zbus::Connection,
 ) -> Result<(), ResetError> {
+
+	let reset = {
+		let bus = bus.clone();
+		let id = app_id.clone();
+		tokio::spawn(
+			crate::ipc::portals::permission_store::reset_permissions(
+				bus,
+				id,
+			)
+		)
+	};
+
 	{
 		use crate::ipc::portals::documents;
 
@@ -27,6 +39,13 @@ pub async fn reset(
 			?;
 	};
 
+	reset
+		.await
+		.map_err(ResetError::SpawnError)
+		?
+		.map_err(ResetError::BusIPCError)
+		?;
+
 	Ok(())
 }
 
@@ -34,4 +53,10 @@ pub async fn reset(
 pub enum ResetError {
 	#[error("Error resetting documents permission: {0:#?}")]
 	DocumentError(crate::ipc::portals::documents::DocumentError),
+
+	#[error("Error spawning task: {0:#?}")]
+	SpawnError(tokio::task::JoinError),
+
+	#[error("Error doing IPC: {0:#?}")]
+	BusIPCError(zbus::Error),
 }
