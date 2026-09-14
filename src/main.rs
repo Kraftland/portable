@@ -291,7 +291,7 @@ async fn run(
 				logger::LogMessage {
 					level: logger::LogLevel::Info,
 					message: format!(
-						"Permission for {} ({}) has been revoked",
+						"Permissions for {} ({}) has been revoked",
 						config.metadata.display_name,
 						config.metadata.sandbox_id,
 					),
