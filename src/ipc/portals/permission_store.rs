@@ -1,3 +1,24 @@
+
+/**
+	PermissionType designates a specific permission
+*/
+pub enum PermissionType {
+	ScreenShot,
+}
+
+impl PermissionType {
+	/**
+		Translate the given PermissionType to table name for Portal calls
+	*/
+	fn table(&self) -> &str {
+		match self {
+			Self::ScreenShot	=> {
+				"screenshot"
+			}
+		}
+	}
+}
+
 /**
 	Given a table ID, list enabled permissions.
 
