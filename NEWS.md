@@ -3,6 +3,7 @@
 ## Notable Improvements
 - The MainPID property will now be set to Init, and sandboxed processes are no longer able to update systemd unit status
 - Init will not crash if shutdown request fails
+- The `--revoke-permissions` switch will now handle ScreenShot, Location and Notifications permission
 
 # 20.1
 
