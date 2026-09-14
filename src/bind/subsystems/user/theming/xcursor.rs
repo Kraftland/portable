@@ -48,47 +48,6 @@ pub async fn forward_xcursor(
 		.map_err(crate::bind::subsystems::user::UserBindError::ForwardEnvsError)
 		?;
 
-	let cursor_size = {
-		let raw_value = match crate::ipc::portals::settings::read_one(
-			&bus,
-			"org.gnome.desktop.interface",
-			"cursor-size",
-		).await {
-			Ok(v)	=> v,
-			Err(e)	=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Warn,
-						message:	format!(
-							"Could not retrieve cursor size from Portal: {e:#?}",
-						),
-					}
-				).await;
-				return Ok(());
-			}
-		};
-
-		match i32::try_from(raw_value) {
-			Ok(v)	=> v,
-			Err(e)	=> {
-				use crate::bind::subsystems::user::UserBindError;
-				return Err(
-					UserBindError::CursorVariantStringError(e)
-				);
-			}
-		}
-	};
-
-	env.send(
-		crate::envs::holder::EnvMessage::Add {
-			key:	"XCURSOR_SIZE".into(),
-			value:	cursor_size.to_string(),
-		}
-	)
-		.await
-		.map_err(crate::bind::subsystems::user::UserBindError::ForwardEnvsError)
-		?;
-
 	Ok(())
 }
 
