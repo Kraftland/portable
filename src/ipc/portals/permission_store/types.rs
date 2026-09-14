@@ -8,6 +8,9 @@ impl super::PermissionType {
 			Self::ScreenShot	=> {
 				"screenshot"
 			}
+			Self::Location		=> {
+				"location"
+			}
 		}
 	}
 
@@ -18,6 +21,9 @@ impl super::PermissionType {
 		match self {
 			Self::ScreenShot	=> {
 				"screenshot"
+			}
+			Self::Location		=> {
+				"location"
 			}
 		}
 	}
