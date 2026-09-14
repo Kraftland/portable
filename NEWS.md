@@ -1,3 +1,8 @@
+# 21
+
+## Notable Improvements
+- The MainPID property will now be set to Init, and sandboxed processes are no longer able to update systemd unit status
+
 # 20.1
 
 ## Notable Improvements
