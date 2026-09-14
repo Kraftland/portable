@@ -11,6 +11,9 @@ impl super::PermissionType {
 			Self::Location		=> {
 				"location"
 			}
+			Self::Notifications	=> {
+				"notifications"
+			}
 		}
 	}
 
@@ -24,6 +27,9 @@ impl super::PermissionType {
 			}
 			Self::Location		=> {
 				"location"
+			}
+			Self::Notifications	=> {
+				"notification"
 			}
 		}
 	}

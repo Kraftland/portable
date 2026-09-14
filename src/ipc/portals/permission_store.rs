@@ -8,6 +8,7 @@ mod types;
 pub enum PermissionType {
 	ScreenShot,
 	Location,
+	Notifications,
 }
 
 /**
