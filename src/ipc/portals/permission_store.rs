@@ -1,4 +1,6 @@
 mod types;
+mod reset;
+
 /**
 	PermissionType designates a specific permission.
 
@@ -38,6 +40,13 @@ pub async fn list(bus: &zbus::Connection, table: &str) -> zbus::Result<Vec<Strin
 	gen_async	= true,
 	gen_blocking	= false,
 )]
-trait PermissionStore {
+pub trait PermissionStore {
+	#[zbus(
+		name	= "List"
+	)]
 	async fn list(&self, table: &str) -> zbus::fdo::Result<Vec<String>>;
+	#[zbus(
+		name	= "DeletePermission"
+	)]
+	async fn delete_permission(&self, table: &str, id: &str, app: &str) -> zbus::fdo::Result<()>;
 }
