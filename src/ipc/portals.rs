@@ -4,3 +4,5 @@ pub mod open_uri;
 
 pub mod request;
 pub mod settings;
+
+pub mod permission_store;
