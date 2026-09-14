@@ -1,3 +1,14 @@
+mod types;
+/**
+	PermissionType designates a specific permission.
+
+	Various useful functions are implemented in the types module.
+	Such as the table and type method.
+*/
+pub enum PermissionType {
+	ScreenShot,
+}
+
 /**
 	Given a table ID, list enabled permissions.
 
