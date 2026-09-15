@@ -312,6 +312,15 @@ async fn generate_bus_rules(
 			object_path: "/StatusNotifierWatcher".into(),
 		},
 
+		// Introspecting Desktop Portal
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.Desktop")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
+			method: "org.freedesktop.DBus.Introspectable.Introspect".into(),
+			object_path: "/org/freedesktop/portal/desktop".into(),
+		},
+
 		// Documents Portal
 		BusAccessLevel::Call {
 			bus_name: BusName::try_from("org.freedesktop.portal.Documents")
