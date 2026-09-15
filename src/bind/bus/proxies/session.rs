@@ -405,6 +405,13 @@ async fn generate_bus_rules(
 			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
 				.map_err(ProxyError::InvalidBusNameError)
 				?,
+			method: "org.freedesktop.DBus.Peer.Ping".into(),
+			object_path: "/org/freedesktop/IBus".into(),
+		},
+		BusAccessLevel::Call {
+			bus_name: BusName::try_from("org.freedesktop.portal.IBus")
+				.map_err(ProxyError::InvalidBusNameError)
+				?,
 			method: "org.freedesktop.IBus.Portal.*".into(),
 			object_path: "/org/freedesktop/IBus".into(),
 		},
