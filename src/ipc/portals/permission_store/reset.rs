@@ -7,7 +7,7 @@
 
 	This does not handle the Document Portal, because technically they are different.
 */
-pub async fn reset_permissions(bus: &zbus::Connection, sandbox_id: &str) -> zbus::Result<()> {
+pub async fn reset_permissions(bus: zbus::Connection, sandbox_id: std::sync::Arc<String>) -> zbus::Result<()> {
 	let proxy = super::PermissionStoreProxy::new(&bus)
 		.await
 		?;
@@ -22,7 +22,7 @@ pub async fn reset_permissions(bus: &zbus::Connection, sandbox_id: &str) -> zbus
 		proxy.delete_permission(
 			item.table(),
 			item.id(),
-			sandbox_id,
+			&sandbox_id,
 		)
 			.await
 			?

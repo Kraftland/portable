@@ -1,6 +1,8 @@
 mod types;
 mod reset;
 
+pub use reset::reset_permissions;
+
 /**
 	PermissionType designates a specific permission.
 

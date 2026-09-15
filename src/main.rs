@@ -280,7 +280,7 @@ async fn run(
 		pref::runtime::options::Action::ResetDocs			=> {
 
 			pref::runtime::cmdline::reset(
-				&config.metadata.sandbox_id,
+				std::sync::Arc::new(config.metadata.sandbox_id.to_owned()),
 				&dbus_conn,
 			)
 				.await
@@ -291,7 +291,7 @@ async fn run(
 				logger::LogMessage {
 					level: logger::LogLevel::Info,
 					message: format!(
-						"Permission for {} ({}) has been revoked",
+						"Permissions for {} ({}) has been revoked",
 						config.metadata.display_name,
 						config.metadata.sandbox_id,
 					),
