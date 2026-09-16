@@ -2,10 +2,13 @@
 /**
 	Gather GPU information and return a complete struct Info.
 */
-pub async fn get(dev: super::GPUDevice) -> Result<super::GPUInfo, super::GPUError> {
+pub async fn get(
+	dev:	super::GPUDevice,
+	logger:	crate::logger::LogSender,
+) -> Result<super::GPUInfo, super::GPUError> {
 	let vendor = super::udev_dev::get_vendor(&dev.card_node).await;
 
-	let boot_display = device_is_boot_display(&dev.card_node)?;
+	let boot_display = device_is_boot_display(&dev.card_node, logger).await?;
 
 	Ok(
 		super::GPUInfo {
@@ -27,7 +30,10 @@ pub async fn get(dev: super::GPUDevice) -> Result<super::GPUInfo, super::GPUErro
 
 	We will see whether this wakes up discrete GPU, if it does, then read the file manually
 */
-fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, super::GPUError> {
+async fn device_is_boot_display(
+	card_device:	&udev::Device,
+	logger:		crate::logger::LogSender,
+) -> Result<bool, super::GPUError> {
 	let boot_display_attr_value = card_device.attribute_value("boot_display");
 	match boot_display_attr_value {
 		Some(v)	=> {
@@ -71,8 +77,21 @@ fn device_is_boot_display(card_device: &udev::Device) -> Result<bool, super::GPU
 	};
 
 	match boot_vga {
-		Some("1")	=> Ok(true),
-		Some("0")	=> Ok(false),
+		Some("1")	=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Warn,
+					message:	format!(
+						"{:?} is using deprecated boot_vga property",
+						card_device.syspath(),
+					)
+				}
+			).await;
+			Ok(true)
+		},
+		Some("0")	=> {
+			Ok(false)
+		},
 		Some(v)	=> {
 			Err(
 				super::GPUError::InvalidBootVGA(format!("{v:?}"))

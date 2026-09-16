@@ -30,7 +30,10 @@ pub async fn enumerate(
 	for gpu in gpus {
 		info_workers.push(
 			tokio::spawn(
-				super::get_info::get(gpu)
+				super::get_info::get(
+					gpu,
+					logger.clone(),
+				)
 			)
 		);
 	};
