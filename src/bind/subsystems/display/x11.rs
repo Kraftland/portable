@@ -58,7 +58,9 @@ impl super::BindDisplay for X11 {
 				let _ = self.logger.send(
 					crate::logger::LogMessage {
 						level: crate::logger::LogLevel::Warn,
-						message: format!("{e:#?}"),
+						message: format!(
+							"Could not bind XAuthority: {e:#?}",
+						),
 					},
 				).await;
 			}
