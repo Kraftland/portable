@@ -35,12 +35,6 @@ pub async fn prime_offload_envs(
 							value: "nvidia".into(),
 						},
 					).await.expect("Could not set offload envs");
-					env_tx.send(
-						crate::envs::holder::EnvMessage::Add {
-							key: "VK_LOADER_DRIVERS_SELECT".into(),
-							value: "nvidia_icd.json".into(),
-						},
-					).await.expect("Could not set offload envs");
 				}
 				nvidia::NVIDIADriver::Unknown { driver: _ }	=> {
 
