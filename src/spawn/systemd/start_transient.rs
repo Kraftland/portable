@@ -500,13 +500,12 @@ async fn generate_properties(
 					"SSH_AUTH_SOCK",
 					"DESKTOP_SESSION",
 					"SHELL",
-					"__EGL_VENDOR_LIBRARY_FILENAMES",
-					"__GLX_VENDOR_LIBRARY_NAME",
 					"VK_LOADER_DRIVERS_SELECT",
 					"VK_LOADER_DRIVERS_DISABLE",
 					"MAIL",
 					"SYSTEMD_EXEC_PID",
 				];
+
 				let array = zbus::zvariant::Array::from(list);
 				zbus::zvariant::Value::from(array)
 					.try_into()
