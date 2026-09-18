@@ -4,13 +4,13 @@ impl super::PermissionType {
 	*/
 	pub fn table(&self) -> &str {
 		match self {
-			Self::ScreenShot	=> {
+			Self::XDPScreenShot	=> {
 				"screenshot"
 			}
-			Self::Location		=> {
+			Self::XDPLocation		=> {
 				"location"
 			}
-			Self::Notifications	=> {
+			Self::XDPNotifications	=> {
 				"notifications"
 			}
 		}
@@ -21,13 +21,13 @@ impl super::PermissionType {
 	*/
 	pub fn id(&self) -> &str {
 		match self {
-			Self::ScreenShot	=> {
+			Self::XDPScreenShot	=> {
 				"screenshot"
 			}
-			Self::Location		=> {
+			Self::XDPLocation		=> {
 				"location"
 			}
-			Self::Notifications	=> {
+			Self::XDPNotifications	=> {
 				"notification"
 			}
 		}

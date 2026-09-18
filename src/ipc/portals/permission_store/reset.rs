@@ -3,7 +3,8 @@
 
 	Supported permissions are listed in super::PermissionType.
 
-	Currently, the ScreenShot, Location and Notifications permission can be reset.
+	Currently, Portable's expose permissions,
+	along with ScreenShot, Location and Notifications permissions can be reset.
 
 	This does not handle the Document Portal, because technically they are different.
 */
@@ -13,9 +14,9 @@ pub async fn reset_permissions(bus: zbus::Connection, sandbox_id: std::sync::Arc
 		?;
 
 	let reset_list = vec![
-		super::PermissionType::ScreenShot,
-		super::PermissionType::Location,
-		super::PermissionType::Notifications,
+		super::PermissionType::XDPScreenShot,
+		super::PermissionType::XDPLocation,
+		super::PermissionType::XDPNotifications,
 	];
 
 	for item in reset_list {

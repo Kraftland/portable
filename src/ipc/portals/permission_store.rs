@@ -9,11 +9,13 @@ pub use reset::reset_permissions;
 
 	Various useful functions are implemented in the types module.
 	Such as the table and type method.
+
+	XDP means Portal permissions, while others are Portable permissions.
 */
 pub enum PermissionType {
-	ScreenShot,
-	Location,
-	Notifications,
+	XDPScreenShot,
+	XDPLocation,
+	XDPNotifications,
 }
 
 /**
