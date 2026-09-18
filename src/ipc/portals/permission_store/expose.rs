@@ -9,6 +9,78 @@
 		|--------- permissions: array of Strings (must be absolute paths!)
 */
 
+/**
+	Updates the permission in PermissionStore. Currently it does not preserve previous permissions
+*/
+pub async fn update(
+	sandbox_id:	&str,
+	bus:		&zbus::Connection,
+	rw:		Option<Vec<std::path::PathBuf>>,
+	ro:		Option<Vec<std::path::PathBuf>>,
+	device:		Option<Vec<std::path::PathBuf>>,
+) -> zbus::Result<()> {
+	let proxy = super::PermissionStoreProxy::new(&bus).await?;
+
+	{
+		let mut ret = vec![];
+
+		for path in rw.unwrap_or(vec![]) {
+			ret.push(
+				path.to_string_lossy().to_string()
+			);
+		};
+
+		proxy.set_permission(
+			"top.kimiblock.Portable",
+			true,
+			"expose-rw",
+			sandbox_id,
+			ret,
+		)
+			.await
+			?
+	};
+	{
+		let mut ret = vec![];
+
+		for path in ro.unwrap_or(vec![]) {
+			ret.push(
+				path.to_string_lossy().to_string()
+			);
+		};
+
+		proxy.set_permission(
+			"top.kimiblock.Portable",
+			true,
+			"expose-ro",
+			sandbox_id,
+			ret,
+		)
+			.await
+			?
+	};
+	{
+		let mut ret = vec![];
+
+		for path in device.unwrap_or(vec![]) {
+			ret.push(
+				path.to_string_lossy().to_string()
+			);
+		};
+
+		proxy.set_permission(
+			"top.kimiblock.Portable",
+			true,
+			"expose-device",
+			sandbox_id,
+			ret,
+		)
+			.await
+			?
+	};
+
+	Ok(())
+}
 
 /**
 	Retrieve the permission types as PathBufs, in order of rw,ro,device.

@@ -63,7 +63,7 @@ pub trait PermissionStore {
 		create:	bool,
 		id:	&str,
 		app_id:	&str,
-		perms:	Vec<&str>,
+		perms:	Vec<String>,
 	) -> zbus::Result<()>;
 
 	#[zbus(
