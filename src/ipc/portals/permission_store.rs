@@ -51,4 +51,17 @@ pub trait PermissionStore {
 		name	= "DeletePermission"
 	)]
 	async fn delete_permission(&self, table: &str, id: &str, app: &str) -> zbus::fdo::Result<()>;
+
+	#[zbus(
+		name	= "SetPermission"
+	)]
+	/// Sets the permissions for an application and a resource in the given table.
+	async fn set_permission(
+		&self,
+		table:	&str,
+		create:	bool,
+		id:	&str,
+		app_id:	&str,
+		perms:	Vec<&str>,
+	) -> zbus::Result<()>;
 }
