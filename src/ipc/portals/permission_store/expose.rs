@@ -108,6 +108,7 @@ pub async fn get(
 		{
 			Ok(v)	=> v,
 			Err(e)	=> {
+				#[cfg(debug_assertions)]
 				let _ = logger.send(
 					crate::logger::LogMessage {
 						level:	crate::logger::LogLevel::Warn,
@@ -116,6 +117,7 @@ pub async fn get(
 						),
 					}
 				).await;
+
 				vec![]
 			}
 		};
@@ -151,6 +153,7 @@ pub async fn get(
 		{
 			Ok(v)	=> v,
 			Err(e)	=> {
+				#[cfg(debug_assertions)]
 				let _ = logger.send(
 					crate::logger::LogMessage {
 						level:	crate::logger::LogLevel::Warn,
@@ -159,6 +162,7 @@ pub async fn get(
 						),
 					}
 				).await;
+
 				vec![]
 			}
 		};
@@ -194,6 +198,7 @@ pub async fn get(
 		{
 			Ok(v)	=> v,
 			Err(e)	=> {
+				#[cfg(debug_assertions)]
 				let _ = logger.send(
 					crate::logger::LogMessage {
 						level:	crate::logger::LogLevel::Warn,
@@ -202,6 +207,7 @@ pub async fn get(
 						),
 					}
 				).await;
+
 				vec![]
 			}
 		};
