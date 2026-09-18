@@ -28,10 +28,19 @@ async fn validate_stored_permission(
 	).await?;
 
 	if contain::permission_contained(&rw, &ro, &device, &expose_list) {
-		return Ok(true);
+		Ok(true)
 	} else {
-		return Ok(false);
-	};
+		crate::ipc::portals::permission_store::expose::update(
+			app_id,
+			dbus_conn,
+			Some(rw),
+			Some(ro),
+			Some(device),
+		)
+			.await
+			?;
+		Ok(false)
+	}
 }
 
 /**
