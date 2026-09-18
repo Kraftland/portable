@@ -17,6 +17,9 @@ pub async fn reset_permissions(bus: zbus::Connection, sandbox_id: std::sync::Arc
 		super::PermissionType::XDPScreenShot,
 		super::PermissionType::XDPLocation,
 		super::PermissionType::XDPNotifications,
+		super::PermissionType::ExposeRW,
+		super::PermissionType::ExposeRO,
+		super::PermissionType::ExposeDevice,
 	];
 
 	for item in reset_list {

@@ -7,11 +7,20 @@ impl super::PermissionType {
 			Self::XDPScreenShot	=> {
 				"screenshot"
 			}
-			Self::XDPLocation		=> {
+			Self::XDPLocation	=> {
 				"location"
 			}
 			Self::XDPNotifications	=> {
 				"notifications"
+			}
+			Self::ExposeRW		=> {
+				"top.kimiblock.Portable"
+			}
+			Self::ExposeRO		=> {
+				"top.kimiblock.Portable"
+			}
+			Self::ExposeDevice	=> {
+				"top.kimiblock.Portable"
 			}
 		}
 	}
@@ -29,6 +38,15 @@ impl super::PermissionType {
 			}
 			Self::XDPNotifications	=> {
 				"notification"
+			}
+			Self::ExposeRW		=> {
+				"expose-rw"
+			}
+			Self::ExposeRO		=> {
+				"expose-ro"
+			}
+			Self::ExposeDevice	=> {
+				"expose-device"
 			}
 		}
 	}

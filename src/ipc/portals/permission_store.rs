@@ -16,6 +16,9 @@ pub enum PermissionType {
 	XDPScreenShot,
 	XDPLocation,
 	XDPNotifications,
+	ExposeRW,
+	ExposeRO,
+	ExposeDevice,
 }
 
 /**
