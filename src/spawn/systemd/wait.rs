@@ -44,18 +44,20 @@ pub async fn wait(
 					}
 				};
 
+				#[cfg(debug_assertions)]
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Debug,
+						message:	format!(
+							"Updated unit state: {state:?}",
+						),
+					}
+				)
+					.await;
+
 				match state {
 					ActiveState::Active	=> {
 						activated = true;
-						#[cfg(debug_assertions)]
-						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Debug,
-								message: format!(
-									"Unit is alive",
-								),
-							}
-						).await;
 					}
 					ActiveState::Failed	=> {
 						let _ = logger.send(
@@ -69,17 +71,6 @@ pub async fn wait(
 						break;
 					}
 					ActiveState::Inactive	=> {
-
-						#[cfg(debug_assertions)]
-						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Debug,
-								message: format!(
-									"Unit is inactive",
-								),
-							}
-						).await;
-
 						if activated {
 							break;
 						}
@@ -90,9 +81,16 @@ pub async fn wait(
 							crate::logger::LogMessage {
 								level:	crate::logger::LogLevel::Warn,
 								message: format!(
-									"Unknown active state: {state}",
+									"Unknown unit state: {state}",
 								),
 							}
+						).await;
+					}
+					v			=> {
+						let _ = logger.send(
+							crate::logger::LogMessage {
+								level:		crate::logger::LogLevel::Warn,
+								message:	format!("Unexpected unit state: {v:?}") }
 						).await;
 					}
 				}
@@ -113,6 +111,9 @@ enum ActiveState {
 	*/
 	Inactive,
 	Failed,
+	Maintenance,
+	Reloading,
+	Refreshing,
 	Others { state: String },
 }
 
@@ -120,9 +121,13 @@ impl From<&str> for ActiveState {
 	fn from(value: &str) -> Self {
 		match value {
 			"active"	=> {ActiveState::Active}
+			"activating"	=> {ActiveState::Active}
 			"inactive"	=> {ActiveState::Inactive}
 			"failed"	=> {ActiveState::Failed}
 			"deactivating"	=> {ActiveState::Inactive}
+			"maintenance"	=> {ActiveState::Maintenance}
+			"reloading"	=> {ActiveState::Reloading}
+			"refreshing"	=> {ActiveState::Refreshing}
 			_v		=> {ActiveState::Others { state: _v.to_string() }}
 		}
 	}
