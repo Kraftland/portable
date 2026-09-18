@@ -45,37 +45,64 @@ pub async fn forward_file(
 	app_id:		&str,
 	logger:		crate::logger::LogSender,
 ) -> (BindRules, HashMap<String, String>) {
-	if expose_list.len() > 0 {
-		match question(&expose_list).await {
-			Ok(true)	=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Info,
-						message: format!("User consent given for exposing"),
-					},
-				).await;
-			}
-			Ok(false)	=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Info,
-						message: format!("User denied exposing files"),
-					},
-				).await;
-				return (vec![], std::collections::HashMap::new());
-			}
-			Err(e)		=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not ask for consent: {e:#?}"),
-					},
-				).await;
-				return (vec![], std::collections::HashMap::new());
+	match validate_stored_permission(dbus_conn, &logger, app_id, expose_list).await {
+		Ok(true)	=> {}
+		Ok(false)	=> {
+			match question(&expose_list).await {
+				Ok(true)	=> {}
+				Ok(false)	=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Info,
+							message: format!("User denied exposing files"),
+						},
+					).await;
+
+					return (vec![], std::collections::HashMap::new());
+				}
+				Err(e)		=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!("Could not ask for consent: {e:#?}"),
+						},
+					).await;
+					return (vec![], std::collections::HashMap::new());
+				}
 			}
 		}
-	} else {
-		return (vec![], std::collections::HashMap::new());
+		Err(e)		=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Warn,
+					message:	format!(
+						"Could not retrieve stored permissions: {e:#?}",
+					),
+				}
+			).await;
+			match question(&expose_list).await {
+				Ok(true)	=> {}
+				Ok(false)	=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Info,
+							message: format!("User denied exposing files"),
+						},
+					).await;
+
+					return (vec![], std::collections::HashMap::new());
+				}
+				Err(e)		=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!("Could not ask for consent: {e:#?}"),
+						},
+					).await;
+					return (vec![], std::collections::HashMap::new());
+				}
+			}
+		}
 	}
 
 
