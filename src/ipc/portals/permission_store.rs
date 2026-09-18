@@ -37,7 +37,7 @@ pub async fn list(bus: &zbus::Connection, table: &str) -> zbus::Result<Vec<Strin
 
 
 #[zbus::proxy(
-	interface	= "oorg.freedesktop.impl.portal.PermissionStore",
+	interface	= "org.freedesktop.impl.portal.PermissionStore",
 	default_service	= "org.freedesktop.impl.portal.PermissionStore",
 	default_path	= "/org/freedesktop/impl/portal/PermissionStore",
 	gen_async	= true,
