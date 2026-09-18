@@ -1,5 +1,38 @@
 use crate::bind::types::BindRules;
 use std::collections::HashMap;
+mod contain;
+
+/**
+	Validates if the permission can be restored without calling user consent.
+
+	It does not append new permissions, but just overwrites them in place.
+
+	Also returns Ok(true) when the list is empty
+
+	If not then update the permission store and return false.
+*/
+async fn validate_stored_permission(
+	dbus_conn:	&zbus::Connection,
+	logger:		&crate::logger::LogSender,
+	app_id:		&str,
+	expose_list:	&Vec<crate::pref::runtime::options::FileExposurePreference>,
+) -> Result<bool, zbus::Error> {
+	if expose_list.len() == 0 {
+		return Ok(true);
+	};
+
+	let (rw, ro, device) = crate::ipc::portals::permission_store::expose::get(
+		app_id,
+		dbus_conn,
+		logger,
+	).await?;
+
+	if contain::permission_contained(&rw, &ro, &device, &expose_list) {
+		return Ok(true);
+	} else {
+		return Ok(false);
+	};
+}
 
 /**
 	Takes a vector of FileExposurePreference and returns the following:

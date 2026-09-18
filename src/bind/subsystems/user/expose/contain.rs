@@ -1,6 +1,6 @@
 
 /// True if expose_list is in the scope of rw, ro and device
-fn permission_contained(
+pub fn permission_contained(
 	rw:		&Vec<std::path::PathBuf>,
 	ro:		&Vec<std::path::PathBuf>,
 	device:		&Vec<std::path::PathBuf>,
