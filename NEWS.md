@@ -1,9 +1,30 @@
-# 21
+# 20.2
 
 ## Notable Improvements
-- The MainPID property will now be set to Init, and sandboxed processes are no longer able to update systemd unit status
+- The MainPID property will now be set to Init, and sandboxed processes will no longer able to update systemd unit status
 - Init will not crash if shutdown request fails
 - The `--revoke-permissions` switch will now handle ScreenShot, Location and Notifications permission
+- Worked around an NVIDIA bug causing some GLX applications (Steam's login UI, for example) failing to create a dri3 screen, resulting in bad performance
+
+## Internal Changes
+* xcursor: support the CURSOR_SIZE property by @Kimiblock in https://github.com/Kraftland/portable/pull/1295
+* forward: add XCURSOR_* to the list by @Kimiblock in https://github.com/Kraftland/portable/pull/1296
+* update main process for systemd by @Kimiblock in https://github.com/Kraftland/portable/pull/1298
+* ibus: allow receiving InputContext updates by @Kimiblock in https://github.com/Kraftland/portable/pull/1299
+* ipc: implement the PermissionStore.list method by @Kimiblock in https://github.com/Kraftland/portable/pull/1300
+* permission store: disable blocking APIs by @Kimiblock in https://github.com/Kraftland/portable/pull/1301
+* permission store: define Permission Type for ScreenShot by @Kimiblock in https://github.com/Kraftland/portable/pull/1302
+* permission store: implement the location permission by @Kimiblock in https://github.com/Kraftland/portable/pull/1303
+* update Init by @Kimiblock in https://github.com/Kraftland/portable/pull/1304
+* permission store: implement the notifications permission by @Kimiblock in https://github.com/Kraftland/portable/pull/1305
+* permission store: implement reset by @Kimiblock in https://github.com/Kraftland/portable/pull/1306
+* feat: support permission revoke for Location, ScreenShot and Notifications by @Kimiblock in https://github.com/Kraftland/portable/pull/1307
+* session: allow pinging the iBus Portal (but not GetXXX) by @Kimiblock in https://github.com/Kraftland/portable/pull/1308
+* session: allow introspecting the desktop portal by @Kimiblock in https://github.com/Kraftland/portable/pull/1309
+* Warn about Packer compat by @Kimiblock in https://github.com/Kraftland/portable/pull/1310
+* gpu: warn about deprecated boot_vga property by @Kimiblock in https://github.com/Kraftland/portable/pull/1311
+* hybrid: re-allow GLX envs to be passed by @Kimiblock in https://github.com/Kraftland/portable/pull/1315
+* x11: be clear about authority failures by @Kimiblock in https://github.com/Kraftland/portable/pull/1316
 
 # 20.1
 
