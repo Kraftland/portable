@@ -9,12 +9,14 @@
 		|--------- permissions: array of Strings (must be absolute paths!)
 */
 
+
 /**
-	Retrieve the permission types as PathBufs, in order of rw,ro,device
+	Retrieve the permission types as PathBufs, in order of rw,ro,device.
 */
 pub async fn get(
 	sandbox_id:	&str,
 	bus:		&zbus::Connection,
+	logger:		&crate::logger::LogSender,
 )
 	-> Result<(Vec<std::path::PathBuf>, Vec<std::path::PathBuf>, Vec<std::path::PathBuf>), zbus::Error>
 {
@@ -24,14 +26,27 @@ pub async fn get(
 		?;
 
 	let rw = {
-		let raw_rw_permissions = proxy
+		let raw_rw_permissions = match proxy
 			.get_permission(
 				"top.kimiblock.Portable",
 				"expose-rw",
 				sandbox_id,
 			)
 			.await
-			?;
+		{
+			Ok(v)	=> v,
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level:	crate::logger::LogLevel::Warn,
+						message: format!(
+							"Could not retrieve saved permission: {e:#?}"
+						),
+					}
+				).await;
+				vec![]
+			}
+		};
 
 		let mut ret = vec![];
 
@@ -54,14 +69,27 @@ pub async fn get(
 	};
 
 	let ro = {
-		let raw_rw_permissions = proxy
+		let raw_rw_permissions = match proxy
 			.get_permission(
 				"top.kimiblock.Portable",
 				"expose-ro",
 				sandbox_id,
 			)
 			.await
-			?;
+		{
+			Ok(v)	=> v,
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level:	crate::logger::LogLevel::Warn,
+						message: format!(
+							"Could not retrieve saved permission: {e:#?}"
+						),
+					}
+				).await;
+				vec![]
+			}
+		};
 
 		let mut ret = vec![];
 
@@ -84,14 +112,27 @@ pub async fn get(
 	};
 
 	let device = {
-		let raw_rw_permissions = proxy
+		let raw_rw_permissions = match proxy
 			.get_permission(
 				"top.kimiblock.Portable",
 				"expose-device",
 				sandbox_id,
 			)
 			.await
-			?;
+		{
+			Ok(v)	=> v,
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level:	crate::logger::LogLevel::Warn,
+						message: format!(
+							"Could not retrieve saved permission: {e:#?}"
+						),
+					}
+				).await;
+				vec![]
+			}
+		};
 
 		let mut ret = vec![];
 
