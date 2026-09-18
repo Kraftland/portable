@@ -1,5 +1,6 @@
 mod types;
 mod reset;
+mod expose;
 
 pub use reset::reset_permissions;
 
