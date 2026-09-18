@@ -64,4 +64,15 @@ pub trait PermissionStore {
 		app_id:	&str,
 		perms:	Vec<&str>,
 	) -> zbus::Result<()>;
+
+	#[zbus(
+		name	= "GetPermission"
+	)]
+	/// Gets the entry for an application and a resource in the given table.
+	async fn get_permission(
+		&self,
+		table:	&str,
+		id:	&str,
+		app_id:	&str,
+	) -> zbus::Result<Vec<String>>;
 }
