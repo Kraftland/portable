@@ -5,7 +5,7 @@ mod contain;
 /**
 	Validates if the permission can be restored without calling user consent.
 
-	It does not append new permissions, but just overwrites them in place.
+	It does not overwrite with new permissions, but appends in place.
 
 	Also returns Ok(true) when the list is empty
 
@@ -28,10 +28,52 @@ async fn validate_stored_permission(
 	).await?;
 
 	if contain::permission_contained(&rw, &ro, &device, &expose_list) {
-		return Ok(true);
+		Ok(true)
 	} else {
-		return Ok(false);
-	};
+		let (rw, ro, device) = {
+			let mut rw = vec![];
+			let mut ro = vec![];
+			let mut dev = vec![];
+
+			use crate::pref::runtime::options::FileExposurePreference;
+
+			for expose in expose_list {
+				match expose {
+					FileExposurePreference::MountPath { host, dest: _, class }
+					=> {
+						match class {
+							crate::bind::types::BindType::Device	=> {
+								dev.push(host.to_path_buf());
+							}
+							crate::bind::types::BindType::ReadOnly	=> {
+								ro.push(host.to_path_buf());
+							}
+							crate::bind::types::BindType::ReadWrite	=> {
+								rw.push(host.to_path_buf());
+							}
+						}
+					}
+					FileExposurePreference::Passthrough { host }		=> {
+						rw.push(host.to_path_buf());
+					}
+				}
+			};
+
+			(rw, ro, dev)
+		};
+
+
+		crate::ipc::portals::permission_store::expose::update(
+			app_id,
+			dbus_conn,
+			Some(rw),
+			Some(ro),
+			Some(device),
+		)
+			.await
+			?;
+		Ok(false)
+	}
 }
 
 /**
@@ -45,37 +87,64 @@ pub async fn forward_file(
 	app_id:		&str,
 	logger:		crate::logger::LogSender,
 ) -> (BindRules, HashMap<String, String>) {
-	if expose_list.len() > 0 {
-		match question(&expose_list).await {
-			Ok(true)	=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Info,
-						message: format!("User consent given for exposing"),
-					},
-				).await;
-			}
-			Ok(false)	=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Info,
-						message: format!("User denied exposing files"),
-					},
-				).await;
-				return (vec![], std::collections::HashMap::new());
-			}
-			Err(e)		=> {
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not ask for consent: {e:#?}"),
-					},
-				).await;
-				return (vec![], std::collections::HashMap::new());
+	match validate_stored_permission(dbus_conn, &logger, app_id, expose_list).await {
+		Ok(true)	=> {}
+		Ok(false)	=> {
+			match question(&expose_list).await {
+				Ok(true)	=> {}
+				Ok(false)	=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Info,
+							message: format!("User denied exposing files"),
+						},
+					).await;
+
+					return (vec![], std::collections::HashMap::new());
+				}
+				Err(e)		=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!("Could not ask for consent: {e:#?}"),
+						},
+					).await;
+					return (vec![], std::collections::HashMap::new());
+				}
 			}
 		}
-	} else {
-		return (vec![], std::collections::HashMap::new());
+		Err(e)		=> {
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Warn,
+					message:	format!(
+						"Could not retrieve stored permissions: {e:#?}",
+					),
+				}
+			).await;
+			match question(&expose_list).await {
+				Ok(true)	=> {}
+				Ok(false)	=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Info,
+							message: format!("User denied exposing files"),
+						},
+					).await;
+
+					return (vec![], std::collections::HashMap::new());
+				}
+				Err(e)		=> {
+					let _ = logger.send(
+						crate::logger::LogMessage {
+							level: crate::logger::LogLevel::Warn,
+							message: format!("Could not ask for consent: {e:#?}"),
+						},
+					).await;
+					return (vec![], std::collections::HashMap::new());
+				}
+			}
+		}
 	}
 
 

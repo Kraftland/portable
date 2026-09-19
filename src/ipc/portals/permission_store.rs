@@ -9,11 +9,16 @@ pub use reset::reset_permissions;
 
 	Various useful functions are implemented in the types module.
 	Such as the table and type method.
+
+	XDP means Portal permissions, while others are Portable permissions.
 */
 pub enum PermissionType {
-	ScreenShot,
-	Location,
-	Notifications,
+	XDPScreenShot,
+	XDPLocation,
+	XDPNotifications,
+	ExposeRW,
+	ExposeRO,
+	ExposeDevice,
 }
 
 /**
@@ -37,8 +42,8 @@ pub async fn list(bus: &zbus::Connection, table: &str) -> zbus::Result<Vec<Strin
 
 
 #[zbus::proxy(
-	interface	= "oorg.freedesktop.impl.portal.PermissionStore",
-	default_service	= "org.freedesktop.portal.Desktop",
+	interface	= "org.freedesktop.impl.portal.PermissionStore",
+	default_service	= "org.freedesktop.impl.portal.PermissionStore",
 	default_path	= "/org/freedesktop/impl/portal/PermissionStore",
 	gen_async	= true,
 	gen_blocking	= false,

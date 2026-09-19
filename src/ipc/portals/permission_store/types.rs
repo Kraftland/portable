@@ -4,14 +4,23 @@ impl super::PermissionType {
 	*/
 	pub fn table(&self) -> &str {
 		match self {
-			Self::ScreenShot	=> {
+			Self::XDPScreenShot	=> {
 				"screenshot"
 			}
-			Self::Location		=> {
+			Self::XDPLocation	=> {
 				"location"
 			}
-			Self::Notifications	=> {
+			Self::XDPNotifications	=> {
 				"notifications"
+			}
+			Self::ExposeRW		=> {
+				"top.kimiblock.Portable"
+			}
+			Self::ExposeRO		=> {
+				"top.kimiblock.Portable"
+			}
+			Self::ExposeDevice	=> {
+				"top.kimiblock.Portable"
 			}
 		}
 	}
@@ -21,14 +30,23 @@ impl super::PermissionType {
 	*/
 	pub fn id(&self) -> &str {
 		match self {
-			Self::ScreenShot	=> {
+			Self::XDPScreenShot	=> {
 				"screenshot"
 			}
-			Self::Location		=> {
+			Self::XDPLocation		=> {
 				"location"
 			}
-			Self::Notifications	=> {
+			Self::XDPNotifications	=> {
 				"notification"
+			}
+			Self::ExposeRW		=> {
+				"expose-rw"
+			}
+			Self::ExposeRO		=> {
+				"expose-ro"
+			}
+			Self::ExposeDevice	=> {
+				"expose-device"
 			}
 		}
 	}
