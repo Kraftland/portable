@@ -1,7 +1,11 @@
+# Dev
+## Notable Improvements
+- `--expose` or `--file-forwarding` will not ask for permission again if approved previously.
+
 # 20.2
 
 ## Notable Improvements
-- The MainPID property will now be set to Init, and sandboxed processes will no longer able to update systemd unit status
+- The MainPID property will now be set to Init, and sandboxed processes will no longer be able to update systemd unit status
 - Init will not crash if shutdown request fails
 - The `--revoke-permissions` switch will now handle ScreenShot, Location and Notifications permission
 - Worked around an NVIDIA bug causing some GLX applications (Steam's login UI, for example) failing to create a dri3 screen, resulting in bad performance
