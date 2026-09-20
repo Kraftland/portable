@@ -22,7 +22,7 @@ jobs:
     - name: Initialise submodules
       run: git submodule update --init --recursive
 
-    - name: Build daemon (Debug)
+    - name: Build daemon (Release)
       run: |
         cargo fetch --locked --target host-tuple
         cargo build --frozen --release
