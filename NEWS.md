@@ -1,6 +1,7 @@
 # Dev
 ## Notable Improvements
 - `--expose` or `--file-forwarding` will not ask for permission again if approved previously.
+- PID 1 now fails loudly when something horribly happens
 
 # 20.2
 
