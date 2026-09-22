@@ -657,6 +657,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "portable-config"
+version = "21.0.0"
+dependencies = [
+ "portable_legacy_conf",
+ "serde",
+ "thiserror",
+ "tokio",
+ "toml",
+]
+
+[[package]]
 name = "portable-daemon"
 version = "20.0.0"
 dependencies = [
@@ -664,12 +675,10 @@ dependencies = [
  "futures-util",
  "jiff",
  "nix",
- "portable_legacy_conf",
- "serde",
+ "portable-config",
  "thiserror",
  "tokio",
  "tokio-util",
- "toml",
  "udev",
  "uuid",
  "wayrs-client",
