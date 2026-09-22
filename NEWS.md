@@ -2,6 +2,7 @@
 ## Notable Improvements
 - `--expose` or `--file-forwarding` will not ask for permission again if approved previously.
 - PID 1 now fails loudly when something horribly happens
+- It is now not possible for application to overwrite certain control group interfaces
 
 # 20.2
 
