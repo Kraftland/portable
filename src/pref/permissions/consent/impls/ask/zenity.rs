@@ -27,8 +27,8 @@ struct ZenityPermissionObject {
 	desc:		String,
 }
 
-impl From<portable_config::definitions::consent::DynamicPermission> for ZenityPermissionObject {
-	fn from(value: portable_config::definitions::consent::DynamicPermission) -> Self {
+impl From<&portable_config::definitions::consent::DynamicPermission> for ZenityPermissionObject {
+	fn from(value: &portable_config::definitions::consent::DynamicPermission) -> Self {
 		Self {
 			default_allow:	value.default_allow(),
 			perm_uid:	value.id().to_string(),
