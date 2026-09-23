@@ -41,7 +41,7 @@ members = []
 exclude = ["lib/init", "lib/config"]
 
 [features]
-default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input"]
+default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input", "zenity-dialogue"]
 
 # Debug terminal window resize
 term-resize-debug = []
@@ -70,6 +70,14 @@ display	= []
 x11	= ["display"]
 # Build with Wayland display protocol support
 wayland	= ["dep:wayrs-client", "dep:wayrs-protocols", "display"]
+
+# Permission Store metaflag
+permission-store = []
+
+# Permission Store metaflag
+permission-consent = []
+# Ask using Zenity, currently the only default
+zenity-dialogue = ["permission-consent"]
 
 # Mimic Flatpak to host, required until appd lands
 flatpak = []
