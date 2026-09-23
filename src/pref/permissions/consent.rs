@@ -13,4 +13,12 @@ pub trait UserConsent {
 /**
 	See UserConsent trait
 */
-pub struct ConsentContent {}
+pub struct ConsentContent {
+	permissions:	Vec<portable_config::definitions::consent::DynamicPermission>,
+}
+
+impl From<Vec<portable_config::definitions::consent::DynamicPermission>> for ConsentContent {
+	fn from(value: Vec<portable_config::definitions::consent::DynamicPermission>) -> Self {
+		Self { permissions: value }
+	}
+}
