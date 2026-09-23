@@ -6,42 +6,20 @@ pub mod impls;
 /**
 	The public trait AskConsent is used to implement consent dialogue for different backends.
 
-	The ConsentContent must be populated.
+	It is implemented for the DynamicPermissions struct by modules under consent/impls/ask/
+		to delegate permission dialogue.
+
+	The DynamicPermissions must be populated.
 
 	ask() implements an async function for asking user consent, of which returns user agreed
-		ConsentContent.
+		DynamicPermissions.
 */
+
+pub type DynamicPermissions = Vec<portable_config::definitions::consent::DynamicPermission>;
+
 pub trait AskConsent {
-	fn ask(content: ConsentContent)
-	-> impl std::future::Future<Output = Result<ConsentContent, Self::ConsentError>>;
+	fn ask(content: DynamicPermissions)
+	-> impl std::future::Future<Output = Result<DynamicPermissions, Self::ConsentError>>;
 
 	type ConsentError;
-}
-
-/**
-	See UserConsent trait
-*/
-#[derive(PartialEq, Eq)]
-pub struct ConsentContent {
-	permissions:	Vec<portable_config::definitions::consent::DynamicPermission>,
-}
-
-impl ConsentContent {
-	/**
-		Merge two ConsentContent s
-	*/
-	pub fn merge(value1: Self, value2: Self) -> Self {
-		let mut permissions = vec![];
-
-		permissions.extend(value1.permissions);
-
-		permissions.extend(value2.permissions);
-		Self { permissions: permissions }
-	}
-}
-
-impl From<Vec<portable_config::definitions::consent::DynamicPermission>> for ConsentContent {
-	fn from(value: Vec<portable_config::definitions::consent::DynamicPermission>) -> Self {
-		Self { permissions: value }
-	}
 }
