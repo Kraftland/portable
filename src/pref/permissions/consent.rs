@@ -1,4 +1,9 @@
 /**
+	The impls module hosts different backend for AskConsent and Permission Storage
+*/
+pub mod impls;
+
+/**
 	The public trait AskConsent is used to implement consent dialogue for different backends.
 
 	The ConsentContent must be populated.
