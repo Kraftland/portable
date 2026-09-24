@@ -27,3 +27,20 @@ pub trait AskConsent {
 
 	type ConsentError;
 }
+
+/**
+	See impls/store/portal.rs for detailed information on how the permission is stored for now
+*/
+pub trait PermissionStore {
+	/**
+		Store a list of Dynamic Permissions to a PermissionStore backend
+	*/
+	fn store(perms: &DynamicPermissionsResult) -> Result<(), Self::StoreError>;
+
+	/**
+		Retrieve a list of DynamicPermissions from a PermissionStore backend
+	*/
+	fn retrieve(perms: &DynamicPermissionsResult)
+
+	type StoreError;
+}

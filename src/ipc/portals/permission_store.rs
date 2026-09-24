@@ -20,15 +20,10 @@ pub enum PermissionType {
 	ExposeRO,
 	ExposeDevice,
 
-	Notifications,
-	Inhibit,
-	DGPU,
-	Kvm,
-	Input,
-	Camera,
-	DisableLandlock,
-	MediaPlayer2,
-	Debugging,
+	/**
+		DynamicPermissions are stored in a single table and id, separated by '\0' (NUL) bytes
+	*/
+	DynamicPermissions(portable_config::definitions::consent::DynamicPermission),
 }
 
 /**

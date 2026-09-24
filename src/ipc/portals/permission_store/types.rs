@@ -22,6 +22,10 @@ impl super::PermissionType {
 			Self::ExposeDevice	=> {
 				"top.kimiblock.Portable"
 			}
+
+			Self::DynamicPermissions(_) => {
+				"top.kimiblock.Portable"
+			}
 		}
 	}
 
@@ -33,7 +37,7 @@ impl super::PermissionType {
 			Self::XDPScreenShot	=> {
 				"screenshot"
 			}
-			Self::XDPLocation		=> {
+			Self::XDPLocation	=> {
 				"location"
 			}
 			Self::XDPNotifications	=> {
@@ -47,6 +51,10 @@ impl super::PermissionType {
 			}
 			Self::ExposeDevice	=> {
 				"expose-device"
+			}
+			Self::DynamicPermissions(_)
+			=> {
+				"dynamic-permissions"
 			}
 		}
 	}

@@ -1,0 +1,3 @@
+/*
+	The Portal backend stores permissions in a XDG Desktop Portal PermissionStore instance
+*/
