@@ -76,9 +76,9 @@ async fn ask_zenity(
 	let permission_objects: Vec<ZenityPermissionObject> = {
 		let mut vec: Vec<ZenityPermissionObject> = vec![];
 
-		for perm in permissions {
+		for perm in &permissions {
 			vec.push(
-				(&perm).into()
+				perm.into()
 			);
 		};
 
@@ -92,7 +92,7 @@ async fn ask_zenity(
 		String::from("--multiple"),
 
 		String::from("--title"),
-		String::from(config.metadata.display_name),
+		String::from(&config.metadata.display_name),
 
 		String::from("--text=Would like to access..."),
 
@@ -109,7 +109,7 @@ async fn ask_zenity(
 
 	{
 		use crate::bind::types::ToCmdline;
-		for object in permission_objects {
+		for object in &permission_objects {
 			cmdline.extend(object.to_cmdline().await);
 		}
 	};
@@ -130,4 +130,16 @@ async fn ask_zenity(
 			.map_err(ZenityError::InvalidUTF8)
 			?
 	};
+
+	let mut output = output.split("|");
+
+	let mut allowed_permissions = vec![];
+
+	for (permission, zenity_object) in permissions.into_iter().zip(permission_objects) {
+		if output.any(|x| zenity_object.perm_uid == x) {
+			allowed_permissions.push(permission);
+		};
+	};
+
+	Ok(allowed_permissions)
 }
