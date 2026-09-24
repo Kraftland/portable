@@ -19,6 +19,16 @@ pub enum PermissionType {
 	ExposeRW,
 	ExposeRO,
 	ExposeDevice,
+
+	Notifications,
+	Inhibit,
+	DGPU,
+	Kvm,
+	Input,
+	Camera,
+	DisableLandlock,
+	MediaPlayer2,
+	Debugging,
 }
 
 /**
