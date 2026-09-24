@@ -10,7 +10,11 @@ impl crate::pref::permissions::consent::AskConsent for crate::pref::permissions:
 
 #[derive(Debug, thiserror::Error)]
 pub enum ZenityError {
+	#[error("Zenity failed to start: {0:#?}")]
+	ZenityFailed(std::io::Error),
 
+	#[error("Zenity output is not valid UTF-8: {0:#?}")]
+	InvalidUTF8(std::string::FromUtf8Error),
 }
 
 /**
@@ -61,6 +65,14 @@ async fn ask_zenity(
 	config:		std::sync::Arc<crate::config::Config>,
 )
 -> Result<crate::pref::permissions::consent::DynamicPermissions, ZenityError> {
+
+	/*
+		The trick here is that permission_objects are in the same position of
+			DynamicPermissions.
+
+		When we check for the Zenity final output, zip this alongside with permissions
+			to avoid doing expensive reverse lookup.
+	*/
 	let permission_objects: Vec<ZenityPermissionObject> = {
 		let mut vec: Vec<ZenityPermissionObject> = vec![];
 
@@ -75,7 +87,6 @@ async fn ask_zenity(
 
 
 	let mut cmdline: Vec<String> = vec![
-		String::from("zenity"),
 		String::from("--list"),
 		String::from("--checkbox"),
 		String::from("--multiple"),
@@ -101,5 +112,22 @@ async fn ask_zenity(
 		for object in permission_objects {
 			cmdline.extend(object.to_cmdline().await);
 		}
+	};
+
+	let output = {
+		let out = tokio::process::Command::new("zenity")
+			.args(cmdline)
+			.stdin(std::process::Stdio::null())
+			.stdout(std::process::Stdio::piped())
+			.stderr(std::process::Stdio::null())
+			.kill_on_drop(true)
+			.output()
+			.await
+			.map_err(ZenityError::ZenityFailed)
+			?;
+
+		String::from_utf8(out.stdout)
+			.map_err(ZenityError::InvalidUTF8)
+			?
 	};
 }
