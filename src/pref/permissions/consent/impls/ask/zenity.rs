@@ -2,7 +2,7 @@ impl crate::pref::permissions::consent::AskConsent for crate::pref::permissions:
 	async fn ask(content: Self, config: std::sync::Arc<crate::config::Config>)
 		-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError>
 	{
-		unimplemented!()
+		ask_zenity(content, config).await
 	}
 
 	type ConsentError = ZenityError;
