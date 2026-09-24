@@ -1,6 +1,6 @@
 impl crate::pref::permissions::consent::AskConsent for crate::pref::permissions::consent::DynamicPermissions {
 	async fn ask(content: Self, config: std::sync::Arc<crate::config::Config>)
-		-> Result<Self, Self::ConsentError>
+		-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError>
 	{
 		unimplemented!()
 	}
@@ -64,7 +64,7 @@ async fn ask_zenity(
 	permissions:	crate::pref::permissions::consent::DynamicPermissions,
 	config:		std::sync::Arc<crate::config::Config>,
 )
--> Result<crate::pref::permissions::consent::DynamicPermissions, ZenityError> {
+-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError> {
 
 	/*
 		The trick here is that permission_objects are in the same position of
@@ -137,7 +137,19 @@ async fn ask_zenity(
 
 	for (permission, zenity_object) in permissions.into_iter().zip(permission_objects) {
 		if output.any(|x| zenity_object.perm_uid == x) {
-			allowed_permissions.push(permission);
+			allowed_permissions.push(
+				(
+					permission,
+					true
+				)
+			);
+		} else {
+			allowed_permissions.push(
+				(
+					permission,
+					false
+				)
+			);
 		};
 	};
 

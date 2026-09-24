@@ -16,10 +16,14 @@ pub mod impls;
 */
 
 pub type DynamicPermissions = Vec<portable_config::definitions::consent::DynamicPermission>;
+pub type DynamicPermissionsResult = Vec<(portable_config::definitions::consent::DynamicPermission, bool)>;
 
 pub trait AskConsent {
-	fn ask(content: DynamicPermissions)
-	-> impl std::future::Future<Output = Result<DynamicPermissions, Self::ConsentError>>;
+	fn ask(
+		content:	DynamicPermissions,
+		config:		std::sync::Arc<crate::config::Config>,
+	)
+	-> impl std::future::Future<Output = Result<DynamicPermissionsResult, Self::ConsentError>>;
 
 	type ConsentError;
 }
