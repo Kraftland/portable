@@ -9,7 +9,7 @@ mod machine_id;
 	The system bind subsystem
 */
 pub struct SystemBind {
-	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+	pub config:		std::sync::Arc<crate::config::Config>,
 
 	pub xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 
