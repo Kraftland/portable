@@ -86,7 +86,7 @@ pub async fn generate_bindrules(
 		);
 	};
 	{
-		use crate::config::config_definition::DeviceAllow;
+		use portable_config::definitions::DeviceAllow;
 
 		let mut all_gpus = false;
 		let mut bind_cam = false;
