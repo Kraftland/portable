@@ -10,7 +10,7 @@ pub struct DocumentsMountPoint {
 
 impl DocumentsMountPoint {
 	pub async fn new(
-			config:		std::sync::Arc<crate::config::config_definition::Config>,
+			config:		std::sync::Arc<crate::config::Config>,
 			bus:		zbus::Connection
 		)	->
 			Result<Self, DocumentError>
