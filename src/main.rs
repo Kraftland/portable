@@ -387,6 +387,25 @@ async fn run(
 			?
 	);
 
+	let dynamic_permissions = match
+		dynamic_permissions
+			.await
+			.map_err(StartError::SpawnError)
+			?
+	{
+		Ok(v)	=> v,
+		Err(e)	=> {
+			let _ = log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Warn,
+					message:	format!("Could not retrieve dynamic permissions: {e}") }
+			)
+				.await;
+
+			std::sync::Arc::new(vec![])
+		}
+	};
+
 	#[cfg(feature = "flatpak")]
 	let flatpak_runtime_spawn = {
 		use bind::subsystems::dirs::RuntimePathsTrait;
