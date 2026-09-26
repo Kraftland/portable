@@ -11,7 +11,7 @@ mod at_spi;
 */
 pub async fn start_proxies(
 	logger:		crate::logger::LogSender,
-	config:		std::sync::Arc<crate::config::config_definition::Config>,
+	config:		std::sync::Arc<crate::config::Config>,
 	session_cancel:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	bus_conn:	zbus::Connection,
