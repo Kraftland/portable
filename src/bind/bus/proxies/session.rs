@@ -13,7 +13,7 @@ mod sandbox;
 */
 pub struct SessionProxy {
 	pub logger:		crate::logger::LogSender,
-	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+	pub config:		std::sync::Arc<crate::config::Config>,
 	pub cancel_token:	tokio_util::sync::CancellationToken,
 	pub portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
@@ -46,7 +46,7 @@ impl crate::bind::bus::StartProxy for SessionProxy {
 
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
-	config:		std::sync::Arc<crate::config::config_definition::Config>,
+	config:		std::sync::Arc<crate::config::Config>,
 	cancel_token:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]

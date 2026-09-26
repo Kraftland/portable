@@ -11,7 +11,7 @@ pub struct FlatpakRuntime {
 
 impl super::RuntimePathsTrait for FlatpakRuntime {
 	fn new(
-		config:		std::sync::Arc<crate::config::config_definition::Config>,
+		config:		std::sync::Arc<crate::config::Config>,
 		xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 		instance_id:	std::sync::Arc<String>,
 	)	->

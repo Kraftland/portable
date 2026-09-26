@@ -9,7 +9,7 @@ mod machine_id;
 	The system bind subsystem
 */
 pub struct SystemBind {
-	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+	pub config:		std::sync::Arc<crate::config::Config>,
 
 	pub xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 
@@ -41,7 +41,7 @@ impl super::GenerateBind for SystemBind {
 	It is designed to provide theming consistency in mind. Masking is done via the mask subsystem.
 */
 async fn bind(
-	config:			std::sync::Arc<crate::config::config_definition::Config>,
+	config:			std::sync::Arc<crate::config::Config>,
 	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,

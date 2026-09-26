@@ -22,7 +22,7 @@ pub async fn generate_bindrules(
 	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
-	config:			std::sync::Arc<crate::config::config_definition::Config>,
+	config:			std::sync::Arc<crate::config::Config>,
 	logger:			crate::logger::LogSender,
 	stop:			std::sync::Arc<crate::stop::Stop>,
 	env:			crate::envs::holder::HoldChannel,
@@ -86,7 +86,7 @@ pub async fn generate_bindrules(
 		);
 	};
 	{
-		use crate::config::config_definition::DeviceAllow;
+		use portable_config::definitions::DeviceAllow;
 
 		let mut all_gpus = false;
 		let mut bind_cam = false;
@@ -334,7 +334,7 @@ pub async fn generate_bindrules(
 	ret.extend(expose_rules);
 
 	let lockdown_options = {
-		use crate::config::config_definition::LockdownOptions;
+		use portable_config::definitions::LockdownOptions;
 
 		let opts: LockdownOptions = LockdownOptions::from(&config.privacy.lockdown_options);
 		opts
