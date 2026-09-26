@@ -1,5 +1,5 @@
 impl crate::pref::permissions::consent::AskConsent for crate::pref::permissions::consent::DynamicPermissions {
-	async fn ask(content: Self, config: std::sync::Arc<crate::config::Config>)
+	async fn ask(content: Self, config: &crate::config::Config)
 		-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError>
 	{
 		ask_zenity(content, config).await
@@ -62,7 +62,7 @@ impl crate::bind::types::ToCmdline for ZenityPermissionObject {
 */
 async fn ask_zenity(
 	permissions:	crate::pref::permissions::consent::DynamicPermissions,
-	config:		std::sync::Arc<crate::config::Config>,
+	config:		&crate::config::Config,
 )
 -> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError> {
 

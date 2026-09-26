@@ -29,7 +29,7 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 	async fn store(
 		&self,
 		perms:	&crate::pref::permissions::consent::DynamicPermissionsResult,
-		app_id:	std::sync::Arc<&str>,
+		app_id:	&str,
 	) -> Result<(), Self::StoreError> {
 		let permission_type = crate::ipc::portals::permission_store::PermissionType::DynamicPermissions;
 
@@ -75,7 +75,7 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 
 	async fn retrieve(
 		&self,
-		app_id:	std::sync::Arc<&str>,
+		app_id:	&str,
 	) -> Result<crate::pref::permissions::consent::DynamicPermissionsResult, Self::StoreError> {
 		let permission_type = crate::ipc::portals::permission_store::PermissionType::DynamicPermissions;
 
