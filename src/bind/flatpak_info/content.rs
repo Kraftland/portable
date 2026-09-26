@@ -2,7 +2,7 @@
 	Generate the content for flatpak-info file
 */
 pub async fn generate(
-	config:		std::sync::Arc<crate::config::config_definition::Config>,
+	config:		std::sync::Arc<crate::config::Config>,
 	instance_id:	std::sync::Arc<String>,
 	xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 ) -> String {
