@@ -23,7 +23,7 @@ impl super::PermissionType {
 				"top.kimiblock.Portable"
 			}
 
-			Self::DynamicPermissions(_) => {
+			Self::DynamicPermissions => {
 				"top.kimiblock.Portable"
 			}
 		}
@@ -52,7 +52,7 @@ impl super::PermissionType {
 			Self::ExposeDevice	=> {
 				"expose-device"
 			}
-			Self::DynamicPermissions(_)
+			Self::DynamicPermissions
 			=> {
 				"dynamic-permissions"
 			}

@@ -21,9 +21,9 @@ pub enum PermissionType {
 	ExposeDevice,
 
 	/**
-		DynamicPermissions are stored in a single table and id, separated by '\0' (NUL) bytes
+		DynamicPermissions are stored in a single table and id, as array of Strings
 	*/
-	DynamicPermissions(portable_config::definitions::consent::DynamicPermission),
+	DynamicPermissions,
 }
 
 /**
