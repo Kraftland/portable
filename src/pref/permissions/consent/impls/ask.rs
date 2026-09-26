@@ -1,4 +1,4 @@
 #[cfg(feature = "zenity-dialogue")]
-mod zenity;
+pub mod zenity;
 
 
