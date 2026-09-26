@@ -35,12 +35,12 @@ pub trait PermissionStore {
 	/**
 		Store a list of Dynamic Permissions to a PermissionStore backend
 	*/
-	fn store(perms: &DynamicPermissionsResult) -> Result<(), Self::StoreError>;
+	fn store(perms: &DynamicPermissionsResult, app_id: std::sync::Arc<&str>) -> Result<(), Self::StoreError>;
 
 	/**
 		Retrieve a list of DynamicPermissions from a PermissionStore backend
 	*/
-	fn retrieve(perms: &DynamicPermissionsResult)
+	fn retrieve(app_id: std::sync::Arc<&str>) -> Result<DynamicPermissionsResult, Self::StoreError>;
 
 	type StoreError;
 }
