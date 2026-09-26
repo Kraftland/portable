@@ -39,6 +39,8 @@ pub trait PermissionStore {
 
 	/**
 		Retrieve a list of DynamicPermissions from a PermissionStore backend
+
+		Implementations should return an empty vector if not initialised.
 	*/
 	fn retrieve(&self, app_id: std::sync::Arc<&str>) -> impl std::future::Future<Output = Result<DynamicPermissionsResult, Self::StoreError>>;
 

@@ -8,6 +8,7 @@
 */
 pub struct Portal {
 	pub bus:	zbus::Connection,
+	pub logger:	crate::logger::LogSender,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -23,6 +24,8 @@ pub enum PortalPermissionStoreError {
 }
 
 impl crate::pref::permissions::consent::PermissionStore for Portal {
+	type StoreError = PortalPermissionStoreError;
+
 	async fn store(
 		&self,
 		perms:	&crate::pref::permissions::consent::DynamicPermissionsResult,
@@ -68,6 +71,47 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 			?;
 
 		Ok(())
+	}
+
+	async fn retrieve(
+		&self,
+		app_id:	std::sync::Arc<&str>,
+	) -> Result<crate::pref::permissions::consent::DynamicPermissionsResult, Self::StoreError> {
+		let permission_type = crate::ipc::portals::permission_store::PermissionType::DynamicPermissions;
+
+		let proxy = crate::ipc::portals::permission_store::PermissionStoreProxy::new(&self.bus)
+			.await
+			.map_err(PortalPermissionStoreError::BusError)
+			?;
+
+		let retrieved_strs = match proxy.get_permission(
+			permission_type.table(),
+			permission_type.id(),
+			&app_id,
+		).await {
+			Ok(v)	=> v,
+			Err(e)	=> {
+				let _ = self.logger.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Debug,
+						message:	format!(
+							"Could not retrieve permission from PermissionStore: {e}. Treating as empty.",
+						)
+					}
+				).await;
+				vec![]
+			}
+		};
+
+		let mut ret = vec![];
+
+		for permission in retrieved_strs {
+			ret.push(
+				str_to_permission(permission.as_str())?
+			);
+		};
+
+		Ok(ret)
 	}
 }
 
