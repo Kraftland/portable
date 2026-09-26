@@ -1,1 +1,1 @@
-mod consent;
+pub mod consent;
