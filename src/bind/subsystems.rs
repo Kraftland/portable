@@ -334,7 +334,7 @@ pub async fn generate_bindrules(
 	ret.extend(expose_rules);
 
 	let lockdown_options = {
-		use crate::config::config_definition::LockdownOptions;
+		use portable_config::definitions::LockdownOptions;
 
 		let opts: LockdownOptions = LockdownOptions::from(&config.privacy.lockdown_options);
 		opts
