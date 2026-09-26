@@ -159,7 +159,7 @@ async fn run(
 	);
 
 	let config = std::sync::Arc::new(
-		config::Config::get(
+		config::get(
 			log_tx.clone(),
 			xdg_dirs.config_home.clone(),
 		)
