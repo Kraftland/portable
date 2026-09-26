@@ -2,7 +2,7 @@
 	This function mounts /dev/kvm if config allows such operation
 */
 pub async fn mount_kvm(
-	device_allow: Vec<crate::config::config_definition::DeviceAllow>
+	device_allow: Vec<portable_config::definitions::DeviceAllow>
 ) -> Result<Vec<crate::bind::types::BindRule>, KvmError> {
 	use crate::bind::types::BindRule;
 	if ! allow_kvm(device_allow) {
@@ -24,10 +24,10 @@ pub async fn mount_kvm(
 	Ok(ret)
 }
 
-fn allow_kvm(device_allow: Vec<crate::config::config_definition::DeviceAllow>) -> bool {
+fn allow_kvm(device_allow: Vec<portable_config::definitions::DeviceAllow>) -> bool {
 	for allow in device_allow {
 		match allow {
-			crate::config::config_definition::DeviceAllow::Kvm	=> {return true;}
+			portable_config::definitions::DeviceAllow::Kvm	=> {return true;}
 			_							=> {continue;}
 		}
 	};
