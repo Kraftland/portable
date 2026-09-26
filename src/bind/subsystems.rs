@@ -22,7 +22,7 @@ pub async fn generate_bindrules(
 	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
-	config:			std::sync::Arc<crate::config::config_definition::Config>,
+	config:			std::sync::Arc<crate::config::Config>,
 	logger:			crate::logger::LogSender,
 	stop:			std::sync::Arc<crate::stop::Stop>,
 	env:			crate::envs::holder::HoldChannel,
