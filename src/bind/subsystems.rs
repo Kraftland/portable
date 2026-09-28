@@ -345,7 +345,14 @@ pub async fn generate_bindrules(
 		extra_files:		forward_map,
 		inhibit_suspend:	config.system.conduct_inhibit,
 		flatpak_info:		config.advanced.flatpak_env,
-		landlock:		lockdown_options.landlock,
+		landlock:		{
+			use portable_config::definitions::consent::DynamicPermission;
+			if *dynamic_permissions.get(&DynamicPermission::DisableLandlock).unwrap_or(&false) {
+				false
+			} else {
+				lockdown_options.landlock
+			}
+		},
 		seccomp_whitelist:	lockdown_options.seccomp_whitelist,
 		allow_debug:		{
 			use portable_config::definitions::consent::DynamicPermission;
