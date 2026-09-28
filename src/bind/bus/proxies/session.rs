@@ -519,7 +519,7 @@ async fn generate_bus_rules(
 		};
 	};
 
-	if mpris_names.len() > 0 {
+	if mpris_names.len() > 0 && *dynamic_perm.get(&DynamicPermission::MediaPlayer2).unwrap_or(&false) {
 		for mpris_name in mpris_names {
 			rules.push(
 				BusAccessLevel::OwnName {
