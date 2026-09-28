@@ -46,12 +46,9 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 
 				perm_str.push_str(perm.0.id());
 
-				match perm.1 {
-					true	=> {
-						perm_str.push_str(":true");
-					}
-					false	=> {}
-				}
+				if *perm.1 {
+					perm_str.push_str(":true");
+				};
 
 				as_ret.push(perm_str);
 			};
@@ -63,7 +60,7 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 			permission_type.table(),
 			true,
 			permission_type.id(),
-			&app_id,
+			app_id,
 			permissions,
 		)
 			.await
@@ -87,7 +84,7 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 		let retrieved_strs = match proxy.get_permission(
 			permission_type.table(),
 			permission_type.id(),
-			&app_id,
+			app_id,
 		).await {
 			Ok(v)	=> v,
 			Err(e)	=> {
