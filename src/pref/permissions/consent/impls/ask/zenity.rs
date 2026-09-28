@@ -1,9 +1,17 @@
-impl crate::pref::permissions::consent::AskConsent for crate::pref::permissions::consent::DynamicPermissions {
-	async fn ask(content: Self, config: &crate::config::Config)
-		-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError>
+use crate::pref::permissions::consent::AskConsent;
+
+impl AskConsent for crate::pref::permissions::consent::DynamicPermissions {
+	async fn ask(
+			config:		&crate::config::Config,
+			missing_perms:	crate::pref::permissions::consent::DynamicPermissions,
+		)
+		-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, Self::ConsentError>
 	{
-		ask_zenity(content, config).await
+		ask_zenity(missing_perms, config)
+			.await
 	}
+
+
 
 	type ConsentError = ZenityError;
 }
@@ -135,25 +143,20 @@ async fn ask_zenity(
 
 	let mut output = output.trim().split("|");
 
-	let mut allowed_permissions = vec![];
+	let mut ret_map = std::collections::HashMap::new();
 
-	for (permission, zenity_object) in permissions.into_iter().zip(permission_objects) {
-		if output.any(|x| zenity_object.perm_uid == x) {
-			allowed_permissions.push(
-				(
-					permission,
-					true
-				)
-			);
-		} else {
-			allowed_permissions.push(
-				(
-					permission,
-					false
-				)
-			);
-		};
+	for perm in permissions {
+		match output
+			.any(|x| perm.id() == x)
+		{
+			true	=> {
+				ret_map.insert(perm, true);
+			}
+			false	=> {
+				ret_map.insert(perm, false);
+			}
+		}
 	};
 
-	Ok(allowed_permissions)
+	Ok(ret_map)
 }
