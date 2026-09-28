@@ -17,6 +17,7 @@ pub async fn start_proxies(
 	bus_conn:	zbus::Connection,
 	env:		crate::envs::holder::HoldChannel,
 	runtime_opts:	std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
+	dynamic_perm:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 
 	#[cfg(feature = "flatpak")]
 	flatpak_dir:	std::sync::Arc<crate::bind::subsystems::dirs::flatpak::FlatpakRuntime>,
@@ -45,6 +46,7 @@ pub async fn start_proxies(
 		let proxy = session::SessionProxy {
 			logger:		logger.clone(),
 			config:		config.clone(),
+			dynamic_perm:	dynamic_perm,
 			cancel_token:	session_cancel,
 			portable_dir:	portable_dir.clone(),
 

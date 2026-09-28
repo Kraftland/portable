@@ -547,6 +547,7 @@ async fn run(
 			dbus_conn.clone(),
 			envs_tx.clone(),
 			runtime_opts.clone(),
+			dynamic_permissions.clone(),
 			#[cfg(feature = "flatpak")]
 			flatpak_runtime,
 			#[cfg(feature = "flatpak")]
