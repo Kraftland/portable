@@ -626,7 +626,7 @@ async fn run(
 			log_tx.send(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
-					message:	format!("Quit requested: D-Bus controller"),
+					message:	"Quit requested: D-Bus controller".to_string(),
 				}
 			)
 				.await
@@ -655,7 +655,7 @@ async fn run(
 			log_tx.send(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
-					message:	format!("Quit requested: D-Bus died"),
+					message:	"Quit requested: D-Bus died".to_string(),
 				}
 			)
 				.await
@@ -668,7 +668,7 @@ async fn run(
 			log_tx.send(
 				logger::LogMessage {
 					level:		logger::LogLevel::Debug,
-					message:	format!("Quit requested: sandbox finished"),
+					message:	"Quit requested: sandbox finished".to_string(),
 				}
 			)
 				.await
