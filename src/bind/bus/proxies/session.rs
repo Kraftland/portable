@@ -105,7 +105,7 @@ async fn compile_rules(
 							.map_err(ProxyError::SpawnError)
 							?
 							?,
-			logger:			logger,
+			logger,
 			proxy_socket:		proxy_socket_path,
 			cancen_token:		Some(cancel_token),
 			sloppy_names:		false,
