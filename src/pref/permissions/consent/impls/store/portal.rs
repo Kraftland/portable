@@ -103,12 +103,12 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 			}
 		};
 
-		let mut ret = vec![];
+		let mut ret = std::collections::HashMap::new();
 
 		for permission in retrieved_strs {
-			ret.push(
-				str_to_permission(permission.as_str())?
-			);
+			let permission = str_to_permission(permission.as_str())?;
+
+			ret.insert(permission.0, permission.1);
 		};
 
 		Ok(ret)

@@ -402,7 +402,7 @@ async fn run(
 			)
 				.await;
 
-			std::sync::Arc::new(vec![])
+			std::sync::Arc::new(std::collections::HashMap::new())
 		}
 	};
 
