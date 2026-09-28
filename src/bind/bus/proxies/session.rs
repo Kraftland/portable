@@ -588,7 +588,7 @@ async fn generate_bus_rules(
 
 	{
 		let inhibit_allowed = {
-			inhibit && *dynamic_perm.get(&DynamicPermission::Notifications).unwrap_or(&false)
+			inhibit && *dynamic_perm.get(&DynamicPermission::Inhibit).unwrap_or(&false)
 		};
 
 		let portals = portal_allowlist::get_allowed_portals(inhibit_allowed).await;
