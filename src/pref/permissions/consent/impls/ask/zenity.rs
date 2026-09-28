@@ -133,7 +133,7 @@ async fn ask_zenity(
 			?
 	};
 
-	let mut output = output.split("|");
+	let mut output = output.trim().split("|");
 
 	let mut allowed_permissions = vec![];
 
