@@ -100,6 +100,8 @@ async fn ask_zenity(
 		String::from("--column=Identifier"),
 		String::from("--column=Permission"),
 
+		String::from("--checklist"),
+
 		String::from("--print-column"),
 		String::from("2"),
 
