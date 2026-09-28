@@ -13,6 +13,9 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - name: Update host
+      run: sudo apt-get update && sudo apt-get upgrade
+
     - name: Set up Rust
       run: sudo apt-get install cargo -y
 
