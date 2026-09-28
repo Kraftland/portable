@@ -17,7 +17,7 @@ pub async fn wait(
 
 	let mut stream = proxy
 		.receive_name_owner_changed_with_args(
-			&vec![(0, init_name)]
+			&[(0, init_name)]
 		)
 		.await
 		.map_err(super::AuxStartError::AliveError)
