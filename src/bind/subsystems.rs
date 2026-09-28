@@ -88,6 +88,7 @@ pub async fn generate_bindrules(
 	};
 	{
 		use portable_config::definitions::DeviceAllow;
+		use portable_config::definitions::consent::DynamicPermission;
 
 		let mut all_gpus = false;
 		let mut bind_cam = false;
@@ -95,7 +96,9 @@ pub async fn generate_bindrules(
 		for allow in &config.system.device_allow {
 			match allow {
 				DeviceAllow::DiscreteGPU	=> {
-					all_gpus = true
+					all_gpus = *dynamic_permissions
+						.get(&DynamicPermission::DGPU)
+						.unwrap_or(&false)
 				}
 				DeviceAllow::Camera		=> {
 					bind_cam = true
