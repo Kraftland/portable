@@ -13,7 +13,7 @@ pub async fn get(
 		logger:	logger.clone(),
 	};
 
-	let stored_permissions = match portal_store.retrieve(&config.metadata.sandbox_id).await {
+	let mut stored_permissions = match portal_store.retrieve(&config.metadata.sandbox_id).await {
 		Ok(v)	=> {
 			#[cfg(debug_assertions)]
 			let _ = logger.send(
