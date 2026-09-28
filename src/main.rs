@@ -189,18 +189,6 @@ async fn run(
 		.map_err(StartError::SpawnError)?
 		.map_err(StartError::BusError)?;
 
-
-	// Fire the consent checker right away, to avoid delaying startup
-	let dynamic_permissions = {
-		tokio::spawn(
-			pref::permissions::consent::get(
-				log_tx.clone(),
-				config.clone(),
-				dbus_conn.clone(),
-			)
-		)
-	};
-
 	let bus_cancel = bus_spawn.1;
 
 	let bus_spawn = {
@@ -366,6 +354,17 @@ async fn run(
 
 			return Ok(());
 		}
+	};
+
+	// Fire the consent checker right away, to avoid delaying startup
+	let dynamic_permissions = {
+		tokio::spawn(
+			pref::permissions::consent::get(
+				log_tx.clone(),
+				config.clone(),
+				dbus_conn.clone(),
+			)
+		)
 	};
 
 	log_tx.send(
