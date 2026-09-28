@@ -101,7 +101,9 @@ pub async fn generate_bindrules(
 						.unwrap_or(&false)
 				}
 				DeviceAllow::Camera		=> {
-					bind_cam = true
+					bind_cam = *dynamic_permissions
+						.get(&DynamicPermission::Camera)
+						.unwrap_or(&false)
 				}
 				DeviceAllow::Input		=> {
 					bind_input = true
