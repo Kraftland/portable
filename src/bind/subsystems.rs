@@ -23,6 +23,7 @@ pub async fn generate_bindrules(
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	config:			std::sync::Arc<crate::config::Config>,
+	dynamic_permissions:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 	logger:			crate::logger::LogSender,
 	stop:			std::sync::Arc<crate::stop::Stop>,
 	env:			crate::envs::holder::HoldChannel,
@@ -346,7 +347,12 @@ pub async fn generate_bindrules(
 		flatpak_info:		config.advanced.flatpak_env,
 		landlock:		lockdown_options.landlock,
 		seccomp_whitelist:	lockdown_options.seccomp_whitelist,
-		allow_debug:		config.advanced.allow_debug,
+		allow_debug:		{
+			use portable_config::definitions::consent::DynamicPermission;
+			config.advanced.allow_debug && *dynamic_permissions
+								.get(&DynamicPermission::Debugging)
+								.unwrap_or(&false)
+		},
 		logger:			logger.clone(),
 		stop:			stop,
 		cancen_token:		cancel_token.clone(),

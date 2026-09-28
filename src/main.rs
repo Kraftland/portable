@@ -560,6 +560,7 @@ async fn run(
 		document,
 		xdg_dirs.clone(),
 		config.clone(),
+		dynamic_permissions.clone(),
 		log_tx.clone(),
 		stop_obj.clone(),
 		envs_tx.clone(),
