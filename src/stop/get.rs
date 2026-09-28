@@ -11,7 +11,6 @@
 
 	When the run() function finishes, a worker is started to start execution.
 */
-
 pub struct Stop {
 	pub pre_parent:		tokio_util::sync::CancellationToken,
 	pub post_cancel:	tokio_util::sync::CancellationToken,
@@ -75,7 +74,7 @@ impl Stop {
 			.clone()
 			.send(
 				StopMessage::Prepare {
-					task: task,
+					task,
 				},
 			)
 			.map_err(StopError::SendError)
@@ -88,7 +87,7 @@ impl Stop {
 			.clone()
 			.send(
 				StopMessage::Post {
-					task: task,
+					task,
 				},
 			)
 			.map_err(StopError::SendError)
