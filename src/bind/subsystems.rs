@@ -93,6 +93,7 @@ pub async fn generate_bindrules(
 		let mut all_gpus = false;
 		let mut bind_cam = false;
 		let mut bind_input = false;
+		let mut bind_kvm = false;
 		for allow in &config.system.device_allow {
 			match allow {
 				DeviceAllow::DiscreteGPU	=> {
@@ -110,7 +111,11 @@ pub async fn generate_bindrules(
 						.get(&DynamicPermission::Input)
 						.unwrap_or(&false)
 				}
-				_				=> {}
+				DeviceAllow::Kvm		=> {
+					bind_kvm = *dynamic_permissions
+						.get(&DynamicPermission::Kvm)
+						.unwrap_or(&false)
+				}
 			}
 		};
 
@@ -119,6 +124,7 @@ pub async fn generate_bindrules(
 			zink:		config.advanced.use_zink,
 			bind_camera:	bind_cam,
 			bind_input:	bind_input,
+			bind_kvm:	bind_kvm,
 			logger:		logger.clone(),
 			envs:		env.clone(),
 		};

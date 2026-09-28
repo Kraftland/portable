@@ -9,6 +9,9 @@ pub mod camera;
 #[cfg(feature = "input")]
 mod input;
 
+#[cfg(feature = "kvm")]
+mod kvm;
+
 /**
 	Implementation of Devices subsystem
 */
@@ -18,6 +21,7 @@ pub struct Devices {
 	pub zink:		bool,
 	pub bind_camera:	bool,
 	pub bind_input:		bool,
+	pub bind_kvm:		bool,
 	pub logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
 	pub envs:		crate::envs::holder::HoldChannel,
 }
@@ -70,6 +74,19 @@ impl super::GenerateBind for Devices {
 			);
 		}
 
+		#[cfg(feature = "kvm")]
+		if self.bind_kvm {
+			tasks.push(
+				tokio::spawn(
+					async move {
+						kvm::scan()
+							.await
+							.map_err(DeviceError::KVMError)
+					}
+				)
+			);
+		}
+
 
 		let mut ret = vec![];
 		for task in tasks {
@@ -98,6 +115,9 @@ pub enum DeviceError {
 
 	#[error("Could not handle Input devices: {0:#?}")]
 	InputError(input::InputError),
+
+	#[error("Could not handle KVM devices: {0}")]
+	KVMError(kvm::KvmError),
 
 	#[error("Could not spawn task: {0:#?}")]
 	Spawn(tokio::task::JoinError),
@@ -264,3 +284,4 @@ async fn bind_udev_device(device: &udev::Device) -> Vec<crate::bind::types::Bind
 
 	ret
 }
+

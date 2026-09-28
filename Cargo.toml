@@ -41,10 +41,13 @@ members = []
 exclude = ["lib/init", "lib/config"]
 
 [features]
-default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input", "zenity-dialogue"]
+default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input", "zenity-dialogue", "kvm"]
 
 # Debug terminal window resize
 term-resize-debug = []
+
+# KVM binding support
+kvm	= []
 
 # Audio support metaflag
 audio	= []

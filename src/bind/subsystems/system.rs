@@ -1,6 +1,5 @@
 mod passwd;
 mod nsswitch;
-mod kvm;
 mod resolv;
 mod bin;
 mod machine_id;
@@ -61,10 +60,6 @@ async fn bind(
 			config.clone(),
 			xdg.clone(),
 		),
-	);
-
-	let kvm_spawn = tokio::spawn(
-		kvm::mount_kvm(config.system.device_allow.clone())
 	);
 
 	let bin_spawn = tokio::spawn(
@@ -535,13 +530,6 @@ async fn bind(
 			.map_err(SystemBindError::SpawnError)?
 	);
 
-	ret.extend(
-		kvm_spawn
-			.await
-			.map_err(SystemBindError::SpawnError)?
-			.map_err(SystemBindError::KvmError)?
-	);
-
 	Ok(ret)
 }
 
@@ -561,9 +549,6 @@ pub enum SystemBindError {
 
 	#[error("Could not spawn task: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
-
-	#[error("Could not mount kvm device: {0:#?}")]
-	KvmError(kvm::KvmError),
 
 	#[error("Could not mount binaries: {0:#?}")]
 	BinError(bin::BinError),
