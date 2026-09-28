@@ -2,6 +2,7 @@
 /**
 	Opens sandbox home under XDG_DATA_HOME/state_dir
 */
+#[cold]
 pub async fn open(
 	xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 	state_dir:	&str,
