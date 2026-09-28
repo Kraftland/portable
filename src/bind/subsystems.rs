@@ -106,7 +106,9 @@ pub async fn generate_bindrules(
 						.unwrap_or(&false)
 				}
 				DeviceAllow::Input		=> {
-					bind_input = true
+					bind_input = *dynamic_permissions
+						.get(&DynamicPermission::Input)
+						.unwrap_or(&false)
 				}
 				_				=> {}
 			}
