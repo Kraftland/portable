@@ -65,9 +65,9 @@ impl XdgDirs {
 		Ok(Self {
 			runtime:		runtime_dir.clone(),
 			config_home:		Self::config_home(&home).await?,
-			data_home:		data_home,
-			home:			home,
-			data_dirs:		data_dirs,
+			data_home,
+			home,
+			data_dirs,
 		})
 	}
 
