@@ -14,7 +14,19 @@ pub async fn get(
 	};
 
 	let stored_permissions = match portal_store.retrieve(&config.metadata.sandbox_id).await {
-		Ok(v)	=> v,
+		Ok(v)	=> {
+			#[cfg(debug_assertions)]
+			let _ = logger.send(
+				crate::logger::LogMessage {
+					level:		crate::logger::LogLevel::Warn,
+					message:	format!(
+						"Retrieved permissions from backend: {v:#?}",
+					),
+				},
+			).await;
+
+			v
+		},
 		Err(e)	=> {
 			let _ = logger.send(
 				crate::logger::LogMessage {
@@ -22,7 +34,7 @@ pub async fn get(
 					message:	format!("Could not retrieve stored permissions: {e}"),
 				}
 			).await;
-			vec![]
+			std::collections::HashMap::new()
 		}
 	};
 
@@ -32,13 +44,7 @@ pub async fn get(
 		let mut ret = vec![];
 
 		for perm in config_permissions {
-			if stored_permissions
-				.iter()
-				.any(
-					|(perms, _)| {
-						perms == &perm
-					}
-				)
+			if stored_permissions.contains_key(&perm)
 			{
 				continue;
 			} else {
@@ -55,30 +61,20 @@ pub async fn get(
 		);
 	};
 
-	let ask_result = {
-		DynamicPermissions::ask(unknown_permissions, config.as_ref())
+	stored_permissions.extend(
+		DynamicPermissions::ask(&config, unknown_permissions)
 			.await
 			.map_err(ConsentError::ZenityError)
 			?
-	};
+	);
 
-	let merged_result = {
-		let mut ret = vec![];
-
-		ret.extend(ask_result);
-
-		ret.extend(stored_permissions);
-
-		ret
-	};
-
-	portal_store.store(&merged_result, &config.metadata.sandbox_id)
+	portal_store.store(&stored_permissions, &config.metadata.sandbox_id)
 		.await
 		.map_err(ConsentError::StorePortalError)
 		?;
 
 	Ok(
-		merged_result.into()
+		stored_permissions.into()
 	)
 }
 
@@ -112,12 +108,17 @@ pub mod impls;
 */
 
 pub type DynamicPermissions = Vec<portable_config::definitions::consent::DynamicPermission>;
-pub type DynamicPermissionsResult = Vec<(portable_config::definitions::consent::DynamicPermission, bool)>;
+pub type DynamicPermissionsResult = std::collections::HashMap<portable_config::definitions::consent::DynamicPermission, bool>;
 
+/**
+	The AskConsent trait is implemented by various backends to present user with a dialogue.
+
+	It takes a list of DynamicPermission, and return them in a hashed favour.
+*/
 pub trait AskConsent {
 	fn ask(
-		content:	DynamicPermissions,
 		config:		&crate::config::Config,
+		missing_perms:	DynamicPermissions,
 	)
 	-> impl std::future::Future<Output = Result<DynamicPermissionsResult, Self::ConsentError>>;
 
