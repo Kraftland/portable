@@ -38,7 +38,7 @@ pub async fn wait(
 			if args.new_owner.is_some() {
 				break;
 			} else {
-				return Err(super::AuxStartError::RemoteDiedError);
+				continue;
 			}
 		}
 	};
