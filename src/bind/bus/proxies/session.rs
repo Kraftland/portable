@@ -13,7 +13,8 @@ mod sandbox;
 */
 pub struct SessionProxy {
 	pub logger:		crate::logger::LogSender,
-	pub config:		std::sync::Arc<crate::config::config_definition::Config>,
+	pub config:		std::sync::Arc<crate::config::Config>,
+	pub dynamic_perm:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 	pub cancel_token:	tokio_util::sync::CancellationToken,
 	pub portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
@@ -31,6 +32,7 @@ impl crate::bind::bus::StartProxy for SessionProxy {
 		compile_rules(
 			self.logger,
 			self.config,
+			self.dynamic_perm,
 			self.cancel_token,
 			self.portable_dir,
 			#[cfg(feature = "flatpak")]
@@ -46,7 +48,8 @@ impl crate::bind::bus::StartProxy for SessionProxy {
 
 async fn compile_rules(
 	logger:		crate::logger::LogSender,
-	config:		std::sync::Arc<crate::config::config_definition::Config>,
+	config:		std::sync::Arc<crate::config::Config>,
+	dynamic_perm:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 	cancel_token:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	#[cfg(feature = "flatpak")]
@@ -71,6 +74,7 @@ async fn compile_rules(
 			config.privacy.classic_notif,
 			config.system.allow_inhibit,
 			config.privacy.push_notification,
+			dynamic_perm,
 		),
 	);
 
@@ -129,6 +133,7 @@ async fn generate_bus_rules(
 	classic_notif:		bool,
 	inhibit:		bool,
 	push_notification:	bool,
+	dynamic_perm:		std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 ) -> Result<Vec<crate::bind::bus::rules::BusAccessLevel>, ProxyError> {
 	use crate::bind::bus::rules::BusAccessLevel;
 	use crate::bind::bus::rules::BusName;
@@ -458,7 +463,9 @@ async fn generate_bus_rules(
 		},
 	];
 
-	if push_notification {
+	use portable_config::definitions::consent::DynamicPermission;
+
+	if push_notification && *dynamic_perm.get(&DynamicPermission::Notifications).unwrap_or(&false) {
 		rules.push(
 			// UP may use different bus names, hence the wildcard here
 			BusAccessLevel::Call {
@@ -512,7 +519,7 @@ async fn generate_bus_rules(
 		};
 	};
 
-	if mpris_names.len() > 0 {
+	if mpris_names.len() > 0 && *dynamic_perm.get(&DynamicPermission::MediaPlayer2).unwrap_or(&false) {
 		for mpris_name in mpris_names {
 			rules.push(
 				BusAccessLevel::OwnName {
@@ -528,7 +535,7 @@ async fn generate_bus_rules(
 		}
 	}
 
-	if classic_notif {
+	if classic_notif && *dynamic_perm.get(&DynamicPermission::Notifications).unwrap_or(&false) {
 		rules.push(
 			BusAccessLevel::Call {
 				bus_name: BusName::try_from("org.freedesktop.Notifications")
@@ -580,7 +587,11 @@ async fn generate_bus_rules(
 	}
 
 	{
-		let portals = portal_allowlist::get_allowed_portals(inhibit).await;
+		let inhibit_allowed = {
+			inhibit && *dynamic_perm.get(&DynamicPermission::Inhibit).unwrap_or(&false)
+		};
+
+		let portals = portal_allowlist::get_allowed_portals(inhibit_allowed).await;
 		for portal in portals {
 			rules.push(
 				BusAccessLevel::Call {

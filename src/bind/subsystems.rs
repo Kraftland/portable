@@ -22,7 +22,8 @@ pub async fn generate_bindrules(
 	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
-	config:			std::sync::Arc<crate::config::config_definition::Config>,
+	config:			std::sync::Arc<crate::config::Config>,
+	dynamic_permissions:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 	logger:			crate::logger::LogSender,
 	stop:			std::sync::Arc<crate::stop::Stop>,
 	env:			crate::envs::holder::HoldChannel,
@@ -86,23 +87,35 @@ pub async fn generate_bindrules(
 		);
 	};
 	{
-		use crate::config::config_definition::DeviceAllow;
+		use portable_config::definitions::DeviceAllow;
+		use portable_config::definitions::consent::DynamicPermission;
 
 		let mut all_gpus = false;
 		let mut bind_cam = false;
 		let mut bind_input = false;
+		let mut bind_kvm = false;
 		for allow in &config.system.device_allow {
 			match allow {
 				DeviceAllow::DiscreteGPU	=> {
-					all_gpus = true
+					all_gpus = *dynamic_permissions
+						.get(&DynamicPermission::DGPU)
+						.unwrap_or(&false)
 				}
 				DeviceAllow::Camera		=> {
-					bind_cam = true
+					bind_cam = *dynamic_permissions
+						.get(&DynamicPermission::Camera)
+						.unwrap_or(&false)
 				}
 				DeviceAllow::Input		=> {
-					bind_input = true
+					bind_input = *dynamic_permissions
+						.get(&DynamicPermission::Input)
+						.unwrap_or(&false)
 				}
-				_				=> {}
+				DeviceAllow::Kvm		=> {
+					bind_kvm = *dynamic_permissions
+						.get(&DynamicPermission::Kvm)
+						.unwrap_or(&false)
+				}
 			}
 		};
 
@@ -111,6 +124,7 @@ pub async fn generate_bindrules(
 			zink:		config.advanced.use_zink,
 			bind_camera:	bind_cam,
 			bind_input:	bind_input,
+			bind_kvm:	bind_kvm,
 			logger:		logger.clone(),
 			envs:		env.clone(),
 		};
@@ -334,7 +348,7 @@ pub async fn generate_bindrules(
 	ret.extend(expose_rules);
 
 	let lockdown_options = {
-		use crate::config::config_definition::LockdownOptions;
+		use portable_config::definitions::LockdownOptions;
 
 		let opts: LockdownOptions = LockdownOptions::from(&config.privacy.lockdown_options);
 		opts
@@ -344,9 +358,26 @@ pub async fn generate_bindrules(
 		extra_files:		forward_map,
 		inhibit_suspend:	config.system.conduct_inhibit,
 		flatpak_info:		config.advanced.flatpak_env,
-		landlock:		lockdown_options.landlock,
+		landlock:		{
+			use portable_config::definitions::consent::DynamicPermission;
+
+			let dynamic_permission = *dynamic_permissions
+				.get(&DynamicPermission::DisableLandlock)
+				.unwrap_or(&false);
+
+			if lockdown_options.landlock {
+				true
+			} else {
+				! dynamic_permission
+			}
+		},
 		seccomp_whitelist:	lockdown_options.seccomp_whitelist,
-		allow_debug:		config.advanced.allow_debug,
+		allow_debug:		{
+			use portable_config::definitions::consent::DynamicPermission;
+			config.advanced.allow_debug && *dynamic_permissions
+								.get(&DynamicPermission::Debugging)
+								.unwrap_or(&false)
+		},
 		logger:			logger.clone(),
 		stop:			stop,
 		cancen_token:		cancel_token.clone(),

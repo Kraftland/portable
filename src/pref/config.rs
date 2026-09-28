@@ -1,13 +1,12 @@
 use thiserror::Error;
 
-pub mod config_toml;
-pub mod config_legacy;
-pub mod config_definition;
-
-pub use config_definition::Config;
+pub use portable_config::Config;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
+	#[error("I/O error reading configuration at {0:?}: {1:#?}")]
+	IOError(std::path::PathBuf, std::io::Error),
+
 	#[error("Could not use TOML config path: invalid path: {0:#?}")]
 	InvalidTomlPath(String),
 
@@ -29,10 +28,10 @@ pub enum ConfigError {
 	),
 
 	#[error("Could not decode TOML configuration: {0:#?}")]
-	InvalidTomlConfig(config_toml::ParseTomlConfigError),
+	InvalidTomlConfig(portable_config::errors::ConfigError),
 
 	#[error("Could not decode legacy Bash configuration: {0:#?}")]
-	InvalidBashConfig(config_legacy::LegacyConfigError),
+	InvalidBashConfig(portable_config::errors::ConfigError),
 }
 
 #[derive(Debug)]
@@ -41,69 +40,107 @@ enum ConfigType {
 	LegacyBash { path: std::path::PathBuf },
 }
 
-impl config_definition::Config {
-	pub async fn get(
-		logger:		crate::logger::LogSender,
-		config_home:	std::path::PathBuf,
-	) -> Result<config_definition::Config, ConfigError> {
-	let config_clone = config_home.clone();
-		/*
-			The trick here is that IntoIter implementation in std causes them to be
-				placed in a top-to-down manner. Whose behaviour can be used to
-				declare a priority between configuration types.
+pub async fn get(
+	logger:		crate::logger::LogSender,
+	config_home:	std::path::PathBuf,
+) -> Result<Config, ConfigError> {
+	/*
+		The trick here is that IntoIter implementation in std causes them to be
+			placed in a top-to-down manner. Whose behaviour can be used to
+			declare a priority between configuration types.
 
-			The TOML configuration will always run first, allowing us to prioritise it
-				over the legacy bash configuration.
+		The TOML configuration will always run first, allowing us to prioritise it
+			over the legacy bash configuration.
 
-			Ref: https://doc.rust-lang.org/std/vec/struct.IntoIter.html
-		*/
-		let config_spawns = vec![
-			tokio::spawn(get_toml_path(config_clone)),
-			tokio::spawn(get_legacy_bash_path(config_home)),
-		];
+		Ref: https://doc.rust-lang.org/std/vec/struct.IntoIter.html
+	*/
+	let config_spawns = vec![
+		tokio::spawn(get_toml_path(config_home.to_path_buf())),
+		tokio::spawn(get_legacy_bash_path(config_home)),
+	];
 
-		let mut config_info = None;
-		let mut config_errors = vec![];
-		for spawn in config_spawns {
-			match spawn.await.map_err(ConfigError::SpawnError)? {
+	let mut config_info = None;
+	let mut config_errors = vec![];
+	for spawn in config_spawns {
+		match spawn.await.map_err(ConfigError::SpawnError)? {
+			Ok(v)	=> {
+				config_info = Some(v);
+				break;
+			}
+			Err(e)	=> {
+				config_errors.push(format!("{e:?}"));
+			}
+		}
+	};
+
+	let config_info = match config_info {
+		Some(v)	=> {v}
+		None	=> {
+			return Err(ConfigError::NoAvailableConfig(config_errors));
+		}
+	};
+
+	#[cfg(debug_assertions)]
+	let _ = logger.send(
+		crate::logger::LogMessage {
+			level: crate::logger::LogLevel::Debug,
+			message: format!("Picked configuration: {config_info:?}"),
+		},
+	).await;
+
+	match config_info {
+		ConfigType::TOML { path }	=> {
+			let file = match tokio::fs::OpenOptions::new()
+				.read(true)
+				.write(false)
+				.create(false)
+				.open(&path)
+				.await
+			{
 				Ok(v)	=> {
-					config_info = Some(v);
-					break;
+					v
 				}
 				Err(e)	=> {
-					config_errors.push(format!("{e:?}"));
+					return Err(
+						ConfigError::IOError(
+							path,
+							e,
+						)
+					);
 				}
-			}
-		};
+			};
 
-		let config_info = match config_info {
-			Some(v)	=> {v}
-			None	=> {
-				return Err(ConfigError::NoAvailableConfig(config_errors));
-			}
-		};
+			portable_config::Config::from_toml_file(file)
+				.await
+				.map_err(ConfigError::InvalidTomlConfig)
+		}
+		ConfigType::LegacyBash { path }	=> {
+			let file = match tokio::fs::OpenOptions::new()
+				.read(true)
+				.write(false)
+				.create(false)
+				.open(&path)
+				.await
+			{
+				Ok(v)	=> {
+					v
+				}
+				Err(e)	=> {
+					return Err(
+						ConfigError::IOError(
+							path,
+							e,
+						)
+					);
+				}
+			};
 
-		let _ = logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Debug,
-				message: format!("Picked configuration: {config_info:?}"),
-			},
-		).await;
-
-		match config_info {
-			ConfigType::TOML { path }	=> {
-				config_toml::read_config(&path)
-					.await
-					.map_err(ConfigError::InvalidTomlConfig)
-			}
-			ConfigType::LegacyBash { path }	=> {
-				config_legacy::get_legacy_conf(&path)
-					.await
-					.map_err(ConfigError::InvalidBashConfig)
+			portable_config::Config::from_bash_file(file)
+				.await
+				.map_err(ConfigError::InvalidBashConfig)
 			}
 		}
 	}
-}
 
 async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, ConfigError> {
 	use std::path::PathBuf;
@@ -122,7 +159,7 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 						Raw path configuration
 					*/
 					let base = PathBuf::from(&v);
-					(base.clone(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(path_exist(base)))
 				},
 				{
 					/*
@@ -134,7 +171,7 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 					base.push("info");
 					base.push(&v);
 					base.push("config.toml");
-					(base.clone(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(path_exist(base)))
 				},
 
 				{
@@ -145,7 +182,7 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 					let mut base = PathBuf::from("/usr/lib/portable/info");
 					base.push(&v);
 					base.push("config.toml");
-					(base.clone(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(path_exist(base)))
 				},
 			];
 
@@ -185,7 +222,7 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 						Raw path configuration
 					*/
 					let base = PathBuf::from(&v);
-					(base.clone(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(path_exist(base)))
 				},
 				{
 					/*
@@ -197,7 +234,7 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 					base.push("info");
 					base.push(&v);
 					base.push("config");
-					(base.clone(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(path_exist(base)))
 				},
 
 				{
@@ -208,7 +245,7 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 					let mut base = PathBuf::from("/usr/lib/portable/info");
 					base.push(&v);
 					base.push("config");
-					(base.clone(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(path_exist(base)))
 				},
 			];
 

@@ -17,7 +17,7 @@ pub use expose::forward_file;
 pub struct UserBind {
 	pub translator:	crate::bind::translate::Delta,
 	pub xdg:	std::sync::Arc<crate::xdg::XdgDirs>,
-	pub config:	std::sync::Arc<crate::config::config_definition::Config>,
+	pub config:	std::sync::Arc<crate::config::Config>,
 	pub env:	crate::envs::holder::HoldChannel,
 	pub logger:	crate::logger::LogSender,
 	pub bus:	zbus::Connection,

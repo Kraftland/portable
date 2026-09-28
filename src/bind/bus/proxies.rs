@@ -11,12 +11,13 @@ mod at_spi;
 */
 pub async fn start_proxies(
 	logger:		crate::logger::LogSender,
-	config:		std::sync::Arc<crate::config::config_definition::Config>,
+	config:		std::sync::Arc<crate::config::Config>,
 	session_cancel:	tokio_util::sync::CancellationToken,
 	portable_dir:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
 	bus_conn:	zbus::Connection,
 	env:		crate::envs::holder::HoldChannel,
 	runtime_opts:	std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
+	dynamic_perm:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
 
 	#[cfg(feature = "flatpak")]
 	flatpak_dir:	std::sync::Arc<crate::bind::subsystems::dirs::flatpak::FlatpakRuntime>,
@@ -45,6 +46,7 @@ pub async fn start_proxies(
 		let proxy = session::SessionProxy {
 			logger:		logger.clone(),
 			config:		config.clone(),
+			dynamic_perm:	dynamic_perm,
 			cancel_token:	session_cancel,
 			portable_dir:	portable_dir.clone(),
 

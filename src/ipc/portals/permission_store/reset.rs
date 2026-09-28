@@ -20,6 +20,7 @@ pub async fn reset_permissions(bus: zbus::Connection, sandbox_id: std::sync::Arc
 		super::PermissionType::ExposeRW,
 		super::PermissionType::ExposeRO,
 		super::PermissionType::ExposeDevice,
+		super::PermissionType::DynamicPermissions,
 	];
 
 	for item in reset_list {

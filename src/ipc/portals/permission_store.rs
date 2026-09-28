@@ -19,6 +19,11 @@ pub enum PermissionType {
 	ExposeRW,
 	ExposeRO,
 	ExposeDevice,
+
+	/**
+		DynamicPermissions are stored in a single table and id, as array of Strings
+	*/
+	DynamicPermissions,
 }
 
 /**

@@ -159,7 +159,7 @@ async fn run(
 	);
 
 	let config = std::sync::Arc::new(
-		config::Config::get(
+		config::get(
 			log_tx.clone(),
 			xdg_dirs.config_home.clone(),
 		)
@@ -188,6 +188,18 @@ async fn run(
 		.await
 		.map_err(StartError::SpawnError)?
 		.map_err(StartError::BusError)?;
+
+
+	// Fire the consent checker right away, to avoid delaying startup
+	let dynamic_permissions = {
+		tokio::spawn(
+			pref::permissions::consent::get(
+				log_tx.clone(),
+				config.clone(),
+				dbus_conn.clone(),
+			)
+		)
+	};
 
 	let bus_cancel = bus_spawn.1;
 
@@ -375,6 +387,25 @@ async fn run(
 			?
 	);
 
+	let dynamic_permissions = match
+		dynamic_permissions
+			.await
+			.map_err(StartError::SpawnError)
+			?
+	{
+		Ok(v)	=> v,
+		Err(e)	=> {
+			let _ = log_tx.send(
+				logger::LogMessage {
+					level:		logger::LogLevel::Warn,
+					message:	format!("Could not retrieve dynamic permissions: {e}") }
+			)
+				.await;
+
+			std::sync::Arc::new(std::collections::HashMap::new())
+		}
+	};
+
 	#[cfg(feature = "flatpak")]
 	let flatpak_runtime_spawn = {
 		use bind::subsystems::dirs::RuntimePathsTrait;
@@ -516,6 +547,7 @@ async fn run(
 			dbus_conn.clone(),
 			envs_tx.clone(),
 			runtime_opts.clone(),
+			dynamic_permissions.clone(),
 			#[cfg(feature = "flatpak")]
 			flatpak_runtime,
 			#[cfg(feature = "flatpak")]
@@ -528,6 +560,7 @@ async fn run(
 		document,
 		xdg_dirs.clone(),
 		config.clone(),
+		dynamic_permissions.clone(),
 		log_tx.clone(),
 		stop_obj.clone(),
 		envs_tx.clone(),

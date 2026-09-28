@@ -7,7 +7,7 @@ pub async fn install_desktop_file(
 	stop:		std::sync::Arc<crate::stop::Stop>,
 	logger:		crate::logger::LogSender,
 
-	config:		std::sync::Arc<crate::config::config_definition::Config>,
+	config:		std::sync::Arc<crate::config::Config>,
 
 	xdg:		std::sync::Arc<crate::xdg::XdgDirs>,
 ) {
