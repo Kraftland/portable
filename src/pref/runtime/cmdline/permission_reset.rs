@@ -6,6 +6,7 @@
 pub async fn reset(
 	app_id:	std::sync::Arc<String>,
 	bus:	&zbus::Connection,
+	logger:	crate::logger::LogSender,
 ) -> Result<(), ResetError> {
 
 	let reset = {
@@ -15,6 +16,7 @@ pub async fn reset(
 			crate::ipc::portals::permission_store::reset_permissions(
 				bus,
 				id,
+				logger.clone(),
 			)
 		)
 	};

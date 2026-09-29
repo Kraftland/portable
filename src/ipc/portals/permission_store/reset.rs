@@ -8,7 +8,11 @@
 
 	This does not handle the Document Portal, because technically they are different.
 */
-pub async fn reset_permissions(bus: zbus::Connection, sandbox_id: std::sync::Arc<String>) -> zbus::Result<()> {
+pub async fn reset_permissions(
+	bus:		zbus::Connection,
+	sandbox_id:	std::sync::Arc<String>,
+	logger:		crate::logger::LogSender,
+) -> zbus::Result<()> {
 	let proxy = super::PermissionStoreProxy::new(&bus)
 		.await
 		?;
@@ -24,13 +28,38 @@ pub async fn reset_permissions(bus: zbus::Connection, sandbox_id: std::sync::Arc
 	];
 
 	for item in reset_list {
-		proxy.delete_permission(
+		match proxy.delete_permission(
 			item.table(),
 			item.id(),
 			&sandbox_id,
 		)
 			.await
-			?
+		{
+			Ok(_)	=> {
+				#[cfg(debug_assertions)]
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Debug,
+						message:	format!(
+							"Reset permission {}", item.id(),
+						),
+					}
+				).await;
+			}
+			Err(e)	=> {
+				let _ = logger.send(
+					crate::logger::LogMessage {
+						level:		crate::logger::LogLevel::Warn,
+						message:	format!(
+							"Could not reset permission with table {} id {}: {}",
+							item.table(),
+							item.id(),
+							e,
+						),
+					}
+				).await;
+			}
+		}
 	}
 
 	Ok(())
