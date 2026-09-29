@@ -60,7 +60,18 @@ impl crate::bind::types::ToCmdline for ZenityPermissionObject {
 		vec![
 			default_allow.to_string(),
 			self.perm_uid.to_string(),
-			self.desc.to_string(),
+			{
+				let mut string = String::new();
+
+				string.push_str(&self.desc);
+
+				if self.default_allow {
+					string.push_str("\n");
+					string.push_str("Denying may cause basic function to fail.");
+				}
+
+				string
+			},
 		]
 	}
 }
@@ -102,7 +113,7 @@ async fn ask_zenity(
 		String::from("--title"),
 		String::from(&config.metadata.display_name),
 
-		String::from("--text=Would like to access..."),
+		String::from("--text=Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>"),
 
 		String::from("--column=Allow"),
 		String::from("--column=Identifier"),
