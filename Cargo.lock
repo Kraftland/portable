@@ -669,7 +669,7 @@ dependencies = [
 
 [[package]]
 name = "portable-daemon"
-version = "20.0.0"
+version = "21.0.0"
 dependencies = [
  "command-fds",
  "futures-util",
