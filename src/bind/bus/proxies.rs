@@ -46,7 +46,7 @@ pub async fn start_proxies(
 		let proxy = session::SessionProxy {
 			logger:		logger.clone(),
 			config:		config.clone(),
-			dynamic_perm:	dynamic_perm,
+			dynamic_perm,
 			cancel_token:	session_cancel,
 			portable_dir:	portable_dir.clone(),
 

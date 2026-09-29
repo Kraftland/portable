@@ -282,6 +282,7 @@ async fn run(
 			pref::runtime::cmdline::reset(
 				std::sync::Arc::new(config.metadata.sandbox_id.to_owned()),
 				&dbus_conn,
+				log_tx.clone(),
 			)
 				.await
 				.map_err(StartError::ResetError)
