@@ -141,16 +141,16 @@ async fn ask_zenity(
 			?
 	};
 
-	let mut output = output
+	let output: std::collections::HashSet<&str> = output
 		.trim()
 		.split("|")
-		.filter(|x| ! x.is_empty());
+		.filter(|x| ! x.is_empty())
+		.collect();
 
 	let mut ret_map = std::collections::HashMap::new();
 
 	for perm in permissions {
-		match output
-			.any(|x| perm.id() == x)
+		match output.contains(perm.id())
 		{
 			true	=> {
 				ret_map.insert(perm, true);
