@@ -141,7 +141,10 @@ async fn ask_zenity(
 			?
 	};
 
-	let mut output = output.trim().split("|");
+	let mut output = output
+		.trim()
+		.split("|")
+		.filter(|x| ! x.is_empty());
 
 	let mut ret_map = std::collections::HashMap::new();
 
