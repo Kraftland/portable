@@ -368,6 +368,7 @@ async fn run(
 		)
 	};
 
+	#[cfg(debug_assertions)]
 	log_tx.send(
 		logger::LogMessage {
 			level: logger::LogLevel::Debug,
