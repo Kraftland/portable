@@ -45,27 +45,6 @@ pub async fn generate_bindrules(
 	let mut workers = vec![];
 
 	{
-		let stop = stop.clone();
-		let logger = logger.clone();
-		let config = config.clone();
-		let xdg = xdg.clone();
-
-		workers.push(
-			tokio::spawn(
-				async move {
-					desktop_file::install_desktop_file(
-						stop,
-						logger,
-						config,
-						xdg,
-					).await;
-					Ok(vec![])
-				}
-			)
-		);
-	};
-
-	{
 		let system_bind = system::SystemBind {
 			config:			config.clone(),
 			portable_runtime:	portable_runtime.clone(),
@@ -469,8 +448,6 @@ pub mod dirs;
 
 #[cfg(feature = "display")]
 mod display;
-
-pub mod desktop_file;
 
 pub mod mask;
 
