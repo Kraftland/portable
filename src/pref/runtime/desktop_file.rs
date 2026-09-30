@@ -8,7 +8,6 @@
 */
 pub async fn get(
 	stop:		std::sync::Arc<crate::stop::Stop>,
-	logger:		crate::logger::LogSender,
 
 	config:		std::sync::Arc<crate::config::Config>,
 
@@ -50,16 +49,6 @@ pub async fn get(
 			)
 				.map_err(InstallDesktopFileError::ParseError)
 				?;
-
-			#[cfg(debug_assertions)]
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Debug,
-					message:	format!(
-						"Decoded desktop file: {desktop_entry}",
-					),
-				}
-			).await;
 
 			return Ok(desktop_entry);
 		}

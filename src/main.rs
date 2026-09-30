@@ -75,6 +75,10 @@ enum StartError {
 
 	#[error("Could not open sandbox home: {0:#?}")]
 	OpenHomeError(zbus::Error),
+
+	#[cfg(feature = "desktop-file")]
+	#[error("Could not parse desktop file: {0}")]
+	DesktopFileError(pref::runtime::desktop_file::InstallDesktopFileError),
 }
 
 #[tokio::main]
@@ -95,7 +99,7 @@ async fn main() {
 			log_tx.send(
 				logger::LogMessage {
 					level: logger::LogLevel::Fatal,
-					message: format!("{e:#?}"),
+					message: format!("{e}"),
 				},
 			).await.unwrap();
 			false
@@ -119,7 +123,7 @@ async fn run(
 		tokio::spawn(portable_daemon::pref::runtime::cmdline::parse(log_tx.clone()))
 	};
 
-	let xdg_dirs_spawn = tokio::spawn(xdg::XdgDirs::get());
+	let xdg_dirs = tokio::spawn(xdg::XdgDirs::get());
 	let bus_spawn = {
 		let token = tokio_util::sync::CancellationToken::new();
 		(tokio::spawn(ipc::register::connect(token.clone())), token)
@@ -152,7 +156,7 @@ async fn run(
 		?;
 
 	let xdg_dirs = std::sync::Arc::new(
-		xdg_dirs_spawn
+		xdg_dirs
 			.await
 			.map_err(StartError::SpawnError)?
 			.map_err(StartError::XdgError)?
@@ -166,6 +170,15 @@ async fn run(
 		.await
 		.map_err(StartError::ConfigError)
 		?
+	);
+
+	#[cfg(feature = "desktop-file")]
+	let desktop_file = tokio::spawn(
+		pref::runtime::desktop_file::get(
+			stop_obj.clone(),
+			config.clone(),
+			xdg_dirs.clone(),
+		)
 	);
 
 	let envs_tx = {
@@ -292,8 +305,7 @@ async fn run(
 				logger::LogMessage {
 					level: logger::LogLevel::Info,
 					message: format!(
-						"Permissions for {} ({}) has been revoked",
-						config.metadata.display_name,
+						"Permissions for {} has been revoked",
 						config.metadata.sandbox_id,
 					),
 				},
@@ -357,6 +369,15 @@ async fn run(
 		}
 	};
 
+	#[cfg(feature = "desktop-file")]
+	let desktop_file: std::sync::Arc<freedesktop_desktop_entry::DesktopEntry> = desktop_file
+		.await
+		.map_err(StartError::SpawnError)
+		?
+		.map_err(StartError::DesktopFileError)
+		?
+		.into();
+
 	// Fire the consent checker right away, to avoid delaying startup
 	let dynamic_permissions = {
 		tokio::spawn(
@@ -364,6 +385,7 @@ async fn run(
 				log_tx.clone(),
 				config.clone(),
 				dbus_conn.clone(),
+				desktop_file,
 			)
 		)
 	};
