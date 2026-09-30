@@ -130,6 +130,7 @@ pub trait ToCmdline {
 }
 
 impl ToCmdline for BindRules {
+	#[inline]
 	async fn to_cmdline(&self)	-> Vec<String> {
 		let mut ret = vec![];
 		for rule in self {
@@ -222,6 +223,7 @@ impl ToCmdline for BindRules {
 
 
 impl DeDupRules for BindRules {
+	#[inline]
 	fn dedup(self)	-> Self {
 		let mut ret = vec![];
 		let mut dest_mnt = vec![];
