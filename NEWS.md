@@ -3,6 +3,7 @@
 - `--expose` or `--file-forwarding` will not ask for permission again if approved previously.
 - PID 1 now fails loudly when something horribly happens
 - It is now not possible for application to overwrite certain control group interfaces
+- Portable now requires user consent to use static permissions, see blog post for more detail: https://blog.kimiblock.top/2026/09/30/dynamic-versus-static/
 
 # 20.2
 
