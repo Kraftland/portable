@@ -165,7 +165,7 @@ async fn run(
 	let config = std::sync::Arc::new(
 		config::get(
 			log_tx.clone(),
-			xdg_dirs.config_home.clone(),
+			xdg_dirs.config_home.to_path_buf(),
 		)
 		.await
 		.map_err(StartError::ConfigError)
