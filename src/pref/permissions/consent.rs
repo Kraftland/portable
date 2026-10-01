@@ -4,9 +4,10 @@
 	It implements the core comparing logic, does query on backends and present a dialogue.
 */
 pub async fn get(
-	logger:	crate::logger::LogSender,
-	config:	std::sync::Arc<portable_config::Config>,
-	bus:	zbus::Connection,
+	logger:		crate::logger::LogSender,
+	config:		std::sync::Arc<portable_config::Config>,
+	bus:		zbus::Connection,
+	desktop_file:	std::sync::Arc<freedesktop_desktop_entry::DesktopEntry>,
 ) -> Result<std::sync::Arc<DynamicPermissionsResult>, ConsentError> {
 	let portal_store = impls::store::portal::Portal {
 		bus:	bus,
@@ -61,8 +62,26 @@ pub async fn get(
 		);
 	};
 
+	let display_name = match
+		desktop_file
+			.name(&freedesktop_desktop_entry::get_languages_from_env())
+	{
+		Some(v)	=> {
+			v.to_string()
+		}
+		None	=> {
+			format!(
+				"Untitled application: {}",
+				&config.metadata.sandbox_id,
+			)
+		}
+	};
+
 	stored_permissions.extend(
-		DynamicPermissions::ask(&config, unknown_permissions)
+		DynamicPermissions::ask(
+			display_name.as_str(),
+			unknown_permissions,
+		)
 			.await
 			.map_err(ConsentError::ZenityError)
 			?
@@ -117,7 +136,7 @@ pub type DynamicPermissionsResult = std::collections::HashMap<portable_config::d
 */
 pub trait AskConsent {
 	fn ask(
-		config:		&crate::config::Config,
+		display_name:	&str,
 		missing_perms:	DynamicPermissions,
 	)
 	-> impl std::future::Future<Output = Result<DynamicPermissionsResult, Self::ConsentError>>;

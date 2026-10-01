@@ -2,12 +2,12 @@ use crate::pref::permissions::consent::AskConsent;
 
 impl AskConsent for crate::pref::permissions::consent::DynamicPermissions {
 	async fn ask(
-			config:		&crate::config::Config,
+			display_name:	&str,
 			missing_perms:	crate::pref::permissions::consent::DynamicPermissions,
 		)
 		-> Result<crate::pref::permissions::consent::DynamicPermissionsResult, Self::ConsentError>
 	{
-		ask_zenity(missing_perms, config)
+		ask_zenity(missing_perms, display_name)
 			.await
 	}
 
@@ -81,7 +81,7 @@ impl crate::bind::types::ToCmdline for ZenityPermissionObject {
 */
 async fn ask_zenity(
 	permissions:	crate::pref::permissions::consent::DynamicPermissions,
-	config:		&crate::config::Config,
+	display_name:	&str,
 )
 -> Result<crate::pref::permissions::consent::DynamicPermissionsResult, ZenityError> {
 
@@ -111,7 +111,7 @@ async fn ask_zenity(
 		String::from("--multiple"),
 
 		String::from("--title"),
-		String::from(&config.metadata.display_name),
+		String::from(display_name),
 
 		String::from("--text=Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>"),
 

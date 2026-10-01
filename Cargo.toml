@@ -34,6 +34,7 @@ udev = { version = "0.9.3", features = ["send", "sync"], default-features = fals
 futures-util = { version = "0.3.34", default-features = false, features = ["tokio-io"] }
 
 uuid = { version = "1.26.0", features = ["v4"], default-features = false }
+freedesktop-desktop-entry = { version = "0.8.3", default-features = false, optional = true }
 
 [workspace]
 resolver = "3"
@@ -41,7 +42,10 @@ members = []
 exclude = ["lib/init", "lib/config"]
 
 [features]
-default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input", "zenity-dialogue", "kvm"]
+default	= ["systemd", "flatpak", "pulseaudio", "x11", "wayland", "gpu", "camera", "input", "zenity-dialogue", "kvm", "desktop-file"]
+
+# .desktop file support
+desktop-file = ["dep:freedesktop-desktop-entry"]
 
 # Debug terminal window resize
 term-resize-debug = []
