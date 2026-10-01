@@ -7,6 +7,8 @@ pub async fn get(
 	logger:		crate::logger::LogSender,
 	config:		std::sync::Arc<portable_config::Config>,
 	bus:		zbus::Connection,
+
+	#[cfg(feature = "desktop-file")]
 	desktop_file:	std::sync::Arc<freedesktop_desktop_entry::DesktopEntry>,
 ) -> Result<std::sync::Arc<DynamicPermissionsResult>, ConsentError> {
 	let portal_store = impls::store::portal::Portal {
@@ -62,6 +64,10 @@ pub async fn get(
 		);
 	};
 
+	#[cfg(not(feature = "desktop-file"))]
+	let display_name = config.metadata.sandbox_id.to_string();
+
+	#[cfg(feature = "desktop-file")]
 	let display_name = match
 		desktop_file
 			.name(&freedesktop_desktop_entry::get_languages_from_env())

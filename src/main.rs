@@ -385,6 +385,8 @@ async fn run(
 				log_tx.clone(),
 				config.clone(),
 				dbus_conn.clone(),
+
+				#[cfg(feature = "desktop-file")]
 				desktop_file,
 			)
 		)
