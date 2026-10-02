@@ -16,7 +16,7 @@ Input devices support without allowing all devices access, enables full DualSens
 
 Processes running inside a Portable sandbox have multiple lines of defence imposed. Multiple LSM, kernel and userspace technologies like Seccomp, Wayland security-context-v1 protocol and Landlock work in unity to ensure a secure, locked-down environment backed by multi-layer defence.
 
-Multiple security boundaries, such as filtering on the session D-Bus is mandatory and can't be turned off.
+Security boundaries, such as filtering on the session D-Bus are mandatory and can't be turned off.
 
 Portable actively hides multiple Operating System persistent identifiers, including but not limited to:
 
