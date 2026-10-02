@@ -4,34 +4,37 @@ pub use portable_config::Config;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
-	#[error("I/O error reading configuration at {0:?}: {1:#?}")]
+	#[error("I/O error reading configuration at {0:?}: {1}")]
 	IOError(std::path::PathBuf, std::io::Error),
 
-	#[error("Could not use TOML config path: invalid path: {0:#?}")]
+	#[error("Could not use TOML config path: invalid path: {0}")]
 	InvalidTomlPath(String),
 
-	#[error("Could not use TOML config: null or invalid environment variable: {0:#?}")]
+	#[error("Could not use TOML config: null or invalid environment variable: {0}")]
 	InvalidTomlVar(std::env::VarError),
 
-	#[error("Could not use legacy Bash config path: invalid path: {0:#?}")]
+	#[error("Could not use legacy Bash config path: invalid path: {0}")]
 	InvalidBashPath(String),
 
-	#[error("Could not use legacy Bash config: null or invalid environment variable: {0:#?}")]
+	#[error("Could not use legacy Bash config: null or invalid environment variable: {0}")]
 	InvalidBashVar(std::env::VarError),
 
-	#[error("Could not determine config type: spawn failed: {0:#?}")]
+	#[error("Could not determine config type: spawn failed: {0}")]
 	SpawnError(tokio::task::JoinError),
 
 	#[error("Could not find a useable configuration of TOML or legacy Bash: {0:?}")]
 	NoAvailableConfig(
-		Vec<String>,
+		Vec<ConfigError>,
 	),
 
-	#[error("Could not decode TOML configuration: {0:#?}")]
+	#[error("Could not decode TOML configuration: {0}")]
 	InvalidTomlConfig(portable_config::errors::ConfigError),
 
-	#[error("Could not decode legacy Bash configuration: {0:#?}")]
+	#[error("Could not decode legacy Bash configuration: {0}")]
 	InvalidBashConfig(portable_config::errors::ConfigError),
+
+	#[error("Could not detect if path exists on filesystem: {0}")]
+	ExistIOError(std::io::Error),
 }
 
 #[derive(Debug)]
@@ -68,7 +71,7 @@ pub async fn get(
 				break;
 			}
 			Err(e)	=> {
-				config_errors.push(format!("{e:?}"));
+				config_errors.push(e);
 			}
 		}
 	};
@@ -84,7 +87,9 @@ pub async fn get(
 	let _ = logger.send(
 		crate::logger::LogMessage {
 			level: crate::logger::LogLevel::Debug,
-			message: format!("Picked configuration: {config_info:?}"),
+			message: format!(
+				"Picked configuration: {config_info:?}, other errors were: {config_errors:?}",
+			),
 		},
 	).await;
 
@@ -142,7 +147,9 @@ pub async fn get(
 		}
 	}
 
-async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, ConfigError> {
+async fn get_toml_path(
+	config_home:	std::path::PathBuf,
+) -> Result<ConfigType, ConfigError> {
 	use std::path::PathBuf;
 	match std::env::var("PORTABLE_CONF") {
 		Ok(v)	=> {
@@ -159,7 +166,7 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 						Raw path configuration
 					*/
 					let base = PathBuf::from(&v);
-					(base.to_path_buf(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(tokio::fs::try_exists(base)))
 				},
 				{
 					/*
@@ -171,7 +178,7 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 					base.push("info");
 					base.push(&v);
 					base.push("config.toml");
-					(base.to_path_buf(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(tokio::fs::try_exists(base)))
 				},
 
 				{
@@ -182,12 +189,17 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 					let mut base = PathBuf::from("/usr/lib/portable/info");
 					base.push(&v);
 					base.push("config.toml");
-					(base.to_path_buf(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(tokio::fs::try_exists(base)))
 				},
 			];
 
 			for (path, result) in try_config_path {
-				match result.await.map_err(ConfigError::SpawnError)? {
+				match
+					result
+						.await
+						.map_err(ConfigError::SpawnError)?
+						.map_err(ConfigError::ExistIOError)?
+				{
 					true	=> {
 						return	Ok(
 							ConfigType::TOML { path }
@@ -205,7 +217,9 @@ async fn get_toml_path(config_home: std::path::PathBuf) -> Result<ConfigType, Co
 	}
 }
 
-async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigType, ConfigError> {
+async fn get_legacy_bash_path(
+	config_home:	std::path::PathBuf,
+) -> Result<ConfigType, ConfigError> {
 	match std::env::var("_portableConfig") {
 		Ok(v)	=> {
 			use std::path::PathBuf;
@@ -222,7 +236,7 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 						Raw path configuration
 					*/
 					let base = PathBuf::from(&v);
-					(base.to_path_buf(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(tokio::fs::try_exists(base)))
 				},
 				{
 					/*
@@ -234,7 +248,7 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 					base.push("info");
 					base.push(&v);
 					base.push("config");
-					(base.to_path_buf(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(tokio::fs::try_exists(base)))
 				},
 
 				{
@@ -245,12 +259,17 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 					let mut base = PathBuf::from("/usr/lib/portable/info");
 					base.push(&v);
 					base.push("config");
-					(base.to_path_buf(), tokio::spawn(path_exist(base)))
+					(base.to_path_buf(), tokio::spawn(tokio::fs::try_exists(base)))
 				},
 			];
 
 			for (path, result) in try_config_path {
-				match result.await.map_err(ConfigError::SpawnError)? {
+				match
+					result
+						.await
+						.map_err(ConfigError::SpawnError)?
+						.map_err(ConfigError::ExistIOError)?
+				{
 					true	=> {
 						return	Ok(
 							ConfigType::LegacyBash { path }
@@ -265,16 +284,4 @@ async fn get_legacy_bash_path(config_home: std::path::PathBuf) -> Result<ConfigT
 			Err(ConfigError::InvalidBashVar(e))
 		}
 	}
-}
-
-async fn path_exist(path: std::path::PathBuf) -> bool {
-	let path = path.clone();
-	tokio::task::spawn_blocking(
-		move || {
-			std::fs::exists(path)
-		},
-	)
-		.await
-		.unwrap_or(Ok(false))
-		.unwrap_or(false)
 }
