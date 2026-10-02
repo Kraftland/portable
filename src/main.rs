@@ -208,7 +208,7 @@ async fn run(
 		let bus = dbus_conn.clone();
 		tokio::spawn(
 			ipc::register::register(
-				config.metadata.sandbox_id.clone(),
+				config.metadata.sandbox_id.to_string(),
 				bus,
 			)
 		)
