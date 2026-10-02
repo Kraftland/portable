@@ -14,13 +14,10 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Update host
-      run: sudo apt-get update && sudo apt-get upgrade
-
-    - name: Set up Rust
-      run: sudo apt-get install cargo -y
+      run: sudo apt-get update
 
     - name: Install Dependencies
-      run: sudo apt update && sudo apt install -y libudev-dev systemd libsystemd-dev
+      run: sudo apt install -y libudev-dev systemd libsystemd-dev
 
     - name: Initialise submodules
       run: git submodule update --init --recursive
