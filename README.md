@@ -38,7 +38,7 @@ See [blog post](https://blog.kimiblock.top/2026/09/30/dynamic-versus-static/) fo
 Use distribution packaging infrastructure without re-inventing the wheel. Companion projects make packaging easy.
 
 ### Transient sandbox
-Create a secure sandbox in one step using `bawn <name>`. Perfect to compiling foreign projects, running command-line programs, etc.
+Create a secure sandbox in one step using `bawn <name>`. Perfect for compiling foreign projects, running command-line programs, trying out new apps, etc.
 
 See [bawn](https://github.com/Kimiblock/bawn) for the successor of Portable Pools.
 
@@ -55,7 +55,7 @@ File sharing for legacy applications.
 Portable employs multiple techniques, such as asynchronous execution to get faster startup. Being a host sandbox enables packagers to re-use system libraries and resources.
 
 ### Resource management
-Powered by systemd and unified control group hierarchy, Portable prohibits silent background process.
+Powered by systemd and unified control group hierarchy, Portable prohibits silent background process from staying.
 
 systemd drop-in support to configure resource limit individually.
 
