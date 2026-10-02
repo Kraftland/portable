@@ -74,9 +74,6 @@ pub enum InputError {
 	#[error("Could not determine if path exists: {0}")]
 	IOError(std::io::Error),
 
-	#[error("Could not determine if path exists: error spawning task: {0:#?}")]
-	SpawnError(tokio::task::JoinError),
-
 	#[error("Could not enumerate input devices: {0:#?}")]
 	EnumerateError(super::EnumerateError),
 }
