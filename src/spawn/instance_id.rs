@@ -29,7 +29,7 @@ pub async fn generate_instance_id(
 
 		#[cfg(feature = "flatpak")]
 		let result_flatpak = {
-			tokio::spawn(test_flatpak_instance_id(runtime_dir.clone(), id.clone()))
+			tokio::spawn(test_flatpak_instance_id(runtime_dir.to_path_buf(), id.clone()))
 		};
 
 		#[cfg(feature = "flatpak")]
