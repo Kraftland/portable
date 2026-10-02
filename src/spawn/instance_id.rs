@@ -2,9 +2,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum InstanceIDError {
-	#[error("Could not generate instance ID: spawn error: {0:#?}")]
-	SpawnError(tokio::task::JoinError),
-
 	#[cfg(feature = "flatpak")]
 	#[error("Could not generate instance ID: error checking Flatpak instance ID collision: {0:#?}")]
 	FlatpakIDCollision(std::io::Error),
@@ -28,15 +25,9 @@ pub async fn generate_instance_id(
 		let id = rng.generate();
 
 		#[cfg(feature = "flatpak")]
-		let result_flatpak = {
-			tokio::spawn(test_flatpak_instance_id(runtime_dir.to_path_buf(), id.clone()))
-		};
-
-		#[cfg(feature = "flatpak")]
 		{
-			let res = result_flatpak
+			let res = test_flatpak_instance_id(runtime_dir.to_path_buf(), id.clone())
 				.await
-				.map_err(InstanceIDError::SpawnError)?
 				?;
 			match res {
 				true	=> {
