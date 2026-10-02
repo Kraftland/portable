@@ -91,3 +91,7 @@ flatpak = []
 
 [profile.release]
 lto = true
+
+[profile.dev]
+strip = false
+split-debuginfo = "off"
