@@ -76,11 +76,7 @@ async fn test_flatpak_instance_id(
 	path.push(".flatpak");
 	path.push(id.to_string());
 
-	tokio::task::spawn_blocking(|| {
-		std::fs::exists(path)
-	})
+	tokio::fs::try_exists(&path)
 		.await
-		.map_err(InstanceIDError::SpawnError)
-		?
 		.map_err(InstanceIDError::FlatpakIDCollision)
 }
