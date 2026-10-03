@@ -392,7 +392,7 @@ pub async fn generate_bindrules(
 			base.extend(runtime_opts.app_args.to_owned());
 
 			if runtime_opts.debug_shell {
-				vec!["-i".to_string()]
+				vec!["--noprofile".to_string(), "-i".to_string()]
 			} else {
 				base
 			}

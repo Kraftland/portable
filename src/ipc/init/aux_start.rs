@@ -40,7 +40,7 @@ pub async fn start(
 ) -> Result<(), AuxStartError> {
 	let args = {
 		if runtime_opts.debug_shell {
-			vec![String::from("-i")]
+			vec!["--noprofile".to_string(), "-i".to_string()]
 		} else {
 			let mut args = config.exec.arguments.to_owned();
 			args.extend(
