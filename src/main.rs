@@ -146,9 +146,7 @@ async fn run(
 	log_tx.send(
 		logger::LogMessage {
 			level:		logger::LogLevel::Warn,
-			message:	format!(
-				"You are running a debug build of Portable",
-			),
+			message:	"You are running a debug build of Portable".to_string(),
 		},
 	)
 		.await
