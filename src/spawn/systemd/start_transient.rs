@@ -582,7 +582,7 @@ async fn generate_properties(
 		vec.push(
 			(
 				"LimitCORE".into(),
-				zbus::zvariant::OwnedValue::from(std::u64::MIN),
+				zbus::zvariant::OwnedValue::from(u64::MIN),
 			)
 		);
 	};
