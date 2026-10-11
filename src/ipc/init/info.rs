@@ -59,6 +59,8 @@ pub struct InitInfo {
 		Avoids I/O error
 	*/
 	pub console:		bool,
+
+	pub config:		std::sync::Arc<crate::config::Config>,
 }
 
 impl InitInfo {
@@ -122,6 +124,7 @@ impl InitInfo {
 			self.logger.clone(),
 			self.cancen_token.clone(),
 			self.stop.clone(),
+			&self.config,
 		).await {
 			Ok(v)	=> {Ok(v.into())}
 			Err(e)	=> {

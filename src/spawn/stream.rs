@@ -8,11 +8,15 @@
 	After which, streaming happens on different threads.
 
 	The cancel token is used to signal that console streaming is complete
+
+	Title is a terminal title to set. Application cannot override because it is set every time
+	an output emerges.
 */
 pub async fn setup(
 	logger:		crate::logger::LogSender,
 	cancel_token:	tokio_util::sync::CancellationToken,
 	stop_obj:	std::sync::Arc<crate::stop::Stop>,
+	config:		&crate::config::Config,
 ) -> Result<std::os::fd::OwnedFd, StreamError> {
 	let (column, row) = match get_winsize() {
 		Ok((column, row))	=> {
@@ -80,8 +84,16 @@ pub async fn setup(
 		)
 	};
 
+	let console_title = {
+		let mut title = String::new();
+
+		title.push_str("Portable app: ");
+		title.push_str(&config.metadata.sandbox_id);
+		title
+	};
+
 	// Output thread
-	let mut output_thread = tokio::spawn(stream_out(reader));
+	let mut output_thread = tokio::spawn(stream_out(reader, console_title));
 
 	// Input thread
 	let mut input_thread = tokio::spawn(stream_in(writer));
@@ -228,29 +240,52 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	}
 }
 
-async fn stream_out(file: std::fs::File) -> Result<(), StreamError> {
+#[inline]
+fn set_title(title: &str, stdout: &mut std::io::Stdout) -> Result<(), StreamError> {
+	use std::io::Write;
+
+	write!(stdout, "\x1b]0;{}\x07", title)
+		.map_err(StreamError::ConsoleIOError)
+		?;
+
+	stdout
+		.flush()
+		.map_err(StreamError::ConsoleIOError)
+		?;
+
+	Ok(())
+}
+
+#[inline]
+async fn stream_out(file: std::fs::File, title: String) -> Result<(), StreamError> {
 	let mut buffer = [0u8; 4096];
 	let mut stdout = std::io::stdout();
 	let mut tokio_file = tokio::fs::File::from_std(file);
 	use tokio::io::AsyncReadExt;
 	use std::io::{Write};
+
+	set_title(&title, &mut stdout)
+		?;
 	loop {
 		match tokio_file.read(&mut buffer).await {
 			Ok(0)	=> {break;}
 			Ok(v)	=> {
-				stdout.write(&buffer[..v])
-					.map_err(StreamError::ConsoleIOError)
-					?;
-				stdout
-					.flush()
+				stdout.write_all(&buffer[..v])
 					.map_err(StreamError::ConsoleIOError)
 					?;
 			}
 			Err(e)	=> {
 				return Err(StreamError::ConsoleIOError(e));
 			}
-		}
+		};
+		set_title(&title, &mut stdout)
+			?;
 	};
+
+	/*
+		Perform a soft reset
+	*/
+	print!("\x1b[!p");
 
 	Ok(())
 }

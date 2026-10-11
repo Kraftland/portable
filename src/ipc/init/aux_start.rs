@@ -113,7 +113,12 @@ pub async fn start(
 			args,
 			forward_map,
 			env_var,
-			crate::spawn::stream::setup(logger, cancel_token.clone(), stop)
+			crate::spawn::stream::setup(
+				logger,
+				cancel_token.clone(),
+				stop,
+				&config,
+			)
 				.await
 				.map_err(AuxStartError::ConsoleError)
 				?
