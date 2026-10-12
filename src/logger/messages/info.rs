@@ -2,6 +2,8 @@ pub enum InfoMessage {
 	PermissionRevoked {
 		config:	std::sync::Arc<crate::config::Config>,
 	},
+
+	DynamicPermissionStoreError(zbus::Error),
 }
 
 impl std::fmt::Display for InfoMessage {
@@ -11,6 +13,9 @@ impl std::fmt::Display for InfoMessage {
 				f.write_str("Permissions for ")?;
 				f.write_str(config.metadata.sandbox_id.as_str())?;
 				f.write_str(" has been revoked")
+			}
+			Self::DynamicPermissionStoreError(v)	=> {
+				f.write_fmt(format_args!("Could "))
 			}
 		}
 	}
