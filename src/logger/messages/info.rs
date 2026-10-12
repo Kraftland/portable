@@ -1,1 +1,17 @@
-pub enum InfoMessage {}
+pub enum InfoMessage {
+	PermissionRevoked {
+		config:	std::sync::Arc<crate::config::Config>,
+	},
+}
+
+impl std::fmt::Display for InfoMessage {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::PermissionRevoked { config }	=> {
+				f.write_str("Permissions for ")?;
+				f.write_str(config.metadata.sandbox_id.as_str())?;
+				f.write_str(" has been revoked")
+			}
+		}
+	}
+}
