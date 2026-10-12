@@ -5,6 +5,7 @@
 - It is now not possible for application to overwrite certain control group interfaces
 - Portable now requires user consent to use static permissions, see blog post for more detail: https://blog.kimiblock.top/2026/09/30/dynamic-versus-static/
 - The Display Name property has been removed in Portable 22. Portable now retrieves localised `Name` property in applications' desktop file.
+- When running inside a console, window title will be dynamically updated to prevent mis-identification between sandboxes.
 
 # 20.2
 
