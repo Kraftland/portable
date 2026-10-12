@@ -33,22 +33,10 @@ pub enum ColourVariant {
 	Special,
 }
 
-pub enum LogLevel {
-	Debug,
-	Info,
-	Warn,
-	Fatal,
-}
-
-pub struct LogMessage {
-	pub level:		LogLevel,
-	pub message:		String,
-}
-
-pub type LogSender = tokio::sync::mpsc::Sender<LogMessage>;
+pub type LogSender = tokio::sync::mpsc::Sender<messages::LogMessage>;
 
 pub async fn logger (
-	mut log_rx:	tokio::sync::mpsc::Receiver<LogMessage>,
+	mut log_rx:	tokio::sync::mpsc::Receiver<messages::LogMessage>,
 	stop_token:	tokio_util::sync::CancellationToken,
 )
 {
@@ -114,19 +102,19 @@ pub async fn logger (
 			}
 		};
 
-		match msg.level {
-			LogLevel::Debug	=> {
+		match msg {
+			messages::LogMessage::Debug(_)	=> {
 				#[cfg(debug_assertions)]
-				println!("{}\t{}", debug_fmt, msg.message);
+				println!("{}\t{}", debug_fmt, msg);
 			}
-			LogLevel::Info => {
-				println!("{}\t\t{}", info_fmt, msg.message);
+			messages::LogMessage::Info(_)	=> {
+				println!("{}\t\t{}", info_fmt, msg);
 			}
-			LogLevel::Warn => {
-				eprintln!("{}\t\t{}", warn_fmt, msg.message);
+			messages::LogMessage::Warn(_)	=> {
+				eprintln!("{}\t\t{}", warn_fmt, msg);
 			}
-			LogLevel::Fatal => {
-				eprintln!("{}\t{}", fatal_fmt, msg.message);
+			messages::LogMessage::Fatal(_)	=> {
+				eprintln!("{}\t{}", fatal_fmt, msg);
 			}
 		}
 	}
