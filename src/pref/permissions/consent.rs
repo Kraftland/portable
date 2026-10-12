@@ -31,11 +31,13 @@ pub async fn get(
 			v
 		},
 		Err(e)	=> {
+			use crate::logger::messages::LogMessage;
+			use crate::logger::messages::warn::WarnMessage;
+
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!("Could not retrieve stored permissions: {e}"),
-				}
+				LogMessage::Warn(
+					WarnMessage::DynamicPermissionStoreRetrieveError(e)
+				)
 			).await;
 			std::collections::HashMap::new()
 		}
