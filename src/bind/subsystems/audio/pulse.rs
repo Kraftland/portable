@@ -82,10 +82,9 @@ async fn get_server_address(
 		Ok(v)	=> {v}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not find a valid PulseAudio address: {e:#?}"),
-				},
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::PulseAddressError(e)
+				)
 			).await;
 			return None;
 		}
@@ -97,10 +96,9 @@ async fn get_server_address(
 		}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not activate PulseAudio server: {e:#?}"),
-				},
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::ActivatePulseError(e)
+				)
 			).await;
 			None
 		}

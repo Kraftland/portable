@@ -65,11 +65,28 @@ pub enum WarnMessage {
 	MissingIDPath(std::ffi::OsString),
 	UnknownDeviceGPUType(std::ffi::OsString),
 	CardRendererNodeMissing(std::ffi::OsString),
+
+	PulseAddressError(crate::bind::subsystems::audio::PulseError),
+	ActivatePulseError(crate::bind::subsystems::audio::PulseError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::PulseAddressError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not parse PulseAudio address: {v}")
+				)
+			}
+			Self::ActivatePulseError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not activate the PulseAudio server: {v}. "
+					)
+				)?;
+
+				f.write_str("You may experience audio issues if PulseAudio is not running")
+			}
 			Self::CardRendererNodeMissing(v)
 			=> {
 				f.write_fmt(
