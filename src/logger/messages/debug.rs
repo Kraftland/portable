@@ -13,6 +13,15 @@ impl std::fmt::Display for DebugMessage {
 			DebugMessage::DecodedConfig(v)	=> {
 				f.write_fmt(format_args!("Resolved configuration: {:#?}", v))
 			}
+			DebugMessage::DynamicPermissionsRetrieved(v)
+			=> {
+				f.write_fmt(
+					format_args!(
+						"Retrieved Dynamic Permissions from PermissionStore: {}",
+						v,
+					),
+				)
+			}
 		}
 	}
 }
