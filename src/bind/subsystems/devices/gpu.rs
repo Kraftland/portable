@@ -177,7 +177,7 @@ pub async fn scan(
 
 
 pub async fn gputest_print_all_devices(
-	tx: &tokio::sync::mpsc::Sender<crate::logger::LogMessage>
+	tx:	&crate::logger::LogSender
 ) -> String {
 	let res = enumerate::enumerate(&tx).await.unwrap();
 	format!("{res:#?}")
