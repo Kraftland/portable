@@ -45,11 +45,19 @@ pub enum WarnMessage {
 	X11SessionType,
 
 	UnknownSessionType,
+
+	WpSecurityContextManagerV1(crate::bind::subsystems::display::wayland::security_context::SecurityContextError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::WpSecurityContextManagerV1(v)
+			=> {
+				f.write_fmt(
+					format_args!("Could not enable security context v1: {v}")
+				)
+			}
 			Self::X11SessionType		=> {
 				f.write_str("Detected session type as X11.")?;
 				f.write_str("This is insecure: ")?;

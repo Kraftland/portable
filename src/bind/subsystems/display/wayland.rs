@@ -14,7 +14,7 @@ pub enum DisplayBindError {
 }
 
 mod find_socket;
-mod security_context;
+pub mod security_context;
 
 pub struct Wayland {
 	pub runtime_dir:	std::path::PathBuf,
