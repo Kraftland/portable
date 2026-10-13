@@ -41,14 +41,12 @@ pub async fn setup(
 	{
 		use std::os::fd::AsRawFd;
 		let _ = logger.send(
-		crate::logger::LogMessage {
-			level: crate::logger::LogLevel::Debug,
-			message: format!(
-				"Allocated pty master (fd:{0:?}) and slave (fd:{1:?})",
-					pty.master.as_raw_fd(),
-					pty.slave.as_raw_fd(),
-				),
-			}
+			crate::logger::messages::LogMessage::Debug(
+				crate::logger::messages::debug::DebugMessage::PtyAllocated {
+					master:	pty.master.as_raw_fd(),
+					slave:	pty.slave.as_raw_fd(),
+				}
+			)
 		).await;
 	};
 
