@@ -24,10 +24,11 @@ pub async fn setup(
 		}
 		Err(e)			=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!("Could not get window size: {e:#?}"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::WindowSize(
+						e
+					)
+				)
 			).await;
 			(80, 24)
 		}

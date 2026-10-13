@@ -8,26 +8,31 @@ pub enum WarnMessage {
 
 	#[cfg(feature = "flatpak")]
 	InstanceIDCollided(u32),
+
+	WindowSize(nix::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::InstanceIDCollided(v)
-			=> {
+			Self::WindowSize(v)		=> {
+				f.write_fmt(
+					format_args!("Could not get console window size: {v}")
+				)
+			}
+			Self::InstanceIDCollided(v)	=> {
 				f.write_fmt(
 					format_args!("Generated instance ID collided with Flatpak: {v}")
 				)
 			}
-			WarnMessage::ConsoleRawError(v)
-			=> {
+			WarnMessage::ConsoleRawError(v)	=> {
 				f.write_fmt(
 					format_args!(
 						"Could not enable RAW console mode: {v}"
 					)
 				)
 			}
-			WarnMessage::DebugBuild	=> {
+			WarnMessage::DebugBuild		=> {
 				f.write_str("Build type is debug, expect slowdown and verbose logging")
 			}
 			WarnMessage::DynamicPermissionStoreRetrieveError(v)
