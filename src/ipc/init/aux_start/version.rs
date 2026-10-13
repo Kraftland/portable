@@ -40,6 +40,12 @@ pub async fn check(
 		return;
 	}
 
+	let _ = logger.send(
+		crate::logger::messages::LogMessage::Warn(
+			crate::logger::messages::warn::WarnMessage::InitVersionMismatch,
+		)
+	).await;
+
 	match crate::ipc::portals::legacy_notif::notify(
 		conn,
 		"dialog-warning-symbolic",
@@ -49,10 +55,9 @@ pub async fn check(
 		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:	crate::logger::LogLevel::Warn,
-					message: format!("Could not notify restart: {e:#?}"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::RestartNotifierError(e)
+				)
 			).await;
 		}
 	}

@@ -14,11 +14,23 @@ pub enum WarnMessage {
 	InvalidUnitState(String),
 
 	UnitFailed,
+
+	RestartNotifierError(zbus::Error),
+
+	InitVersionMismatch,
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::InitVersionMismatch	=> {
+				f.write_str("Sandbox is running a different major version.")
+			}
+			Self::RestartNotifierError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not present restart notifier: {v}")
+				)
+			}
 			Self::UnitFailed		=> {
 				f.write_str("Unit has failed. Either the application is malfunctioning, or the system did not meet minium requirements.")
 			}
