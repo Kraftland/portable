@@ -31,12 +31,6 @@ impl crate::bind::subsystems::GenerateBind for super::Audio {
 				v
 			}
 			None	=> {
-				let _ = self.logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not find PulseAudio server"),
-					},
-				).await;
 				return Ok(vec![]);
 			}
 		};
