@@ -23,13 +23,11 @@ pub async fn wait(
 				let state = match v.get().await {
 					Ok(v)	=> {ActiveState::from(v.as_str())}
 					Err(e)	=> {
+						use crate::logger::messages::fatal::FatalMessage;
 						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Fatal,
-								message: format!(
-									"Could not get ActiveState: {e:#?}",
-								),
-							}
+							crate::logger::messages::LogMessage::Fatal(
+								FatalMessage::UnitStateRetrieve(e)
+							)
 						).await;
 						cancel_token.cancel();
 						return;
@@ -63,6 +61,7 @@ pub async fn wait(
 							)
 						).await;
 					}
+					_			=> {}
 				}
 			}
 
