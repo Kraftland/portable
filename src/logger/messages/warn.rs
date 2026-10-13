@@ -5,11 +5,20 @@ pub enum WarnMessage {
 	),
 	UnknownArgument(String),
 	ConsoleRawError(crate::spawn::stream::StreamError),
+
+	#[cfg(feature = "flatpak")]
+	InstanceIDCollided(u32),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::InstanceIDCollided(v)
+			=> {
+				f.write_fmt(
+					format_args!("Generated instance ID collided with Flatpak: {v}")
+				)
+			}
 			WarnMessage::ConsoleRawError(v)
 			=> {
 				f.write_fmt(
