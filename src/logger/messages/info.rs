@@ -15,7 +15,7 @@ impl std::fmt::Display for InfoMessage {
 				f.write_str(" has been revoked")
 			}
 			Self::DynamicPermissionStoreError(v)	=> {
-				f.write_fmt(format_args!("Could "))
+				f.write_fmt(format_args!("Could not retrieve Dynamic Permissions from PermissionStore: {v}"))
 			}
 		}
 	}
