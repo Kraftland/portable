@@ -29,12 +29,19 @@ pub enum WarnMessage {
 		table:	String,
 		id:	String,
 		err:	zbus::fdo::Error,
-	}
+	},
+
+	InvalidUserEnvironment(String),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::InvalidUserEnvironment(v)	=> {
+				f.write_fmt(
+					format_args!("Invalid user environment: {v}")
+				)
+			}
 			Self::PermissionStoreResetError { table, id, err }
 			=> {
 				f.write_fmt(
