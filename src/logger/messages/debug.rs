@@ -10,11 +10,23 @@ pub enum DebugMessage {
 		master:	std::os::fd::RawFd,
 		slave:	std::os::fd::RawFd,
 	},
+	PermissionReset {
+		table:	String,
+		id:	String,
+	}
 }
 
 impl std::fmt::Display for DebugMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::PermissionReset { table, id }
+			=> {
+				f.write_fmt(
+					format_args!(
+						"Reset permission: table {table} ID {id}"
+					)
+				)
+			}
 			Self::PtyAllocated { master, slave }
 			=> {
 				f.write_fmt(

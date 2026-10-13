@@ -24,11 +24,24 @@ pub enum WarnMessage {
 	InitVersionError(zbus::Error),
 
 	ExposePermissionRetrieve(zbus::Error),
+
+	PermissionStoreResetError{
+		table:	String,
+		id:	String,
+		err:	zbus::fdo::Error,
+	}
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::PermissionStoreResetError { table, id, err }
+			=> {
+				f.write_fmt(
+					format_args!("Could not reset permissions: table {table} ID {id}: {err}")
+				)
+			}
+
 			Self::ExposePermissionRetrieve(v)
 			=> {
 				f.write_fmt(
