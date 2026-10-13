@@ -15,22 +15,13 @@ pub async fn mount(
 	};
 
 	if attrs.is_symlink() {
-		#[cfg(debug_assertions)]
-		let _ = logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Debug,
-				message: format!("resolv.conf is a symlink"),
-			}
-		).await;
-
 		let dest = match tokio::fs::canonicalize("/etc/resolv.conf").await {
 			Ok(v)	=> {v}
 			Err(e)	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!("Could not read dest of resolv.conf: {e:#?}"),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::ResolvLinkError(e)
+					)
 				).await;
 				return vec![];
 			}

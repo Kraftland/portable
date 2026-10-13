@@ -34,11 +34,17 @@ pub enum WarnMessage {
 	InvalidUserEnvironment(String),
 
 	ResolvUnknown,
+	ResolvLinkError(std::io::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::ResolvLinkError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not canonicalise resolv.conf: {v}")
+				)
+			}
 			Self::ResolvUnknown		=> {
 				f.write_str("Unknown type of resolv.conf")
 			}
