@@ -19,13 +19,14 @@ pub async fn get(
 	let mut stored_permissions = match portal_store.retrieve(&config.metadata.sandbox_id).await {
 		Ok(v)	=> {
 			#[cfg(debug_assertions)]
+			use crate::logger::messages::LogMessage;
+			#[cfg(debug_assertions)]
+			use crate::logger::messages::debug::DebugMessage;
+			#[cfg(debug_assertions)]
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!(
-						"Retrieved permissions from backend: {v:#?}",
-					),
-				},
+				LogMessage::Debug(
+					DebugMessage::DynamicPermissionsRetrieved(format!("{v:#?}"))
+				)
 			).await;
 
 			v

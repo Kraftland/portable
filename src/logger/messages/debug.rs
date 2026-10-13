@@ -4,6 +4,7 @@
 #[cfg(debug_assertions)]
 pub enum DebugMessage {
 	DecodedConfig(std::sync::Arc<crate::config::Config>),
+	DynamicPermissionsRetrieved(String),
 }
 
 impl std::fmt::Display for DebugMessage {
