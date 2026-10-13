@@ -47,11 +47,30 @@ pub enum WarnMessage {
 	UnknownSessionType,
 
 	WpSecurityContextManagerV1(crate::bind::subsystems::display::wayland::security_context::SecurityContextError),
+
+	X11UnknownInputMethod,
+
+	X11DisplayUnknown(std::env::VarError),
+
+	X11AuthorityBindError(crate::bind::subsystems::display::x11::xauth::XAuthorityError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::X11AuthorityBindError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not bind XAUTHORITY: {v}")
+				)
+			}
+			Self::X11DisplayUnknown(v)	=> {
+				f.write_fmt(
+					format_args!("Could not retrieve DISPLAY for X11: {v}")
+				)
+			}
+			Self::X11UnknownInputMethod	=> {
+				f.write_str("Could not determine input method for X11")
+			}
 			Self::WpSecurityContextManagerV1(v)
 			=> {
 				f.write_fmt(

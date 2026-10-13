@@ -37,11 +37,11 @@ impl super::BindDisplay for X11 {
 					?;
 			}
 			Err(e)	=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = self.logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not obtain $DISPLAY: {e:#?}"),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::X11DisplayUnknown(e),
+					)
 				).await;
 			}
 		};
@@ -55,13 +55,11 @@ impl super::BindDisplay for X11 {
 				ret.extend(v);
 			}
 			Err(e)	=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = self.logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!(
-							"Could not bind XAuthority: {e:#?}",
-						),
-					},
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::X11AuthorityBindError(e)
+					)
 				).await;
 			}
 		};
@@ -131,10 +129,9 @@ impl super::BindDisplay for X11 {
 			}
 			im::InputMethodKind::Unknown	=> {
 				let _ = self.logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not determine Input Method type"),
-					},
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::X11UnknownInputMethod
+					)
 				).await;
 
 				HashMap::new()
