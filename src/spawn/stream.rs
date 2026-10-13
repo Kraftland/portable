@@ -53,23 +53,12 @@ pub async fn setup(
 	};
 
 	match raw_mode(stop_obj).await {
-		Ok(_)	=> {
-			#[cfg(debug_assertions)]
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Debug,
-					message: format!("Successfully set console to raw mode"),
-				}
-			).await;
-		}
+		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!(
-						"Could not put console into RAW mode: {e:#?}",
-					),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::ConsoleRawError(e)
+				)
 			).await;
 		}
 	}

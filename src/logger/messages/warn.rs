@@ -4,11 +4,20 @@ pub enum WarnMessage {
 		crate::pref::permissions::consent::impls::store::portal::PortalPermissionStoreError,
 	),
 	UnknownArgument(String),
+	ConsoleRawError(crate::spawn::stream::StreamError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			WarnMessage::ConsoleRawError(v)
+			=> {
+				f.write_fmt(
+					format_args!(
+						"Could not enable RAW console mode: {v}"
+					)
+				)
+			}
 			WarnMessage::DebugBuild	=> {
 				f.write_str("Build type is debug, expect slowdown and verbose logging")
 			}
