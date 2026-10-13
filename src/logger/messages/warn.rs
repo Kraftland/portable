@@ -59,11 +59,21 @@ pub enum WarnMessage {
 	UnknownGPUVendor,
 	UnknownNVIDIADriver(Option<std::string::String>),
 	DevNVIDIAScanError(std::io::Error),
+	BootVGADeprecated(
+		std::path::PathBuf,
+	),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::BootVGADeprecated(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Device {v:?} is using deprecated boot_vga property"
+					)
+				)
+			}
 			Self::DevNVIDIAScanError(v)	=> {
 				f.write_fmt(
 					format_args!("Could not scan /dev for NVIDIA devices: {v}")
