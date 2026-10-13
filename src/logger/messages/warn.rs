@@ -68,11 +68,29 @@ pub enum WarnMessage {
 
 	PulseAddressError(crate::bind::subsystems::audio::PulseError),
 	ActivatePulseError(crate::bind::subsystems::audio::PulseError),
+
+	A11yBusSpawnError(crate::bind::bus::proxies::start::StartProxyError),
+
+	A11yBusBuildError(crate::bind::bus::proxies::StartProxyError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::A11yBusBuildError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not build accessibility proxy: {v}"
+					)
+				)
+			}
+			Self::A11yBusSpawnError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not spawn accessibility proxy: {v}"
+					)
+				)
+			}
 			Self::PulseAddressError(v)	=> {
 				f.write_fmt(
 					format_args!("Could not parse PulseAudio address: {v}")

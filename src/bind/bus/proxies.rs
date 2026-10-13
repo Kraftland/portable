@@ -118,10 +118,9 @@ pub async fn start_proxies(
 			}
 			Err(e)	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not start a11y proxy: {e:#?}"),
-					},
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::A11yBusBuildError(e)
+					)
 				).await;
 				(vec![], tokio::spawn(async {Ok(())}))
 			}
@@ -157,10 +156,9 @@ pub async fn start_proxies(
 		}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not start a11y bus proxy: {e:#?}"),
-				},
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::A11yBusSpawnError(e)
+				)
 			).await;
 		}
 	}
