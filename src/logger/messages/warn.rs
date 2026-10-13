@@ -62,11 +62,32 @@ pub enum WarnMessage {
 	BootVGADeprecated(
 		std::path::PathBuf,
 	),
+	MissingIDPath(std::ffi::OsString),
+	UnknownDeviceGPUType(std::ffi::OsString),
+	CardRendererNodeMissing(std::ffi::OsString),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::CardRendererNodeMissing(v)
+			=> {
+				f.write_fmt(
+					format_args!(
+						"{v} is missing the card / renderer node"
+					)
+				)
+			}
+			Self::UnknownDeviceGPUType(v)	=> {
+				f.write_fmt(
+					format_args!("Device {v:?} has unknown type")
+				)
+			}
+			Self::MissingIDPath(v)		=> {
+				f.write_fmt(
+					format_args!("Device {v:?} is missing ID_PATH property")
+				)
+			}
 			Self::BootVGADeprecated(v)	=> {
 				f.write_fmt(
 					format_args!(
