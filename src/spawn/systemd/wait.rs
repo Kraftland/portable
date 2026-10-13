@@ -8,14 +8,6 @@ pub async fn wait(
 	cancel_token:	tokio_util::sync::CancellationToken,
 	logger:		crate::logger::LogSender,
 ) -> Result<(), zbus::Error> {
-	#[cfg(debug_assertions)]
-	let _ = logger.send(
-		crate::logger::LogMessage {
-			level:		crate::logger::LogLevel::Debug,
-			message:	format!("Listening on object path: {escaped_path:?}"),
-		}
-	).await;
-
 	let proxy = PropertiesProxy::new(conn, escaped_path)
 		.await
 		?;
@@ -44,17 +36,6 @@ pub async fn wait(
 					}
 				};
 
-				#[cfg(debug_assertions)]
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!(
-							"Updated unit state: {state:?}",
-						),
-					}
-				)
-					.await;
-
 				match state {
 					ActiveState::Active	=> {
 						activated = true;
@@ -77,20 +58,11 @@ pub async fn wait(
 					}
 					ActiveState::Others { state }
 								=> {
+						use crate::logger::messages::warn::WarnMessage;
 						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Warn,
-								message: format!(
-									"Unknown unit state: {state}",
-								),
-							}
-						).await;
-					}
-					v			=> {
-						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:		crate::logger::LogLevel::Warn,
-								message:	format!("Unexpected unit state: {v:?}") }
+							crate::logger::messages::LogMessage::Warn(
+								WarnMessage::InvalidUnitState(state)
+							)
 						).await;
 					}
 				}

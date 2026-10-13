@@ -10,11 +10,20 @@ pub enum WarnMessage {
 	InstanceIDCollided(u32),
 
 	WindowSize(nix::Error),
+
+	InvalidUnitState(String),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::InvalidUnitState(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Unexpected systemd unit state: {v}"
+					)
+				)
+			}
 			Self::WindowSize(v)		=> {
 				f.write_fmt(
 					format_args!("Could not get console window size: {v}")
