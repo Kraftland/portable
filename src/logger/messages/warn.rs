@@ -55,13 +55,22 @@ pub enum WarnMessage {
 	X11AuthorityBindError(crate::bind::subsystems::display::x11::xauth::XAuthorityError),
 
 	EnumerateGPUError(crate::bind::subsystems::devices::gpu::GPUError),
-
 	GPUSpawnError(tokio::task::JoinError),
+	UnknownGPUVendor,
+	UnknownNVIDIADriver(Option<std::string::String>),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::UnknownGPUVendor		=> {
+				f.write_str("Unknown GPU vendor, please report a bug with PCI vendor ID")
+			}
+			Self::UnknownNVIDIADriver(v)	=> {
+				f.write_fmt(
+					format_args!("Unknown driver for NVIDIA card: {v:?}")
+				)
+			}
 			Self::GPUSpawnError(v)		=> {
 				f.write_fmt(
 					format_args!("Could not spawn GPU task: {v}")
