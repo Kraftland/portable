@@ -32,11 +32,16 @@ pub enum WarnMessage {
 	},
 
 	InvalidUserEnvironment(String),
+
+	ResolvUnknown,
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::ResolvUnknown		=> {
+				f.write_str("Unknown type of resolv.conf")
+			}
 			Self::InvalidUserEnvironment(v)	=> {
 				f.write_fmt(
 					format_args!("Invalid user environment: {v}")

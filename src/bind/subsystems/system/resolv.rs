@@ -53,10 +53,9 @@ pub async fn mount(
 		]
 	} else {
 		let _ = logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Warn,
-				message: format!("Unknown type of resolv.conf"),
-			}
+			crate::logger::messages::LogMessage::Warn(
+				crate::logger::messages::warn::WarnMessage::ResolvUnknown
+			)
 		).await;
 		vec![]
 	}
