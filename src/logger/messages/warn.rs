@@ -36,11 +36,28 @@ pub enum WarnMessage {
 	ResolvUnknown,
 	ResolvLinkError(std::io::Error),
 	ResolvStatError(std::io::Error),
+	ForwardAddFullError(crate::ipc::portals::documents::DocumentError),
+
+	BindConsentError(crate::bind::subsystems::user::UserBindError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::BindConsentError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not ask for file exposure consent: {v}"
+					)
+				)
+			}
+			Self::ForwardAddFullError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not forward files: AddFull failed: {v}"
+					)
+				)
+			}
 			Self::ResolvStatError(v)	=> {
 				f.write_fmt(
 					format_args!(

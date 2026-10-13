@@ -13,7 +13,7 @@ pub enum DebugMessage {
 	PermissionReset {
 		table:	String,
 		id:	String,
-	}
+	},
 }
 
 impl std::fmt::Display for DebugMessage {

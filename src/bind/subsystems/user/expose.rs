@@ -94,20 +94,18 @@ pub async fn forward_file(
 				Ok(true)	=> {}
 				Ok(false)	=> {
 					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Info,
-							message: format!("User denied exposing files"),
-						},
+						crate::logger::messages::LogMessage::Info(
+							crate::logger::messages::info::InfoMessage::ExposeDenied,
+						)
 					).await;
 
 					return (vec![], std::collections::HashMap::new());
 				}
 				Err(e)		=> {
 					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!("Could not ask for consent: {e:#?}"),
-						},
+						crate::logger::messages::LogMessage::Warn(
+							crate::logger::messages::warn::WarnMessage::BindConsentError(e)
+						)
 					).await;
 					return (vec![], std::collections::HashMap::new());
 				}
@@ -115,31 +113,26 @@ pub async fn forward_file(
 		}
 		Err(e)		=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!(
-						"Could not retrieve stored permissions: {e:#?}",
-					),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
+				)
 			).await;
 			match question(&expose_list).await {
 				Ok(true)	=> {}
 				Ok(false)	=> {
 					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Info,
-							message: format!("User denied exposing files"),
-						},
+						crate::logger::messages::LogMessage::Info(
+							crate::logger::messages::info::InfoMessage::ExposeDenied,
+						)
 					).await;
 
 					return (vec![], std::collections::HashMap::new());
 				}
 				Err(e)		=> {
 					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!("Could not ask for consent: {e:#?}"),
-						},
+						crate::logger::messages::LogMessage::Warn(
+							crate::logger::messages::warn::WarnMessage::BindConsentError(e)
+						)
 					).await;
 					return (vec![], std::collections::HashMap::new());
 				}
@@ -188,13 +181,6 @@ pub async fn forward_file(
 	let mut pass_map = HashMap::new();
 
 	if path_list.len() > 0 {
-		#[cfg(debug_assertions)]
-		let _ = logger.send(
-			crate::logger::LogMessage {
-				level:		crate::logger::LogLevel::Debug,
-				message:	format!("Forwarding file via Portals: {:?}", &path_list),
-			}
-		).await;
 
 		let doc_ids = crate::ipc::portals::documents::add_full(
 			&path_list,
@@ -205,11 +191,11 @@ pub async fn forward_file(
 		let doc_ids = match doc_ids {
 			Ok(v)	=> v,
 			Err(e)	=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not forward files: {e:#?}"),
-					},
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::ForwardAddFullError(e)
+					)
 				).await;
 				return (rules, pass_map);
 			}
