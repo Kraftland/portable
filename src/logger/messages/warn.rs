@@ -41,11 +41,23 @@ pub enum WarnMessage {
 	BindConsentError(crate::bind::subsystems::user::UserBindError),
 
 	XCursorRetrieve(zbus::Error),
+
+	X11SessionType,
+
+	UnknownSessionType,
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::X11SessionType		=> {
+				f.write_str("Detected session type as X11.")?;
+				f.write_str("This is insecure: ")?;
+				f.write_str("X11 allows client to access keyboard input and capture screen silently.")
+			}
+			Self::UnknownSessionType	=> {
+				f.write_str("Could not determine session type. Did you set XDG_SESSION_TYPE?")
+			}
 			Self::XCursorRetrieve(v)	=> {
 				f.write_fmt(
 					format_args!(
