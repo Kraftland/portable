@@ -74,7 +74,7 @@ impl std::fmt::Display for WarnMessage {
 			=> {
 				f.write_fmt(
 					format_args!(
-						"{v} is missing the card / renderer node"
+						"{v:?} is missing the card / renderer node"
 					)
 				)
 			}
