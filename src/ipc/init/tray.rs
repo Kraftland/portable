@@ -9,9 +9,8 @@ mod wake;
 pub async fn wake(
 	config:		std::sync::Arc<crate::config::Config>,
 	conn:		&zbus::Connection,
-	log:		crate::logger::LogSender,
 ) -> Result<(), WakeError> {
-	let pairs = list::list(&conn, &config.metadata.sandbox_id, &log)
+	let pairs = list::list(&conn, &config.metadata.sandbox_id)
 		.await
 		.map_err(WakeError::BusFdoError)
 		?;
