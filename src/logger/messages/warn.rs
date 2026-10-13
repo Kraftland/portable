@@ -18,11 +18,25 @@ pub enum WarnMessage {
 	RestartNotifierError(zbus::Error),
 
 	InitVersionMismatch,
+
+	InitProxy(zbus::Error),
+
+	InitVersionError(zbus::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::InitProxy(v)		=> {
+				f.write_fmt(
+					format_args!("Could not create proxy to sandbox Init: {v}")
+				)
+			}
+			Self::InitVersionError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not retrieve sandbox Init version: {v}")
+				)
+			}
 			Self::InitVersionMismatch	=> {
 				f.write_str("Sandbox is running a different major version.")
 			}

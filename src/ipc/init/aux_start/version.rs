@@ -14,10 +14,9 @@ pub async fn check(
 		Ok(v)	=> v,
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:	crate::logger::LogLevel::Warn,
-					message: format!("Could not create proxy to Init: {e:#?}"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::InitProxy(e)
+				)
 			).await;
 			return;
 		}
@@ -27,10 +26,9 @@ pub async fn check(
 		Ok(v)	=> {v}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:	crate::logger::LogLevel::Warn,
-					message: format!("Could not get Init version: {e:#?}"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::InitVersionError(e)
+				)
 			).await;
 			return;
 		}
