@@ -41,13 +41,11 @@ pub async fn wait(
 						activated = true;
 					}
 					ActiveState::Failed	=> {
+						use crate::logger::messages::warn::WarnMessage;
 						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Warn,
-								message: format!(
-									"Unit has failed",
-								),
-							}
+							crate::logger::messages::LogMessage::Warn(
+								WarnMessage::UnitFailed
+							)
 						).await;
 						break;
 					}

@@ -12,11 +12,16 @@ pub enum WarnMessage {
 	WindowSize(nix::Error),
 
 	InvalidUnitState(String),
+
+	UnitFailed,
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::UnitFailed		=> {
+				f.write_str("Unit has failed. Either the application is malfunctioning, or the system did not meet minium requirements.")
+			}
 			Self::InvalidUnitState(v)	=> {
 				f.write_fmt(
 					format_args!(
