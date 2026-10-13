@@ -1,6 +1,9 @@
 pub enum WarnMessage {
 	DebugBuild,
-	DynamicPermissionStoreRetrieveError(crate::pref::permissions::consent::impls::store::portal::PortalPermissionStoreError),
+	DynamicPermissionStoreRetrieveError(
+		crate::pref::permissions::consent::impls::store::portal::PortalPermissionStoreError,
+	),
+	UnknownArgument(String),
 }
 
 impl std::fmt::Display for WarnMessage {
@@ -14,6 +17,10 @@ impl std::fmt::Display for WarnMessage {
 				f.write_fmt(
 					format_args!("Could not retrieve stored permissions: {v}"),
 				)
+			}
+			WarnMessage::UnknownArgument(v)
+			=> {
+				f.write_fmt(format_args!("Unrecognised argument: {v}"))
 			}
 		}
 	}
