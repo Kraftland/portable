@@ -108,14 +108,10 @@ pub async fn get(
 		{
 			Ok(v)	=> v,
 			Err(e)	=> {
-				#[cfg(debug_assertions)]
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:	crate::logger::LogLevel::Warn,
-						message: format!(
-							"Could not retrieve saved permission: {e:#?}"
-						),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
+					)
 				).await;
 
 				vec![]
@@ -153,14 +149,10 @@ pub async fn get(
 		{
 			Ok(v)	=> v,
 			Err(e)	=> {
-				#[cfg(debug_assertions)]
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:	crate::logger::LogLevel::Warn,
-						message: format!(
-							"Could not retrieve saved permission: {e:#?}"
-						),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
+					)
 				).await;
 
 				vec![]
@@ -198,14 +190,10 @@ pub async fn get(
 		{
 			Ok(v)	=> v,
 			Err(e)	=> {
-				#[cfg(debug_assertions)]
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:	crate::logger::LogLevel::Warn,
-						message: format!(
-							"Could not retrieve saved permission: {e:#?}"
-						),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
+					)
 				).await;
 
 				vec![]

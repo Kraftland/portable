@@ -22,11 +22,19 @@ pub enum WarnMessage {
 	InitProxy(zbus::Error),
 
 	InitVersionError(zbus::Error),
+
+	ExposePermissionRetrieve(zbus::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::ExposePermissionRetrieve(v)
+			=> {
+				f.write_fmt(
+					format_args!("Could not retrieve expose permissions: {v}")
+				)
+			}
 			Self::InitProxy(v)		=> {
 				f.write_fmt(
 					format_args!("Could not create proxy to sandbox Init: {v}")
