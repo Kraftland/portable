@@ -58,11 +58,17 @@ pub enum WarnMessage {
 	GPUSpawnError(tokio::task::JoinError),
 	UnknownGPUVendor,
 	UnknownNVIDIADriver(Option<std::string::String>),
+	DevNVIDIAScanError(std::io::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::DevNVIDIAScanError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not scan /dev for NVIDIA devices: {v}")
+				)
+			}
 			Self::UnknownGPUVendor		=> {
 				f.write_str("Unknown GPU vendor, please report a bug with PCI vendor ID")
 			}
