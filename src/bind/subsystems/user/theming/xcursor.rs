@@ -18,10 +18,9 @@ pub async fn forward_xcursor(
 			Ok(v)	=> v,
 			Err(e)	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Warn,
-						message:	format!("Could not retrieve cursor theme from Portal: {e:#?}"),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::XCursorRetrieve(e)
+					)
 				).await;
 				return Ok(());
 			}

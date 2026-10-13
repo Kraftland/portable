@@ -39,11 +39,20 @@ pub enum WarnMessage {
 	ForwardAddFullError(crate::ipc::portals::documents::DocumentError),
 
 	BindConsentError(crate::bind::subsystems::user::UserBindError),
+
+	XCursorRetrieve(zbus::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::XCursorRetrieve(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not retrieve X Cursor information from Portal: {v}"
+					)
+				)
+			}
 			Self::BindConsentError(v)	=> {
 				f.write_fmt(
 					format_args!(
