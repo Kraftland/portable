@@ -35,11 +35,19 @@ pub enum WarnMessage {
 
 	ResolvUnknown,
 	ResolvLinkError(std::io::Error),
+	ResolvStatError(std::io::Error),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::ResolvStatError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not read status of resolv.conf: {v}"
+					)
+				)
+			}
 			Self::ResolvLinkError(v)	=> {
 				f.write_fmt(
 					format_args!("Could not canonicalise resolv.conf: {v}")

@@ -5,10 +5,9 @@ pub async fn mount(
 		Ok(v)	=> v,
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!("Could not read status of resolv.conf: {e:#?}"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::ResolvStatError(e)
+				)
 			).await;
 			return vec![];
 		}
