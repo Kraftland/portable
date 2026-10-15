@@ -31,7 +31,7 @@ pub async fn holder(
 	xdg:	std::sync::Arc<crate::xdg::XdgDirs>,
 	config:	std::sync::Arc<crate::config::Config>,
 ) {
-	use crate::logger::LogMessage;
+	use crate::logger::messages::LogMessage;
 
 	let mut envs_map = super::forward::get();
 
@@ -39,10 +39,9 @@ pub async fn holder(
 		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = log_tx.send(
-				LogMessage {
-					level:	crate::logger::LogLevel::Warn,
-					message: format!("Could not load portable.env: {e:#?}"),
-				}
+				LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::UserEnvLoadError(e)
+				)
 			).await;
 		}
 	};
@@ -51,10 +50,9 @@ pub async fn holder(
 		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = log_tx.send(
-				LogMessage {
-					level:	crate::logger::LogLevel::Warn,
-					message: format!("Could not load XDG envs: {e:#?}"),
-				}
+				LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::XdgEnvLoadError(e)
+				)
 			).await;
 		}
 	};
@@ -73,24 +71,28 @@ pub async fn holder(
 					true	=> {continue;}
 					false	=> {}
 				};
+
+				#[cfg(debug_assertions)]
 				let _ = log_tx.send(
-					LogMessage {
-						level: crate::logger::LogLevel::Debug,
-						message: format!("Environment variable set: {} {}", key, value),
-					}
+					LogMessage::Debug(
+						crate::logger::messages::debug::DebugMessage::EnvSet {
+							key:	key.clone(),
+							val:	value.clone(),
+						}
+					)
 				).await;
+
 				envs_map.insert(key, value);
 			}
 			EnvMessage::Collect { chan }	=> {
-				let result = chan.send(envs_map.to_owned());
+				let result = chan.send(envs_map);
 				match result {
 					Ok(_)	=> {}
-					Err(e)	=> {
+					Err(_)	=> {
 						let _ = log_tx.send(
-							LogMessage {
-								level: crate::logger::LogLevel::Fatal,
-								message: format!("Could not send envs: {e:#?}")
-							}
+							LogMessage::Fatal(
+								crate::logger::messages::fatal::FatalMessage::SendEnvs
+							)
 						).await;
 					}
 				}

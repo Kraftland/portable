@@ -2,11 +2,17 @@ pub enum FatalMessage {
 	LogError(Box<tokio::sync::mpsc::error::SendError<crate::logger::messages::LogMessage>>),
 	UnitStateRetrieve(zbus::Error),
 	ProxyFailed(std::io::Error),
+	SendEnvs,
 }
 
 impl std::fmt::Display for FatalMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::SendEnvs		=> {
+				f.write_str(
+					"Could not send environment variables: An unsuccessful send would be one where the corresponding receiver has already been deallocated."
+				)
+			}
 			Self::ProxyFailed(v)	=> {
 				f.write_fmt(
 					format_args!("Could not start D-Bus proxy: {v}")

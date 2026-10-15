@@ -72,11 +72,26 @@ pub enum WarnMessage {
 	A11yBusSpawnError(crate::bind::bus::proxies::start::StartProxyError),
 
 	A11yBusBuildError(crate::bind::bus::proxies::StartProxyError),
+
+	UserEnvLoadError(crate::envs::user::LoadError),
+	XdgEnvLoadError(crate::envs::xdg::XDGEnvError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::XdgEnvLoadError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not load XDG environment variables: {v}")
+				)
+			}
+			Self::UserEnvLoadError(v)	=> {
+				f.write_fmt(
+					format_args!(
+						"Could not load user environment variables: {v}"
+					)
+				)
+			}
 			Self::A11yBusBuildError(v)	=> {
 				f.write_fmt(
 					format_args!(
