@@ -16,14 +16,6 @@ pub async fn get_address_with_sandbox(
 				.map_err(super::ProxyError::IOError)
 				?;
 
-			#[cfg(debug_assertions)]
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Debug,
-					message:	format!("Created bus proxy parent: {0:?}", path)
-				}
-			).await;
-
 			path
 		};
 
