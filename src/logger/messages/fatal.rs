@@ -3,11 +3,17 @@ pub enum FatalMessage {
 	UnitStateRetrieve(zbus::Error),
 	ProxyFailed(std::io::Error),
 	SendEnvs,
+	StartError(Box<dyn std::error::Error>),
 }
 
 impl std::fmt::Display for FatalMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::StartError(v)	=> {
+				f.write_fmt(
+					format_args!("{v}")
+				)
+			}
 			Self::SendEnvs		=> {
 				f.write_str(
 					"Could not send environment variables: An unsuccessful send would be one where the corresponding receiver has already been deallocated."

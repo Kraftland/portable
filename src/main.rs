@@ -13,7 +13,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 enum StartError {
 	#[error("Could not contact logging thread: {0:#?}")]
-	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
+	LogError(tokio::sync::mpsc::error::SendError<logger::messages::LogMessage>),
 
 	#[error("Could not read config: {0:#?}")]
 	ConfigError(config::ConfigError),
@@ -97,10 +97,9 @@ async fn main() {
 		Ok(_)	=> {true}
 		Err(e)	=> {
 			log_tx.send(
-				logger::LogMessage {
-					level: logger::LogLevel::Fatal,
-					message: format!("{e}"),
-				},
+				logger::messages::LogMessage::Fatal(
+					logger::messages::fatal::FatalMessage::StartError(e)
+				)
 			).await.unwrap();
 			false
 		}
@@ -144,10 +143,7 @@ async fn run(
 
 	#[cfg(debug_assertions)]
 	log_tx.send(
-		logger::LogMessage {
-			level:		logger::LogLevel::Warn,
-			message:	"You are running a debug build of Portable".to_string(),
-		},
+		logger::messages::LogMessage::Warn(logger::messages::warn::WarnMessage::DebugBuild)
 	)
 		.await
 		.map_err(StartError::LogError)
