@@ -14,11 +14,17 @@ pub enum DebugMessage {
 		table:	String,
 		id:	String,
 	},
+	ProxyExited(Option<i32>),
 }
 
 impl std::fmt::Display for DebugMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::ProxyExited(v)		=> {
+				f.write_fmt(
+					format_args!("D-Bus proxy has exited with code {v:?}")
+				)
+			}
 			Self::PermissionReset { table, id }
 			=> {
 				f.write_fmt(
