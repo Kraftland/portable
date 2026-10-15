@@ -11,14 +11,6 @@ pub enum StartProxyError {
 
 impl Proxy {
 	pub async fn start(self, log: bool)	-> Result<(), StartProxyError> {
-		#[cfg(debug_assertions)]
-		let _ = self.logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Debug,
-				message: format!("Starting D-Bus proxy: {:#?}", &self),
-			},
-		).await;
-
 		use command_fds::{CommandFdExt, FdMapping};
 		use crate::bind::types::ToCmdline;
 
