@@ -37,9 +37,10 @@ pub type LogSender = tokio::sync::mpsc::Sender<messages::LogMessage>;
 
 pub async fn logger (
 	mut log_rx:	tokio::sync::mpsc::Receiver<messages::LogMessage>,
-	stop_token:	tokio_util::sync::CancellationToken,
+	stop:		std::sync::Arc<crate::stop::Stop>,
 )
 {
+	let cancel_token = tokio_util::sync::CancellationToken::new();
 	let logging_config = LoggingConfig::get();
 
 	let (
@@ -86,22 +87,28 @@ pub async fn logger (
 	#[cfg(debug_assertions)]
 	println!("{}\tUsing logger configuration: {:#?}", &debug_fmt, &logging_config);
 
-	loop {
-		let msg = tokio::select! {
-			biased;
-			log_msg = log_rx.recv()			=> {
-				match log_msg {
-					Some(v)	=> v,
-					None	=> {
-						return;
-					}
-				}
-			}
-			_	= stop_token.cancelled()	=> {
-				return ;
-			}
-		};
+	{
+		let child_token = stop.pre_parent.child_token();
+		let cancel = cancel_token.child_token();
+		stop.stop_funcs.send(
+			crate::stop::StopMessage::Post {
+				task: tokio::spawn(async move {
+					child_token.cancelled().await;
 
+					cancel.cancelled().await;
+
+					Ok(())
+				}),
+			}
+		).unwrap_or_else(
+			|e| {
+				eprintln!("Could not contact the stop worker: {e}");
+				()
+			}
+		)
+	};
+
+	while let Some(msg) = log_rx.recv().await {
 		match msg {
 			messages::LogMessage::Debug(_)	=> {
 				#[cfg(debug_assertions)]
@@ -117,7 +124,7 @@ pub async fn logger (
 				eprintln!("{}\t{}", fatal_fmt, msg);
 			}
 		}
-	}
+	};
 
-
+	cancel_token.cancel();
 }
