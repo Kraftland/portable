@@ -40,7 +40,21 @@ pub async fn logger (
 	stop:		std::sync::Arc<crate::stop::Stop>,
 )
 {
-	let cancel_token = tokio_util::sync::CancellationToken::new();
+
+	/*
+		Core of the new race-free shutdown design.
+
+		The stop worker will call master_token.cancel, while outside we wait for slave_token
+		before closing channels.
+	*/
+	let (master_token, slave_token) = {
+		let token = tokio_util::sync::CancellationToken::new();
+		let slave = token.child_token();
+		(
+			token,
+			slave,
+		)
+	};
 	let logging_config = LoggingConfig::get();
 
 	let (
@@ -88,14 +102,13 @@ pub async fn logger (
 	println!("{}\tUsing logger configuration: {:#?}", &debug_fmt, &logging_config);
 
 	{
-		let child_token = stop.pre_parent.child_token();
-		let cancel = cancel_token.child_token();
+		let stop_cancel = stop.pre_parent.child_token();
 		stop.stop_funcs.send(
-			crate::stop::StopMessage::Post {
+			crate::stop::StopMessage::Prepare {
 				task: tokio::spawn(async move {
-					child_token.cancelled().await;
+					stop_cancel.cancelled().await;
 
-					cancel.cancelled().await;
+					master_token.cancel();
 
 					Ok(())
 				}),
@@ -123,8 +136,10 @@ pub async fn logger (
 			messages::LogMessage::Fatal(_)	=> {
 				eprintln!("{}\t{}", fatal_fmt, msg);
 			}
+		};
+
+		if slave_token.is_cancelled() {
+			log_rx.close();
 		}
 	};
-
-	cancel_token.cancel();
 }
