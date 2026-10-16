@@ -24,11 +24,16 @@ pub enum DebugMessage {
 	QuitProxy,
 	QuitSandbox,
 	QuitController,
+
+	AuxRequested,
 }
 
 impl std::fmt::Display for DebugMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::AuxRequested		=> {
+				f.write_str("Requested auxiliary startup")
+			}
 			Self::QuitController		=> {
 				f.write_str("Quit requested: IPC controller")
 			}

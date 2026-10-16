@@ -60,13 +60,9 @@ async fn run(
 	};
 
 	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Info,
-			message: format!(
-				"Portable daemon version {}",
-				env!("CARGO_PKG_VERSION_MAJOR"),
-			),
-		},
+		logger::messages::LogMessage::Info(
+			logger::messages::info::InfoMessage::DaemonVersion
+		)
 	)
 		.await
 		.map_err(StartError::LogError)
@@ -139,28 +135,6 @@ async fn run(
 		)
 	};
 
-	#[cfg(debug_assertions)]
-	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Debug,
-			message: format!("Resolved configuration: {config:#?}"),
-		}
-	)
-		.await
-		.map_err(StartError::LogError)
-		?;
-
-	#[cfg(debug_assertions)]
-	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Debug,
-			message: format!("Populated XDG Base Directories: {xdg_dirs:#?}"),
-		}
-	)
-		.await
-		.map_err(StartError::LogError)
-		?;
-
 	let runtime_opts = std::sync::Arc::new(
 		runtime_opts_spawn
 			.await
@@ -227,13 +201,9 @@ async fn run(
 				?;
 
 			log_tx.send(
-				logger::LogMessage {
-					level: logger::LogLevel::Info,
-					message: format!(
-						"Permissions for {} has been revoked",
-						config.metadata.sandbox_id,
-					),
-				},
+				logger::messages::LogMessage::Info(
+					logger::messages::info::InfoMessage::PermissionRevoked { config }
+				)
 			)
 			.await
 			.map_err(StartError::LogError)
@@ -250,17 +220,6 @@ async fn run(
 	{
 		ipc::register::RegisterStatus::Primary		=> {}
 		ipc::register::RegisterStatus::Secondary	=> {
-			#[cfg(debug_assertions)]
-			log_tx.send(
-				logger::LogMessage {
-					level: logger::LogLevel::Debug,
-					message: format!("Entering auxiliary mode"),
-				},
-			)
-			.await
-			.map_err(StartError::LogError)
-			?;
-
 			if ! config.advanced.tray_wake {
 				ipc::init::aux_start::start(
 					runtime_opts,
@@ -275,16 +234,15 @@ async fn run(
 
 				#[cfg(debug_assertions)]
 				log_tx.send(
-					logger::LogMessage {
-						level: logger::LogLevel::Debug,
-						message: format!("Requested AuxStart"),
-					},
+					logger::messages::LogMessage::Debug(
+						logger::messages::debug::DebugMessage::AuxRequested
+					)
 				)
 				.await
 				.map_err(StartError::LogError)
 				?;
 			} else {
-				ipc::init::tray::wake(config, &dbus_conn, log_tx)
+				ipc::init::tray::wake(config, &dbus_conn)
 					.await
 					.map_err(StartError::TrayError)
 					?;
@@ -317,16 +275,6 @@ async fn run(
 		)
 	};
 
-	#[cfg(debug_assertions)]
-	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Debug,
-			message: format!("Registered to session bus as primary"),
-		}
-	).await
-	.map_err(StartError::LogError)
-	?;
-
 	let instance_id = std::sync::Arc::new(
 		spawn::instance_id::generate_instance_id(
 			&xdg_dirs.runtime,
@@ -346,9 +294,9 @@ async fn run(
 		Ok(v)	=> v,
 		Err(e)	=> {
 			let _ = log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Warn,
-					message:	format!("Could not retrieve dynamic permissions: {e}") }
+				logger::messages::LogMessage::Warn(
+					logger::messages::warn::WarnMessage::DynamicPermissionsError(e)
+				)
 			)
 				.await;
 

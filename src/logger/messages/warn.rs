@@ -75,11 +75,19 @@ pub enum WarnMessage {
 
 	UserEnvLoadError(crate::envs::user::LoadError),
 	XdgEnvLoadError(crate::envs::xdg::XDGEnvError),
+
+	DynamicPermissionsError(crate::pref::permissions::consent::ConsentError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::DynamicPermissionsError(v)
+			=> {
+				f.write_fmt(
+					format_args!("Could not retrieve dynamic permissions: {v}")
+				)
+			}
 			Self::XdgEnvLoadError(v)	=> {
 				f.write_fmt(
 					format_args!("Could not load XDG environment variables: {v}")
