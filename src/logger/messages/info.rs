@@ -14,7 +14,10 @@ impl std::fmt::Display for InfoMessage {
 		match self {
 			Self::DaemonVersion			=> {
 				f.write_fmt(
-					format_args!("Portable daemon, version {}", env!("CARGO_PKG_VERSION_MAJOR"))
+					format_args!(
+						"Portable daemon, version {}",
+						env!("CARGO_PKG_VERSION_MAJOR"),
+					)
 				)
 			}
 			Self::ExposeDenied			=> {
