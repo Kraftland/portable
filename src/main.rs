@@ -19,7 +19,7 @@ async fn main() {
 
 
 	let (log_tx, log_task) = {
-		let (log_tx, log_rx) = tokio::sync::mpsc::channel(5);
+		let (log_tx, log_rx) = tokio::sync::mpsc::channel(16);
 		let pre_stop = stop_object.pre_parent.child_token();
 		(log_tx, tokio::spawn(logger::logger(log_rx, pre_stop)))
 	};
