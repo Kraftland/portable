@@ -29,7 +29,7 @@ async fn main() {
 		Err(e)	=> {
 			log_tx.send(
 				logger::messages::LogMessage::Fatal(
-					logger::messages::fatal::FatalMessage::StartError(e)
+					logger::messages::fatal::FatalMessage::StartError(Box::new(e))
 				)
 			).await.unwrap();
 			false
