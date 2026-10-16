@@ -3,7 +3,7 @@ pub enum FatalMessage {
 	UnitStateRetrieve(zbus::Error),
 	ProxyFailed(std::io::Error),
 	SendEnvs,
-	StartError(crate::errors::StartError),
+	StartError(Box<crate::errors::StartError>),
 }
 
 impl std::fmt::Display for FatalMessage {

@@ -19,12 +19,25 @@ pub enum DebugMessage {
 	EnvSet {
 		key:	String,
 		val:	String,
-	}
+	},
+
+	QuitProxy,
+	QuitSandbox,
+	QuitController,
 }
 
 impl std::fmt::Display for DebugMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::QuitController		=> {
+				f.write_str("Quit requested: IPC controller")
+			}
+			Self::QuitProxy			=> {
+				f.write_str("Quit requesed: D-Bus proxy finished")
+			}
+			Self::QuitSandbox		=> {
+				f.write_str("Quit requesed: sandbox finished")
+			}
 			Self::EnvSet { key, val }	=> {
 				f.write_fmt(
 					format_args!("Environment variable set: {key} = {val}")

@@ -8,7 +8,7 @@ use portable_daemon::pref;
 use portable_daemon::bind;
 use portable_daemon::spawn;
 
-use thiserror::Error;
+use portable_daemon::errors::StartError;
 
 pub use portable_daemon::errors;
 
@@ -575,10 +575,9 @@ async fn run(
 		_	=	bus_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	"Quit requested: D-Bus controller".to_string(),
-				}
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitController
+				)
 			)
 				.await
 				.map_err(StartError::LogError)
@@ -604,10 +603,9 @@ async fn run(
 		_	=	proxy_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	"Quit requested: D-Bus died".to_string(),
-				}
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitProxy
+				)
 			)
 				.await
 				.map_err(StartError::LogError)
@@ -617,10 +615,9 @@ async fn run(
 		_	=	spawn_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	"Quit requested: sandbox finished".to_string(),
-				}
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitSandbox
+				)
 			)
 				.await
 				.map_err(StartError::LogError)
