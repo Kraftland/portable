@@ -8,7 +8,6 @@
 pub async fn find(
 	runtime_dir: std::path::PathBuf,
 ) -> Result<std::path::PathBuf, super::DisplayBindError> {
-	use crate::bind::subsystems::display::exists;
 
 	/*
 		use WAYLAND_DISPLAY environment variable if it is set
@@ -29,7 +28,12 @@ pub async fn find(
 	if ! display_path.is_absolute() {
 		let mut path = runtime_dir;
 		path.push(display_path);
-		match exists(path.clone()).await.map_err(super::DisplayBindError::IOError)? {
+		match
+			tokio::fs::try_exists(&path)
+				.await
+				.map_err(super::DisplayBindError::IOError)
+				?
+			{
 			true	=> {
 				Ok(path)
 			}
@@ -38,7 +42,12 @@ pub async fn find(
 			}
 		}
 	} else {
-		match exists(display_path.clone()).await.map_err(super::DisplayBindError::IOError)? {
+		match
+			tokio::fs::try_exists(&display_path)
+				.await
+				.map_err(super::DisplayBindError::IOError)
+				?
+		{
 			true	=> {
 				Ok(display_path)
 			}

@@ -15,7 +15,7 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 		];
 		for path in paths {
 			let path = std::path::PathBuf::from(path);
-			if exists(path.clone()).await? {
+			if tokio::fs::try_exists(&path).await.map_err(InputError::IOError)? {
 				ret.push(
 					BindRule::Path {
 						source: path.clone(),
@@ -71,21 +71,9 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 
 #[derive(thiserror::Error, Debug)]
 pub enum InputError {
-	#[error("Could not determine if path exists")]
+	#[error("Could not determine if path exists: {0}")]
 	IOError(std::io::Error),
-
-	#[error("Could not determine if path exists: error spawning task: {0:#?}")]
-	SpawnError(tokio::task::JoinError),
 
 	#[error("Could not enumerate input devices: {0:#?}")]
 	EnumerateError(super::EnumerateError),
-}
-
-/**
-	Whether the path exists on filesystem
-*/
-pub async fn exists(path: std::path::PathBuf) -> Result<bool, InputError> {
-	tokio::task::spawn_blocking(|| {
-		std::fs::exists(path).map_err(InputError::IOError)
-	}).await.map_err(InputError::SpawnError)?
 }

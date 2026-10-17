@@ -146,9 +146,7 @@ async fn run(
 	log_tx.send(
 		logger::LogMessage {
 			level:		logger::LogLevel::Warn,
-			message:	format!(
-				"You are running a debug build of Portable",
-			),
+			message:	"You are running a debug build of Portable".to_string(),
 		},
 	)
 		.await
@@ -208,7 +206,7 @@ async fn run(
 		let bus = dbus_conn.clone();
 		tokio::spawn(
 			ipc::register::register(
-				config.metadata.sandbox_id.clone(),
+				config.metadata.sandbox_id.to_string(),
 				bus,
 			)
 		)

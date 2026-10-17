@@ -65,24 +65,6 @@ pub trait BindDisplay {
 	type DisplayBindError;
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum ExistError {
-	#[error("Could not determine if path exists")]
-	IOError(std::io::Error),
-
-	#[error("Could not determine if path exists: error spawning task: {0:#?}")]
-	SpawnError(tokio::task::JoinError),
-}
-
-/**
-	Whether the socket or file exists on filesystem
-*/
-pub async fn exists(path: std::path::PathBuf) -> Result<bool, ExistError> {
-	tokio::task::spawn_blocking(|| {
-		std::fs::exists(path).map_err(ExistError::IOError)
-	}).await.map_err(ExistError::SpawnError)?
-}
-
 mod session;
 
 /**
@@ -176,11 +158,11 @@ async fn bind(
 	if wayland {
 		let info = wayland::Wayland {
 			runtime_dir:		xdg.runtime.to_path_buf(),
-			env:			env,
-			portable_runtime:	portable_runtime,
-			logger:			logger,
-			app_id:			app_id,
-			instance_id:		instance_id,
+			env,
+			portable_runtime,
+			logger,
+			app_id,
+			instance_id,
 		};
 
 		if ! ime_applied {}

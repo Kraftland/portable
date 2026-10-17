@@ -392,7 +392,7 @@ pub async fn generate_bindrules(
 			base.extend(runtime_opts.app_args.to_owned());
 
 			if runtime_opts.debug_shell {
-				vec!["-i".to_string()]
+				vec!["--noprofile".to_string(), "-i".to_string()]
 			} else {
 				base
 			}
@@ -400,6 +400,7 @@ pub async fn generate_bindrules(
 		uclamp_min:		0,
 		uclamp_max:		config.system.uclamp_max,
 		console:		console::is_terminal(),
+		config,
 	};
 
 	Ok((ret, init_info, cancel_token))

@@ -3,8 +3,8 @@ pub enum DisplayBindError {
 	#[error("Could not bind X11 display: {0:#?}")]
 	SpawnError(tokio::task::JoinError),
 
-	#[error("I/O error: {0:#?}")]
-	IOError(crate::bind::subsystems::display::ExistError),
+	#[error("I/O error: {0}")]
+	IOError(std::io::Error),
 
 	#[error("Could not send environment variable: {0:#?}")]
 	SendEnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
@@ -66,7 +66,12 @@ impl super::BindDisplay for X11 {
 			}
 		};
 
-		match super::exists("/tmp/.X11-unix".into()).await.map_err(DisplayBindError::IOError)? {
+		match
+			tokio::fs::try_exists("/tmp/.X11-unix")
+				.await
+				.map_err(DisplayBindError::IOError)
+				?
+		{
 			true	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
@@ -145,7 +150,12 @@ impl super::BindDisplay for X11 {
 			).await.map_err(DisplayBindError::SendEnvError)?
 		};
 
-		match super::exists("/tmp/.XIM-unix".into()).await.map_err(DisplayBindError::IOError)? {
+		match
+			tokio::fs::try_exists("/tmp/.XIM-unix")
+				.await
+				.map_err(DisplayBindError::IOError)
+				?
+		{
 			true	=> {
 				Ok(vec![
 					crate::bind::types::BindRule::Path {

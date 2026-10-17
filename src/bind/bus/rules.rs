@@ -122,9 +122,9 @@ pub enum BusNameError {
 	BusNameTooLongError(usize),
 }
 
-impl Into<String> for BusName {
-	fn into(self) -> String {
-		self.name
+impl From<BusName> for String {
+	fn from(value: BusName) -> Self {
+		value.name
 	}
 }
 

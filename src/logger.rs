@@ -1,6 +1,18 @@
 mod config;
 
 /**
+	The messages module holds all possible logging messages.
+
+	They are defined in four different categories: debug, info, warn, critical.
+
+	The central LogMessage Enum holds aforementioned categories as enum variants, and those four
+	then hold the actual message.
+
+	Every variant must implement the std::fmt::Display trait.
+*/
+pub mod messages;
+
+/**
 	LoggingConfig designates the initial configuration for logging thread.
 
 	It has a function get() implemented by config module.
