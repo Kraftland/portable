@@ -92,6 +92,7 @@ impl Proxy {
 					let result = child.wait().await;
 					match result {
 						Ok(v)	=> {
+							#[cfg(debug_assertions)]
 							let _ = self.logger.send(
 								crate::logger::messages::LogMessage::Debug(
 									crate::logger::messages::debug::DebugMessage::ProxyExited(v.code())
