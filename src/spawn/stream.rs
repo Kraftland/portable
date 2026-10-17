@@ -24,10 +24,11 @@ pub async fn setup(
 		}
 		Err(e)			=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!("Could not get window size: {e:#?}"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::WindowSize(
+						e
+					)
+				)
 			).await;
 			(80, 24)
 		}
@@ -41,35 +42,22 @@ pub async fn setup(
 	{
 		use std::os::fd::AsRawFd;
 		let _ = logger.send(
-		crate::logger::LogMessage {
-			level: crate::logger::LogLevel::Debug,
-			message: format!(
-				"Allocated pty master (fd:{0:?}) and slave (fd:{1:?})",
-					pty.master.as_raw_fd(),
-					pty.slave.as_raw_fd(),
-				),
-			}
+			crate::logger::messages::LogMessage::Debug(
+				crate::logger::messages::debug::DebugMessage::PtyAllocated {
+					master:	pty.master.as_raw_fd(),
+					slave:	pty.slave.as_raw_fd(),
+				}
+			)
 		).await;
 	};
 
 	match raw_mode(stop_obj).await {
-		Ok(_)	=> {
-			#[cfg(debug_assertions)]
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Debug,
-					message: format!("Successfully set console to raw mode"),
-				}
-			).await;
-		}
+		Ok(_)	=> {}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!(
-						"Could not put console into RAW mode: {e:#?}",
-					),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::ConsoleRawError(e)
+				)
 			).await;
 		}
 	}

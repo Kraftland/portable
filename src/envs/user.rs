@@ -81,11 +81,13 @@ pub async fn load_user_envs(
 				map.insert(k.to_string(), v.to_string());
 			}
 			None		=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = log.send(
-					crate::logger::LogMessage {
-						level:	crate::logger::LogLevel::Warn,
-						message: format!("Malformed environment: {line}"),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::InvalidUserEnvironment(
+							line.to_string(),
+						)
+					)
 				).await;
 				continue;
 			}

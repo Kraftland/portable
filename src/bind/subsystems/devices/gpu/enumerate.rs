@@ -4,7 +4,7 @@
 	Errors needs to be handled gracefully.
 */
 pub async fn enumerate(
-	logger:	&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	logger:	&crate::logger::LogSender,
 ) -> Result<Vec<super::GPUInfo>, super::GPUError> {
 	let devices = crate::bind::subsystems::devices::enumerate(
 		crate::bind::subsystems::devices::Filter::SubsystemWithDevtype {
@@ -15,13 +15,6 @@ pub async fn enumerate(
 		.await
 		.map_err(super::GPUError::Enumerate)
 		?;
-
-	let _ = logger.send(
-		crate::logger::LogMessage {
-			level: crate::logger::LogLevel::Debug,
-			message: format!("Enumerated {} cards and renderers", devices.len()),
-		}
-	).await;
 
 	let gpus = super::associate::associate(devices, &logger).await;
 

@@ -61,7 +61,6 @@ async fn compile_rules(
 
 	let (proxy_socket_path, app_sandbox) = address::get_address_with_sandbox(
 		portable_dir,
-		&logger,
 	)
 		.await
 		?;

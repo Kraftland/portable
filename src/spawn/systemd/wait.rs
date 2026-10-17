@@ -8,14 +8,6 @@ pub async fn wait(
 	cancel_token:	tokio_util::sync::CancellationToken,
 	logger:		crate::logger::LogSender,
 ) -> Result<(), zbus::Error> {
-	#[cfg(debug_assertions)]
-	let _ = logger.send(
-		crate::logger::LogMessage {
-			level:		crate::logger::LogLevel::Debug,
-			message:	format!("Listening on object path: {escaped_path:?}"),
-		}
-	).await;
-
 	let proxy = PropertiesProxy::new(conn, escaped_path)
 		.await
 		?;
@@ -31,42 +23,27 @@ pub async fn wait(
 				let state = match v.get().await {
 					Ok(v)	=> {ActiveState::from(v.as_str())}
 					Err(e)	=> {
+						use crate::logger::messages::fatal::FatalMessage;
 						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Fatal,
-								message: format!(
-									"Could not get ActiveState: {e:#?}",
-								),
-							}
+							crate::logger::messages::LogMessage::Fatal(
+								FatalMessage::UnitStateRetrieve(e)
+							)
 						).await;
 						cancel_token.cancel();
 						return;
 					}
 				};
 
-				#[cfg(debug_assertions)]
-				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!(
-							"Updated unit state: {state:?}",
-						),
-					}
-				)
-					.await;
-
 				match state {
 					ActiveState::Active	=> {
 						activated = true;
 					}
 					ActiveState::Failed	=> {
+						use crate::logger::messages::warn::WarnMessage;
 						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Warn,
-								message: format!(
-									"Unit has failed",
-								),
-							}
+							crate::logger::messages::LogMessage::Warn(
+								WarnMessage::UnitFailed
+							)
 						).await;
 						break;
 					}
@@ -77,22 +54,14 @@ pub async fn wait(
 					}
 					ActiveState::Others { state }
 								=> {
+						use crate::logger::messages::warn::WarnMessage;
 						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:	crate::logger::LogLevel::Warn,
-								message: format!(
-									"Unknown unit state: {state}",
-								),
-							}
+							crate::logger::messages::LogMessage::Warn(
+								WarnMessage::InvalidUnitState(state)
+							)
 						).await;
 					}
-					v			=> {
-						let _ = logger.send(
-							crate::logger::LogMessage {
-								level:		crate::logger::LogLevel::Warn,
-								message:	format!("Unexpected unit state: {v:?}") }
-						).await;
-					}
+					_			=> {}
 				}
 			}
 

@@ -448,7 +448,7 @@ pub mod devices;
 pub mod dirs;
 
 #[cfg(feature = "display")]
-mod display;
+pub mod display;
 
 pub mod mask;
 

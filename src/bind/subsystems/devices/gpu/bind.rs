@@ -3,7 +3,7 @@
 */
 pub async fn generate_bind_rules(
 	gpu:		super::GPUInfo,
-	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	logger:		crate::logger::LogSender,
 ) -> Vec<crate::bind::types::BindRule> {
 	use crate::bind::types::BindRule;
 	use super::GPUVendor;
@@ -76,12 +76,9 @@ pub async fn generate_bind_rules(
 				}
 				super::nvidia::NVIDIADriver::Unknown { driver }	=> {
 					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!(
-								"Unknown nvidia driver: {driver:?}",
-							),
-						},
+						crate::logger::messages::LogMessage::Warn(
+							crate::logger::messages::warn::WarnMessage::UnknownNVIDIADriver(driver)
+						)
 					).await;
 				}
 			}
@@ -93,10 +90,9 @@ pub async fn generate_bind_rules(
 
 		GPUVendor::Others	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Could not apply GPU quirks: unknown vendor"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::UnknownGPUVendor,
+				)
 			).await;
 		}
 	};

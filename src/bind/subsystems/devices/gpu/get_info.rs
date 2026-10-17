@@ -78,14 +78,13 @@ async fn device_is_boot_display(
 
 	match boot_vga {
 		Some("1")	=> {
+			use crate::logger::messages::warn::WarnMessage;
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!(
-						"{:?} is using deprecated boot_vga property",
-						card_device.syspath(),
-					)
-				}
+				crate::logger::messages::LogMessage::Warn(
+					WarnMessage::BootVGADeprecated(
+						parent_device.syspath().to_path_buf(),
+					),
+				)
 			).await;
 			Ok(true)
 		},

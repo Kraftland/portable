@@ -2,20 +2,18 @@
 	Scan /dev/ for nvidia device nodes that aren't in udev database
 */
 pub fn get_nvidia_devices(
-	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	logger:		&crate::logger::LogSender,
 ) -> Vec<std::path::PathBuf> {
-	use crate::logger::LogMessage;
-	use crate::logger::LogLevel;
 	let dir = {
 		let dir = std::fs::read_dir("/dev");
 		match dir {
 			Ok(v)	=> {v}
 			Err(e)	=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = logger.blocking_send(
-					LogMessage {
-						level: LogLevel::Warn,
-						message: format!("Could not read /dev: {e:#?}"),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::DevNVIDIAScanError(e),
+					)
 				);
 				return vec![];
 			}
@@ -32,11 +30,11 @@ pub fn get_nvidia_devices(
 				}
 			}
 			Err(e)	=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = logger.blocking_send(
-					LogMessage {
-						level: LogLevel::Warn,
-						message: format!("Could not read /dev entry: {e:#?}"),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::DevNVIDIAScanError(e),
+					)
 				);
 			}
 		}
