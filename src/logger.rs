@@ -123,8 +123,8 @@ pub async fn logger (
 
 	while let Some(msg) = log_rx.recv().await {
 		match msg {
+			#[cfg(debug_assertions)]
 			messages::LogMessage::Debug(_)	=> {
-				#[cfg(debug_assertions)]
 				println!("{}\t{}", debug_fmt, msg);
 			}
 			messages::LogMessage::Info(_)	=> {
