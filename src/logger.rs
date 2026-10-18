@@ -1,5 +1,8 @@
 mod config;
 
+#[cfg(test)]
+mod test;
+
 /**
 	The messages module holds all possible logging messages.
 
