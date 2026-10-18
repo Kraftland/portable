@@ -93,7 +93,7 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 
 				let _ = self.logger.send(
 					LogMessage::Info(
-						InfoMessage::DynamicPermissionStoreError(e)
+						InfoMessage::DynamicPermissionStoreError(e.into())
 					)
 				).await;
 				vec![]

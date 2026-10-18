@@ -3,7 +3,7 @@ pub enum InfoMessage {
 		config:	std::sync::Arc<crate::config::Config>,
 	},
 
-	DynamicPermissionStoreError(zbus::Error),
+	DynamicPermissionStoreError(Box<zbus::Error>),
 	ExposeDenied,
 
 	DaemonVersion,
