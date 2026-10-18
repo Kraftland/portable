@@ -8,6 +8,8 @@
 #[test]
 #[cfg(not(debug_assertions))]
 fn logger_is_not_bigger() {
+	use crate::logger::messages;
+
 	let new_size = std::mem::size_of::<messages::LogMessage>();
 
 	println!("Size of next generation logger is {new_size}");
