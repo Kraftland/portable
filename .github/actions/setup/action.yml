@@ -4,10 +4,13 @@ runs:
   using: composite
   steps:
     - name: Update host
+      shell: bash
       run: sudo apt-get update
 
     - name: Install Dependencies
+      shell: bash
       run: sudo apt install -y libudev-dev systemd libsystemd-dev
 
     - name: Initialise submodules
+      shell: bash
       run: git submodule update --init --recursive
