@@ -28,7 +28,9 @@ pub enum ZenityError {
 /**
 	A Zenity permission object we implement to translate:
 
-		DynamicPermission (singular) <-> ZenityPermissionObject <-> Vec<String>
+	```text
+	DynamicPermission (singular) <-> ZenityPermissionObject <-> Vec<String>
+	```
 
 	We expect our Zenity dialogue to have 3 columns (albeit 1 hidden):
 	Allow (checkbox) | Internal Permission Unique ID (hidden) | Description
