@@ -8,14 +8,14 @@ on:
   push:
     branches: [ "master" ]
 
+
 jobs:
-  setup:
-    uses: ./.github/workflows/pre-run.yml
 
   build:
-    needs: setup
     runs-on: ubuntu-latest
     steps:
+
+    - uses: ./.github/workflows/pre-run.yml
 
     - name: Run clippy
       run: |

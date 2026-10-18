@@ -3,9 +3,9 @@ name: Setup build environment
 on:
   workflow_call:
 
-jobs:
-
-  build:
+runs:
+  using: composite
+  steps:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
