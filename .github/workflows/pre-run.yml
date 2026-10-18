@@ -1,4 +1,4 @@
-name: Setup build environment
+name: Setup build environment (checkout first)
 
 on:
   workflow_call:
@@ -8,8 +8,6 @@ runs:
   steps:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
-
     - name: Update host
       run: sudo apt-get update
 
