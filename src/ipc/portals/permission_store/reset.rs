@@ -51,8 +51,8 @@ pub async fn reset_permissions(
 				let _ = logger.send(
 					crate::logger::messages::LogMessage::Warn(
 						WarnMessage::PermissionStoreResetError {
-							table:	item.table().to_string(),
-							id:	item.id().to_string(),
+							table:	item.table().to_string().into(),
+							id:	item.id().to_string().into(),
 							err:	e,
 						}
 					)

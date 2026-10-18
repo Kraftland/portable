@@ -26,8 +26,8 @@ pub enum WarnMessage {
 	ExposePermissionRetrieve(zbus::Error),
 
 	PermissionStoreResetError{
-		table:	String,
-		id:	String,
+		table:	Box<String>,
+		id:	Box<String>,
 		err:	zbus::fdo::Error,
 	},
 
