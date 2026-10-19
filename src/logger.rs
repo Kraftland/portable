@@ -91,6 +91,7 @@ pub async fn logger (
 
 	loop {
 		let msg = tokio::select! {
+			biased;
 			msg	=	log_rx.recv()			=> {msg}
 			_	=	stop.pre_parent.cancelled()	=> {return;}
 		};
