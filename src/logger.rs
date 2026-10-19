@@ -89,25 +89,57 @@ pub async fn logger (
 	#[cfg(debug_assertions)]
 	println!("{}\tUsing logger configuration: {:#?}", &debug_fmt, &logging_config);
 
-	while let Some(msg) = log_rx.recv().await {
-		match msg {
-			#[cfg(debug_assertions)]
-			messages::LogMessage::Debug(_)	=> {
-				println!("{}\t{}", debug_fmt, msg);
-			}
-			messages::LogMessage::Info(_)	=> {
-				println!("{}\t\t{}", info_fmt, msg);
-			}
-			messages::LogMessage::Warn(_)	=> {
-				eprintln!("{}\t\t{}", warn_fmt, msg);
-			}
-			messages::LogMessage::Fatal(_)	=> {
-				eprintln!("{}\t{}", fatal_fmt, msg);
-			}
+	loop {
+		let msg = tokio::select! {
+			msg	=	log_rx.recv()			=> {msg}
+			_	=	stop.pre_parent.cancelled()	=> {return;}
 		};
 
-		if stop.pre_parent.is_cancelled() {
-			log_rx.close();
+		let msg = match msg {
+			Some(v)	=> {v}
+			None	=> {return;}
+		};
+
+		log(
+			msg,
+			#[cfg(debug_assertions)]
+			debug_fmt,
+			info_fmt,
+			warn_fmt,
+			fatal_fmt,
+		);
+	}
+}
+
+/**
+	Handle the actual logging stuff. Splitting would allow us to perform inlining
+*/
+#[inline]
+fn log(
+	msg:		messages::LogMessage,
+
+	#[cfg(debug_assertions)]
+	debug_fmt:	&str,
+
+	info_fmt:	&str,
+
+	warn_fmt:	&str,
+
+	fatal_fmt:	&str,
+) {
+	match msg {
+		#[cfg(debug_assertions)]
+		messages::LogMessage::Debug(_)	=> {
+			println!("{}\t{}", debug_fmt, msg);
+		}
+		messages::LogMessage::Info(_)	=> {
+			println!("{}\t\t{}", info_fmt, msg);
+		}
+		messages::LogMessage::Warn(_)	=> {
+			eprintln!("{}\t\t{}", warn_fmt, msg);
+		}
+		messages::LogMessage::Fatal(_)	=> {
+			eprintln!("{}\t{}", fatal_fmt, msg);
 		}
 	};
 }
