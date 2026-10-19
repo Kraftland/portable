@@ -40,14 +40,19 @@ x11 = false
 # When false, prevents application from connecting to legacy notifications endpoint. Defaults to true.
 classicNotifications = false
 
-# When true, exposes camera devices in the sandbox. Defaults to false.
-cameras = false
+# Lockdown is a set of rules
+# 	that aims to reduce the attack surface within a sandbox.
+# It contains many additional protections
 
-# When true, allows application to connect to PipeWire server. Note that a proxy is set up to prevent privileged actions. Defaults to false.
-pipeWire = false
-
-# When true, allows application to receive Input events, particularly useful for Games. Defaults to false.
-input = false
+# Previously lockdown (bool)
+[privacy.lockdown_options]
+# System call filtering in whitelist rather than blacklist
+# 	prevents non-native system calls to be made
+# 	(e.g. X86 on X86_64 systems)
+seccomp_whitelist = false
+# Landlock as another layer of filesystem security,
+# 	blocks reparent of /, effectively prevents manipulation of mount points
+landlock = true
 
 # Do not use. May break apps.
 [advanced]
@@ -57,6 +62,3 @@ mprisName = []
 trayWake = false
 kDEStatus = true
 flatpakInfo = true
-
-# Enables landlock for additional protection, breaks many apps.
-landlock = false
