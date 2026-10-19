@@ -4,7 +4,6 @@ pub async fn stop(
 	mut rx:	tokio::sync::mpsc::UnboundedReceiver<StopMessage>,
 	pre:	tokio_util::sync::CancellationToken,
 	post:	tokio_util::sync::CancellationToken,
-	succ:	bool,
 ) {
 	rx.close();
 
@@ -60,13 +59,4 @@ pub async fn stop(
 			}
 		};
 	};
-
-	#[cfg(debug_assertions)]
-	println!("Finished stop sequence");
-
-	if succ {
-		std::process::exit(0)
-	} else {
-		std::process::exit(1)
-	}
 }

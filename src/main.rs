@@ -13,7 +13,7 @@ use portable_daemon::errors::StartError;
 pub use portable_daemon::errors;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::process::ExitCode {
 	let (stop_object, stop_drainer) = stop::Stop::new().await;
 
 
@@ -23,15 +23,17 @@ async fn main() {
 		(log_tx, tokio::spawn(logger::logger(log_rx, stop_object.clone())))
 	};
 
-	let success = match run(log_tx.clone(), stop_object.clone()).await {
-		Ok(_)	=> {true}
+	let exit_code = match run(log_tx.clone(), stop_object.clone()).await {
+		Ok(_)	=> {
+			std::process::ExitCode::SUCCESS
+		}
 		Err(e)	=> {
 			log_tx.send(
 				logger::messages::LogMessage::Fatal(
 					logger::messages::fatal::FatalMessage::StartError(Box::new(e))
 				)
 			).await.unwrap();
-			false
+			std::process::ExitCode::FAILURE
 		}
 	};
 
@@ -39,9 +41,13 @@ async fn main() {
 		stop_drainer,
 		stop_object.pre_parent.clone(),
 		stop_object.post_cancel.clone(),
-		success,
 	).await;
-	log_task.await.unwrap();
+
+	log_task
+		.await
+		.expect("Could not wait for logging thread");
+
+	exit_code
 }
 
 async fn run(
