@@ -31,14 +31,11 @@ pub async fn generate_instance_id(
 				?;
 			match res {
 				true	=> {
+					use crate::logger::messages::warn::WarnMessage;
 					let _ = logger.send(
-						crate::logger::LogMessage {
-							level: crate::logger::LogLevel::Warn,
-							message: format!(
-								"Instance ID collided with Flatpak: {}",
-								id,
-							),
-						},
+						crate::logger::messages::LogMessage::Warn(
+							WarnMessage::InstanceIDCollided(id)
+						)
 					).await;
 					continue;
 				}

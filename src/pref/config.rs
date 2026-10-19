@@ -43,6 +43,19 @@ enum ConfigType {
 	LegacyBash { path: std::path::PathBuf },
 }
 
+impl From<&ConfigType> for std::path::PathBuf {
+	fn from(value: &ConfigType) -> Self {
+		match value {
+			ConfigType::TOML { path }	=> {
+				path.to_path_buf()
+			}
+			ConfigType::LegacyBash { path }	=> {
+				path.to_path_buf()
+			}
+		}
+	}
+}
+
 pub async fn get(
 	logger:		crate::logger::LogSender,
 	config_home:	std::path::PathBuf,
@@ -84,14 +97,16 @@ pub async fn get(
 	};
 
 	#[cfg(debug_assertions)]
-	let _ = logger.send(
-		crate::logger::LogMessage {
-			level: crate::logger::LogLevel::Debug,
-			message: format!(
-				"Picked configuration: {config_info:?}, other errors were: {config_errors:?}",
-			),
-		},
-	).await;
+	{
+		use crate::logger::messages::LogMessage;
+		let _ = logger.send(
+			LogMessage::Debug(
+				crate::logger::messages::debug::DebugMessage::FoundConfig(
+					(&config_info).into(),
+				)
+			)
+		).await;
+	};
 
 	match config_info {
 		ConfigType::TOML { path }	=> {

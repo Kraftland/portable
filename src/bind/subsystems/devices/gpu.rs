@@ -35,7 +35,7 @@ pub enum GPUError {
 	The public function scan implements the GPU binding subsystem
 */
 pub async fn scan(
-	logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	logger:		crate::logger::LogSender,
 	all_gpus:	bool,
 	envs:		crate::envs::holder::HoldChannel,
 	zink:		bool,
@@ -50,10 +50,9 @@ pub async fn scan(
 			Ok(v)	=> {v}
 			Err(e)	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Could not enumerate GPUs: {e:#?}"),
-					},
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::EnumerateGPUError(e)
+					)
 				).await;
 				return Ok(vec![]);
 			}
@@ -64,13 +63,9 @@ pub async fn scan(
 		Ok(v)	=> {v}
 		Err(e)	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!(
-						"Could not apply NVIDIA quirks: {:#?}",
-						e,
-					),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::GPUSpawnError(e),
+				)
 			).await;
 			vec![]
 		}
@@ -177,7 +172,7 @@ pub async fn scan(
 
 
 pub async fn gputest_print_all_devices(
-	tx: &tokio::sync::mpsc::Sender<crate::logger::LogMessage>
+	tx:	&crate::logger::LogSender
 ) -> String {
 	let res = enumerate::enumerate(&tx).await.unwrap();
 	format!("{res:#?}")

@@ -8,78 +8,9 @@ use portable_daemon::pref;
 use portable_daemon::bind;
 use portable_daemon::spawn;
 
-use thiserror::Error;
+use portable_daemon::errors::StartError;
 
-#[derive(Debug, Error)]
-enum StartError {
-	#[error("Could not contact logging thread: {0:#?}")]
-	LogError(tokio::sync::mpsc::error::SendError<logger::LogMessage>),
-
-	#[error("Could not read config: {0:#?}")]
-	ConfigError(config::ConfigError),
-
-	#[error("Could not populate XDG Base Directories: {0:#?}")]
-	XdgError(xdg::XdgError),
-
-	#[error("Could not spawn thread: {0:#?}")]
-	SpawnError(tokio::task::JoinError),
-
-	#[error("Could not register D-Bus service: {0:#?}")]
-	BusError(ipc::register::RegisterError),
-
-	#[error("Could not parse runtime options: {0:#?}")]
-	RuntimeOptError(portable_daemon::pref::runtime::cmdline::RuntimeOptsError),
-
-	#[error("Could not share files or directories: {0:#?}")]
-	ShareError(portable_daemon::pref::runtime::cmdline::share_file::ShareError),
-
-	#[error("Could not stop remote sandbox: {0:#?}")]
-	StopControllerError(portable_daemon::ipc::controller::quit::StopError),
-
-	#[error("Could not generate a suitable instance ID: {0:#?}")]
-	InstanceIDError(spawn::instance_id::InstanceIDError),
-
-	#[cfg(feature = "flatpak")]
-	#[error("Could not create Flatpak runtime path: {0:#?}")]
-	FlatpakRuntimePathError(bind::subsystems::dirs::flatpak::Error),
-
-	#[error("Could not create Flatpak Info: {0:#?}")]
-	FlatpakInfoError(bind::flatpak_info::FlatpakInfoError),
-
-	#[error("Could not create Portable runtime path: {0:#?}")]
-	PortableRuntimePathError(bind::subsystems::dirs::portable_runtime::Error),
-
-	#[error("Could not create Documents Portal path: {0:#?}")]
-	DocumentRuntimePathError(bind::subsystems::dirs::documents::DocumentError),
-
-	#[error("Could not start D-Bus proxy: {0:#?}")]
-	ProxyError(bind::bus::proxies::StartProxyError),
-
-	#[error("Could not generate bind rules: {0:#?}")]
-	BindError(bind::subsystems::BindError),
-
-	#[error("Could not publish info for Init: {0:#?}")]
-	InitPublishError(zbus::Error),
-
-	#[error("Could not spawn sandbox: {0:#?}")]
-	SpawnSandboxError(spawn::StartAppError),
-
-	#[error("Could not start auxiliary instance: {0:#?}")]
-	AuxStartError(ipc::init::aux_start::AuxStartError),
-
-	#[error("Could not wake up application via tray: {0:#?}")]
-	TrayError(ipc::init::tray::WakeError),
-
-	#[error("Could not reset app permission: {0:#?}")]
-	ResetError(pref::runtime::cmdline::ResetError),
-
-	#[error("Could not open sandbox home: {0:#?}")]
-	OpenHomeError(zbus::Error),
-
-	#[cfg(feature = "desktop-file")]
-	#[error("Could not parse desktop file: {0}")]
-	DesktopFileError(pref::runtime::desktop_file::InstallDesktopFileError),
-}
+pub use portable_daemon::errors;
 
 #[tokio::main]
 async fn main() {
@@ -88,19 +19,17 @@ async fn main() {
 
 
 	let (log_tx, log_task) = {
-		let (log_tx, log_rx) = tokio::sync::mpsc::channel(5);
-		let pre_stop = stop_object.pre_parent.child_token();
-		(log_tx, tokio::spawn(logger::logger(log_rx, pre_stop)))
+		let (log_tx, log_rx) = tokio::sync::mpsc::channel(16);
+		(log_tx, tokio::spawn(logger::logger(log_rx, stop_object.clone())))
 	};
 
 	let success = match run(log_tx.clone(), stop_object.clone()).await {
 		Ok(_)	=> {true}
 		Err(e)	=> {
 			log_tx.send(
-				logger::LogMessage {
-					level: logger::LogLevel::Fatal,
-					message: format!("{e}"),
-				},
+				logger::messages::LogMessage::Fatal(
+					logger::messages::fatal::FatalMessage::StartError(Box::new(e))
+				)
 			).await.unwrap();
 			false
 		}
@@ -130,13 +59,9 @@ async fn run(
 	};
 
 	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Info,
-			message: format!(
-				"Portable daemon version {}",
-				env!("CARGO_PKG_VERSION_MAJOR"),
-			),
-		},
+		logger::messages::LogMessage::Info(
+			logger::messages::info::InfoMessage::DaemonVersion
+		)
 	)
 		.await
 		.map_err(StartError::LogError)
@@ -144,10 +69,7 @@ async fn run(
 
 	#[cfg(debug_assertions)]
 	log_tx.send(
-		logger::LogMessage {
-			level:		logger::LogLevel::Warn,
-			message:	"You are running a debug build of Portable".to_string(),
-		},
+		logger::messages::LogMessage::Warn(logger::messages::warn::WarnMessage::DebugBuild)
 	)
 		.await
 		.map_err(StartError::LogError)
@@ -211,28 +133,6 @@ async fn run(
 			)
 		)
 	};
-
-	#[cfg(debug_assertions)]
-	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Debug,
-			message: format!("Resolved configuration: {config:#?}"),
-		}
-	)
-		.await
-		.map_err(StartError::LogError)
-		?;
-
-	#[cfg(debug_assertions)]
-	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Debug,
-			message: format!("Populated XDG Base Directories: {xdg_dirs:#?}"),
-		}
-	)
-		.await
-		.map_err(StartError::LogError)
-		?;
 
 	let runtime_opts = std::sync::Arc::new(
 		runtime_opts_spawn
@@ -300,13 +200,9 @@ async fn run(
 				?;
 
 			log_tx.send(
-				logger::LogMessage {
-					level: logger::LogLevel::Info,
-					message: format!(
-						"Permissions for {} has been revoked",
-						config.metadata.sandbox_id,
-					),
-				},
+				logger::messages::LogMessage::Info(
+					logger::messages::info::InfoMessage::PermissionRevoked { config }
+				)
 			)
 			.await
 			.map_err(StartError::LogError)
@@ -323,17 +219,6 @@ async fn run(
 	{
 		ipc::register::RegisterStatus::Primary		=> {}
 		ipc::register::RegisterStatus::Secondary	=> {
-			#[cfg(debug_assertions)]
-			log_tx.send(
-				logger::LogMessage {
-					level: logger::LogLevel::Debug,
-					message: format!("Entering auxiliary mode"),
-				},
-			)
-			.await
-			.map_err(StartError::LogError)
-			?;
-
 			if ! config.advanced.tray_wake {
 				ipc::init::aux_start::start(
 					runtime_opts,
@@ -348,16 +233,15 @@ async fn run(
 
 				#[cfg(debug_assertions)]
 				log_tx.send(
-					logger::LogMessage {
-						level: logger::LogLevel::Debug,
-						message: format!("Requested AuxStart"),
-					},
+					logger::messages::LogMessage::Debug(
+						logger::messages::debug::DebugMessage::AuxRequested
+					)
 				)
 				.await
 				.map_err(StartError::LogError)
 				?;
 			} else {
-				ipc::init::tray::wake(config, &dbus_conn, log_tx)
+				ipc::init::tray::wake(config, &dbus_conn)
 					.await
 					.map_err(StartError::TrayError)
 					?;
@@ -390,16 +274,6 @@ async fn run(
 		)
 	};
 
-	#[cfg(debug_assertions)]
-	log_tx.send(
-		logger::LogMessage {
-			level: logger::LogLevel::Debug,
-			message: format!("Registered to session bus as primary"),
-		}
-	).await
-	.map_err(StartError::LogError)
-	?;
-
 	let instance_id = std::sync::Arc::new(
 		spawn::instance_id::generate_instance_id(
 			&xdg_dirs.runtime,
@@ -419,9 +293,9 @@ async fn run(
 		Ok(v)	=> v,
 		Err(e)	=> {
 			let _ = log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Warn,
-					message:	format!("Could not retrieve dynamic permissions: {e}") }
+				logger::messages::LogMessage::Warn(
+					logger::messages::warn::WarnMessage::DynamicPermissionsError(e)
+				)
 			)
 				.await;
 
@@ -648,10 +522,9 @@ async fn run(
 		_	=	bus_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	"Quit requested: D-Bus controller".to_string(),
-				}
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitController
+				)
 			)
 				.await
 				.map_err(StartError::LogError)
@@ -677,10 +550,9 @@ async fn run(
 		_	=	proxy_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	"Quit requested: D-Bus died".to_string(),
-				}
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitProxy
+				)
 			)
 				.await
 				.map_err(StartError::LogError)
@@ -690,10 +562,9 @@ async fn run(
 		_	=	spawn_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
-				logger::LogMessage {
-					level:		logger::LogLevel::Debug,
-					message:	"Quit requested: sandbox finished".to_string(),
-				}
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitSandbox
+				)
 			)
 				.await
 				.map_err(StartError::LogError)

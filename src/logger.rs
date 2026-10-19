@@ -1,5 +1,8 @@
 mod config;
 
+#[cfg(test)]
+mod test;
+
 /**
 	The messages module holds all possible logging messages.
 
@@ -33,23 +36,11 @@ pub enum ColourVariant {
 	Special,
 }
 
-pub enum LogLevel {
-	Debug,
-	Info,
-	Warn,
-	Fatal,
-}
-
-pub struct LogMessage {
-	pub level:		LogLevel,
-	pub message:		String,
-}
-
-pub type LogSender = tokio::sync::mpsc::Sender<LogMessage>;
+pub type LogSender = tokio::sync::mpsc::Sender<messages::LogMessage>;
 
 pub async fn logger (
-	mut log_rx:	tokio::sync::mpsc::Receiver<LogMessage>,
-	stop_token:	tokio_util::sync::CancellationToken,
+	mut log_rx:	tokio::sync::mpsc::Receiver<messages::LogMessage>,
+	stop:		std::sync::Arc<crate::stop::Stop>,
 )
 {
 	let logging_config = LoggingConfig::get();
@@ -98,38 +89,25 @@ pub async fn logger (
 	#[cfg(debug_assertions)]
 	println!("{}\tUsing logger configuration: {:#?}", &debug_fmt, &logging_config);
 
-	loop {
-		let msg = tokio::select! {
-			biased;
-			log_msg = log_rx.recv()			=> {
-				match log_msg {
-					Some(v)	=> v,
-					None	=> {
-						return;
-					}
-				}
+	while let Some(msg) = log_rx.recv().await {
+		match msg {
+			#[cfg(debug_assertions)]
+			messages::LogMessage::Debug(_)	=> {
+				println!("{}\t{}", debug_fmt, msg);
 			}
-			_	= stop_token.cancelled()	=> {
-				return ;
+			messages::LogMessage::Info(_)	=> {
+				println!("{}\t\t{}", info_fmt, msg);
+			}
+			messages::LogMessage::Warn(_)	=> {
+				eprintln!("{}\t\t{}", warn_fmt, msg);
+			}
+			messages::LogMessage::Fatal(_)	=> {
+				eprintln!("{}\t{}", fatal_fmt, msg);
 			}
 		};
 
-		match msg.level {
-			LogLevel::Debug	=> {
-				#[cfg(debug_assertions)]
-				println!("{}\t{}", debug_fmt, msg.message);
-			}
-			LogLevel::Info => {
-				println!("{}\t\t{}", info_fmt, msg.message);
-			}
-			LogLevel::Warn => {
-				eprintln!("{}\t\t{}", warn_fmt, msg.message);
-			}
-			LogLevel::Fatal => {
-				eprintln!("{}\t{}", fatal_fmt, msg.message);
-			}
+		if stop.pre_parent.is_cancelled() {
+			log_rx.close();
 		}
-	}
-
-
+	};
 }

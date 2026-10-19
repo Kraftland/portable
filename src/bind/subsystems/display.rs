@@ -99,19 +99,17 @@ async fn bind(
 		}
 		session::SessionType::X11	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("X11 is insecure!"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::X11SessionType,
+				)
 			).await;
 			x11 = true
 		}
 		session::SessionType::Unknown	=> {
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!("Unknown session type!"),
-				}
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::UnknownSessionType,
+				)
 			).await;
 		}
 	};

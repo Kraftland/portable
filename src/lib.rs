@@ -8,5 +8,6 @@ pub mod envs;
 pub mod ipc;
 pub mod spawn;
 pub mod pref;
+pub mod errors;
 
 pub use pref::config;

@@ -5,6 +5,9 @@ on:
     types: released
   pull_request:
     branches: [ "master" ]
+  push:
+    branches: [ "master" ]
+
 
 jobs:
 
@@ -13,14 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Update host
-      run: sudo apt-get update
-
-    - name: Install Dependencies
-      run: sudo apt install -y libudev-dev systemd libsystemd-dev
-
-    - name: Initialise submodules
-      run: git submodule update --init --recursive
+    - uses: ./.github/actions/setup
 
     - name: Run clippy
       run: |

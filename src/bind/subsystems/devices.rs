@@ -22,7 +22,7 @@ pub struct Devices {
 	pub bind_camera:	bool,
 	pub bind_input:		bool,
 	pub bind_kvm:		bool,
-	pub logger:		tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	pub logger:		crate::logger::LogSender,
 	pub envs:		crate::envs::holder::HoldChannel,
 }
 

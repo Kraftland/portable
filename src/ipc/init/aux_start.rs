@@ -94,16 +94,6 @@ pub async fn start(
 
 	let env_var = crate::envs::forward::get();
 
-	#[cfg(debug_assertions)]
-	let _ = logger.send(
-		crate::logger::LogMessage {
-			level:		crate::logger::LogLevel::Debug,
-			message: format!("Forwarding variables: {env_var:#?}"),
-		}
-	).await;
-
-
-
 	if crate::bind::subsystems::console::is_terminal() {
 		let cancel_token = tokio_util::sync::CancellationToken::new();
 		proxy.request_start(

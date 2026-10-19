@@ -4,7 +4,7 @@
 */
 pub async fn associate(
 	devices:	Vec<udev::Device>,
-	logger:		&tokio::sync::mpsc::Sender<crate::logger::LogMessage>,
+	logger:		&crate::logger::LogSender,
 ) -> Vec<super::GPUDevice> {
 	// The map is for holding (card, renderer)
 	let mut map: std::collections::HashMap
@@ -16,12 +16,11 @@ pub async fn associate(
 			Some(v)	=> v,
 			None	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!(
-						"GPU {:?} does not have ID_PATH property", device.sysname(),
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::MissingIDPath(
+							device.sysname().into(),
 						)
-					}
+					)
 				).await;
 				continue;
 			}
@@ -30,12 +29,13 @@ pub async fn associate(
 		let dev_type = match card_type(&device) {
 			Some(v)	=> v,
 			None	=> {
-				crate::logger::LogMessage {
-					level:		crate::logger::LogLevel::Warn,
-					message:	format!(
-						"Device {:?} has unknown type", device.sysname(),
+				let _ = logger.send(
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::UnknownDeviceGPUType(
+							device.sysname().into(),
+						)
 					)
-				};
+				).await;
 				continue;
 			}
 		};
@@ -58,13 +58,9 @@ pub async fn associate(
 			Some(v)	=> v,
 			None	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!(
-							"Could not find card node for {0:?}",
-							k,
-						)
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::CardRendererNodeMissing(k.into())
+					)
 				).await;
 				continue;
 			}
@@ -74,28 +70,13 @@ pub async fn associate(
 			Some(v)	=> v,
 			None	=> {
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!(
-							"Could not find renderer node for {0:?}",
-							k,
-						)
-					}
+					crate::logger::messages::LogMessage::Warn(
+						crate::logger::messages::warn::WarnMessage::CardRendererNodeMissing(k.into())
+					)
 				).await;
 				continue;
 			}
 		};
-
-		let _ = logger.send(
-			crate::logger::LogMessage {
-				level: crate::logger::LogLevel::Debug,
-				message: format!(
-					"Associated GPU card {:?} to renderer node {:?}",
-					card.sysname(),
-					renderer.sysname(),
-				)
-			}
-		).await;
 
 		ret.push(
 			super::GPUDevice {

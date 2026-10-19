@@ -88,13 +88,13 @@ impl crate::pref::permissions::consent::PermissionStore for Portal {
 		).await {
 			Ok(v)	=> v,
 			Err(e)	=> {
+				use crate::logger::messages::LogMessage;
+				use crate::logger::messages::info::InfoMessage;
+
 				let _ = self.logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!(
-							"Could not retrieve permission from PermissionStore: {e}. Treating as empty.",
-						)
-					}
+					LogMessage::Info(
+						InfoMessage::DynamicPermissionStoreError(e.into())
+					)
 				).await;
 				vec![]
 			}

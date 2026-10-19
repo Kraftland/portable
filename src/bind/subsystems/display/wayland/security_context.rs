@@ -61,26 +61,14 @@ pub async fn create_context(
 
 	match listen_context(context_fd, conn, app_id, instance_id).await {
 		Ok(_)	=> {
-			#[cfg(debug_assertions)]
-			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Debug,
-					message: format!(
-						"Compositor supports wp_security_context_manager_v1",
-					),
-				},
-			).await;
-
 			Ok(security_context_path)
 		}
 		Err(e)	=> {
+			use crate::logger::messages::warn::WarnMessage;
 			let _ = logger.send(
-				crate::logger::LogMessage {
-					level: crate::logger::LogLevel::Warn,
-					message: format!(
-						"Could not enable wp_security_context_manager_v1: {e:?}",
-					),
-				},
+				crate::logger::messages::LogMessage::Warn(
+					WarnMessage::WpSecurityContextManagerV1(e),
+				)
 			).await;
 			Ok(original_socket)
 		}

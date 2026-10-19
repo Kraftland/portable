@@ -1,7 +1,7 @@
 /**
 	List registered StatusNotifierItems' bus name and their path
 */
-pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::LogSender)
+pub async fn list(conn: &zbus::Connection, app_id: &str)
 -> zbus::fdo::Result<Vec<(String, String)>> {
 	let mut ret = vec![];
 
@@ -19,12 +19,6 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 		?;
 
 	for name in names {
-		#[cfg(debug_assertions)]
-		let _ = log.send(
-			crate::logger::LogMessage {
-				level:	crate::logger::LogLevel::Debug,
-				message: format!("Got D-Bus remote: {name}") }
-		).await;
 		match name.split_once("/") {
 			Some((k, v))	=> {
 				let k = k.trim_end_matches("@");
@@ -65,34 +59,9 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 					path
 				};
 
-				#[cfg(debug_assertions)]
-				let _ = log.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!("Built detect path: {dir:?}"),
-					}
-				).await;
-
 				if ! dir.exists() {
-					#[cfg(debug_assertions)]
-					let _ = log.send(
-						crate::logger::LogMessage {
-							level:		crate::logger::LogLevel::Debug,
-							message:	format!(
-								"D-Bus remote: {k} on {pid:?} does not match",
-							),
-						}
-					).await;
 					continue;
 				}
-
-				#[cfg(debug_assertions)]
-				let _ = log.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!("Got D-Bus remote: {k} on {pid:?}"),
-					}
-				).await;
 
 				ret.push((k.to_string(), v.to_string()));
 			}
@@ -128,34 +97,9 @@ pub async fn list(conn: &zbus::Connection, app_id: &str, log: &crate::logger::Lo
 					path
 				};
 
-				#[cfg(debug_assertions)]
-				let _ = log.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!("Built detect path: {dir:?}"),
-					}
-				).await;
-
 				if ! dir.exists() {
-					#[cfg(debug_assertions)]
-					let _ = log.send(
-						crate::logger::LogMessage {
-							level:		crate::logger::LogLevel::Debug,
-							message:	format!(
-								"D-Bus remote: {name} on {pid:?} does not match",
-							),
-						}
-					).await;
 					continue;
 				}
-
-				#[cfg(debug_assertions)]
-				let _ = log.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!("Got D-Bus remote: {name} on {pid:?}"),
-					}
-				).await;
 
 				// Legacy style
 				ret.push(

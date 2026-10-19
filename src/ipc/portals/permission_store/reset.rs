@@ -38,25 +38,24 @@ pub async fn reset_permissions(
 			Ok(_)	=> {
 				#[cfg(debug_assertions)]
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Debug,
-						message:	format!(
-							"Reset permission {}", item.id(),
-						),
-					}
+					crate::logger::messages::LogMessage::Debug(
+						crate::logger::messages::debug::DebugMessage::PermissionReset {
+							table:	item.table().to_string(),
+							id:	item.id().to_string(),
+						}
+					)
 				).await;
 			}
 			Err(e)	=> {
+				use crate::logger::messages::warn::WarnMessage;
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level:		crate::logger::LogLevel::Warn,
-						message:	format!(
-							"Could not reset permission with table {} id {}: {}",
-							item.table(),
-							item.id(),
-							e,
-						),
-					}
+					crate::logger::messages::LogMessage::Warn(
+						WarnMessage::PermissionStoreResetError {
+							table:	item.table().to_string().into(),
+							id:	item.id().to_string().into(),
+							err:	e,
+						}
+					)
 				).await;
 			}
 		}

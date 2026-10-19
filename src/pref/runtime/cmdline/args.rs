@@ -98,12 +98,14 @@ pub async fn parse(logger: crate::logger::LogSender)
 			"f5aaebc6-0014-4d30-beba-72bce57e0650"	=> {
 				return Err(CmdlineError::UnsafeError);
 			}
-			&_					=> {
+			v					=> {
+				use crate::logger::messages::LogMessage;
+				use crate::logger::messages::warn::WarnMessage;
+
 				let _ = logger.send(
-					crate::logger::LogMessage {
-						level: crate::logger::LogLevel::Warn,
-						message: format!("Unrecognised argument: {arg}"),
-					},
+					LogMessage::Warn(
+						WarnMessage::UnknownArgument(v.to_string())
+					)
 				).await;
 			}
 		}

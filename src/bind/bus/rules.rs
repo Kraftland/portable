@@ -22,9 +22,7 @@ pub enum BusAccessLevel {
 		/**
 			"method" may be quite misleading, but it actually maps to
 
-				```
-				interface name [.] method name
-				```
+			interface name [.] method name
 
 			A .* suffix may be allowed.
 		*/
@@ -44,9 +42,7 @@ pub enum BusAccessLevel {
 		/**
 			"method" may be quite misleading, but it actually maps to
 
-				```
-				interface name [.] method name
-				```
+			interface name [.] method name
 
 			A .* suffix may be allowed.
 		*/
