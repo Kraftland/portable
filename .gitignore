@@ -12,3 +12,7 @@ lib/init/target
 # Added by cargo
 
 /target
+
+*.svg
+
+perf.data*
