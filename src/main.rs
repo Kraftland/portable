@@ -19,7 +19,7 @@ async fn main() -> std::process::ExitCode {
 
 
 	let (log_tx, log_task) = {
-		let (log_tx, log_rx) = tokio::sync::mpsc::channel(16);
+		let (log_tx, log_rx) = tokio::sync::mpsc::channel(24);
 		(log_tx, tokio::spawn(logger::logger(log_rx, stop_object.clone())))
 	};
 

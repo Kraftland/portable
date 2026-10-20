@@ -93,7 +93,10 @@ pub async fn logger (
 		let msg = tokio::select! {
 			biased;
 			msg	=	log_rx.recv()			=> {msg}
-			_	=	stop.pre_parent.cancelled()	=> {return;}
+			_	=	stop.pre_parent.cancelled()	=> {
+				log_rx.close();
+				continue;
+			}
 		};
 
 		let msg = match msg {
