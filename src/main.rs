@@ -14,6 +14,8 @@ pub use portable_daemon::errors;
 
 #[tokio::main]
 async fn main() -> Result<(), StartError> {
+	console_subscriber::init();
+
 	let (stop_object, stop_drainer) = stop::Stop::new().await;
 
 
