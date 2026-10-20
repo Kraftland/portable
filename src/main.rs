@@ -13,7 +13,7 @@ use portable_daemon::errors::StartError;
 pub use portable_daemon::errors;
 
 #[tokio::main]
-async fn main() -> std::process::ExitCode {
+async fn main() -> Result<(), StartError> {
 	let (stop_object, stop_drainer) = stop::Stop::new().await;
 
 
@@ -25,7 +25,7 @@ async fn main() -> std::process::ExitCode {
 
 	let exit_code = match run(log_tx.clone(), stop_object.clone()).await {
 		Ok(_)	=> {
-			std::process::ExitCode::SUCCESS
+			Ok(())
 		}
 		Err(e)	=> {
 			log_tx.send(
@@ -33,7 +33,7 @@ async fn main() -> std::process::ExitCode {
 					logger::messages::fatal::FatalMessage::StartError(Box::new(e))
 				)
 			).await.unwrap();
-			std::process::ExitCode::FAILURE
+			Err(StartError::FatalShutdown)
 		}
 	};
 
