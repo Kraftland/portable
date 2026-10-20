@@ -164,6 +164,7 @@ async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError
 			Ok(v)	=> v,
 			Err(e)	=> {
 				eprintln!("Could not get terminal dimentions: {e:#?}");
+				tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 				continue;
 			}
 		};
