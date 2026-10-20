@@ -108,6 +108,7 @@ pub async fn setup(
 
 			output_thread.abort();
 			input_thread.abort();
+			resize_thread.abort();
 
 			cancel_token.cancel();
 		}
