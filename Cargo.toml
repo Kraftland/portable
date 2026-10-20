@@ -14,7 +14,7 @@ license = "GPL-3.0-or-later"
 portable-config = { version = "21.0.0", path = "lib/config" }
 
 thiserror = "2.0.19"
-tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "sync", "signal", "fs", "io-util", "tracing"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "sync", "signal", "fs", "io-util"] }
 tokio-util = { version = "0.7.18", features = ["rt"] }
 nix = { version = "0.31.3", features = ["term", "user", "ioctl"] }
 jiff = { version = "0.2.34", features = ["std"], default-features = false }
@@ -35,7 +35,6 @@ futures-util = { version = "0.3.34", default-features = false, features = ["toki
 
 uuid = { version = "1.26.0", features = ["v4"], default-features = false }
 freedesktop-desktop-entry = { version = "0.8.3", default-features = false, optional = true }
-console-subscriber = "0.5.0"
 
 [workspace]
 resolver = "3"
@@ -96,6 +95,3 @@ lto = true
 [profile.dev]
 strip = false
 split-debuginfo = "off"
-
-[build]
-rustflags = ["--cfg", "tokio_unstable"]
