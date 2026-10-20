@@ -191,29 +191,32 @@ async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError
 
 async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	let mut buffer = [0u8; 1024];
-	let mut stdin: tokio::io::unix::AsyncFd<std::fs::File> = {
-		use std::os::fd::AsFd;
-		let stdin = std::io::stdin()
-			.as_fd()
-			.try_clone_to_owned()
-			.map_err(StreamError::StdinConvertError)
-			?;
-		tokio::fs::File::from_std(stdin.into()).into()
+	let stdin = {
+		tokio::io::unix::AsyncFd::new(
+			make_nonblock(std::io::stdin())
+				?
+		)
+			.map_err(StreamError::StdinSetupError)
+			?
 	};
 
 	let mut tokio_file = tokio::fs::File::from_std(file);
 	use tokio::io::AsyncWriteExt;
-	use tokio::io::AsyncReadExt;
 
 	loop {
-		let input = stdin
-			.read(&mut buffer)
-			.await;
-
-		match input {
-			Ok(0)	=> {return Ok(());}
-			Ok(v)	=> {
-				tokio_file.write(&buffer[..v])
+		match
+			stdin
+			.readable()
+			.await
+			.map_err(StreamError::ConsoleIOError)
+			?
+			.try_io(|inner| {
+				use std::io::Read;
+				inner.get_ref().read(&mut buffer)
+			})
+		{
+			Ok(_)	=> {
+				tokio_file.write(&buffer)
 					.await
 					.map_err(StreamError::ConsoleIOError)
 					?;
@@ -224,7 +227,7 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 						?;
 			}
 			Err(e)	=> {
-				return Err(StreamError::ConsoleIOError(e));
+				return Err(StreamError::ConsoleTryIOError(e));
 			}
 		}
 	}
@@ -375,6 +378,9 @@ pub enum StreamError {
 
 	#[error("Error during console I/O: {0:#?}")]
 	ConsoleIOError(std::io::Error),
+
+	#[error("Error attempting console I/O: {0:#?}")]
+	ConsoleTryIOError(tokio::io::unix::TryIoError),
 
 	#[error("Error putting console into RAW mode: {0:#?}")]
 	RawError(nix::Error),
