@@ -68,4 +68,7 @@ pub enum StartError {
 	#[cfg(feature = "desktop-file")]
 	#[error("Could not parse desktop file: {0}")]
 	DesktopFileError(crate::pref::runtime::desktop_file::InstallDesktopFileError),
+
+	#[error("Could not start the sandbox: a fatal error has occured")]
+	FatalShutdown,
 }
