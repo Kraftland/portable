@@ -415,19 +415,16 @@ async fn run(
 		let flatpak_runtime = flatpak_runtime.clone();
 		tokio::spawn(
 				async {
-					Ok(
-						bind::flatpak_info::create(
-							config_clone,
-							instance_clone,
-							xdg_clone,
-							portable_clone,
-
-							#[cfg(feature = "flatpak")]
-							flatpak_runtime,
-						)
-						.await
-						.map_err(StartError::FlatpakInfoError)?
-				)
+					bind::flatpak_info::create(
+						config_clone,
+						instance_clone,
+						xdg_clone,
+						portable_clone,
+						#[cfg(feature = "flatpak")]
+						flatpak_runtime,
+					)
+					.await
+					.map_err(StartError::FlatpakInfoError)
 			}
 		)
 	};
