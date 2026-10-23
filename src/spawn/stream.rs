@@ -98,7 +98,14 @@ pub async fn setup(
 				}
 				input	= &mut input_thread		=> {
 					#[cfg(debug_assertions)]
-					println!("Input thread stopped: {input:#?}");
+					match input {
+						Ok(_)	=> {
+							println!("Input thread stopped");
+						}
+						Err(e)	=> {
+							println!("Input thread crashed: {e}");
+						}
+					}
 				}
 				resize	= &mut resize_thread		=> {
 					#[cfg(debug_assertions)]
@@ -215,8 +222,14 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 				inner.get_ref().read(&mut buffer)
 			})
 		{
-			Ok(_)	=> {
-				tokio_file.write(&buffer)
+			Ok(n)	=> {
+				let n = n.map_err(StreamError::ConsoleIOError)?;
+
+				if n == 0 {
+					return Ok(());
+				};
+
+				tokio_file.write(&buffer[..n])
 					.await
 					.map_err(StreamError::ConsoleIOError)
 					?;
@@ -226,8 +239,8 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 						.map_err(StreamError::ConsoleIOError)
 						?;
 			}
-			Err(e)	=> {
-				return Err(StreamError::ConsoleTryIOError(e));
+			Err(_)	=> {
+				continue;
 			}
 		}
 	}
