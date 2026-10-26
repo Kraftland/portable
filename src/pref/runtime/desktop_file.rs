@@ -140,25 +140,25 @@ async fn generate_file_content(app_id: &str) -> String {
 	let mut content = String::new();
 
 	content.push_str("[Desktop Entry]");
-	content.push_str("\n");
+	content.push('\n');
 
 	content.push_str("Name=");
 	content.push_str("Unknown:");
 	content.push_str(app_id);
-	content.push_str("\n");
+	content.push('\n');
 
 	content.push_str("Exec=");
 	content.push_str("true");
-	content.push_str("\n");
+	content.push('\n');
 
 	content.push_str("Type=Application");
-	content.push_str("\n");
+	content.push('\n');
 
 	content.push_str("Icon=image-missing");
-	content.push_str("\n");
+	content.push('\n');
 
 	content.push_str("Comment=Application info missing");
-	content.push_str("\n");
+	content.push('\n');
 
 	content
 }
