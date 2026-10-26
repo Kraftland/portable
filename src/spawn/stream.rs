@@ -99,8 +99,15 @@ pub async fn setup(
 				input	= &mut input_thread		=> {
 					#[cfg(debug_assertions)]
 					match input {
-						Ok(_)	=> {
-							println!("Input thread stopped");
+						Ok(v)	=> {
+							match v {
+								Ok(_)	=> {
+									println!("Input thread stopped");
+								}
+								Err(e)	=> {
+									println!("Input thread crashed: {e}");
+								}
+							}
 						}
 						Err(e)	=> {
 							println!("Input thread crashed: {e}");
