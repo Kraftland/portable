@@ -276,7 +276,7 @@ impl std::fmt::Display for WarnMessage {
 				)
 			}
 			Self::UnitFailed		=> {
-				f.write_str("Unit has failed. Either the application is malfunctioning, or the system did not meet minium requirements.")
+				f.write_str("Unit has failed. Either the application is malfunctioning, or the system did not meet minimum requirements.")
 			}
 			Self::InvalidUnitState(v)	=> {
 				f.write_fmt(
