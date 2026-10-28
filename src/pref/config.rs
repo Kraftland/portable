@@ -209,18 +209,15 @@ async fn get_toml_path(
 			];
 
 			for (path, result) in try_config_path {
-				match
+				if
 					result
 						.await
 						.map_err(ConfigError::SpawnError)?
 						.map_err(ConfigError::ExistIOError)?
 				{
-					true	=> {
-						return	Ok(
-							ConfigType::TOML { path }
-						);
-					}
-					false	=> {}
+					return	Ok(
+						ConfigType::TOML { path }
+					);
 				}
 			};
 			Err(ConfigError::InvalidTomlPath(v))
@@ -279,18 +276,15 @@ async fn get_legacy_bash_path(
 			];
 
 			for (path, result) in try_config_path {
-				match
+				if
 					result
 						.await
 						.map_err(ConfigError::SpawnError)?
 						.map_err(ConfigError::ExistIOError)?
 				{
-					true	=> {
-						return	Ok(
-							ConfigType::LegacyBash { path }
-						);
-					}
-					false	=> {}
+					return	Ok(
+						ConfigType::LegacyBash { path }
+					);
 				}
 			};
 			Err(ConfigError::InvalidBashPath(v))
