@@ -22,9 +22,37 @@ pub struct GPUInfo {
 	pub	render_name:	String,
 
 	/**
+		devlinks for the renderer node
+	*/
+	pub	render_devlink:	Vec<std::path::PathBuf>,
+
+
+	/**
+		Kernel device node for the renderer
+	*/
+	pub	render_devnode:	std::path::PathBuf,
+
+	/**
+		Device path in sysfs
+	*/
+	pub	render_syspath:	std::path::PathBuf,
+
+	/**
 		Card node name. Like card0, card1.
 
 		Obtained via sysname()
 	*/
 	pub	card_name:	String,
+	/**
+		devlinks for the card node
+	*/
+	pub	card_devlink:	Vec<std::path::PathBuf>,
+	/**
+		Kernel device node for the card node
+	*/
+	pub	card_devnode:	std::path::PathBuf,
+	/**
+		Device path in sysfs
+	*/
+	pub	card_syspath:	std::path::PathBuf,
 }
