@@ -3,6 +3,7 @@
 
 	It contains information, for example if it should be bound when not driving the boot display.
 */
+#[derive(PartialEq, Eq)]
 pub struct GPUInfo {
 	/**
 		boot_display describes whether the graphics card is used for booting.

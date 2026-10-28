@@ -3,6 +3,7 @@
 
 	It implements the TryFrom trait to convert from Strings.
 */
+#[derive(PartialEq, Eq)]
 pub enum GPUVendor {
 	Intel,
 	AMD,
