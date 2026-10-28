@@ -17,13 +17,14 @@ pub async fn select<T>(
 where
 	T:	IntoIterator<Item = super::GPUInfo>,
 {
-	let mut gpu_map = vec![];
-
-	if all_gpus {
+	let gpu_map = if all_gpus {
+		let mut gpu_map = vec![];
 		for dev in devices {
 			gpu_map.push((dev, true));
 		};
+		gpu_map
 	} else {
+		let mut gpu_map = vec![];
 		for dev in devices {
 			if dev.boot_display {
 				gpu_map.push((dev, true));
@@ -31,6 +32,7 @@ where
 				gpu_map.push((dev, false));
 			};
 		};
+		gpu_map
 	};
 
 	unimplemented!()
