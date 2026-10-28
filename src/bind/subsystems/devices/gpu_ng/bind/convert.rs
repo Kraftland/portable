@@ -21,19 +21,38 @@ impl TryFrom<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 				crate::bind::types::BindRule::Path {
 					source:	card_path.to_path_buf(),
 					dest:	card_path,
-					class:	crate::bind::types::BindType::Device }
+					class:	crate::bind::types::BindType::Device,
+				}
 			);
 			ret.push(
 				crate::bind::types::BindRule::Path {
 					source:	render_path.to_path_buf(),
 					dest:	render_path,
-					class:	crate::bind::types::BindType::Device }
+					class:	crate::bind::types::BindType::Device,
+				}
 			);
 		};
 
 		// Basically bind_udev_device in devices
 		// devlinks first
-
+		for link in value.card_devlink {
+			ret.push(
+				crate::bind::types::BindRule::Path {
+					source:	link.to_path_buf(),
+					dest:	link,
+					class:	crate::bind::types::BindType::Device,
+				}
+			);
+		};
+		for link in value.render_devlink {
+			ret.push(
+				crate::bind::types::BindRule::Path {
+					source:	link.to_path_buf(),
+					dest:	link,
+					class:	crate::bind::types::BindType::Device,
+				}
+			);
+		};
 
 		unimplemented!()
 
