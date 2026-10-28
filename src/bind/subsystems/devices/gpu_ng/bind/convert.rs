@@ -80,6 +80,32 @@ impl TryFrom<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 			None	=> {}
 		}
 
+		// Finally, syspath
+		match value.card_syspath {
+			Some(v)	=> {
+				ret.push(
+					crate::bind::types::BindRule::Path {
+						source:	v.to_path_buf(),
+						dest:	v,
+						class:	crate::bind::types::BindType::Device,
+					}
+				);
+			}
+			None	=> {}
+		}
+		match value.render_syspath {
+			Some(v)	=> {
+				ret.push(
+					crate::bind::types::BindRule::Path {
+						source:	v.to_path_buf(),
+						dest:	v,
+						class:	crate::bind::types::BindType::Device,
+					}
+				);
+			}
+			None	=> {}
+		}
+
 		unimplemented!()
 
 	}
