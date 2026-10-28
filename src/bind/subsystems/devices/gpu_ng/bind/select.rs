@@ -1,6 +1,8 @@
 /**
 	The public function select decides a list of GPUs to expose inside said sandbox.
 
+	It should also convert them into bind rules, including vendor workarounds.
+
 	It accepts a collection of GPU info and perform various decisions, some even be heuristics
 		to select a primary GPU (or GPUs).
 
@@ -11,21 +13,25 @@ pub async fn select<T>(
 	all_gpus:	bool,
 )
 ->
-	Vec<super::GPUInfo>
+	crate::bind::types::BindRules
 where
 	T:	IntoIterator<Item = super::GPUInfo>,
 {
+	let mut gpu_map = vec![];
+
 	if all_gpus {
-		return devices.into_iter().collect();
+		for dev in devices {
+			gpu_map.push((dev, true));
+		};
+	} else {
+		for dev in devices {
+			if dev.boot_display {
+				gpu_map.push((dev, true));
+			} else {
+				gpu_map.push((dev, false));
+			};
+		};
 	};
 
-	let mut ret = vec![];
-
-	for device in devices {
-		if device.boot_display {
-			ret.push(device);
-		}
-	};
-
-	ret
+	unimplemented!()
 }
