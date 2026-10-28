@@ -10,7 +10,7 @@ pub type BindRules = Vec<BindRule>;
 /**
 	BindRule represents a single rule of exposing the host system
 */
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BindRule {
 	Path {
 		source:		std::path::PathBuf,
