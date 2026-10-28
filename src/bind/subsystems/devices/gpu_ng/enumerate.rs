@@ -11,6 +11,8 @@ pub struct GPUInfo {
 	*/
 	pub	boot_display:	bool,
 
+	pub	vendor:		super::vendor::GPUVendor,
+
 	/**
 		Renderer node name. Like renderD128, renderD129.
 
