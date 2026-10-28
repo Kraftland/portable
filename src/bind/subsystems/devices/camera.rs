@@ -12,7 +12,6 @@ pub async fn scan() -> Result<BindRules, CameraError> {
 			subsystem: "video4linux".into(),
 		},
 	)
-		.await
 		.map_err(CameraError::EnumerateError)
 		?;
 
@@ -20,7 +19,7 @@ pub async fn scan() -> Result<BindRules, CameraError> {
 
 	for dev in devices {
 		ret.extend(
-			super::bind_udev_device(&dev).await
+			super::bind_udev_device(&dev)
 		);
 	};
 

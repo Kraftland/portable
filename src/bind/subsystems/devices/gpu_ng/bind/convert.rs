@@ -31,6 +31,8 @@ impl TryFrom<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 			);
 		};
 
+		// Basically bind_udev_device in devices
+		// devlinks first
 
 
 		unimplemented!()
