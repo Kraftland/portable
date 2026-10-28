@@ -30,12 +30,12 @@ pub struct GPUInfo {
 	/**
 		Kernel device node for the renderer
 	*/
-	pub	render_devnode:	std::path::PathBuf,
+	pub	render_devnode:	Option<std::path::PathBuf>,
 
 	/**
 		Device path in sysfs
 	*/
-	pub	render_syspath:	std::path::PathBuf,
+	pub	render_syspath:	Option<std::path::PathBuf>,
 
 	/**
 		Card node name. Like card0, card1.
@@ -50,9 +50,9 @@ pub struct GPUInfo {
 	/**
 		Kernel device node for the card node
 	*/
-	pub	card_devnode:	std::path::PathBuf,
+	pub	card_devnode:	Option<std::path::PathBuf>,
 	/**
 		Device path in sysfs
 	*/
-	pub	card_syspath:	std::path::PathBuf,
+	pub	card_syspath:	Option<std::path::PathBuf>,
 }
