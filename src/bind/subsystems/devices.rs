@@ -3,6 +3,9 @@ use thiserror::Error;
 #[cfg(feature = "gpu")]
 pub mod gpu;
 
+#[cfg(feature = "gpu")]
+pub mod gpu_ng;
+
 #[cfg(feature = "camera")]
 pub mod camera;
 
