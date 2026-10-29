@@ -35,5 +35,11 @@ where
 		gpu_map
 	};
 
+	let mut bind_rules = vec![];
+
+	for (device, expose) in gpu_map {
+
+	};
+
 	unimplemented!()
 }
