@@ -1,27 +1,27 @@
 #[derive(thiserror::Error, Debug)]
 pub enum StartAppError {
-	#[error("Could not create proxy to Manager: {0:#?}")]
+	#[error("Could not create proxy to Manager: {0}")]
 	ManagerProxyError(zbus::Error),
 
-	#[error("Could not generate properties for Manager: {0:#?}")]
+	#[error("Could not generate properties for Manager: {0}")]
 	PropertiesError(zbus::zvariant::Error),
 
-	#[error("Could not spawn task: {0:#?}")]
+	#[error("Could not spawn task: {0}")]
 	SpawnError(tokio::task::JoinError),
 
-	#[error("Could not generate properties for Manager: envs error: {0:#?}")]
+	#[error("Could not generate properties for Manager: envs error: {0}")]
 	EnvsError(crate::envs::holder::EnvError),
 
-	#[error("Could not start app: systemd error: {0:#?}")]
+	#[error("Could not start app: systemd error: {0}")]
 	SystemdStartError(zbus::Error),
 
-	#[error("Could not wait for job removal: {0:#?}")]
+	#[error("Could not wait for job removal: {0}")]
 	SubscribeRemoveError(zbus::Error),
 
-	#[error("Could not generate object path for Manager: {0:#?}")]
+	#[error("Could not generate object path for Manager: {0}")]
 	ObjectPathError(zbus::zvariant::Error),
 
-	#[error("Could not send stop command: {0:#?}")]
+	#[error("Could not send stop command: {0}")]
 	StopError(tokio::sync::mpsc::error::SendError<crate::stop::StopMessage>),
 }
 
