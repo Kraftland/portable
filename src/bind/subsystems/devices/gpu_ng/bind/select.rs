@@ -36,20 +36,20 @@ where
 	};
 
 	// Pop all bound GPUs' vendor, we need some nvidia-specific stuff afterwards
-	let vendors = {
-		let mut vendors = vec![];
+	let mut vendors = vec![];
 
-		for gpu in gpu_map {
-			vendors.push(
-				gpu.0.vendor
-			);
-		};
-	};
-
-	let mut bind_rules = vec![];
+	let mut bind_rules: Vec<crate::bind::types::BindRule> = vec![];
 
 	for (device, expose) in gpu_map {
+		if ! expose {
+			continue;
+		};
 
+		let rules: Vec<crate::bind::types::BindRule> = (&device).into();
+
+		vendors.push(device.vendor);
+
+		bind_rules.extend(rules);
 	};
 
 	unimplemented!()
