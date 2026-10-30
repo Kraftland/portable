@@ -55,4 +55,19 @@ pub struct GPUInfo {
 		Device path in sysfs
 	*/
 	pub	card_syspath:	Option<std::path::PathBuf>,
+
+	/**
+		The parent device is included because some applications need them, like Lutris
+
+		devlinks for the parent device
+	*/
+	pub	parent_devlink:	Vec<std::path::PathBuf>,
+	/**
+		Kernel device node for the parent device
+	*/
+	pub	parent_devnode:	Option<std::path::PathBuf>,
+	/**
+		Device path in sysfs
+	*/
+	pub	parent_syspath:	Option<std::path::PathBuf>,
 }
