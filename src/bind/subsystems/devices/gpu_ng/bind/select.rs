@@ -35,6 +35,17 @@ where
 		gpu_map
 	};
 
+	// Pop all bound GPUs' vendor, we need some nvidia-specific stuff afterwards
+	let vendors = {
+		let mut vendors = vec![];
+
+		for gpu in gpu_map {
+			vendors.push(
+				gpu.0.vendor
+			);
+		};
+	};
+
 	let mut bind_rules = vec![];
 
 	for (device, expose) in gpu_map {
