@@ -53,6 +53,15 @@ impl TryFrom<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 				}
 			);
 		};
+		for link in value.parent_devlink {
+			ret.push(
+				crate::bind::types::BindRule::Path {
+					source:	link.to_path_buf(),
+					dest:	link,
+					class:	crate::bind::types::BindType::Device,
+				}
+			);
+		};
 
 		// Kernel device node under /dev
 		match value.card_devnode {
@@ -68,6 +77,18 @@ impl TryFrom<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 			None	=> {}
 		}
 		match value.render_devnode {
+			Some(v)	=> {
+				ret.push(
+					crate::bind::types::BindRule::Path {
+						source:	v.to_path_buf(),
+						dest:	v,
+						class:	crate::bind::types::BindType::Device,
+					}
+				);
+			}
+			None	=> {}
+		}
+		match value.parent_devnode {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
@@ -105,8 +126,20 @@ impl TryFrom<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 			}
 			None	=> {}
 		}
+		match value.parent_syspath {
+			Some(v)	=> {
+				ret.push(
+					crate::bind::types::BindRule::Path {
+						source:	v.to_path_buf(),
+						dest:	v,
+						class:	crate::bind::types::BindType::Device,
+					}
+				);
+			}
+			None	=> {}
+		}
 
-		unimplemented!()
+		Ok(ret)
 
 	}
 
