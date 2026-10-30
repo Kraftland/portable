@@ -1,5 +1,5 @@
-impl From<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
-	fn from(value: super::GPUInfo) -> Self {
+impl From<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
+	fn from(value: &super::GPUInfo) -> Self {
 		let mut ret: Vec<crate::bind::types::BindRule> = vec![];
 
 		// /sys/class/drm is not convered yet.
@@ -35,65 +35,65 @@ impl From<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 
 		// Basically bind_udev_device in devices
 		// devlinks first
-		for link in value.card_devlink {
+		for link in &value.card_devlink {
 			ret.push(
 				crate::bind::types::BindRule::Path {
 					source:	link.to_path_buf(),
-					dest:	link,
+					dest:	link.to_path_buf(),
 					class:	crate::bind::types::BindType::Device,
 				}
 			);
 		};
-		for link in value.render_devlink {
+		for link in &value.render_devlink {
 			ret.push(
 				crate::bind::types::BindRule::Path {
 					source:	link.to_path_buf(),
-					dest:	link,
+					dest:	link.to_path_buf(),
 					class:	crate::bind::types::BindType::Device,
 				}
 			);
 		};
-		for link in value.parent_devlink {
+		for link in &value.parent_devlink {
 			ret.push(
 				crate::bind::types::BindRule::Path {
 					source:	link.to_path_buf(),
-					dest:	link,
+					dest:	link.to_path_buf(),
 					class:	crate::bind::types::BindType::Device,
 				}
 			);
 		};
 
 		// Kernel device node under /dev
-		match value.card_devnode {
+		match &value.card_devnode {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
 						source:	v.to_path_buf(),
-						dest:	v,
+						dest:	v.to_path_buf(),
 						class:	crate::bind::types::BindType::Device,
 					}
 				);
 			}
 			None	=> {}
 		}
-		match value.render_devnode {
+		match &value.render_devnode {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
 						source:	v.to_path_buf(),
-						dest:	v,
+						dest:	v.to_path_buf(),
 						class:	crate::bind::types::BindType::Device,
 					}
 				);
 			}
 			None	=> {}
 		}
-		match value.parent_devnode {
+		match &value.parent_devnode {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
 						source:	v.to_path_buf(),
-						dest:	v,
+						dest:	v.to_path_buf(),
 						class:	crate::bind::types::BindType::Device,
 					}
 				);
@@ -102,36 +102,36 @@ impl From<super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 		}
 
 		// Finally, syspath
-		match value.card_syspath {
+		match &value.card_syspath {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
 						source:	v.to_path_buf(),
-						dest:	v,
+						dest:	v.to_path_buf(),
 						class:	crate::bind::types::BindType::Device,
 					}
 				);
 			}
 			None	=> {}
 		}
-		match value.render_syspath {
+		match &value.render_syspath {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
 						source:	v.to_path_buf(),
-						dest:	v,
+						dest:	v.to_path_buf(),
 						class:	crate::bind::types::BindType::Device,
 					}
 				);
 			}
 			None	=> {}
 		}
-		match value.parent_syspath {
+		match &value.parent_syspath {
 			Some(v)	=> {
 				ret.push(
 					crate::bind::types::BindRule::Path {
 						source:	v.to_path_buf(),
-						dest:	v,
+						dest:	v.to_path_buf(),
 						class:	crate::bind::types::BindType::Device,
 					}
 				);
