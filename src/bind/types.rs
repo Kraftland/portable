@@ -10,7 +10,7 @@ pub type BindRules = Vec<BindRule>;
 /**
 	BindRule represents a single rule of exposing the host system
 */
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BindRule {
 	Path {
 		source:		std::path::PathBuf,
@@ -50,7 +50,7 @@ pub enum BindRule {
 /**
 	The type of VFS
 */
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum VirtualFS {
 	/// Mount new devtmpfs
 	Devtmpfs,
@@ -77,7 +77,7 @@ pub enum VirtualFS {
 /**
 	The type of overlayfs
 */
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum OverlayType {
 	/**
 		With ReadWrite all writes will go to RWSRC.
@@ -107,7 +107,7 @@ pub enum OverlayType {
 
 	The device type is not implemented for overlayfs mounting
 */
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BindType {
 	ReadWrite,
 	ReadOnly,

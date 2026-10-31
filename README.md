@@ -80,7 +80,7 @@ Portable has companion projects for packaging and sandboxing:
 - enables unprivileged user namespaces
 - uses systemd >=258
 - has libseccomp >= 2.6
-- a thread-safe libudev implementation (systemd-udevd is)
+- libudev
 - has landlock ABI 8 and above (Linux kernel >= 7.0)
 - Follows the [FHS (Filesystem Hierarchy Standard)](https://specifications.freedesktop.org/fhs/latest/)
 	- Note that `/lib` `/lib64` `/bin` `/sbin` should be symlinks to their respective locations under `/usr`
