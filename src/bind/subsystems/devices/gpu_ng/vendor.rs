@@ -44,4 +44,10 @@ pub trait VendorHook {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum VendorError {}
+pub enum VendorError {
+	#[error("Could not scan for nvidia devices under devtmpfs: {0}")]
+	ScanNvidiaDevError(std::io::Error),
+
+	#[error("Could not mount or unmount nvidia modules: {0}")]
+	MountNvidiaModuleError(std::io::Error),
+}
