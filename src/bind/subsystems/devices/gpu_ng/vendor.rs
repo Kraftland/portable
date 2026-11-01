@@ -16,6 +16,7 @@ pub enum GPUVendor {
 }
 
 pub mod nvidia;
+pub mod amd;
 
 /**
 	The VendorHook trait is used to define vendor-specific actions.
@@ -43,6 +44,16 @@ pub trait VendorHook {
 	fn present(&self) -> impl Future<Output = Result<crate::bind::types::BindRules, VendorError>>;
 }
 
+impl VendorHook for GPUVendor {
+	async fn absent(&self) -> Result<crate::bind::types::BindRules, VendorError> {
+
+	}
+
+	async fn present(&self) -> Result<crate::bind::types::BindRules, VendorError> {
+
+	}
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum VendorError {
 	#[error("Could not scan for nvidia devices under devtmpfs: {0}")]
@@ -50,4 +61,7 @@ pub enum VendorError {
 
 	#[error("Could not mount or unmount nvidia modules: {0}")]
 	MountNvidiaModuleError(std::io::Error),
+
+	#[error("Could not mount ROCm device: {0}")]
+	KfdIOError(std::io::Error),
 }
