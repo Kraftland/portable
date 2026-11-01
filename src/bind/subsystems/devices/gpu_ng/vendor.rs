@@ -80,7 +80,51 @@ impl VendorHook for GPUVendor {
 	}
 
 	async fn present(&self) -> Result<crate::bind::types::BindRules, VendorError> {
+		match self {
+			Self::Intel	=> {
+				Ok(vec![])
+			}
+			Self::AMD	=> {
+				amd::bind_rocm_device()
+					.await
+			}
+			Self::NVIDIA { driver }
+			=> {
+				match driver {
+					nvidia::NVIDIADriver::Proprietary	=> {
+						let mut ret = nvidia::nvidia_module_mounts(false)
+							.await
+							?;
 
+						for path in nvidia::get_nvidia_devices()
+							.await
+							?
+						{
+							ret.push(
+								crate::bind::types::BindRule::Path {
+									source:	path.to_path_buf(),
+									dest:	path,
+									class:	crate::bind::types::BindType::Device,
+								}
+							);
+						};
+						Ok(ret)
+					}
+					nvidia::NVIDIADriver::Unknown		=> {
+						Err(
+							VendorError::UnknownNVIDIADriver
+						)
+					}
+					_					=> {
+						Ok(vec![])
+					}
+				}
+			}
+			Self::Other { vendor }
+			=> {
+				Err(VendorError::UnknownVendor(vendor.to_string()))
+			}
+		}
 	}
 }
 
