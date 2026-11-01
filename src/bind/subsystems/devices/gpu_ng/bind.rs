@@ -4,7 +4,6 @@
 */
 pub mod convert;
 
-mod select;
-pub use select::select;
+pub mod select;
 
 use super::GPUInfo;

@@ -76,11 +76,20 @@ pub enum WarnMessage {
 	XdgEnvLoadError(crate::envs::xdg::XDGEnvError),
 
 	DynamicPermissionsError(crate::pref::permissions::consent::ConsentError),
+
+	#[cfg(feature = "gpu")]
+	GPUError(crate::bind::subsystems::devices::gpu_ng::SelectError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::GPUError(v)		=> {
+				f.write_fmt(
+					format_args!("Could not bind GPU: {v}")
+				)
+			}
+
 			Self::DynamicPermissionsError(v)
 			=> {
 				f.write_fmt(

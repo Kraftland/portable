@@ -5,6 +5,8 @@
 */
 mod vendor;
 
+pub use vendor::VendorError;
+
 /**
 	The enumerate module hosts GPU listing code.
 
@@ -22,3 +24,4 @@ pub use enumerate::GPUInfo;
 	the final rules.
 */
 mod bind;
+pub use bind::select::SelectError;

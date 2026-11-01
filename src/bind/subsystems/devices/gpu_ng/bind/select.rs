@@ -11,6 +11,7 @@
 pub async fn select<T>(
 	devices:	T,
 	all_gpus:	bool,
+	log_tx:		crate::logger::LogSender,
 )
 ->
 	crate::bind::types::BindRules
@@ -35,22 +36,91 @@ where
 		gpu_map
 	};
 
-	// Pop all bound GPUs' vendor, we need some nvidia-specific stuff afterwards
-	let mut vendors = vec![];
+	/*
+		This is split to two stages, early and late.
 
-	let mut bind_rules: Vec<crate::bind::types::BindRule> = vec![];
+		Early includes absent hooks only to avoid masking present hooks.
+
+		Late is currently dedicated to present hooks and general udev device binds.
+	*/
+	let (
+		(
+			vendor_bind_late_tx,
+			vendor_bind_late_rx,
+		),
+		(
+			vendor_bind_early_tx,
+			vendor_bind_early_rx,
+		),
+	) = {
+		(
+			tokio::sync::mpsc::unbounded_channel::<crate::bind::types::BindRules>(),
+			tokio::sync::mpsc::unbounded_channel::<crate::bind::types::BindRules>(),
+		)
+	};
+
+	let mut workers: Vec<tokio::task::JoinHandle<Result<(), SelectError>>> = vec![];
 
 	for (device, expose) in gpu_map {
-		if ! expose {
-			continue;
+		let (
+			vendor_bind_late,
+			vendor_bind_early,
+		) = {
+			(
+				vendor_bind_late_tx.clone(),
+				vendor_bind_early_tx.clone(),
+			)
 		};
 
-		let rules: Vec<crate::bind::types::BindRule> = (&device).into();
+		workers.push(tokio::spawn(async move {
+			use crate::bind::subsystems::devices::gpu_ng::vendor::VendorHook;
+			// If we don't expose this device, run absent hooks only
+			if ! expose {
+				vendor_bind_early.send(
+					device
+						.vendor
+						.absent()
+						.await
+						.map_err(SelectError::VendorError)
+						?
+				)
+					.map_err(SelectError::TokioSendError)
+					?;
 
-		vendors.push(device.vendor);
+				return Ok(());
+			};
 
-		bind_rules.extend(rules);
+			let rules: Vec<crate::bind::types::BindRule> = (&device).into();
+
+			vendor_bind_late.send(
+				rules,
+			)
+				.map_err(SelectError::TokioSendError)
+				?;
+
+			vendor_bind_late.send(
+				device
+					.vendor
+					.present()
+					.await
+					.map_err(SelectError::VendorError)
+					?
+			)
+				.map_err(SelectError::TokioSendError)
+				?;
+
+			Ok(())
+		}));
 	};
 
 	unimplemented!()
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum SelectError {
+	#[error("Could not run the vendor hook: {0}")]
+	VendorError(crate::bind::subsystems::devices::gpu_ng::VendorError),
+
+	#[error("Could not send to tokio channel: {0}")]
+	TokioSendError(tokio::sync::mpsc::error::SendError<crate::bind::types::BindRules>),
 }
