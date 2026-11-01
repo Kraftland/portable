@@ -32,6 +32,8 @@ pub mod amd;
 
 	By introducing this trait and implementing this for GPUVendor, we can elegantly process
 	workarounds for various vendors.
+
+	Note that absent must run before present to make sure it does not override each other.
 */
 pub trait VendorHook {
 	/**
@@ -46,7 +48,35 @@ pub trait VendorHook {
 
 impl VendorHook for GPUVendor {
 	async fn absent(&self) -> Result<crate::bind::types::BindRules, VendorError> {
-
+		match self {
+			Self::Intel	=> {
+				Ok(vec![])
+			}
+			Self::AMD	=> {
+				Ok(vec![])
+			}
+			Self::NVIDIA { driver }
+			=> {
+				match driver {
+					nvidia::NVIDIADriver::Proprietary	=> {
+						nvidia::nvidia_module_mounts(true)
+							.await
+					}
+					nvidia::NVIDIADriver::Unknown		=> {
+						Err(
+							VendorError::UnknownNVIDIADriver
+						)
+					}
+					_					=> {
+						Ok(vec![])
+					}
+				}
+			}
+			Self::Other { vendor }
+			=> {
+				Err(VendorError::UnknownVendor(vendor.to_string()))
+			}
+		}
 	}
 
 	async fn present(&self) -> Result<crate::bind::types::BindRules, VendorError> {
@@ -64,4 +94,10 @@ pub enum VendorError {
 
 	#[error("Could not mount ROCm device: {0}")]
 	KfdIOError(std::io::Error),
+
+	#[error("Unknown GPU vendor: {0}")]
+	UnknownVendor(String),
+
+	#[error("Unknown NVIDIA driver type")]
+	UnknownNVIDIADriver,
 }
