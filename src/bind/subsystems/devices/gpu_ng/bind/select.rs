@@ -46,11 +46,11 @@ where
 	let (
 		(
 			vendor_bind_late_tx,
-			vendor_bind_late_rx,
+			mut vendor_bind_late_rx,
 		),
 		(
 			vendor_bind_early_tx,
-			vendor_bind_early_rx,
+			mut vendor_bind_early_rx,
 		),
 	) = {
 		(
@@ -113,7 +113,49 @@ where
 		}));
 	};
 
-	unimplemented!()
+	{
+		for worker in workers {
+			match worker.await.map_err(SelectError::TokioJoinError) {
+				Ok(v)	=> {
+					match v {
+						Ok(_)	=> {}
+						Err(e)	=> {
+							use crate::logger::messages::warn::WarnMessage;
+							let _ = log_tx.send(
+								crate::logger::messages::LogMessage::Warn(
+									WarnMessage::GPUError(e)
+								)
+							).await;
+						}
+					}
+				}
+				Err(e)	=> {
+					use crate::logger::messages::warn::WarnMessage;
+					let _ = log_tx.send(
+						crate::logger::messages::LogMessage::Warn(
+							WarnMessage::GPUError(e)
+						)
+					).await;
+				}
+			}
+		}
+	};
+
+	let bind_rules = {
+		let mut rules = vec![];
+
+		while let Some(v) = vendor_bind_early_rx.recv().await {
+			rules.extend(v);
+		}
+
+		while let Some(v) = vendor_bind_late_rx.recv().await {
+			rules.extend(v);
+		}
+
+		rules
+	};
+
+	bind_rules
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -123,4 +165,7 @@ pub enum SelectError {
 
 	#[error("Could not send to tokio channel: {0}")]
 	TokioSendError(tokio::sync::mpsc::error::SendError<crate::bind::types::BindRules>),
+
+	#[error("Could not spawn GPU work: {0}")]
+	TokioJoinError(tokio::task::JoinError),
 }
