@@ -20,7 +20,7 @@ pub fn associate(devices: Vec<udev::Device>) -> Result<Vec<super::GPUPair>, Enum
 		let mut renderers = vec![];
 
 		for dev in devices {
-			let mut devpath: std::path::PathBuf = dev.devpath().into();
+			let devpath: std::path::PathBuf = dev.devpath().into();
 
 			let devpath = devpath.parent().unwrap_or(&devpath);
 

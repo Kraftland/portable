@@ -1,3 +1,21 @@
+mod from;
+
+#[derive(Debug, thiserror::Error)]
+pub enum EnumerateError {
+	#[error("Could not enumerate udev GPUs: {0}")]
+	UdevEnumerateError(crate::bind::subsystems::devices::EnumerateError),
+
+	#[error("Could not associate renderer node with card node: card {0:?} missing renderer")]
+	RendererMissing(std::ffi::OsString),
+
+	#[error("Could not translate device name to String: {0:?}")]
+	NonUnicode(std::ffi::OsString),
+
+	#[error("Could not translate device links to String: {0:?}")]
+	DevlinksNonUnicode(std::ffi::OsString),
+}
+
+
 /**
 	GPUInfo represents a single GPU device.
 
