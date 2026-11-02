@@ -73,10 +73,10 @@ pub fn associate(devices: Vec<udev::Device>) -> Result<Vec<super::GPUPair>, Enum
 	let mut ret = vec![];
 
 	for card in cards {
-
 		if let Some(v) = renderers.remove(&card.devpath_stripped) {
 			ret.push(
 				super::GPUPair {
+					parent:		v.parent(),
 					renderer:	v,
 					card:		card.device,
 				},
