@@ -5,6 +5,21 @@ pub enum NVIDIADriver {
 	Unknown,
 }
 
+impl From<Option<&std::ffi::OsStr>> for NVIDIADriver {
+	fn from(value: Option<&std::ffi::OsStr>) -> Self {
+		let value = match value {
+			Some(v)	=> v,
+			None	=> return Self::Unknown,
+		};
+
+		match value.to_str() {
+			Some("nvidia")	=> Self::Proprietary,
+			Some("nouveau")	=> Self::Nouveau,
+			_		=> Self::Unknown,
+		}
+	}
+}
+
 /*
 	Scan /dev/ for nvidia device nodes that aren't in udev database.
 
