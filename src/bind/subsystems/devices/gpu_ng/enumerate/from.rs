@@ -25,5 +25,7 @@ pub async fn enumerate() -> Result<Vec<super::GPUInfo>, super::EnumerateError> {
 
 	let devices = associate::associate(devices)?;
 
+	unimplemented!()
+
 
 }
