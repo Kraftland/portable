@@ -15,6 +15,8 @@ pub enum GPUVendor {
 	},
 }
 
+mod from;
+
 pub mod nvidia;
 pub mod amd;
 
