@@ -1,4 +1,4 @@
-mod from;
+pub mod from;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EnumerateError {
