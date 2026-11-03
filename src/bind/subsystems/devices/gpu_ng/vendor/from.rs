@@ -4,7 +4,7 @@
 	It takes a borrowed parent udev Device to gather information about the graphics card.
 */
 fn device_to_vendor(device: &udev::Device) -> super::GPUVendor {
-	let vendor = match device.property_value("vendor") {
+	let vendor = match device.attribute_value("vendor") {
 		Some(v)	=> v,
 		None	=> return super::GPUVendor::Other { vendor: format!("None") }
 	};
