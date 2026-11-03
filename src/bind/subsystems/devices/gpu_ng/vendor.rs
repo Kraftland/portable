@@ -54,6 +54,14 @@ pub trait VendorHook {
 	*/
 	fn offload(&self, env: &crate::envs::holder::HoldChannel)
 		-> impl Future<Output = Result<(), VendorError>>;
+
+	/**
+		Environment variables to set when zink is enabled.
+
+		Currently it is NVIDIA only, specifically to fix wemeet.
+	*/
+	fn zink(&self, env: &crate::envs::holder::HoldChannel)
+		-> impl Future<Output = Result<(), VendorError>>;
 }
 
 impl VendorHook for GPUVendor {
@@ -209,6 +217,53 @@ impl VendorHook for GPUVendor {
 				}
 			}
 		}
+	}
+	async fn zink(&self, env: &crate::envs::holder::HoldChannel)
+			-> Result<(), VendorError>
+	{
+		match self {
+			Self::NVIDIA { driver }	=> {
+				env.send(
+					crate::envs::holder::EnvMessage::Add {
+						key:	"MESA_LOADER_DRIVER_OVERRIDE".into(),
+						value:	"zink".into(),
+					}
+				)
+					.await
+					.map_err(VendorError::EnvSendError)
+					?;
+				env.send(
+					crate::envs::holder::EnvMessage::Add {
+						key:	"GALLIUM_DRIVER".into(),
+						value:	"zink".into(),
+					}
+				)
+					.await
+					.map_err(VendorError::EnvSendError)
+					?;
+				env.send(
+					crate::envs::holder::EnvMessage::Add {
+						key:	"LIBGL_KOPPER_DRI2".into(),
+						value:	"1".into(),
+					}
+				)
+					.await
+					.map_err(VendorError::EnvSendError)
+					?;
+				env.send(
+					crate::envs::holder::EnvMessage::Add {
+						key:	"__EGL_VENDOR_LIBRARY_FILENAMES".into(),
+						value:	"/usr/share/glvnd/egl_vendor.d/50_mesa.json".into(),
+					}
+				)
+					.await
+					.map_err(VendorError::EnvSendError)
+					?;
+			}
+			_			=> {}
+		};
+
+		Ok(())
 	}
 }
 
