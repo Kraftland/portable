@@ -10,7 +10,7 @@
 */
 pub async fn select<T>(
 	devices:	T,
-	all_gpus:	bool,
+	all_gpus:	&bool,
 	log_tx:		crate::logger::LogSender,
 )
 ->
@@ -18,7 +18,7 @@ pub async fn select<T>(
 where
 	T:	IntoIterator<Item = super::GPUInfo>,
 {
-	let gpu_map = if all_gpus {
+	let gpu_map = if *all_gpus {
 		let mut gpu_map = vec![];
 		for dev in devices {
 			gpu_map.push((dev, true));
@@ -123,7 +123,7 @@ where
 							use crate::logger::messages::warn::WarnMessage;
 							let _ = log_tx.send(
 								crate::logger::messages::LogMessage::Warn(
-									WarnMessage::GPUError(e)
+									WarnMessage::GPUSelectError(e)
 								)
 							).await;
 						}
@@ -133,7 +133,7 @@ where
 					use crate::logger::messages::warn::WarnMessage;
 					let _ = log_tx.send(
 						crate::logger::messages::LogMessage::Warn(
-							WarnMessage::GPUError(e)
+							WarnMessage::GPUSelectError(e)
 						)
 					).await;
 				}

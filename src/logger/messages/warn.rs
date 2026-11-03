@@ -78,15 +78,22 @@ pub enum WarnMessage {
 	DynamicPermissionsError(crate::pref::permissions::consent::ConsentError),
 
 	#[cfg(feature = "gpu")]
-	GPUError(crate::bind::subsystems::devices::gpu_ng::SelectError),
+	GPUSelectError(crate::bind::subsystems::devices::gpu_ng::SelectError),
+	#[cfg(feature = "gpu")]
+	GPUEnumerateError(crate::bind::subsystems::devices::gpu_ng::EnumerateError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::GPUError(v)		=> {
+			Self::GPUEnumerateError(v)	=> {
 				f.write_fmt(
-					format_args!("Could not bind GPU: {v}")
+					format_args!("Could not enumerate GPUs: {v}")
+				)
+			}
+			Self::GPUSelectError(v)		=> {
+				f.write_fmt(
+					format_args!("Could not select GPU to bind: {v}")
 				)
 			}
 
