@@ -33,11 +33,12 @@ impl super::GenerateBind for Devices {
 		#[cfg(feature = "gpu")]
 		{
 			let logger = self.logger.clone();
+			let envs = self.envs.clone();
 
 			tasks.push(
 				tokio::spawn(
 					async move {
-						gpu_ng::bind(self.all_gpus, logger)
+						gpu_ng::bind(self.all_gpus, logger, envs)
 							.await
 							.map_err(DeviceError::GPUError)
 					}

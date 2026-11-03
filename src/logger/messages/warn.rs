@@ -81,11 +81,18 @@ pub enum WarnMessage {
 	GPUSelectError(crate::bind::subsystems::devices::gpu_ng::SelectError),
 	#[cfg(feature = "gpu")]
 	GPUEnumerateError(crate::bind::subsystems::devices::gpu_ng::EnumerateError),
+	#[cfg(feature = "gpu")]
+	GPUVendorError(crate::bind::subsystems::devices::gpu_ng::VendorError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::GPUVendorError(v)		=> {
+				f.write_fmt(
+					format_args!("Could not execute GPU vendor hook: {v}")
+				)
+			}
 			Self::GPUEnumerateError(v)	=> {
 				f.write_fmt(
 					format_args!("Could not enumerate GPUs: {v}")

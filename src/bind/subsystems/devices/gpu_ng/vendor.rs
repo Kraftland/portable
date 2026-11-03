@@ -52,7 +52,7 @@ pub trait VendorHook {
 
 		Effectly just PRIME render offloading.
 	*/
-	fn offload(&self, env: crate::envs::holder::HoldChannel)
+	fn offload(&self, env: &crate::envs::holder::HoldChannel)
 		-> impl Future<Output = Result<(), VendorError>>;
 }
 
@@ -137,7 +137,7 @@ impl VendorHook for GPUVendor {
 		}
 	}
 
-	async fn offload(&self, env: crate::envs::holder::HoldChannel)
+	async fn offload(&self, env: &crate::envs::holder::HoldChannel)
 			-> Result<(), VendorError>
 	{
 		match self {

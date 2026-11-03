@@ -30,6 +30,7 @@ pub use bind::select::SelectError;
 pub async fn bind(
 	all_gpus:	bool,
 	logger:		crate::logger::LogSender,
+	env:		crate::envs::holder::HoldChannel,
 ) -> Result<crate::bind::types::BindRules, GPUError> {
 	let gpus = match enumerate::from::enumerate().await {
 		Ok(v)	=> v,
@@ -45,7 +46,7 @@ pub async fn bind(
 	};
 
 	Ok(
-		bind::select::select(gpus, &all_gpus, logger).await
+		bind::select::select(gpus, &all_gpus, logger, env).await
 	)
 }
 

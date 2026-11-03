@@ -12,6 +12,7 @@ pub async fn select<T>(
 	devices:	T,
 	all_gpus:	&bool,
 	log_tx:		crate::logger::LogSender,
+	env:		crate::envs::holder::HoldChannel,
 )
 ->
 	crate::bind::types::BindRules
@@ -19,8 +20,19 @@ where
 	T:	IntoIterator<Item = super::GPUInfo>,
 {
 	let gpu_map = if *all_gpus {
+		use crate::bind::subsystems::devices::gpu_ng::vendor::VendorHook;
 		let mut gpu_map = vec![];
 		for dev in devices {
+			match dev.vendor.offload(&env).await {
+				Ok(_)	=> {}
+				Err(e)	=> {
+					let _ = log_tx.send(
+						crate::logger::messages::LogMessage::Warn(
+							crate::logger::messages::warn::WarnMessage::GPUVendorError(e)
+						)
+					).await;
+				}
+			};
 			gpu_map.push((dev, true));
 		};
 		gpu_map
