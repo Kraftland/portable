@@ -21,3 +21,9 @@ fn device_to_vendor(device: &udev::Device) -> super::GPUVendor {
 		}
 	}
 }
+
+impl From<&udev::Device> for super::GPUVendor {
+	fn from(value: &udev::Device) -> Self {
+		device_to_vendor(value)
+	}
+}
