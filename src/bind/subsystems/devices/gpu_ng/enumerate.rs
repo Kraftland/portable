@@ -59,7 +59,7 @@ pub struct GPUInfo {
 	/**
 		Device path in sysfs
 	*/
-	pub	render_syspath:	Option<std::path::PathBuf>,
+	pub	render_syspath:	std::path::PathBuf,
 
 	/**
 		Card node name. Like card0, card1.
