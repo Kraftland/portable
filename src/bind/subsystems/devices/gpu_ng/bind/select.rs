@@ -11,6 +11,7 @@
 pub async fn select<T>(
 	devices:	T,
 	all_gpus:	&bool,
+	zink:		&bool,
 	log_tx:		crate::logger::LogSender,
 	env:		crate::envs::holder::HoldChannel,
 )
@@ -82,6 +83,20 @@ where
 				vendor_bind_late_tx.clone(),
 				vendor_bind_early_tx.clone(),
 			)
+		};
+
+		if *zink {
+			use crate::bind::subsystems::devices::gpu_ng::vendor::VendorHook;
+			match device.vendor.zink(&env).await {
+				Ok(_)	=> {}
+				Err(e)	=> {
+					let _ = log_tx.send(
+						crate::logger::messages::LogMessage::Warn(
+							crate::logger::messages::warn::WarnMessage::GPUVendorError(e)
+						)
+					).await;
+				}
+			}
 		};
 
 		workers.push(tokio::spawn(async move {

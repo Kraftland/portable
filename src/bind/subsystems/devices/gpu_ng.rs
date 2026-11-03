@@ -29,6 +29,7 @@ pub use bind::select::SelectError;
 
 pub async fn bind(
 	all_gpus:	bool,
+	zink:		bool,
 	logger:		crate::logger::LogSender,
 	env:		crate::envs::holder::HoldChannel,
 ) -> Result<crate::bind::types::BindRules, GPUError> {
@@ -46,7 +47,7 @@ pub async fn bind(
 	};
 
 	Ok(
-		bind::select::select(gpus, &all_gpus, logger, env).await
+		bind::select::select(gpus, &all_gpus, &zink, logger, env).await
 	)
 }
 

@@ -222,7 +222,7 @@ impl VendorHook for GPUVendor {
 			-> Result<(), VendorError>
 	{
 		match self {
-			Self::NVIDIA { driver }	=> {
+			Self::NVIDIA { driver: _ }	=> {
 				env.send(
 					crate::envs::holder::EnvMessage::Add {
 						key:	"MESA_LOADER_DRIVER_OVERRIDE".into(),

@@ -38,7 +38,7 @@ impl super::GenerateBind for Devices {
 			tasks.push(
 				tokio::spawn(
 					async move {
-						gpu_ng::bind(self.all_gpus, logger, envs)
+						gpu_ng::bind(self.all_gpus, self.zink, logger, envs)
 							.await
 							.map_err(DeviceError::GPUError)
 					}
