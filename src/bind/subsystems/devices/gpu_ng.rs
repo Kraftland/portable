@@ -16,6 +16,7 @@ pub use vendor::VendorError;
 */
 mod enumerate;
 pub use enumerate::GPUInfo;
+pub use enumerate::EnumerateError;
 
 /**
 	The bind module decide which GPU to bind.
@@ -25,3 +26,28 @@ pub use enumerate::GPUInfo;
 */
 mod bind;
 pub use bind::select::SelectError;
+
+pub async fn bind(
+	all_gpus:	bool,
+	logger:		crate::logger::LogSender,
+) -> Result<crate::bind::types::BindRules, GPUError> {
+	let gpus = match enumerate::from::enumerate().await {
+		Ok(v)	=> v,
+		Err(e)	=> {
+			let _ = logger.send(
+				crate::logger::messages::LogMessage::Warn(
+					crate::logger::messages::warn::WarnMessage::GPUEnumerateError(e)
+				)
+			).await;
+
+			return Ok(vec![]);
+		}
+	};
+
+	Ok(
+		bind::select::select(gpus, &all_gpus, logger).await
+	)
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GPUError {}
