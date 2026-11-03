@@ -93,5 +93,5 @@ pub struct GPUInfo {
 	/**
 		Device path in sysfs
 	*/
-	pub	parent_syspath:	std::path::PathBuf,
+	pub	parent_syspath:	Option<std::path::PathBuf>,
 }
