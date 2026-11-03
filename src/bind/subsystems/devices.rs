@@ -30,6 +30,21 @@ impl super::GenerateBind for Devices {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
 		let mut tasks = vec![];
 
+		#[cfg(feature = "gpu")]
+		{
+			let logger = self.logger.clone();
+
+			tasks.push(
+				tokio::spawn(
+					async move {
+						gpu_ng::bind(self.all_gpus, logger)
+							.await
+							.map_err(DeviceError::GPUError)
+					}
+				)
+			);
+		};
+
 		#[cfg(feature = "input")]
 		if self.bind_input {
 			tasks.push(
@@ -89,17 +104,20 @@ impl super::GenerateBind for Devices {
 
 #[derive(Debug, Error)]
 pub enum DeviceError {
+	#[cfg(feature = "gpu")]
+	#[error("Could not bind GPU: {0}")]
+	GPUError(gpu_ng::GPUError),
 
-	#[error("Could not handle Camera devices: {0:#?}")]
+	#[error("Could not handle Camera devices: {0}")]
 	CameraError(camera::CameraError),
 
-	#[error("Could not handle Input devices: {0:#?}")]
+	#[error("Could not handle Input devices: {0}")]
 	InputError(input::InputError),
 
 	#[error("Could not handle KVM devices: {0}")]
 	KVMError(kvm::KvmError),
 
-	#[error("Could not spawn task: {0:#?}")]
+	#[error("Could not spawn task: {0}")]
 	Spawn(tokio::task::JoinError),
 }
 
