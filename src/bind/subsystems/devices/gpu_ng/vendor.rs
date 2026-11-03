@@ -46,6 +46,14 @@ pub trait VendorHook {
 		Actions to invoke when present, see trait document
 	*/
 	fn present(&self) -> impl Future<Output = Result<crate::bind::types::BindRules, VendorError>>;
+
+	/**
+		Environment variables to set when present and all_gpus are set to true.
+
+		Effectly just PRIME render offloading.
+	*/
+	fn offload(&self, env: crate::envs::holder::HoldChannel)
+		-> impl Future<Output = Result<(), VendorError>>;
 }
 
 impl VendorHook for GPUVendor {
@@ -128,10 +136,87 @@ impl VendorHook for GPUVendor {
 			}
 		}
 	}
+
+	async fn offload(&self, env: crate::envs::holder::HoldChannel)
+			-> Result<(), VendorError>
+	{
+		match self {
+			Self::Intel | Self::AMD | Self::Other { vendor: _ }
+			=> {
+				// TODO: we should set device / vendor ID, see mesa:
+				// https://docs.mesa3d.org/envvars.html#:~:text=DRI%5FPRIME
+				// but we should also wait until gpud or some other selection logic
+				// comes along, or we should probably just leave it as is.
+
+				env.send(
+					crate::envs::holder::EnvMessage::Add {
+						key:	"DRI_PRIME".into(),
+						value:	"1".into(),
+					}
+				)
+					.await
+					.map_err(VendorError::EnvSendError)
+					?;
+				Ok(())
+			}
+
+			Self::NVIDIA { driver }
+			=> {
+				match driver {
+					nvidia::NVIDIADriver::Proprietary	=> {
+						env.send(
+							crate::envs::holder::EnvMessage::Add {
+								key:	"__NV_PRIME_RENDER_OFFLOAD".into(),
+								value:	"1".into(),
+							}
+						)
+							.await
+							.map_err(VendorError::EnvSendError)
+							?;
+						env.send(
+							crate::envs::holder::EnvMessage::Add {
+								key:	"__VK_LAYER_NV_optimus".into(),
+								value:	"NVIDIA_only".into(),
+							}
+						)
+							.await
+							.map_err(VendorError::EnvSendError)
+							?;
+						env.send(
+							crate::envs::holder::EnvMessage::Add {
+								key:	"__GLX_VENDOR_LIBRARY_NAME".into(),
+								value:	"nvidia".into(),
+							}
+						)
+							.await
+							.map_err(VendorError::EnvSendError)
+							?;
+						Ok(())
+					}
+					nvidia::NVIDIADriver::Nouveau | nvidia::NVIDIADriver::Unknown
+					=> {
+						env.send(
+							crate::envs::holder::EnvMessage::Add {
+								key:	"DRI_PRIME".into(),
+								value:	"1".into(),
+							}
+						)
+							.await
+							.map_err(VendorError::EnvSendError)
+							?;
+						Ok(())
+					}
+				}
+			}
+		}
+	}
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum VendorError {
+	#[error("Could not send PRIME render offload variables: {0}")]
+	EnvSendError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
+
 	#[error("Could not scan for nvidia devices under devtmpfs: {0}")]
 	ScanNvidiaDevError(std::io::Error),
 
