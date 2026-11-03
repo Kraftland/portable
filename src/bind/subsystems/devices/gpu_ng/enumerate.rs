@@ -13,6 +13,12 @@ pub enum EnumerateError {
 
 	#[error("Could not translate device links to String: {0:?}")]
 	DevlinksNonUnicode(std::ffi::OsString),
+
+	#[error("Unexpected boot_display value: {0:?}")]
+	BootDisplayUnexpected(std::ffi::OsString),
+
+	#[error("Unexpected boot_vga value: {0:?}")]
+	BootVGAUnexpected(std::ffi::OsString),
 }
 
 
