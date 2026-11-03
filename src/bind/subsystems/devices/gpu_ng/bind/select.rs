@@ -141,6 +141,11 @@ where
 		}
 	};
 
+	{
+		vendor_bind_late_rx.close();
+		vendor_bind_early_rx.close();
+	};
+
 	let bind_rules = {
 		let mut rules = vec![];
 
