@@ -47,7 +47,16 @@ pub async fn bind(
 	};
 
 	Ok(
-		bind::select::select(gpus, &all_gpus, &zink, logger, env).await
+		crate::bind::types::DeDupRules::dedup(
+			bind::select::select(
+				gpus,
+				&all_gpus,
+				&zink,
+				logger,
+				env,
+			)
+				.await
+		)
 	)
 }
 
