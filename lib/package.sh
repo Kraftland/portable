@@ -46,12 +46,6 @@ install -vDm755 \
 	-t \
 	"${installPrefix}/usr/lib/portable/prlimit-stub/"
 
-
-install -vDm755 \
-	"target/release/gputest" \
-	-t \
-	"${installPrefix}/usr/lib/portable/"
-
 install -vDm755 \
 	"target/release/portable-daemon" \
 	"${installPrefix}/usr/bin/portable"
