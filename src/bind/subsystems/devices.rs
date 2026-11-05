@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[cfg(feature = "gpu")]
-pub mod gpu;
+pub mod gpu_ng;
 
 #[cfg(feature = "camera")]
 pub mod camera;
@@ -30,23 +30,21 @@ impl super::GenerateBind for Devices {
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::BindError> {
 		let mut tasks = vec![];
 
-		let logger_clone = self.logger.clone();
-
 		#[cfg(feature = "gpu")]
-		tasks.push(
-			tokio::spawn(
-				async move {
-					gpu::scan(
-						logger_clone,
-						self.all_gpus,
-						self.envs,
-						self.zink,
-					)
-					.await
-					.map_err(DeviceError::GPUError)
-				}
-			),
-		);
+		{
+			let logger = self.logger.clone();
+			let envs = self.envs.clone();
+
+			tasks.push(
+				tokio::spawn(
+					async move {
+						gpu_ng::bind(self.all_gpus, self.zink, logger, envs)
+							.await
+							.map_err(DeviceError::GPUError)
+					}
+				)
+			);
+		};
 
 		#[cfg(feature = "input")]
 		if self.bind_input {
@@ -107,19 +105,20 @@ impl super::GenerateBind for Devices {
 
 #[derive(Debug, Error)]
 pub enum DeviceError {
-	#[error("Could not handle GPU devices: {0:#?}")]
-	GPUError(gpu::GPUError),
+	#[cfg(feature = "gpu")]
+	#[error("Could not bind GPU: {0}")]
+	GPUError(gpu_ng::GPUError),
 
-	#[error("Could not handle Camera devices: {0:#?}")]
+	#[error("Could not handle Camera devices: {0}")]
 	CameraError(camera::CameraError),
 
-	#[error("Could not handle Input devices: {0:#?}")]
+	#[error("Could not handle Input devices: {0}")]
 	InputError(input::InputError),
 
 	#[error("Could not handle KVM devices: {0}")]
 	KVMError(kvm::KvmError),
 
-	#[error("Could not spawn task: {0:#?}")]
+	#[error("Could not spawn task: {0}")]
 	Spawn(tokio::task::JoinError),
 }
 
@@ -142,7 +141,7 @@ pub enum Filter {
 	SubsystemWithDevtype {subsystem: String, devtype: String},
 }
 
-pub async fn enumerate(filter: Filter) -> Result<Vec<udev::Device>, EnumerateError> {
+pub fn enumerate(filter: Filter) -> Result<Vec<udev::Device>, EnumerateError> {
 	let mut enumerator = match filter {
 		Filter::Subsystem { subsystem }				=> {
 			let mut enumerator = {
@@ -244,7 +243,7 @@ fn bind_devlinks(devlinks: Option<&std::ffi::OsStr>)
 	ret
 }
 
-async fn bind_udev_device(device: &udev::Device) -> Vec<crate::bind::types::BindRule> {
+fn bind_udev_device(device: &udev::Device) -> Vec<crate::bind::types::BindRule> {
 	use crate::bind::types::BindType;
 	use crate::bind::types::BindRule;
 

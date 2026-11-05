@@ -33,7 +33,6 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 				subsystem: "input".to_string(),
 			},
 		)
-			.await
 			.map_err(InputError::EnumerateError)
 			?;
 
@@ -42,7 +41,6 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 				subsystem: "hid".to_string(),
 			},
 		)
-			.await
 			.map_err(InputError::EnumerateError)
 			?;
 
@@ -51,7 +49,6 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 				subsystem: "hidraw".to_string(),
 			},
 		)
-			.await
 			.map_err(InputError::EnumerateError)
 			?;
 
@@ -63,7 +60,7 @@ pub async fn scan() -> Result<crate::bind::types::BindRules, InputError> {
 	};
 
 	for device in devices {
-		ret.extend(super::bind_udev_device(&device).await);
+		ret.extend(super::bind_udev_device(&device));
 	};
 
 	Ok(crate::bind::types::DeDupRules::dedup(ret))

@@ -54,7 +54,6 @@ pub enum WarnMessage {
 
 	X11AuthorityBindError(crate::bind::subsystems::display::x11::xauth::XAuthorityError),
 
-	EnumerateGPUError(crate::bind::subsystems::devices::gpu::GPUError),
 	GPUSpawnError(tokio::task::JoinError),
 	UnknownGPUVendor,
 	UnknownNVIDIADriver(Option<std::string::String>),
@@ -77,11 +76,34 @@ pub enum WarnMessage {
 	XdgEnvLoadError(crate::envs::xdg::XDGEnvError),
 
 	DynamicPermissionsError(crate::pref::permissions::consent::ConsentError),
+
+	#[cfg(feature = "gpu")]
+	GPUSelectError(crate::bind::subsystems::devices::gpu_ng::SelectError),
+	#[cfg(feature = "gpu")]
+	GPUEnumerateError(crate::bind::subsystems::devices::gpu_ng::EnumerateError),
+	#[cfg(feature = "gpu")]
+	GPUVendorError(crate::bind::subsystems::devices::gpu_ng::VendorError),
 }
 
 impl std::fmt::Display for WarnMessage {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::GPUVendorError(v)		=> {
+				f.write_fmt(
+					format_args!("Could not execute GPU vendor hook: {v}")
+				)
+			}
+			Self::GPUEnumerateError(v)	=> {
+				f.write_fmt(
+					format_args!("Could not enumerate GPUs: {v}")
+				)
+			}
+			Self::GPUSelectError(v)		=> {
+				f.write_fmt(
+					format_args!("Could not select GPU to bind: {v}")
+				)
+			}
+
 			Self::DynamicPermissionsError(v)
 			=> {
 				f.write_fmt(
@@ -169,11 +191,6 @@ impl std::fmt::Display for WarnMessage {
 			Self::GPUSpawnError(v)		=> {
 				f.write_fmt(
 					format_args!("Could not spawn GPU task: {v}")
-				)
-			}
-			Self::EnumerateGPUError(v)	=> {
-				f.write_fmt(
-					format_args!("Could not enumerate GPUs: {v}")
 				)
 			}
 			Self::X11AuthorityBindError(v)	=> {
