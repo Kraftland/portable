@@ -340,13 +340,6 @@ async fn generate_properties(
 
 	vec.push(
 		(
-			String::from("PrivateIPC"),
-			OwnedValue::from(true),
-		)
-	);
-
-	vec.push(
-		(
 			String::from("ProtectClock"),
 			OwnedValue::from(true),
 		)
@@ -414,30 +407,6 @@ async fn generate_properties(
 		(
 			String::from("RestrictRealtime"),
 			OwnedValue::from(true),
-		)
-	);
-
-	vec.push(
-		(
-			String::from("ProtectProc"),
-			OwnedValue::from(Str::from("invisible")),
-			/*
-				https://github.com/systemd/systemd/blob/6a863b4dc31adc49fdfdd5deba32ed1b115adda3/src/core/namespace.h#L40
-			*/
-		)
-	);
-
-	vec.push(
-		(
-			String::from("ProcSubset"),
-			Str::from("pid").into(),
-		)
-	);
-
-	vec.push(
-		(
-			"PrivateUsers".into(),
-			true.into(),
 		)
 	);
 
@@ -512,30 +481,6 @@ async fn generate_properties(
 					.map_err(StartAppError::PropertiesError)
 					?
 			}
-		)
-	);
-
-	vec.push(
-		(
-			"SystemCallFilter".into(),
-			{
-				let is_whitelist = false;
-				let deny_list = vec![
-					"@clock",
-					"@cpu-emulation",
-					"@module",
-					"@obsolete",
-					"@raw-io",
-					"@reboot",
-					"@swap",
-				];
-
-				let native_tuple = (is_whitelist, deny_list);
-				zbus::zvariant::Value::from(native_tuple)
-					.try_into()
-					.map_err(StartAppError::PropertiesError)
-					?
-			},
 		)
 	);
 
