@@ -71,4 +71,7 @@ pub enum StartError {
 
 	#[error("Could not start the sandbox: a fatal error has occured")]
 	FatalShutdown,
+
+	#[error("Could not create a signal listener: {0}")]
+	SignalListenerError(std::io::Error),
 }
