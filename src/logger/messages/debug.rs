@@ -24,6 +24,8 @@ pub enum DebugMessage {
 	QuitProxy,
 	QuitSandbox,
 	QuitController,
+	QuitSIGINT,
+	QuitSIGTERM,
 
 	AuxRequested,
 }
@@ -39,10 +41,16 @@ impl std::fmt::Display for DebugMessage {
 				f.write_str("Quit requested: IPC controller")
 			}
 			Self::QuitProxy			=> {
-				f.write_str("Quit requesed: D-Bus proxy finished")
+				f.write_str("Quit requested: D-Bus proxy finished")
 			}
 			Self::QuitSandbox		=> {
-				f.write_str("Quit requesed: sandbox finished")
+				f.write_str("Quit requested: sandbox finished")
+			}
+			Self::QuitSIGINT		=> {
+				f.write_str("Quit requested: keyboard interrupt")
+			}
+			Self::QuitSIGTERM		=> {
+				f.write_str("Quit requested: terminated by other process")
 			}
 			Self::EnvSet { key, val }	=> {
 				f.write_fmt(
