@@ -547,6 +547,30 @@ async fn run(
 				?;
 		}
 
+		_	=	sigterm.recv()		=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitSIGTERM
+				)
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
+		_	=	sigint.recv()		=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitSIGINT
+				)
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
 		/*
 			This is problematic. Should the first invocation be finished and
 				other instances remaining, this will cause them to be killed too
