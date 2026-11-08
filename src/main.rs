@@ -521,6 +521,19 @@ async fn run(
 		cancel_token
 	};
 
+	let (
+		mut sigterm,
+		mut sigint,
+	) = {
+		use tokio::signal::unix::signal;
+		use tokio::signal::unix::SignalKind;
+
+		(
+			signal(SignalKind::terminate()).map_err(StartError::SignalListenerError)?,
+			signal(SignalKind::interrupt()).map_err(StartError::SignalListenerError)?,
+		)
+	};
+
 	tokio::select! {
 		_	=	bus_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
