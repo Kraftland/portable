@@ -149,7 +149,4 @@ impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ToBindError {
-	#[error("Could not canonicalise DRM path: {0}")]
-	DrmCanonicaliseError(std::io::Error),
-}
+pub enum ToBindError {}
