@@ -12,6 +12,7 @@
 - thread-safe libudev is not required anymore
 - Portable now terminates correctly when receiving a SIGTERM or SIGINT signal
 - Fixed invalid symbolic links under /sys/class/drm
+- Denied system calls would no longer spam journal
 
 # 20.2
 
