@@ -521,12 +521,49 @@ async fn run(
 		cancel_token
 	};
 
+	let (
+		mut sigterm,
+		mut sigint,
+	) = {
+		use tokio::signal::unix::signal;
+		use tokio::signal::unix::SignalKind;
+
+		(
+			signal(SignalKind::terminate()).map_err(StartError::SignalListenerError)?,
+			signal(SignalKind::interrupt()).map_err(StartError::SignalListenerError)?,
+		)
+	};
+
 	tokio::select! {
 		_	=	bus_cancel.cancelled()	=> {
 			#[cfg(debug_assertions)]
 			log_tx.send(
 				logger::messages::LogMessage::Debug(
 					logger::messages::debug::DebugMessage::QuitController
+				)
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
+		_	=	sigterm.recv()		=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitSIGTERM
+				)
+			)
+				.await
+				.map_err(StartError::LogError)
+				?;
+		}
+
+		_	=	sigint.recv()		=> {
+			#[cfg(debug_assertions)]
+			log_tx.send(
+				logger::messages::LogMessage::Debug(
+					logger::messages::debug::DebugMessage::QuitSIGINT
 				)
 			)
 				.await

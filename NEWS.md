@@ -10,6 +10,7 @@
 - Rewritten the GPU subsystem to make it more efficient
 - Removed several duplicated systemd properties to speed up their startup
 - thread-safe libudev is not required anymore
+- Portable now terminates correctly when receiving a SIGTERM or SIGINT signal
 
 # 20.2
 
