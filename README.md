@@ -1,7 +1,7 @@
 # Abstract
 Portable is a security and privacy focused speedy Linux desktop sandbox.
 
-Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org), or [Portable Sandbox](https://t.me/PortableSandbox)
+Discuss Development at [#portable-dev:matrix.org](https://matrix.to/#/#portable-dev:matrix.org), or [Portable Sandbox](https://t.me/PortableSandbox). The former Matrix group is official, while the latter one is bridged albeit having no stability guarantee.
 
 ## Why Portable?
 
