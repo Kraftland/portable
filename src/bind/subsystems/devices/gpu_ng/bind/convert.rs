@@ -2,33 +2,46 @@ impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 	fn try_from(value: &super::GPUInfo) -> Result<Self, Self::Error> {
 		let mut ret: Vec<crate::bind::types::BindRule> = vec![];
 
-		// /sys/class/drm is not convered yet.
+		/*
+			/sys/class/drm is not convered yet.
+
+			They are just mere symbolic links pointing to the respective syspath()s.
+
+			Avoid querying realpath because that is heavy, and kernel behaviour might
+			change.
+		*/
 		{
 			let drm_path: std::path::PathBuf = ["/sys", "class", "drm"].iter().collect();
 
-			let card_path = {
+			let (card_bind_src, card_drm_path) = {
 				let mut path = drm_path.to_path_buf();
 				path.push(value.card_name.as_str());
-				path
-			};
-			let render_path = {
-				let mut path = drm_path.to_path_buf();
-				path.push(value.render_name.as_str());
-				path
+				(
+					value.card_syspath.to_path_buf(),
+					path,
+				)
 			};
 
 			ret.push(
-				crate::bind::types::BindRule::Path {
-					source:	card_path.to_path_buf(),
-					dest:	card_path,
-					class:	crate::bind::types::BindType::Device,
+				crate::bind::types::BindRule::Symlink {
+					source:	card_bind_src,
+					dest:	card_drm_path,
 				}
 			);
+
+			let (render_bind_src, render_drm_path) = {
+				let mut path = drm_path.to_path_buf();
+				path.push(value.render_name.as_str());
+				(
+					value.render_syspath.to_path_buf(),
+					path,
+				)
+			};
+
 			ret.push(
-				crate::bind::types::BindRule::Path {
-					source:	render_path.to_path_buf(),
-					dest:	render_path,
-					class:	crate::bind::types::BindType::Device,
+				crate::bind::types::BindRule::Symlink {
+					source:	render_bind_src,
+					dest:	render_drm_path,
 				}
 			);
 		};
@@ -136,6 +149,4 @@ impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ToBindError {
-
-}
+pub enum ToBindError {}

@@ -11,6 +11,7 @@
 - Removed several duplicated systemd properties to speed up their startup
 - thread-safe libudev is not required anymore
 - Portable now terminates correctly when receiving a SIGTERM or SIGINT signal
+- Fixed invalid symbolic links under /sys/class/drm
 
 # 20.2
 
