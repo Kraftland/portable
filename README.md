@@ -147,4 +147,4 @@ Portable follows a major.minor.patch version scheme. We thrives to provide a sta
 
 The patch release is exclusive for bug fixes. Whereas minor releases contain new features. If a feature or a set of features needs time to test or is important enough, we conduct a major release.
 
-Portable has and always will be only supporting the latest release. Generally users can upgrade without manual intervention, but between major releases it's advised to run `systemctl --user stop portable.slice` to stop the portable framework.
+Portable has and always will be only supporting the latest release. Generally users can upgrade without manual intervention, but between major releases it's advised to restart running applications.
