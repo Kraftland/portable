@@ -87,12 +87,12 @@ device_allow = []
 
 # The network section defines behaviour of Portable's network firewall.
 [network]
-# Whether or not an application can use network interfaces. Defaults to true.
+# Whether or not an application can use network interfaces. Defaults to false.
 enable = true
 
 # The privacy section defines several security and privacy preference.
 [privacy]
-# When false, prevents application from connecting to X server on Wayland. Defaults to true.
+# When false, prevents application from connecting to X server on Wayland. Defaults to false.
 # Previously x11.
 x11_compat = true
 
