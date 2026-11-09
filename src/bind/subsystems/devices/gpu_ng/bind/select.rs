@@ -117,7 +117,10 @@ where
 				return Ok(());
 			};
 
-			let rules: Vec<crate::bind::types::BindRule> = (&device).into();
+			let rules: Vec<crate::bind::types::BindRule> = (&device)
+				.try_into()
+				.map_err(SelectError::BindConvertError)
+				?;
 
 			vendor_bind_late.send(
 				rules,
@@ -200,4 +203,7 @@ pub enum SelectError {
 
 	#[error("Could not spawn GPU work: {0}")]
 	TokioJoinError(tokio::task::JoinError),
+
+	#[error("Could not convert GPUInfo into bind rules: {0}")]
+	BindConvertError(super::convert::ToBindError),
 }

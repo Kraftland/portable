@@ -1,5 +1,5 @@
-impl From<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
-	fn from(value: &super::GPUInfo) -> Self {
+impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
+	fn try_from(value: &super::GPUInfo) -> Result<Self, Self::Error> {
 		let mut ret: Vec<crate::bind::types::BindRule> = vec![];
 
 		// /sys/class/drm is not convered yet.
@@ -129,6 +129,13 @@ impl From<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 			None	=> {}
 		}
 
-		ret
+		Ok(ret)
 	}
+
+	type Error = ToBindError;
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ToBindError {
+
 }
