@@ -2,7 +2,14 @@ impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 	fn try_from(value: &super::GPUInfo) -> Result<Self, Self::Error> {
 		let mut ret: Vec<crate::bind::types::BindRule> = vec![];
 
-		// /sys/class/drm is not convered yet.
+		/*
+			/sys/class/drm is not convered yet.
+
+			They are just mere symbolic links pointing to the respective syspath()s.
+
+			Avoid querying realpath because that is heavy, and kernel behaviour might
+			change.
+		*/
 		{
 			let drm_path: std::path::PathBuf = ["/sys", "class", "drm"].iter().collect();
 
@@ -10,9 +17,7 @@ impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 				let mut path = drm_path.to_path_buf();
 				path.push(value.card_name.as_str());
 				(
-					std::fs::canonicalize(&path)
-						.map_err(ToBindError::DrmCanonicaliseError)
-						?,
+					value.card_syspath.to_path_buf(),
 					path,
 				)
 			};
@@ -28,9 +33,7 @@ impl TryFrom<&super::GPUInfo> for Vec<crate::bind::types::BindRule> {
 				let mut path = drm_path.to_path_buf();
 				path.push(value.render_name.as_str());
 				(
-					std::fs::canonicalize(&path)
-						.map_err(ToBindError::DrmCanonicaliseError)
-						?,
+					value.render_syspath.to_path_buf(),
 					path,
 				)
 			};
