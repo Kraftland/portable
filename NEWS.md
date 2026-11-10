@@ -13,6 +13,7 @@
 - Portable now terminates correctly when receiving a SIGTERM or SIGINT signal
 - Fixed invalid symbolic links under /sys/class/drm
 - Denied system calls would no longer spam journal
+- Removed unotify from Init to gain higher performance under load and stop journal spam introduced by problematic applications. For debugging purposes, please use `ausearch -m SECCOMP -i` instead.
 
 # 20.2
 
