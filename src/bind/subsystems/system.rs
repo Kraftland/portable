@@ -17,8 +17,6 @@ pub struct SystemBind {
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 
 	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
-
-	pub logger:			crate::logger::LogSender,
 }
 
 impl super::GenerateBind for SystemBind {
@@ -29,7 +27,6 @@ impl super::GenerateBind for SystemBind {
 			self.document_mount,
 			self.xdg,
 			self.flatpak_info,
-			self.logger,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -51,6 +48,14 @@ async fn bind(
 {
 	let bin_spawn = tokio::spawn(
 		bin::bind(config.clone())
+	);
+
+	let etc_spawn = tokio::spawn(
+		etc::bind_etc(
+			config.clone(),
+			xdg.clone(),
+			portable_runtime.clone(),
+		)
 	);
 
 	use crate::bind::subsystems::dirs::RuntimePathsTrait;
@@ -462,6 +467,15 @@ async fn bind(
 			?
 	);
 
+	ret.extend(
+		etc_spawn
+			.await
+			.map_err(SystemBindError::SpawnError)
+			?
+			.map_err(SystemBindError::EtcError)
+			?
+	);
+
 	Ok(ret)
 }
 
@@ -475,4 +489,7 @@ pub enum SystemBindError {
 
 	#[error("Could not mount binaries: {0}")]
 	BinError(bin::BinError),
+
+	#[error("Could not mount /etc: {0}")]
+	EtcError(etc::EtcError),
 }
