@@ -18,7 +18,9 @@ pub async fn bind_etc(
 	use crate::bind::types::BindRule;
 	use crate::bind::subsystems::dirs::RuntimePathsTrait;
 
-	let resolv_spawn = tokio::spawn(super::resolv::mount(logger.clone()));
+	let resolv_spawn = tokio::spawn(
+		super::resolv::mount()
+	);
 
 	let passwd_spawn = tokio::spawn(
 		super::passwd::generate(
@@ -64,6 +66,7 @@ pub async fn bind_etc(
 		resolv_spawn
 			.await
 			.map_err(EtcError::SpawnError)?
+			.map_err(EtcError::ResolvError)?
 	);
 
 	ret.extend(
@@ -91,4 +94,7 @@ pub enum EtcError {
 
 	#[error("Could not generate Machine ID: {0}")]
 	MachineIDError(super::machine_id::MachineIDError),
+
+	#[error("Could not bind resolv.conf: {0}")]
+	ResolvError(super::resolv::ResolvError),
 }
