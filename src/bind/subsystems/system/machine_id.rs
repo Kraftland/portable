@@ -1,3 +1,12 @@
+#[derive(Debug, thiserror::Error)]
+pub enum MachineIDError {
+	#[error("I/O error: {0}")]
+	IOError(std::io::Error),
+
+	#[error("Expected parent path of Machine ID to be Some")]
+	NoneParentForMachineID,
+}
+
 /**
 	Generates or retrieves the machine-id from a file
 
@@ -7,7 +16,7 @@ pub async fn bind(
 	config:	std::sync::Arc<crate::config::Config>,
 	xdg:	std::sync::Arc<crate::xdg::XdgDirs>,
 )
--> Result<crate::bind::types::BindRules, super::SystemBindError> {
+-> Result<crate::bind::types::BindRules, MachineIDError> {
 	let path = {
 		let mut path = xdg.config_home.to_path_buf();
 		path.push("portable");
@@ -40,8 +49,12 @@ pub async fn bind(
 	If it does not exist,
 		it is expected to generate machine-id then write to that specific file for future use.
 */
-async fn exist_or_generate_id(path: &std::path::PathBuf) -> Result<(), super::SystemBindError> {
-	if tokio::fs::try_exists(&path).await.map_err(super::SystemBindError::IOError)? {
+async fn exist_or_generate_id(path: &std::path::PathBuf) -> Result<(), MachineIDError> {
+	if tokio::fs::try_exists(&path)
+		.await
+		.map_err(MachineIDError::IOError)
+		?
+	{
 		Ok(())
 	} else {
 		let uuid = generate_id();
@@ -51,14 +64,14 @@ async fn exist_or_generate_id(path: &std::path::PathBuf) -> Result<(), super::Sy
 				Some(v)	=> v,
 				None	=> {
 					return Err(
-						super::SystemBindError::NoneParentForMachineID,
+						MachineIDError::NoneParentForMachineID
 					);
 				}
 			};
 
 			tokio::fs::create_dir_all(&parent)
 				.await
-				.map_err(super::SystemBindError::IOError)
+				.map_err(MachineIDError::IOError)
 				?;
 
 			tokio::fs::OpenOptions::new()
@@ -68,7 +81,7 @@ async fn exist_or_generate_id(path: &std::path::PathBuf) -> Result<(), super::Sy
 				.mode(0o700)
 				.open(&path)
 				.await
-				.map_err(super::SystemBindError::IOError)
+				.map_err(MachineIDError::IOError)
 				?
 		};
 
@@ -80,7 +93,7 @@ async fn exist_or_generate_id(path: &std::path::PathBuf) -> Result<(), super::Sy
 					.as_bytes()
 				)
 			.await
-			.map_err(super::SystemBindError::IOError)
+			.map_err(MachineIDError::IOError)
 			?;
 		Ok(())
 	}
