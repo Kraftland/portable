@@ -76,7 +76,6 @@ pub async fn bind_etc(
 	);
 
 	let optional_paths = vec![
-		"/etc/issue",
 		"/etc/ld.so.conf",
 		"/etc/ld.so.conf.d",
 		"/etc/protocols",
