@@ -72,6 +72,7 @@ pub async fn bind_etc(
 			.await
 			.map_err(EtcError::SpawnError)
 			?
+			.map_err(EtcError::MachineIDError)
 			?
 	);
 
@@ -89,4 +90,6 @@ pub enum EtcError {
 	#[error("Could not generate passwd file: {0}")]
 	PasswdError(super::passwd::PasswdError),
 
+	#[error("Could not generate Machine ID: {0}")]
+	MachineIDError(super::machine_id::MachineIDError),
 }
