@@ -80,7 +80,6 @@ pub async fn bind_etc(
 		"/etc/ld.so.conf.d",
 		"/etc/protocols",
 		"/etc/rc_maps.cfg",
-		"/etc/request-key.conf",
 		"/etc/rpc",
 		"/etc/services",
 		"/etc/slsh.rc",
