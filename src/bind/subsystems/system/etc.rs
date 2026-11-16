@@ -75,6 +75,44 @@ pub async fn bind_etc(
 			?
 	);
 
+	let optional_paths = vec![
+		"/etc/issue",
+		"/etc/ld.so.conf",
+		"/etc/ld.so.conf.d",
+		"/etc/protocols",
+		"/etc/rc_maps.cfg",
+		"/etc/request-key.conf",
+		"/etc/rpc",
+		"/etc/services",
+		"/etc/slsh.rc",
+		"/etc/xattr.conf",
+		"/etc/alsa",
+		"/etc/fonts",
+		"/etc/gss",
+		"/etc/gtk-3.0",
+		"/etc/gtk-4.0",
+		"/etc/pulse",
+		"/etc/ssl",
+		"/etc/ca-certificates",
+		"/etc/xdg"
+	];
+
+	for path in optional_paths {
+		if tokio::fs::try_exists(&path)
+			.await
+			.map_err(EtcError::ExistIOError)
+			?
+		{
+			ret.push(
+				BindRule::Path {
+					source:	path.into(),
+					dest:	path.into(),
+					class:	crate::bind::types::BindType::ReadOnly,
+				}
+			);
+		}
+	};
+
 	Ok(ret)
 }
 
@@ -94,4 +132,7 @@ pub enum EtcError {
 
 	#[error("Could not bind resolv.conf: {0}")]
 	ResolvError(super::resolv::ResolvError),
+
+	#[error("Could not determine if path exists: I/O error: {0}")]
+	ExistIOError(std::io::Error),
 }
