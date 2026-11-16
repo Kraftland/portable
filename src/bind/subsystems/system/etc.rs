@@ -94,6 +94,7 @@ pub async fn bind_etc(
 		"/etc/ca-certificates",
 		"/etc/xdg",
 		"/etc/ld.so.cache",
+		"/etc/timezone",
 	];
 
 	for path in optional_paths {
