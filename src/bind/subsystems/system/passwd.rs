@@ -238,7 +238,9 @@ async fn u32_from_file(path: impl AsRef<std::path::Path>) -> Result<u32, PasswdE
 		?;
 
 	Ok(
-		buffer.parse::<u32>()
+		buffer
+			.trim()
+			.parse::<u32>()
 			.map_err(PasswdError::IntegerOverflow)
 			?
 	)
@@ -246,7 +248,7 @@ async fn u32_from_file(path: impl AsRef<std::path::Path>) -> Result<u32, PasswdE
 
 #[derive(thiserror::Error, Debug)]
 pub enum PasswdError {
-	#[error("Integer overflow parsing String: {0}")]
+	#[error("Could not parse file as unsigned integer: {0}")]
 	IntegerOverflow(std::num::ParseIntError),
 
 	#[error("I/O error parsing integer from file: {0}")]
