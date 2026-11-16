@@ -42,16 +42,6 @@ pub async fn bind_etc(
 	let mut ret = vec![
 		BindRule::Path {
 			source:	{
-				passwd_spawn
-					.await
-					.map_err(EtcError::SpawnError)?
-					.map_err(EtcError::PasswdError)?
-			},
-			dest:	"/etc/passwd".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
-		},
-		BindRule::Path {
-			source:	{
 				nsswitch_spawn
 					.await
 					.map_err(EtcError::SpawnError)?
@@ -61,6 +51,13 @@ pub async fn bind_etc(
 			class:	crate::bind::types::BindType::ReadOnly,
 		},
 	];
+
+	ret.extend(
+		passwd_spawn
+			.await
+			.map_err(EtcError::SpawnError)?
+			.map_err(EtcError::PasswdError)?
+	);
 
 	ret.extend(
 		resolv_spawn
