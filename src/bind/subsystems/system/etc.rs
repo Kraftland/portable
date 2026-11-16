@@ -95,6 +95,8 @@ pub async fn bind_etc(
 		"/etc/xdg",
 		"/etc/ld.so.cache",
 		"/etc/timezone",
+		"/etc/lsb-release",
+		"/etc/os-release",
 	];
 
 	for path in optional_paths {
