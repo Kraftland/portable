@@ -94,7 +94,8 @@ pub async fn bind_etc(
 		"/etc/pulse",
 		"/etc/ssl",
 		"/etc/ca-certificates",
-		"/etc/xdg"
+		"/etc/xdg",
+		"/etc/ld.so.cache",
 	];
 
 	for path in optional_paths {
