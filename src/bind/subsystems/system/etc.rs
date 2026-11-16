@@ -5,7 +5,6 @@
 		attack and leak surface is down to a minimum.
 */
 pub async fn bind_etc(
-	logger:			crate::logger::LogSender,
 	config:			std::sync::Arc<crate::config::Config>,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	portable_runtime:	std::sync::Arc<crate::bind::subsystems::dirs::portable_runtime::PortableRuntime>,
