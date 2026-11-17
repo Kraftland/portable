@@ -3,6 +3,7 @@ mod nsswitch;
 mod resolv;
 mod bin;
 mod machine_id;
+mod etc;
 
 /**
 	The system bind subsystem
@@ -16,8 +17,6 @@ pub struct SystemBind {
 	pub document_mount:	crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 
 	pub flatpak_info:	std::sync::Arc<std::path::PathBuf>,
-
-	pub logger:			crate::logger::LogSender,
 }
 
 impl super::GenerateBind for SystemBind {
@@ -28,7 +27,6 @@ impl super::GenerateBind for SystemBind {
 			self.document_mount,
 			self.xdg,
 			self.flatpak_info,
-			self.logger,
 		).await
 	}
 	type BindError = SystemBindError;
@@ -45,51 +43,24 @@ async fn bind(
 	document_mount:		crate::bind::subsystems::dirs::documents::DocumentsMountPoint,
 	xdg:			std::sync::Arc<crate::xdg::XdgDirs>,
 	flatpak_info:		std::sync::Arc<std::path::PathBuf>,
-	logger:			crate::logger::LogSender,
 )
 -> Result<crate::bind::types::BindRules, SystemBindError>
 {
-	let state_directory = {
-		let mut path = xdg.data_home.to_path_buf();
-		path.push(&config.metadata.state_directory);
-		path
-	};
-
-	let machine_id = tokio::spawn(
-		machine_id::bind(
-			config.clone(),
-			xdg.clone(),
-		),
-	);
-
 	let bin_spawn = tokio::spawn(
 		bin::bind(config.clone())
 	);
 
-	let resolv_spawn = tokio::spawn(resolv::mount(logger.clone()));
-
-	let passwd_spawn = tokio::spawn(
-		passwd::generate(
-			portable_runtime.path(),
-			state_directory,
+	let etc_spawn = tokio::spawn(
+		etc::bind_etc(
+			config.clone(),
+			xdg.clone(),
+			portable_runtime.clone(),
 		)
-	);
-	let nsswitch_spawn = tokio::spawn(
-		nsswitch::generate(portable_runtime.path())
 	);
 
 	use crate::bind::subsystems::dirs::RuntimePathsTrait;
 	use crate::bind::types::BindRule;
 	let mut ret = vec![
-		/*
-			/etc mounts
-		*/
-		BindRule::Path {
-			source:	"/etc".into(),
-			dest:	"/etc".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
-		},
-
 		BindRule::VirtualFS {
 			dest:	"/host".into(),
 			class:	crate::bind::types::VirtualFS::Tmpfs {
@@ -306,26 +277,6 @@ async fn bind(
 			dest:	document_mount.path(),
 			class:	crate::bind::types::BindType::ReadWrite,
 		},
-		BindRule::Path {
-			source:	{
-				passwd_spawn
-					.await
-					.map_err(SystemBindError::SpawnError)?
-					.map_err(SystemBindError::PasswdError)?
-			},
-			dest:	"/etc/passwd".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
-		},
-		BindRule::Path {
-			source:	{
-				nsswitch_spawn
-					.await
-					.map_err(SystemBindError::SpawnError)?
-					.map_err(SystemBindError::NsswitchError)?
-			},
-			dest:	"/etc/nsswitch.conf".into(),
-			class:	crate::bind::types::BindType::ReadOnly,
-		},
 		/*
 			Privacy mounts are handled in the mask subsystem
 		*/
@@ -517,17 +468,12 @@ async fn bind(
 	);
 
 	ret.extend(
-		machine_id
+		etc_spawn
 			.await
 			.map_err(SystemBindError::SpawnError)
 			?
+			.map_err(SystemBindError::EtcError)
 			?
-	);
-
-	ret.extend(
-		resolv_spawn
-			.await
-			.map_err(SystemBindError::SpawnError)?
 	);
 
 	Ok(ret)
@@ -535,21 +481,15 @@ async fn bind(
 
 #[derive(thiserror::Error, Debug)]
 pub enum SystemBindError {
-	#[error("Error while generating machine-id: expected parent path to be Some")]
-	NoneParentForMachineID,
-
-	#[error("I/O error while reading path: {0:#?}")]
+	#[error("I/O error while reading path: {0}")]
 	IOError(std::io::Error),
 
-	#[error("Could not generate nsswitch file: {0:#?}")]
-	NsswitchError(nsswitch::NsswitchError),
-
-	#[error("Could not generate passwd file: {0:#?}")]
-	PasswdError(passwd::PasswdError),
-
-	#[error("Could not spawn task: {0:#?}")]
+	#[error("Could not spawn task: {0}")]
 	SpawnError(tokio::task::JoinError),
 
-	#[error("Could not mount binaries: {0:#?}")]
+	#[error("Could not mount binaries: {0}")]
 	BinError(bin::BinError),
+
+	#[error("Could not mount /etc: {0}")]
+	EtcError(etc::EtcError),
 }
