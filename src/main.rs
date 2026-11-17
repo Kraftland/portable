@@ -90,6 +90,7 @@ async fn run(
 
 	let config = std::sync::Arc::new(
 		config::get(
+			#[cfg(debug_assertions)]
 			log_tx.clone(),
 			xdg_dirs.config_home.to_path_buf(),
 		)
