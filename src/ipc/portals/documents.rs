@@ -14,13 +14,21 @@ pub async fn get_mount_point(
 	let path: std::path::PathBuf = {
 		use std::os::unix::ffi::OsStrExt;
 
-		std::ffi::OsStr::from_bytes(
-			proxy
-				.mount_point()
-				.await
-				.map_err(DocumentError::MountPointError)
-				?
+		let reply = proxy
+			.mount_point()
+			.await
+			.map_err(DocumentError::MountPointError)
+			?;
+
+		let cstr = std::ffi::CStr::from_bytes_until_nul(
+			reply
 				.as_ref()
+		)
+			.map_err(DocumentError::MissingNulTermination)
+			?;
+
+		std::ffi::OsStr::from_bytes(
+			cstr.to_bytes()
 		)
 			.into()
 	};
@@ -185,6 +193,9 @@ pub async fn add_full(
 
 #[derive(thiserror::Error, Debug)]
 pub enum DocumentError {
+	#[error("Unexpected Portal reply: not NUL-terminated: {0}")]
+	MissingNulTermination(std::ffi::FromBytesUntilNulError),
+
 	#[error("Could not open file: {0}")]
 	OpenError(std::io::Error),
 
