@@ -82,7 +82,6 @@ pub async fn bind_etc(
 		"/etc/rc_maps.cfg",
 		"/etc/rpc",
 		"/etc/services",
-		"/etc/slsh.rc",
 		"/etc/xattr.conf",
 		"/etc/alsa",
 		"/etc/fonts",
