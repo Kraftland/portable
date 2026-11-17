@@ -131,6 +131,31 @@ async fn run(
 
 	let bus_cancel = bus_spawn.1;
 
+	/*
+		Look up Document Portal mount point early, since that's a 0.3ms op
+	*/
+	let document_spawn = {
+		let bus_clone = dbus_conn.clone();
+		let config_clone = config.clone();
+
+		tokio::spawn(
+			async move {
+				let runtime = crate::bind::subsystems::dirs::documents::DocumentsMountPoint::new(
+					config_clone,
+					bus_clone,
+				)
+				.await
+				.map_err(StartError::DocumentRuntimePathError)
+				?;
+				runtime.create_path()
+					.await
+					.map_err(StartError::DocumentRuntimePathError)
+					?;
+				Ok(runtime)
+			}
+		)
+	};
+
 	let bus_spawn = {
 		let bus = dbus_conn.clone();
 		tokio::spawn(
@@ -335,54 +360,29 @@ async fn run(
 		)
 	};
 
-	let (
-		portable_runtime_spawn,
-		document_spawn,
-	) = {
+	let portable_runtime_spawn = {
 		let stop_clone = stop_obj.clone();
 		use bind::subsystems::dirs::RuntimePathsTrait;
 		use bind::subsystems::dirs::portable_runtime::PortableRuntime;
-		use bind::subsystems::dirs::documents;
 
 		let config_clone = config.clone();
-		let config_clone_2 = config.clone();
 		let xdg_clone = xdg_dirs.clone();
 		let instance_id_clone = instance_id.clone();
-		let bus_clone = dbus_conn.clone();
 
-		(
-			tokio::spawn(
-				async move {
-					let runtime = PortableRuntime::new(
-						config_clone,
-						xdg_clone,
-						instance_id_clone,
-					);
-					runtime
-						.create_path(stop_clone.clone())
-						.await
-						.map_err(StartError::PortableRuntimePathError)
-						?;
-					Ok(runtime)
-				},
-			),
-			tokio::spawn(
-				async move {
-					let runtime = documents::DocumentsMountPoint::new(
-						config_clone_2,
-						bus_clone,
-					)
+		tokio::spawn(
+			async move {
+				let runtime = PortableRuntime::new(
+					config_clone,
+					xdg_clone,
+					instance_id_clone,
+				);
+				runtime
+					.create_path(stop_clone.clone())
 					.await
-					.map_err(StartError::DocumentRuntimePathError)
+					.map_err(StartError::PortableRuntimePathError)
 					?;
-
-					runtime.create_path()
-						.await
-						.map_err(StartError::DocumentRuntimePathError)
-						?;
-					Ok(runtime)
-				}
-			),
+				Ok(runtime)
+			},
 		)
 	};
 

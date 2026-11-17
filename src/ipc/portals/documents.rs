@@ -1,4 +1,29 @@
 /**
+	This public function can get a document mount point from the Document Portal.
+
+	This path is shared among every application ID.
+*/
+pub async fn get_mount_point(
+	dbus_conn:	&zbus::Connection,
+) -> Result<std::path::PathBuf, DocumentError> {
+	let proxy = DocumentsPortalProxy::new(dbus_conn)
+		.await
+		.map_err(DocumentError::ProxyError)
+		?;
+
+	let reply = proxy
+		.mount_point()
+		.await
+		.map_err(DocumentError::MountPointError)
+		?;
+
+	Ok(
+		bytes_to_pathbuf(&reply)
+			?
+	)
+}
+
+/**
 	List the document storage of a specific application
 
 	Returns a hash map of document IDs and PathBuf, paired in order.
@@ -21,10 +46,14 @@ pub async fn list(
 	let mut map = std::collections::HashMap::with_capacity(documents.len());
 
 	for (k, v) in documents {
-		let path_string = String::try_from(v)
-			.map_err(DocumentError::PathNotUTF8)
-			?;
-		map.insert(k, std::path::PathBuf::from(path_string.trim_end_matches("\0")));
+		map.insert(
+			k,
+			bytes_to_pathbuf(
+				v
+					.as_ref()
+			)
+				?,
+		);
 	};
 
 	Ok(map)
@@ -125,10 +154,8 @@ pub async fn add_full(
 			.map_err(DocumentError::MountTypeError)
 			?;
 
-		let path = String::from_utf8(bytes)
-			.map_err(DocumentError::MountNotUTF8)
-			?;
-		path.trim_end_matches('\0').to_string()
+		bytes_to_pathbuf(&bytes)
+			?
 	};
 
 	let mut ret = vec![];
@@ -153,33 +180,59 @@ pub async fn add_full(
 
 }
 
+/**
+	This function converts a portal ay (array of bytes) reply to a PathBuf
+
+	It trims trailing NUL properly.
+*/
+fn bytes_to_pathbuf(bytes: &[u8]) -> Result<std::path::PathBuf, DocumentError> {
+	use std::os::unix::ffi::OsStrExt;
+
+	let cstr = std::ffi::CStr::from_bytes_until_nul(
+		bytes
+			.as_ref()
+	)
+		.map_err(DocumentError::MissingNulTermination)
+		?;
+
+	Ok(
+		std::ffi::OsStr::from_bytes(
+			cstr.to_bytes()
+		)
+			.into()
+	)
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum DocumentError {
-	#[error("Could not open file: {0:#?}")]
+	#[error("Unexpected Portal reply: not NUL-terminated: {0}")]
+	MissingNulTermination(std::ffi::FromBytesUntilNulError),
+
+	#[error("Could not open file: {0}")]
 	OpenError(std::io::Error),
 
-	#[error("Could not create bus proxy: {0:#?}")]
+	#[error("Could not create bus proxy: {0}")]
 	ProxyError(zbus::Error),
 
-	#[error("Could not request passthrough: {0:#?}")]
+	#[error("Could not request passthrough: {0}")]
 	CallError(zbus::Error),
 
 	#[error("Missing mountpoint in Portal reply, you may need a system upgrade")]
 	MissingMountError,
 
-	#[error("Type of mountpoint is not [u8]: {0:#?}")]
+	#[error("Type of mountpoint is not [u8]: {0}")]
 	MountTypeError(zbus::zvariant::Error),
 
-	#[error("Type of mountpoint is not UTF-8: {0:#?}")]
-	MountNotUTF8(std::string::FromUtf8Error),
-
-	#[error("List error: {0:#?}")]
+	#[error("List error: {0}")]
 	ListError(zbus::Error),
 
-	#[error("Path is not UTF-8: {0:#?}")]
+	#[error("GetMountPoint failed: {0}")]
+	MountPointError(zbus::Error),
+
+	#[error("Path is not UTF-8: {0}")]
 	PathNotUTF8(std::string::FromUtf8Error),
 
-	#[error("Error deleting a file from document storage: {0:#?}")]
+	#[error("Error deleting a file from document storage: {0}")]
 	DeleteError(zbus::Error),
 }
 
@@ -209,4 +262,7 @@ trait DocumentsPortal {
 		&self,
 		doc_id:		&str,
 	) -> zbus::Result<()>;
+
+	#[zbus(name = "GetMountPoint")]
+	async fn mount_point(&self) -> zbus::Result<Vec<u8>>;
 }
