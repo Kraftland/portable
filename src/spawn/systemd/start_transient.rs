@@ -306,13 +306,6 @@ async fn generate_properties(
 
 	vec.push(
 		(
-			String::from("MemoryPressureWatch"),
-			OwnedValue::from(Str::from("on")),
-		)
-	);
-
-	vec.push(
-		(
 			String::from("OOMPolicy"),
 			OwnedValue::from(Str::from("kill")),
 		)
