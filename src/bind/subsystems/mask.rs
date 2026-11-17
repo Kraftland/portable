@@ -26,15 +26,21 @@ async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
 
 	for path in paths::get_paths() {
 		status.push(
-			(path.clone(), tokio::fs::try_exists(path))
+			(
+				tokio::fs::try_exists(&path)
+					.await
+					.map_err(MaskError::ExistError)
+					?,
+				path,
+			)
 		);
 	};
 
 	for entry in status {
-		if entry.1.await.map_err(MaskError::ExistError)? {
+		if entry.0 {
 			ret.push(
 				BindRule::VirtualFS {
-					dest: entry.0,
+					dest: entry.1,
 					class: crate::bind::types::VirtualFS::Tmpfs {
 						size_mb: Some(0),
 						perms: None,
