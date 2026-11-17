@@ -103,12 +103,6 @@ impl crate::spawn::Start for crate::spawn::Spawn {
 				?;
 		};
 
-		proxy
-			.subscribe()
-			.await
-			.map_err(StartAppError::ManagerProxyError)
-			?;
-
 		proxy.start_transient_unit(
 			unit_name.inner().await.to_string(),
 			String::from("replace"),
