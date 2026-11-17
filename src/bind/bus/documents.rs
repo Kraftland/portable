@@ -4,26 +4,6 @@
 */
 pub type DocumentPath = std::path::PathBuf;
 
-async fn get(
-	conn: zbus::Connection
-) -> Result<DocumentPath, DocumentsError> {
-	let proxy = DocumentsProxy::new(&conn)
-		.await
-		.map_err(DocumentsError::ProxyError)
-		?;
-	let path = String::from_utf8(
-		proxy
-			.mount_point()
-			.await
-			.map_err(DocumentsError::GetMountError)
-			?
-	)
-		.map_err(DocumentsError::InvalidUTF8Error)
-		?;
-	Ok(std::path::PathBuf::from(path))
-
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum DocumentsError {
 	#[error("Could not create Documents Portal proxy: {0:#?}")]
