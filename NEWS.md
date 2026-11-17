@@ -14,6 +14,7 @@
 - Fixed invalid symbolic links under /sys/class/drm
 - Denied system calls would no longer spam journal
 - Removed unotify from Init to gain higher performance under load and stop journal spam introduced by problematic applications. For debugging purposes, please use `ausearch -m SECCOMP -i` instead.
+- The `/etc` directory is now isolated from the system
 
 # 20.2
 
