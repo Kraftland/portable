@@ -1,6 +1,5 @@
 pub mod rules;
 pub mod proxies;
-pub mod documents;
 
 /**
 	Note that proxy_socket's parent must exist before starting the D-Bus proxy
