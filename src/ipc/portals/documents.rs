@@ -11,29 +11,16 @@ pub async fn get_mount_point(
 		.map_err(DocumentError::ProxyError)
 		?;
 
-	let path: std::path::PathBuf = {
-		use std::os::unix::ffi::OsStrExt;
+	let reply = proxy
+		.mount_point()
+		.await
+		.map_err(DocumentError::MountPointError)
+		?;
 
-		let reply = proxy
-			.mount_point()
-			.await
-			.map_err(DocumentError::MountPointError)
-			?;
-
-		let cstr = std::ffi::CStr::from_bytes_until_nul(
-			reply
-				.as_ref()
-		)
-			.map_err(DocumentError::MissingNulTermination)
-			?;
-
-		std::ffi::OsStr::from_bytes(
-			cstr.to_bytes()
-		)
-			.into()
-	};
-
-	Ok(path)
+	Ok(
+		bytes_to_pathbuf(&reply)
+			?
+	)
 }
 
 /**
@@ -189,6 +176,29 @@ pub async fn add_full(
 
 	Ok(ret)
 
+}
+
+/**
+	This function converts a portal ay (array of bytes) reply to a PathBuf
+
+	It trims trailing NUL properly.
+*/
+fn bytes_to_pathbuf(bytes: &[u8]) -> Result<std::path::PathBuf, DocumentError> {
+	use std::os::unix::ffi::OsStrExt;
+
+	let cstr = std::ffi::CStr::from_bytes_until_nul(
+		bytes
+			.as_ref()
+	)
+		.map_err(DocumentError::MissingNulTermination)
+		?;
+
+	Ok(
+		std::ffi::OsStr::from_bytes(
+			cstr.to_bytes()
+		)
+			.into()
+	)
 }
 
 #[derive(thiserror::Error, Debug)]
