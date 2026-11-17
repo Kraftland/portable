@@ -150,10 +150,8 @@ pub async fn add_full(
 			.map_err(DocumentError::MountTypeError)
 			?;
 
-		let path = String::from_utf8(bytes)
-			.map_err(DocumentError::MountNotUTF8)
-			?;
-		path.trim_end_matches('\0').to_string()
+		bytes_to_pathbuf(&bytes)
+			?
 	};
 
 	let mut ret = vec![];
@@ -220,9 +218,6 @@ pub enum DocumentError {
 
 	#[error("Type of mountpoint is not [u8]: {0}")]
 	MountTypeError(zbus::zvariant::Error),
-
-	#[error("Type of mountpoint is not UTF-8: {0}")]
-	MountNotUTF8(std::string::FromUtf8Error),
 
 	#[error("List error: {0}")]
 	ListError(zbus::Error),
