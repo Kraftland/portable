@@ -57,7 +57,9 @@ impl From<&ConfigType> for std::path::PathBuf {
 }
 
 pub async fn get(
+	#[cfg(debug_assertions)]
 	logger:		crate::logger::LogSender,
+
 	config_home:	std::path::PathBuf,
 ) -> Result<Config, ConfigError> {
 	/*
