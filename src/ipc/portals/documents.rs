@@ -46,10 +46,14 @@ pub async fn list(
 	let mut map = std::collections::HashMap::with_capacity(documents.len());
 
 	for (k, v) in documents {
-		let path_string = String::try_from(v)
-			.map_err(DocumentError::PathNotUTF8)
-			?;
-		map.insert(k, std::path::PathBuf::from(path_string.trim_end_matches("\0")));
+		map.insert(
+			k,
+			bytes_to_pathbuf(
+				v
+					.as_ref()
+			)
+				?,
+		);
 	};
 
 	Ok(map)
