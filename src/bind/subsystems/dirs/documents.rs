@@ -2,6 +2,9 @@
 	The per-app instance of document portal
 
 	The struct does not implement shared trait due to the async and IPC nature.
+
+	It is later bound by the system subsystem, with inner_per_app acting as source
+		and inner as dest.
 */
 pub struct DocumentsMountPoint {
 	inner:		std::path::PathBuf,
@@ -15,42 +18,32 @@ impl DocumentsMountPoint {
 		)	->
 			Result<Self, DocumentError>
 	{
-		let proxy = DocumentsProxy::new(&bus)
+		let shared_path = crate::ipc::portals::documents::get_mount_point(&bus)
 			.await
-			.map_err(DocumentError::ProxyError)
+			.map_err(DocumentError::DocumentGetError)
 			?;
 
-		let bytes = proxy
-			.mount_point()
-			.await
-			.map_err(DocumentError::CallError)
-			?;
-		let path = String::from_utf8(bytes)
-			.map_err(DocumentError::TranslateError)
-			?
-			.trim_end_matches('\0')
-			.to_string();
-		let mut per_app_path = std::path::PathBuf::from(path);
-
-		let public_path = per_app_path.clone();
-
-		per_app_path.push("by-app");
-		per_app_path.push(&config.metadata.sandbox_id);
+		let per_app_path = {
+			let mut shared_path = shared_path.to_path_buf();
+			shared_path.push("by-app");
+			shared_path.push(&config.metadata.sandbox_id);
+			shared_path
+		};
 
 		Ok(
 			DocumentsMountPoint {
-				inner:		public_path,
+				inner:		shared_path,
 				inner_per_app:	per_app_path,
 			}
 		)
 	}
 
 	pub fn path(&self)	-> std::path::PathBuf {
-		self.inner.clone()
+		self.inner.to_path_buf()
 	}
 
 	pub fn path_per_app(&self) -> std::path::PathBuf {
-		self.inner_per_app.clone()
+		self.inner_per_app.to_path_buf()
 	}
 
 	pub fn path_ref(&self)	-> &std::path::PathBuf {
@@ -64,29 +57,11 @@ impl DocumentsMountPoint {
 	}
 }
 
-#[zbus::proxy(
-	interface	= "org.freedesktop.portal.Documents",
-	default_service	= "org.freedesktop.portal.Documents",
-	default_path	= "/org/freedesktop/portal/documents",
-)]
-trait Documents {
-	#[zbus(
-		name	= "GetMountPoint"
-	)]
-	fn mount_point(&self) -> zbus::Result<Vec<u8>>;
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum DocumentError {
-	#[error("I/O error creating documents path: {0:#?}")]
+	#[error("I/O error creating documents path: {0}")]
 	CreateError(std::io::Error),
 
-	#[error("Error creating proxy: {0:#?}")]
-	ProxyError(zbus::Error),
-
-	#[error("Error calling proxy: {0:#?}")]
-	CallError(zbus::Error),
-
-	#[error("Error translating bytes to String: {0:#?}")]
-	TranslateError(std::string::FromUtf8Error),
+	#[error("Could not get Document Portal mount point: {0}")]
+	DocumentGetError(crate::ipc::portals::documents::DocumentError),
 }
