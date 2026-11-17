@@ -93,7 +93,7 @@ pub async fn bind_etc(
 		"/etc/ca-certificates",
 		"/etc/xdg",
 		"/etc/ld.so.cache",
-		"/etc/timezone",
+		"/etc/localtime",
 		"/etc/lsb-release",
 		"/etc/os-release",
 	];
