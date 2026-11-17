@@ -20,6 +20,7 @@ pub async fn get_mount_point(
 				.await
 				.map_err(DocumentError::MountPointError)
 				?
+				.as_ref()
 		)
 			.into()
 	};
@@ -243,5 +244,5 @@ trait DocumentsPortal {
 	) -> zbus::Result<()>;
 
 	#[zbus(name = "GetMountPoint")]
-	async fn mount_point(&self) -> zbus::Result<&[u8]>;
+	async fn mount_point(&self) -> zbus::Result<Vec<u8>>;
 }
