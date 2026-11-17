@@ -1,4 +1,33 @@
 /**
+	This public function can get a document mount point from the Document Portal.
+
+	This path is shared among every application ID.
+*/
+pub async fn get_mount_point(
+	dbus_conn:	&zbus::Connection,
+) -> Result<std::path::PathBuf, DocumentError> {
+	let proxy = DocumentsPortalProxy::new(dbus_conn)
+		.await
+		.map_err(DocumentError::ProxyError)
+		?;
+
+	let path: std::path::PathBuf = {
+		use std::os::unix::ffi::OsStrExt;
+
+		std::ffi::OsStr::from_bytes(
+			proxy
+				.mount_point()
+				.await
+				.map_err(DocumentError::MountPointError)
+				?
+		)
+			.into()
+	};
+
+	Ok(path)
+}
+
+/**
 	List the document storage of a specific application
 
 	Returns a hash map of document IDs and PathBuf, paired in order.
@@ -155,31 +184,34 @@ pub async fn add_full(
 
 #[derive(thiserror::Error, Debug)]
 pub enum DocumentError {
-	#[error("Could not open file: {0:#?}")]
+	#[error("Could not open file: {0}")]
 	OpenError(std::io::Error),
 
-	#[error("Could not create bus proxy: {0:#?}")]
+	#[error("Could not create bus proxy: {0}")]
 	ProxyError(zbus::Error),
 
-	#[error("Could not request passthrough: {0:#?}")]
+	#[error("Could not request passthrough: {0}")]
 	CallError(zbus::Error),
 
 	#[error("Missing mountpoint in Portal reply, you may need a system upgrade")]
 	MissingMountError,
 
-	#[error("Type of mountpoint is not [u8]: {0:#?}")]
+	#[error("Type of mountpoint is not [u8]: {0}")]
 	MountTypeError(zbus::zvariant::Error),
 
-	#[error("Type of mountpoint is not UTF-8: {0:#?}")]
+	#[error("Type of mountpoint is not UTF-8: {0}")]
 	MountNotUTF8(std::string::FromUtf8Error),
 
-	#[error("List error: {0:#?}")]
+	#[error("List error: {0}")]
 	ListError(zbus::Error),
 
-	#[error("Path is not UTF-8: {0:#?}")]
+	#[error("GetMountPoint failed: {0}")]
+	MountPointError(zbus::Error),
+
+	#[error("Path is not UTF-8: {0}")]
 	PathNotUTF8(std::string::FromUtf8Error),
 
-	#[error("Error deleting a file from document storage: {0:#?}")]
+	#[error("Error deleting a file from document storage: {0}")]
 	DeleteError(zbus::Error),
 }
 
@@ -209,4 +241,7 @@ trait DocumentsPortal {
 		&self,
 		doc_id:		&str,
 	) -> zbus::Result<()>;
+
+	#[zbus(name = "GetMountPoint")]
+	async fn mount_point(&self) -> zbus::Result<&[u8]>;
 }
