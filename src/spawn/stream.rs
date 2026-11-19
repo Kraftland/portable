@@ -205,12 +205,24 @@ async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError
 
 async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	let mut buffer = [0u8; 1024];
-	let stdin = {
-		tokio::io::unix::AsyncFd::new(
-			make_nonblock(std::io::stdin())
+
+	let stdin = unsafe {
+		use std::os::fd::FromRawFd;
+
+		tokio::io::unix::AsyncFd::register(
+			make_nonblock(
+				std::os::fd::OwnedFd::from_raw_fd(
+					nix::fcntl::fcntl(
+						std::io::stdin(),
+						nix::fcntl::FcntlArg::F_DUPFD(3),
+					)
+						.map_err(StreamError::StdinSetupNixError)
+						?
+				)
+			)
 				?
 		)
-			.map_err(StreamError::StdinSetupError)
+			.map_err(StreamError::StdinAsyncFdRegisterError)
 			?
 	};
 
@@ -411,6 +423,10 @@ pub enum StreamError {
 	#[error("Could not stream standard input: error manipulating file descriptor: {0}")]
 	StdinSetupError(std::io::Error),
 
+	#[error("Could not create asynchronous standard input file descriptor: {0}")]
+	StdinAsyncFdRegisterError(tokio::io::unix::AsyncFdRegisterError<std::fs::File>),
+
 	#[error("Could not stream standard input: error manipulating file descriptor: {0}")]
 	StdinSetupNixError(nix::Error),
 }
+
