@@ -206,24 +206,30 @@ async fn stream_resize(master_fd: std::os::fd::OwnedFd)-> Result<(), StreamError
 async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 	let mut buffer = [0u8; 1024];
 
-	let stdin = unsafe {
+	let stdin = {
+		let raw_fd = {
+			nix::fcntl::fcntl(
+				std::io::stdin(),
+				nix::fcntl::FcntlArg::F_DUPFD(1025),
+			)
+				.map_err(StreamError::StdinSetupNixError)
+				?
+		};
+
 		use std::os::fd::FromRawFd;
 
-		tokio::io::unix::AsyncFd::register(
-			make_nonblock(
-				std::os::fd::OwnedFd::from_raw_fd(
-					nix::fcntl::fcntl(
-						std::io::stdin(),
-						nix::fcntl::FcntlArg::F_DUPFD(3),
+		unsafe {
+			tokio::io::unix::AsyncFd::register(
+				make_nonblock(
+					std::os::fd::OwnedFd::from_raw_fd(
+						raw_fd
 					)
-						.map_err(StreamError::StdinSetupNixError)
-						?
 				)
+					?
 			)
+				.map_err(StreamError::StdinAsyncFdRegisterError)
 				?
-		)
-			.map_err(StreamError::StdinAsyncFdRegisterError)
-			?
+		}
 	};
 
 	let mut tokio_file = tokio::fs::File::from_std(file);
