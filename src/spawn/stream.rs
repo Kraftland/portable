@@ -210,7 +210,7 @@ async fn stream_in(file: std::fs::File) -> Result<(), StreamError> {
 		let raw_fd = {
 			nix::fcntl::fcntl(
 				std::io::stdin(),
-				nix::fcntl::FcntlArg::F_DUPFD(1025),
+				nix::fcntl::FcntlArg::F_DUPFD(25),
 			)
 				.map_err(StreamError::StdinSetupNixError)
 				?
