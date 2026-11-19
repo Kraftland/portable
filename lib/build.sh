@@ -2,6 +2,19 @@
 
 set -e
 
+# $1 is po dir, $2 is DOMAIN name. Outputs to build/locale
+function buildLocales() {
+	for po in "$1"/*.po; do
+		[ -f "$po" ] || continue
+		lang=${po##*/}
+		lang=${lang%.po}
+
+		output="build/locale/$lang/LC_MESSAGES/$2.mo"
+		mkdir -p "$(dirname "$output")"
+		msgfmt -o "$output" "$po"
+	done
+}
+
 function buildGo() {
 	currDir="$(pwd)"
 	cd "$1"
@@ -32,6 +45,11 @@ function buildRust() {
 }
 
 git submodule update --init --recursive
+
+# Build locales for portable-config
+mkdir -p locales
+
+buildLocale lib/config/po "portable-config"
 
 buildRust .
 

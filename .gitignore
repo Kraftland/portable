@@ -9,6 +9,8 @@ lib/flatpak-spawn-stub/top.kimiblock.flatpak-spawn
 lib/prlimit-stub/top.kimiblock.prlimit
 lib/init/target
 
+locales/
+
 # Added by cargo
 
 /target
