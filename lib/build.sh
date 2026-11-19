@@ -49,7 +49,7 @@ git submodule update --init --recursive
 # Build locales for portable-config
 mkdir -p locales
 
-buildLocale lib/config/po "portable-config"
+buildLocales lib/config/po "portable-config"
 
 buildRust .
 
