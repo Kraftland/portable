@@ -36,6 +36,12 @@ cp -r \
 	"lib/overlay-usr" \
 	"${installPrefix}/usr/lib/portable/"
 
+install -d "${installPrefix}/usr/share"
+
+cp -r \
+	"build/locale" \
+	"${installPrefix}/usr/share"
+
 install -vDm755 \
 	"lib/portable-pools" \
 	-t \
