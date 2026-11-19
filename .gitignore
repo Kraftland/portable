@@ -10,6 +10,7 @@ lib/prlimit-stub/top.kimiblock.prlimit
 lib/init/target
 
 locales/
+build/
 
 # Added by cargo
 
