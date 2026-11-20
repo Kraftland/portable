@@ -18,10 +18,13 @@ impl AskConsent for crate::pref::permissions::consent::DynamicPermissions {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ZenityError {
-	#[error("Zenity failed to start: {0:#?}")]
+	#[error("Zenity failed to start: {0}")]
 	ZenityFailed(std::io::Error),
 
-	#[error("Zenity output is not valid UTF-8: {0:#?}")]
+	#[error("Could not wait for zenity, your locale settings may be incorrect: {0}")]
+	ZenityExitError(std::process::ExitStatus),
+
+	#[error("Zenity output is not valid UTF-8: {0}")]
 	InvalidUTF8(std::string::FromUtf8Error),
 }
 
@@ -107,8 +110,8 @@ async fn ask_zenity(
 
 	let mut cmdline: Vec<String> = vec![
 		String::from("--list"),
-		String::from("--checkbox"),
-		String::from("--multiple"),
+
+		String::from("--checklist"),
 
 		String::from("--title"),
 		String::from(display_name),
@@ -118,8 +121,6 @@ async fn ask_zenity(
 		String::from("--column=Allow"),
 		String::from("--column=Identifier"),
 		String::from("--column=Permission"),
-
-		String::from("--checklist"),
 
 		String::from("--print-column"),
 		String::from("2"),
@@ -140,12 +141,18 @@ async fn ask_zenity(
 			.args(cmdline)
 			.stdin(std::process::Stdio::null())
 			.stdout(std::process::Stdio::piped())
-			.stderr(std::process::Stdio::null())
+			.stderr(std::process::Stdio::inherit())
 			.kill_on_drop(true)
 			.output()
 			.await
 			.map_err(ZenityError::ZenityFailed)
 			?;
+
+		if ! out.status.success() {
+			return Err(
+				ZenityError::ZenityExitError(out.status)
+			)
+		};
 
 		String::from_utf8(out.stdout)
 			.map_err(ZenityError::InvalidUTF8)
