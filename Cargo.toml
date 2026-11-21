@@ -35,6 +35,7 @@ futures-util = { version = "0.3.34", default-features = false, features = ["toki
 
 uuid = { version = "1.26.0", features = ["v4"], default-features = false }
 freedesktop-desktop-entry = { version = "0.8.3", default-features = false, optional = true }
+gettext-rs = { version = "0.8.0", features = ["gettext-system"] }
 
 [workspace]
 resolver = "3"

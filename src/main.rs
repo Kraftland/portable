@@ -12,8 +12,35 @@ use portable_daemon::errors::StartError;
 
 pub use portable_daemon::errors;
 
+fn main() -> Result<(), StartError> {
+	match unsafe {
+		gettextrs::TextDomain::new("org.kraftland.portable")
+			.codeset("UTF-8")
+			.init()
+			.expect("Could not initialise gettext")
+	}
+	{
+		Some(v)	=> {
+			#[cfg(debug_assertions)]
+			println!("Initialised i18n support, locale: {v:?}");
+		}
+		None	=> {
+			#[cfg(debug_assertions)]
+			eprintln!("Could not initialise i18n support");
+		}
+	};
+
+	main_async()
+}
+
+
+/**
+	An asynchronous main() to capture Results early on.
+
+	It looks ugly, but we need to initialise gettext in a synchronous context
+*/
 #[tokio::main]
-async fn main() -> Result<(), StartError> {
+async fn main_async() -> Result<(), StartError> {
 	let (stop_object, stop_drainer) = stop::Stop::new().await;
 
 
