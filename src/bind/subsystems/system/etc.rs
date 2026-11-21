@@ -98,20 +98,14 @@ pub async fn bind_etc(
 		"/etc/os-release",
 	];
 
-	for path in optional_paths {
-		if tokio::fs::try_exists(&path)
-			.await
-			.map_err(EtcError::ExistIOError)
-			?
-		{
-			ret.push(
-				BindRule::Path {
-					source:	path.into(),
-					dest:	path.into(),
-					class:	crate::bind::types::BindType::ReadOnly,
-				}
-			);
-		}
+	for path in super::exist::list_exists(optional_paths).await.map_err(EtcError::ExistError)? {
+		ret.push(
+			BindRule::Path {
+				source:	path.to_path_buf(),
+				dest:	path,
+				class:	crate::bind::types::BindType::ReadOnly,
+			}
+		);
 	};
 
 	Ok(ret)
@@ -134,6 +128,6 @@ pub enum EtcError {
 	#[error("Could not bind resolv.conf: {0}")]
 	ResolvError(super::resolv::ResolvError),
 
-	#[error("Could not determine if path exists: I/O error: {0}")]
-	ExistIOError(std::io::Error),
+	#[error("Could not determine if path exists: {0}")]
+	ExistError(super::exist::ExistError),
 }

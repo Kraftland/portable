@@ -4,6 +4,7 @@ mod resolv;
 mod bin;
 mod machine_id;
 mod etc;
+pub mod exist;
 
 /**
 	The system bind subsystem
@@ -277,6 +278,16 @@ async fn bind(
 			dest:	document_mount.path(),
 			class:	crate::bind::types::BindType::ReadWrite,
 		},
+
+		/*
+			/dev/null pesudo device
+		*/
+		BindRule::Path {
+		source:	"/dev/null".into(),
+			dest:	"/dev/null".into(),
+			class:	crate::bind::types::BindType::Device,
+		},
+
 		/*
 			Privacy mounts are handled in the mask subsystem
 		*/
@@ -320,27 +331,55 @@ async fn bind(
 		);
 	};
 
-	// Mount the /dev/null pesudo device
-	if tokio::fs::try_exists("/dev/null").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/dev/null".into(),
-				class:	crate::bind::types::BindType::Device,
-			},
-		);
+	{
+		let rw_paths = [
+			// Games require this
+			"/sys/devices/system",
+
+		];
+
+		let ro_paths = [
+			// Character devices are needed
+			"/sys/dev/char",
+			"/sys/module",
+		];
+
+		let device_paths = [
+			"/dev/udmabuf",
+			"/dev/ntsync",
+		];
+
+		for path in exist::list_exists(rw_paths).await.map_err(SystemBindError::ExistError)? {
+			ret.push(
+				BindRule::Path {
+					source:	path.to_path_buf(),
+					dest:	path.to_path_buf(),
+					class:	crate::bind::types::BindType::ReadWrite,
+				}
+			);
+		};
+
+		for path in exist::list_exists(device_paths).await.map_err(SystemBindError::ExistError)? {
+			ret.push(
+				BindRule::Path {
+					source:	path.to_path_buf(),
+					dest:	path.to_path_buf(),
+					class:	crate::bind::types::BindType::Device,
+				}
+			);
+		};
+
+		for path in exist::list_exists(ro_paths).await.map_err(SystemBindError::ExistError)? {
+			ret.push(
+				BindRule::Path {
+					source:	path.to_path_buf(),
+					dest:	path.to_path_buf(),
+					class:	crate::bind::types::BindType::ReadOnly,
+				}
+			);
+		};
 	};
 
-	// Mask certain procfs entries as they leak system info
-	if tokio::fs::try_exists("/proc/uptime").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/proc/uptime".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
 	if tokio::fs::try_exists("/proc/modules").await.map_err(SystemBindError::IOError)? {
 		ret.push(
 			BindRule::Path {
@@ -348,113 +387,6 @@ async fn bind(
 				dest:	"/proc/modules".into(),
 				class:	crate::bind::types::BindType::ReadOnly,
 			},
-		);
-	};
-	if tokio::fs::try_exists("/proc/cmdline").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/proc/cmdline".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-	if tokio::fs::try_exists("/proc/diskstats").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/proc/diskstats".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-	if tokio::fs::try_exists("/proc/devices").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/proc/devices".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-	if tokio::fs::try_exists("/proc/config.gz").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/proc/config.gz".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-	if tokio::fs::try_exists("/proc/loadavg").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/dev/null".into(),
-				dest:	"/proc/loadavg".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-
-	// Games won't function without it
-	if tokio::fs::try_exists("/sys/devices/system").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/sys/devices/system".into(),
-				dest:	"/sys/devices/system".into(),
-				class:	crate::bind::types::BindType::ReadWrite,
-			},
-		);
-	};
-
-
-	// CGroups not showing up doesn't break Init
-	if tokio::fs::try_exists("/sys/fs/cgroup").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/sys/fs/cgroup".into(),
-				dest:	"/sys/fs/cgroup".into(),
-				class:	crate::bind::types::BindType::ReadWrite,
-			},
-		);
-	};
-
-	if tokio::fs::try_exists("/sys/dev/char").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/sys/dev/char".into(),
-				dest:	"/sys/dev/char".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-
-	if tokio::fs::try_exists("/sys/module").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source:	"/sys/module".into(),
-				dest:	"/sys/module".into(),
-				class:	crate::bind::types::BindType::ReadOnly,
-			},
-		);
-	};
-
-	if tokio::fs::try_exists("/dev/udmabuf").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source: "/dev/udmabuf".into(),
-				dest: "/dev/udmabuf".into(),
-				class: crate::bind::types::BindType::Device,
-			}
-		);
-	};
-	if tokio::fs::try_exists("/dev/ntsync").await.map_err(SystemBindError::IOError)? {
-		ret.push(
-			BindRule::Path {
-				source: "/dev/ntsync".into(),
-				dest: "/dev/ntsync".into(),
-				class: crate::bind::types::BindType::Device,
-			}
 		);
 	};
 
@@ -492,4 +424,7 @@ pub enum SystemBindError {
 
 	#[error("Could not mount /etc: {0}")]
 	EtcError(etc::EtcError),
+
+	#[error("Could not detect if path exists: {0}")]
+	ExistError(exist::ExistError),
 }

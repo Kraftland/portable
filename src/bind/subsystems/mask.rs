@@ -1,6 +1,3 @@
-mod paths;
-mod flatpak;
-
 pub struct Mask {}
 
 impl super::GenerateBind for Mask {
@@ -14,47 +11,61 @@ impl super::GenerateBind for Mask {
 	The public function is used to mask certain paths for privacy
 */
 async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
+	let mask_dirs = vec![
+		"/proc/bus",
+		"/proc/driver",
+
+		"/sys/devices/virtual/dmi",
+		"/sys/devices/virtual/block",
+		"/sys/devices/virtual/sound",
+
+		"/proc/1",
+		"/usr/share/applications",
+	];
+
+	let mask_files = vec![
+		// Mask certain procfs entries as they leak system info
+		"/proc/uptime",
+		"/proc/cmdline",
+		"/proc/diskstats",
+		"/proc/devices",
+		"/proc/config.gz",
+		"/proc/loadavg",
+	];
+
+
 	let mut ret = vec![];
 	use crate::bind::types::BindRule;
 
-	let mut status = vec![];
-	let mut subtask = vec![];
 
-	subtask.push(
-		flatpak::mask_spawn()
-	);
-
-	for path in paths::get_paths() {
-		status.push(
-			(
-				tokio::fs::try_exists(&path)
-					.await
-					.map_err(MaskError::ExistError)
-					?,
-				path,
-			)
+	for path in super::system::exist::list_exists(mask_dirs)
+		.await
+		.map_err(MaskError::ExistError)
+		?
+	{
+		ret.push(
+			BindRule::VirtualFS {
+				dest:	path,
+				class:	crate::bind::types::VirtualFS::Tmpfs {
+					size_mb:	Some(0),
+					perms:		None,
+				},
+			}
 		);
 	};
 
-	for entry in status {
-		if entry.0 {
-			ret.push(
-				BindRule::VirtualFS {
-					dest: entry.1,
-					class: crate::bind::types::VirtualFS::Tmpfs {
-						size_mb: Some(0),
-						perms: None,
-					},
-				},
-			);
-		}
-	};
-
-	for task in subtask {
-		match task.await {
-			Some(v)	=> {ret.push(v);}
-			None	=> {continue;}
-		}
+	for path in super::system::exist::list_exists(mask_files)
+		.await
+		.map_err(MaskError::ExistError)
+		?
+	{
+		ret.push(
+			BindRule::Path {
+				source:	"/dev/null".into(),
+				dest:	path,
+				class:	crate::bind::types::BindType::ReadOnly,
+			}
+		);
 	};
 
 	Ok(ret)
@@ -62,9 +73,6 @@ async fn mask_paths() -> Result<crate::bind::types::BindRules, MaskError> {
 
 #[derive(thiserror::Error, Debug)]
 pub enum MaskError {
-	#[error("Could not determine if path exists: {0:#?}")]
-	ExistError(std::io::Error),
-
-	#[error("Could not determine if path exists: {0:#?}")]
-	SpawnError(tokio::task::JoinError),
+	#[error("Could not determine if path exists: {0}")]
+	ExistError(super::system::exist::ExistError),
 }
