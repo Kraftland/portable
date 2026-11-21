@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 23:12+0800\n"
+"POT-Creation-Date: 2026-11-21 23:15+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -53,17 +53,21 @@ msgstr ""
 msgid "Perform debugging"
 msgstr ""
 
-#: src/pref/permissions/consent/impls/ask/zenity.rs:121
+#: src/pref/permissions/consent/impls/ask/zenity.rs:74
+msgid "This permission may be required for application to function"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:124
 msgid ""
 "Would like to request...\n"
 "<small>Permissions are persistent and can be revoked by invoking --revoke-"
 "permissions</small>"
 msgstr ""
 
-#: src/pref/permissions/consent/impls/ask/zenity.rs:126
+#: src/pref/permissions/consent/impls/ask/zenity.rs:129
 msgid "Allow While in Use"
 msgstr ""
 
-#: src/pref/permissions/consent/impls/ask/zenity.rs:131
+#: src/pref/permissions/consent/impls/ask/zenity.rs:134
 msgid "Permission Description"
 msgstr ""

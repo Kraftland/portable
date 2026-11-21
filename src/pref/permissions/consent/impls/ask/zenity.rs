@@ -70,7 +70,10 @@ impl crate::bind::types::ToCmdline for ZenityPermissionObject {
 
 				if self.default_allow {
 					string.push_str("\n");
-					string.push_str("Denying may cause basic function to fail.");
+					string.push_str(
+						gettextrs::gettext("This permission may be required for application to function")
+							.as_str()
+					);
 				}
 
 				string
