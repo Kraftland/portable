@@ -1,14 +1,14 @@
-# Chinese translations for portable-config package.
-# Copyright (C) 2026 Kimiblock Moe, Kraftland Organisation Founder
-# This file is distributed under the same license as the portable-config package.
+# Chinese translations for org.kraftland.portable package.
+# Copyright (C) 2026 Kraftland Organisation
+# This file is distributed under the same license as the org.kraftland.portable package.
 # Kimiblock Moe <kimiblock@icloud.com>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: portable-config 0.1.0\n"
+"Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 15:53+0800\n"
-"PO-Revision-Date: 2026-11-19 22:55+0800\n"
+"POT-Creation-Date: 2026-11-21 17:06+0800\n"
+"PO-Revision-Date: 2026-11-21 19:19+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (China) <kraftland.org@icloud.com>\n"
 "Language: zh_CN\n"
@@ -20,15 +20,15 @@ msgstr ""
 
 #: lib/config/src/definitions/consent.rs:111
 msgid "Send notifications"
-msgstr "发送通知"
+msgstr "发送系统通知"
 
 #: lib/config/src/definitions/consent.rs:116
 msgid "Inhibit system suspend and shutdown"
-msgstr "保持设备唤醒"
+msgstr "保持设备运行"
 
 #: lib/config/src/definitions/consent.rs:122
 msgid "Render on Discrete GPU"
-msgstr "使用非默认显卡渲染图像"
+msgstr "使用非默认显卡渲染"
 
 #: lib/config/src/definitions/consent.rs:129
 msgid "Run a Kernel Virtual Machine"
@@ -36,20 +36,20 @@ msgstr "运行内核虚拟机"
 
 #: lib/config/src/definitions/consent.rs:136
 msgid "Access and manage Input Devices"
-msgstr "访问和管理输入设备"
+msgstr "使用并管理内建和外接输入设备"
 
 #: lib/config/src/definitions/consent.rs:142
 msgid "Access Camera"
-msgstr "拍摄照片与视频"
+msgstr "使用内建和外接相机捕捉图像和影片"
 
 #: lib/config/src/definitions/consent.rs:150
 msgid "Mount namespace"
-msgstr "使用挂载命名空间"
+msgstr "使用命名空间操作挂载表"
 
 #: lib/config/src/definitions/consent.rs:159
 msgid "Control Media Players"
-msgstr "控制其它媒体播放器"
+msgstr "控制媒体播放"
 
 #: lib/config/src/definitions/consent.rs:167
 msgid "Perform debugging"
-msgstr "调试内部程序"
+msgstr "使用调试功能"

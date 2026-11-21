@@ -1,14 +1,14 @@
-# Chinese translations for portable-config package.
-# Copyright (C) 2026 Kimiblock Moe, Kraftland Organisation Founder
-# This file is distributed under the same license as the portable-config package.
+# Chinese translations for org.kraftland.portable package.
+# Copyright (C) 2026 Kraftland Organisation
+# This file is distributed under the same license as the org.kraftland.portable package.
 # Kimiblock Moe <kimiblock@icloud.com>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: portable-config 0.1.0\n"
+"Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 15:53+0800\n"
-"PO-Revision-Date: 2026-11-18 23:25+0800\n"
+"POT-Creation-Date: 2026-11-21 17:06+0800\n"
+"PO-Revision-Date: 2026-11-21 17:08+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (Hong Kong) <(nothing)>\n"
 "Language: zh_HK\n"

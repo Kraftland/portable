@@ -770,6 +770,7 @@ dependencies = [
  "command-fds",
  "freedesktop-desktop-entry",
  "futures-util",
+ "gettext-rs",
  "jiff",
  "nix",
  "portable-config",
