@@ -1,0 +1,53 @@
+# Chinese translations for portable-config package.
+# Copyright (C) 2026 Kimiblock Moe, Kraftland Organisation Founder
+# This file is distributed under the same license as the portable-config package.
+# Kimiblock Moe <kimiblock@icloud.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: portable-config 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-21 15:53+0800\n"
+"PO-Revision-Date: 2026-11-18 23:25+0800\n"
+"Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
+"Language-Team: Chinese (traditional) <zh-l10n@lists.slat.org>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lib/config/src/definitions/consent.rs:111
+msgid "Send notifications"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:116
+msgid "Inhibit system suspend and shutdown"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:122
+msgid "Render on Discrete GPU"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:129
+msgid "Run a Kernel Virtual Machine"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:136
+msgid "Access and manage Input Devices"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:142
+msgid "Access Camera"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:150
+msgid "Mount namespace"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:159
+msgid "Control Media Players"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:167
+msgid "Perform debugging"
+msgstr ""

@@ -46,10 +46,7 @@ function buildRust() {
 
 git submodule update --init --recursive
 
-# Build locales for portable-config
-mkdir -p locales
-
-buildLocales lib/config/po "portable-config"
+buildLocales po/ "org.kraftland.portable"
 
 buildRust .
 
