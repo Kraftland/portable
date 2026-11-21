@@ -116,7 +116,12 @@ async fn ask_zenity(
 		String::from("--title"),
 		String::from(display_name),
 
-		String::from("--text=Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>"),
+		String::from(
+			format!(
+				"--text={}",
+				gettextrs::gettext("Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>")
+			)
+		),
 
 		String::from("--column=Allow"),
 		String::from("--column=Identifier"),
