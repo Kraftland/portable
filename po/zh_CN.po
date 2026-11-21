@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 22:58+0800\n"
-"PO-Revision-Date: 2026-11-21 23:02+0800\n"
+"POT-Creation-Date: 2026-11-21 23:12+0800\n"
+"PO-Revision-Date: 2026-11-21 23:12+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (China) <kraftland.org@icloud.com>\n"
 "Language: zh_CN\n"
@@ -54,7 +54,7 @@ msgstr "控制媒体播放"
 msgid "Perform debugging"
 msgstr "使用调试功能"
 
-#: src/pref/permissions/consent/impls/ask/zenity.rs:122
+#: src/pref/permissions/consent/impls/ask/zenity.rs:121
 msgid ""
 "Would like to request...\n"
 "<small>Permissions are persistent and can be revoked by invoking --revoke-"
@@ -62,3 +62,14 @@ msgid ""
 msgstr ""
 "欲获得如下权限...\n"
 "<small>权限将会被保留，阁下可以通过 --revoke-permissions 选项撤销</small>"
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:126
+msgid "Allow While in Use"
+msgstr "运行时允许"
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:131
+msgid "Permission Description"
+msgstr "权限细则"
+
+#~ msgid "Allow Permission"
+#~ msgstr "授予权限"

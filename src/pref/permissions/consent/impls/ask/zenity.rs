@@ -121,9 +121,15 @@ async fn ask_zenity(
 			gettextrs::gettext("Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>")
 			),
 
-		String::from("--column=Allow"),
+		format!(
+			"--column={}",
+			gettextrs::gettext("Allow While in Use"),
+		),
 		String::from("--column=Identifier"),
-		String::from("--column=Permission"),
+		format!(
+			"--column={}",
+			gettextrs::gettext("Permission Description")
+		),
 
 		String::from("--print-column"),
 		String::from("2"),

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 22:58+0800\n"
+"POT-Creation-Date: 2026-11-21 23:12+0800\n"
 "PO-Revision-Date: 2026-11-21 17:07+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (traditional) <zh-l10n@lists.slat.org>\n"
@@ -52,9 +52,17 @@ msgstr ""
 msgid "Perform debugging"
 msgstr ""
 
-#: src/pref/permissions/consent/impls/ask/zenity.rs:122
+#: src/pref/permissions/consent/impls/ask/zenity.rs:121
 msgid ""
 "Would like to request...\n"
 "<small>Permissions are persistent and can be revoked by invoking --revoke-"
 "permissions</small>"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:126
+msgid "Allow While in Use"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:131
+msgid "Permission Description"
 msgstr ""
