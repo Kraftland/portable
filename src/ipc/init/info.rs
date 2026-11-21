@@ -34,20 +34,6 @@ pub struct InitInfo {
 	*/
 	pub target_args:	Vec<String>,
 
-	/**
-		uclamp_min describes the minimum guaranteed performance operating point.
-
-		It is clamped between 0 and 100, as per cgroup v2 specifications.
-	*/
-	pub uclamp_min:		u32,
-	/**
-		uclamp_max describes the maximum performance operating point.
-		It operates as a ceiling limit.
-
-		It is clamped between 0 and 100, as per cgroup v2 specifications.
-	*/
-	pub uclamp_max:		u32,
-
 	pub logger:		crate::logger::LogSender,
 
 	pub cancen_token:	tokio_util::sync::CancellationToken,
@@ -94,8 +80,6 @@ impl InitInfo {
 		bool,
 		&str,
 		&Vec<String>,
-		u32,
-		u32,
 		bool,
 		bool,
 	) {
@@ -107,8 +91,6 @@ impl InitInfo {
 			self.allow_debug,
 			&self.target_exec,
 			&self.target_args,
-			self.uclamp_min,
-			self.uclamp_max,
 			self.console,
 			self.seccomp_whitelist,
 		)

@@ -396,8 +396,6 @@ pub async fn generate_bindrules(
 				base
 			}
 		},
-		uclamp_min:		0,
-		uclamp_max:		config.system.uclamp_max,
 		console:		console::is_terminal(),
 		config,
 	};
