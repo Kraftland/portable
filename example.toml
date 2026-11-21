@@ -52,15 +52,6 @@ allow_inhibit = false
 # Previously inhibitOnBehalf.
 conduct_inhibit = false
 
-# An unsigned integer ranging from 0 to 100.
-# Specifies the "max" value of cgroup's cpu.uclamp property. This influences
-# 	frequency selection of schedutil and Energy / Capacity Aware scheduling on Heterogeneous CPUs.
-# Lower value yields more energy efficiency, while higher trades efficiency
-# 	for performance.
-# Defaults to 100, i.e. unlimited.
-# Previously uclamp.
-uclamp_max = 100
-
 # A TOML slice that accepts string values.
 # Current possible values are: (dgpu, input, camera, kvm).
 #------------------------------------------------------------------------------#
