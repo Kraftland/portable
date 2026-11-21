@@ -20,10 +20,7 @@ fn main() -> Result<(), StartError> {
 			.expect("Could not initialise gettext")
 	}
 	{
-		Some(v)	=> {
-			#[cfg(debug_assertions)]
-			println!("Initialised i18n support, locale: {v:?}");
-		}
+		Some(_)	=> {}
 		None	=> {
 			#[cfg(debug_assertions)]
 			eprintln!("Could not initialise i18n support");
