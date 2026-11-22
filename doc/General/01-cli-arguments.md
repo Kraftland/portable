@@ -4,9 +4,6 @@
 
 Environment variables:
 
-- PORTABLE_LOGGING	-> Optional
-	- Possible values: debug, info
-
 - PORTABLE_CONF		-> Required
 	- Possible values:
 		- Application ID of installed sandbox under /usr/lib/portable/info (recommended), or XDG_CONFIG_DIR/portable/info
@@ -17,15 +14,16 @@ Environment variables:
 Command line arguments (optional):
 
 ```
-	--debug-shell	-> Enter the sandbox via a bash shell
+	--debug-shell	-	-> Enter the sandbox via a bash shell
 	--opendir	-	-> Open the sandbox's home directory
-	--share-files	-> Place files in sandbox's "Shared" directory
+	--share-files	-	-> Place files in sandbox's "Shared" directory
 	--share-directory	-> Share a directory using the same way
-	--quit	-	-> Terminate running sandbox
+	--quit	-	-	-> Terminate running sandbox
 	--	-	-	-> Any argument after this double dash will be passed to the application
 	--expose <orig> <dest>	-> See further doc below
 	--forward-file		-> See file forwarding documents under General/
-	--revoke-permissions	-> Revoke runtime application permissions
+	--revoke-permissions	-> Revoke runtime application permissions, including Dynamic Permissions and File access
+	-h | --help	-	-> Print a simple help
 ```
 
 

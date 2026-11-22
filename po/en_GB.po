@@ -1,0 +1,76 @@
+# English translations for org.kraftland.portable package.
+# Copyright (C) 2026 Kraftland Organisation
+# This file is distributed under the same license as the org.kraftland.portable package.
+# Kimiblock Moe <kimiblock@icloud.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: org.kraftland.portable 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-21 23:15+0800\n"
+"PO-Revision-Date: 2026-11-22 13:41+0800\n"
+"Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
+"Language-Team: English (British) <(nothing)>\n"
+"Language: en_GB\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/config/src/definitions/consent.rs:83
+msgid "Send notifications"
+msgstr "Send notifications"
+
+#: lib/config/src/definitions/consent.rs:88
+msgid "Inhibit system suspend and shutdown"
+msgstr "Inhibit system suspend and shutdown"
+
+#: lib/config/src/definitions/consent.rs:94
+msgid "Render on Discrete GPU"
+msgstr "Render on Discrete GPU"
+
+#: lib/config/src/definitions/consent.rs:101
+msgid "Run a Kernel Virtual Machine"
+msgstr "Run a Kernel Virtual Machine"
+
+#: lib/config/src/definitions/consent.rs:108
+msgid "Access and manage Input Devices"
+msgstr "Access and manage Input Devices"
+
+#: lib/config/src/definitions/consent.rs:114
+msgid "Access Camera"
+msgstr "Access Camera"
+
+#: lib/config/src/definitions/consent.rs:122
+msgid "Mount namespace"
+msgstr "Mount namespace"
+
+#: lib/config/src/definitions/consent.rs:131
+msgid "Control Media Players"
+msgstr "Control Media Players"
+
+#: lib/config/src/definitions/consent.rs:139
+msgid "Perform debugging"
+msgstr "Perform debugging"
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:74
+msgid "This permission may be required for application to function"
+msgstr "This permission may be required for application to function"
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:124
+msgid ""
+"Would like to request...\n"
+"<small>Permissions are persistent and can be revoked by invoking --revoke-"
+"permissions</small>"
+msgstr ""
+"Would like to request...\n"
+"<small>Permissions are persistent and can be revoked by invoking --revoke-"
+"permissions</small>"
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:129
+msgid "Allow While in Use"
+msgstr "Allow While in Use"
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:134
+msgid "Permission Description"
+msgstr "Permission Description"
