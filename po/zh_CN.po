@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 23:15+0800\n"
-"PO-Revision-Date: 2026-11-21 23:15+0800\n"
+"POT-Creation-Date: 2026-11-22 19:58+0800\n"
+"PO-Revision-Date: 2026-11-22 20:55+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (China) <kraftland.org@icloud.com>\n"
 "Language: zh_CN\n"
@@ -74,6 +74,26 @@ msgstr "运行时允许"
 #: src/pref/permissions/consent/impls/ask/zenity.rs:134
 msgid "Permission Description"
 msgstr "权限细则"
+
+#: src/pref/runtime/cmdline/help.rs:5
+msgid ""
+"This is Portable Sandbox. A fast, private, modern sandbox designed for "
+"desktop Linux."
+msgstr "这是 Portable。一个快速、隐私、现代的 Linux 桌面沙盒。"
+
+#: src/pref/runtime/cmdline/help.rs:8
+msgid ""
+"Visit https://github.com/Kraftland/portable/blob/master/doc/General/01-cli-"
+"arguments.md for CLI documentation"
+msgstr ""
+"访问 https://github.com/Kraftland/portable/blob/master/doc/General/01-cli-"
+"arguments.md 以获取命令行参数帮助。"
+
+#: src/pref/runtime/cmdline/help.rs:11
+msgid ""
+"You should also receive a copy from the distributor, usually in /usr/share/"
+"doc/portable"
+msgstr ""
 
 #~ msgid "Allow Permission"
 #~ msgstr "授予权限"
