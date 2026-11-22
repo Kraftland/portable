@@ -70,7 +70,10 @@ impl crate::bind::types::ToCmdline for ZenityPermissionObject {
 
 				if self.default_allow {
 					string.push_str("\n");
-					string.push_str("Denying may cause basic function to fail.");
+					string.push_str(
+						gettextrs::gettext("This permission may be required for application to function")
+							.as_str()
+					);
 				}
 
 				string
@@ -116,11 +119,20 @@ async fn ask_zenity(
 		String::from("--title"),
 		String::from(display_name),
 
-		String::from("--text=Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>"),
+		format!(
+			"--text={}",
+			gettextrs::gettext("Would like to request...\n<small>Permissions are persistent and can be revoked by invoking --revoke-permissions</small>")
+			),
 
-		String::from("--column=Allow"),
+		format!(
+			"--column={}",
+			gettextrs::gettext("Allow While in Use"),
+		),
 		String::from("--column=Identifier"),
-		String::from("--column=Permission"),
+		format!(
+			"--column={}",
+			gettextrs::gettext("Permission Description")
+		),
 
 		String::from("--print-column"),
 		String::from("2"),

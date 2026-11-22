@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 19:19+0800\n"
+"POT-Creation-Date: 2026-11-21 23:15+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,38 +17,57 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/config/src/definitions/consent.rs:111
+#: lib/config/src/definitions/consent.rs:83
 msgid "Send notifications"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:116
+#: lib/config/src/definitions/consent.rs:88
 msgid "Inhibit system suspend and shutdown"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:122
+#: lib/config/src/definitions/consent.rs:94
 msgid "Render on Discrete GPU"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:129
+#: lib/config/src/definitions/consent.rs:101
 msgid "Run a Kernel Virtual Machine"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:136
+#: lib/config/src/definitions/consent.rs:108
 msgid "Access and manage Input Devices"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:142
+#: lib/config/src/definitions/consent.rs:114
 msgid "Access Camera"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:150
+#: lib/config/src/definitions/consent.rs:122
 msgid "Mount namespace"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:159
+#: lib/config/src/definitions/consent.rs:131
 msgid "Control Media Players"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:167
+#: lib/config/src/definitions/consent.rs:139
 msgid "Perform debugging"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:74
+msgid "This permission may be required for application to function"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:124
+msgid ""
+"Would like to request...\n"
+"<small>Permissions are persistent and can be revoked by invoking --revoke-"
+"permissions</small>"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:129
+msgid "Allow While in Use"
+msgstr ""
+
+#: src/pref/permissions/consent/impls/ask/zenity.rs:134
+msgid "Permission Description"
 msgstr ""
