@@ -20,11 +20,11 @@ msgstr ""
 
 #: lib/config/src/definitions/consent.rs:83
 msgid "Send notifications"
-msgstr "发送系统通知"
+msgstr "发送桌面通知"
 
 #: lib/config/src/definitions/consent.rs:88
 msgid "Inhibit system suspend and shutdown"
-msgstr "保持设备运行"
+msgstr "阻止系统自动睡眠与关机"
 
 #: lib/config/src/definitions/consent.rs:94
 msgid "Render on Discrete GPU"
@@ -36,15 +36,15 @@ msgstr "运行内核虚拟机"
 
 #: lib/config/src/definitions/consent.rs:108
 msgid "Access and manage Input Devices"
-msgstr "使用并管理内建和外接输入设备"
+msgstr "使用并管理输入设备"
 
 #: lib/config/src/definitions/consent.rs:114
 msgid "Access Camera"
-msgstr "使用内建和外接相机捕捉图像和影片"
+msgstr "使用相机"
 
 #: lib/config/src/definitions/consent.rs:122
 msgid "Mount namespace"
-msgstr "使用命名空间操作挂载表"
+msgstr "挂载命名空间"
 
 #: lib/config/src/definitions/consent.rs:131
 msgid "Control Media Players"
