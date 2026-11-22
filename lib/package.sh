@@ -42,6 +42,12 @@ cp -r \
 	"build/locale" \
 	"${installPrefix}/usr/share"
 
+install -d "${installPrefix}/usr/share/doc/"
+
+cp -r \
+	"doc" \
+	"${installPrefix}/usr/share/doc/portable"
+
 install -vDm755 \
 	"lib/portable-pools" \
 	-t \
