@@ -5,6 +5,7 @@
 xgettext \
 	lib/config/src/definitions/consent.rs \
 	src/pref/permissions/consent/impls/ask/zenity.rs \
+	src/pref/runtime/cmdline/help.rs \
 	--package-name="org.kraftland.portable" \
 	--package-version="0.1.0" \
 	--copyright-holder="Kraftland Organisation" \

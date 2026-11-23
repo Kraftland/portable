@@ -37,6 +37,9 @@ pub async fn parse(logger: crate::logger::LogSender)
 			"--file-forwarding" | "--forward-file"	=> {
 				file_forwarding = true
 			}
+			"--help" | "-h"				=> {
+				start_mode = Action::Help
+			}
 			"--dbus-activation"			=> {
 				bus_activate = true
 			}

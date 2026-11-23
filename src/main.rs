@@ -199,6 +199,13 @@ async fn run(
 
 	match &runtime_opts.action {
 		pref::runtime::options::Action::Normal				=> {}
+		pref::runtime::options::Action::Help				=> {
+			use portable_daemon::pref::runtime::cmdline::help;
+
+			eprintln!(
+				"{}", help::help_content()
+			);
+		}
 		pref::runtime::options::Action::ShareFile			=> {
 			use portable_daemon::pref::runtime::cmdline::share_file;
 			share_file::share_path_with_helper(

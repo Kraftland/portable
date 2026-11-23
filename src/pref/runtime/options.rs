@@ -27,6 +27,7 @@ pub enum Action {
 	ShareDir,
 	OpenHome,
 	ResetDocs,
+	Help,
 	Quit,
 }
 

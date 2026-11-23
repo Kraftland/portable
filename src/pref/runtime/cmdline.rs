@@ -3,6 +3,7 @@ mod args;
 pub mod share_file;
 mod permission_reset;
 pub mod open_home;
+pub mod help;
 
 pub use permission_reset::{reset, ResetError};
 
