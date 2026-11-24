@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 19:58+0800\n"
+"POT-Creation-Date: 2026-11-24 19:47+0800\n"
 "PO-Revision-Date: 2026-11-22 20:55+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (China) <kraftland.org@icloud.com>\n"
@@ -74,6 +74,14 @@ msgstr "运行时允许"
 #: src/pref/permissions/consent/impls/ask/zenity.rs:134
 msgid "Permission Description"
 msgstr "权限细则"
+
+#: src/ipc/init/aux_start/version.rs:50
+msgid "Restart required"
+msgstr ""
+
+#: src/ipc/init/aux_start/version.rs:51
+msgid "Application is running a different major version of Portable"
+msgstr ""
 
 #: src/pref/runtime/cmdline/help.rs:5
 msgid ""
