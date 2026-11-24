@@ -94,7 +94,7 @@ msgid ""
 "You should also receive a copy from the distributor, usually in /usr/share/"
 "doc/portable"
 msgstr ""
-"或访问发行版打包的帮助文档副本，通常位于 /usr/share/doc/portable"
+"或访问由发行版打包的帮助文档副本，相关文件通常位于 /usr/share/doc/portable"
 
 #~ msgid "Allow Permission"
 #~ msgstr "授予权限"
