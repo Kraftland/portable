@@ -47,8 +47,8 @@ pub async fn check(
 	match crate::ipc::portals::legacy_notif::notify(
 		conn,
 		"dialog-warning-symbolic",
-		"Restart required",
-		"Application is running a different major version of Portable",
+		gettextrs::gettext("Restart required").as_str(),
+		gettextrs::gettext("Application is running a different major version of Portable").as_str(),
 	).await {
 		Ok(_)	=> {}
 		Err(e)	=> {
