@@ -6,9 +6,11 @@ pub fn permission_contained(
 	device:		&Vec<std::path::PathBuf>,
 	expose_list:	&Vec<crate::pref::runtime::options::FileExposurePreference>,
 ) -> bool {
+	use crate::pref::runtime::options::FileExposurePreference;
+
 	for expose in expose_list {
 		match expose {
-			crate::pref::runtime::options::FileExposurePreference::MountPath { host, dest: _, class }
+			FileExposurePreference::MountPath { host, dest: _, class }
 			=> {
 				match class {
 					crate::bind::types::BindType::Device	=> {
@@ -28,13 +30,9 @@ pub fn permission_contained(
 					}
 				}
 			}
-			crate::pref::runtime::options::FileExposurePreference::Passthrough { host }
+			FileExposurePreference::Passthrough { host: _ }
 			=> {
-				if rw.contains(host) {
-					continue;
-				} else {
-					return false;
-				}
+				continue;
 			}
 		}
 	};
