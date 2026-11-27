@@ -48,7 +48,7 @@ arguments = ["--gapplication-service"]
 # Previously inhibitSuspend.
 allow_inhibit = false
 
-# Inhibit suspend and idle on behalf of applications. Requires system.inhibitSuspend being true
+# Inhibit suspend and idle on behalf of applications. Requires allow_inhibit being true
 # Previously inhibitOnBehalf.
 conduct_inhibit = false
 
