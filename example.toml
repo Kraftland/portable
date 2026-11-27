@@ -1,6 +1,11 @@
 # This is a Portable configuration, using TOML 1.1.0
 # For syntax, check https://toml.io/en/v1.1.0
 
+# When configuring Portable's behaviour, please bear in mind that the defaults
+# may change in future. As such, it is recommended to specify all available
+# fields even if the configurator has no intention of enabling them.
+# Note that values specified below may not be the current default.
+
 # The metadata section contains information of your sandbox.
 [metadata]
 # This is your Application ID, avoid conflict. Should be a reversed DNS name.
