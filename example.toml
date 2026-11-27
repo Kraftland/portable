@@ -1,12 +1,16 @@
 # This is a Portable configuration, using TOML 1.1.0
 # For syntax, check https://toml.io/en/v1.1.0
 
+# When configuring Portable's behaviour, please bear in mind that the defaults
+# may change in future. As such, it is recommended to specify all available
+# fields even if the configurator has no intention of enabling them.
+# Note that values specified below may not be the current default.
+
 # The metadata section contains information of your sandbox.
 [metadata]
 # This is your Application ID, avoid conflict. Should be a reversed DNS name.
 # If the author's DNS domain name contains hyphen/minus characters ('-'), which are not allowed in D-Bus interface names, they should be replaced by underscores. If the DNS domain name contains a digit immediately following a period ('.'), which is also not allowed in interface names), the interface name should add an underscore before that digit. For example, if the owner of 7-zip.org defined an interface for out-of-process plugins, it might be named org._7_zip.Plugin.
 # Previously appID.
-# Note that Packer could not parse the updated sandbox_id field yet! If you make a package using Packer, you would still need to use appID.
 sandbox_id = "org.example.App"
 
 # This is a display name of an application. It should only contain ASCII characters and not spaces.
@@ -48,7 +52,7 @@ arguments = ["--gapplication-service"]
 # Previously inhibitSuspend.
 allow_inhibit = false
 
-# Inhibit suspend and idle on behalf of applications. Requires system.inhibitSuspend being true
+# Inhibit suspend and idle on behalf of applications. Requires allow_inhibit being true
 # Previously inhibitOnBehalf.
 conduct_inhibit = false
 
