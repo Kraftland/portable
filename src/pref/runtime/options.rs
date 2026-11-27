@@ -1,8 +1,16 @@
 pub struct RuntimeOpts {
 	/**
-		File forwarding
+		Parsed file forwarding content from command line.
+
+		Mount Path and Passthrough should be handled in different paths.
+
+		Specifically, the former has a dedicated permission storage system and has it'w own
+		permission dialogue.
+
+		The latter has a general dynamic permission and does not check whether the file was
+		last forwarded. Processor should check if dynamic permission is allowed first.
 	*/
-	pub file_expose:	Vec<FileExposurePreference>,
+	pub file_expose_intent:	Vec<FileExposurePreference>,
 	pub action:		Action,
 	pub app_args:		ApplicationArguments,
 	pub bus_activation:	bool,

@@ -22,7 +22,7 @@ pub async fn parse(logger: crate::logger::LogSender) -> Result<super::options::R
 
 	match bw_bind_par::get_bwbindpar_opts() {
 		Some(v)	=> {
-			options.file_expose.push(v);
+			options.file_expose_intent.push(v);
 		}
 		None	=> {}
 	};

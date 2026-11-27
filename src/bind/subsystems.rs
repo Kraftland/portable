@@ -208,11 +208,15 @@ pub async fn generate_bindrules(
 	};
 
 	let (expose_rules, forward_map) = {
+		use portable_config::definitions::consent::DynamicPermission;
+
 		user::forward_file(
-			&runtime_opts.file_expose,
+			&runtime_opts.file_expose_intent,
 			&dbus_conn,
 			&config.metadata.sandbox_id,
 			logger.clone(),
+			dynamic_permissions.get(&DynamicPermission::FileForwarding)
+				.unwrap_or(&false)
 		)
 		.await
 	};

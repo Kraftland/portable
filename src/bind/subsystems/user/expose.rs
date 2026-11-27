@@ -86,6 +86,9 @@ pub async fn forward_file(
 	dbus_conn:	&zbus::Connection,
 	app_id:		&str,
 	logger:		crate::logger::LogSender,
+
+	// Whether file forwarding is allowed by the user
+	file_forward:	&bool,
 ) -> (BindRules, HashMap<String, String>) {
 	match validate_stored_permission(dbus_conn, &logger, app_id, expose_list).await {
 		Ok(true)	=> {}
