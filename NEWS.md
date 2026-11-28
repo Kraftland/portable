@@ -1,4 +1,7 @@
 # Dev
+
+Next generation of sandboxing is nigh.
+
 ## Notable Improvements
 - `--expose` or `--file-forwarding` will not ask for permission again if approved previously.
 - PID 1 now fails loudly when something horribly happens
@@ -16,6 +19,7 @@
 - Removed unotify from Init to gain higher performance under load and stop journal spam introduced by problematic applications. For debugging purposes, please use `ausearch -m SECCOMP -i` instead.
 - The `/etc` directory is now isolated from the system
 - Portable is now internationalised. Some UI elements may've already been translated to your locale, while others are in progress.
+- A transparent file passthrough experience has come. File forwarding is now a capability gated behind user consent and option `privacy.file_forwarding`. When enabled and allowed, it allows for a distraction-free experience of file passthrough.
 
 # 20.2
 
