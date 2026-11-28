@@ -159,6 +159,11 @@ async fn bind(
 					.map_err(DisplayError::X11Error)
 			})
 		);
+	} else {
+		x11::X11::unbind(&env)
+			.await
+			.map_err(DisplayError::X11Error)
+			?;
 	};
 
 	#[cfg(feature = "wayland")]
@@ -182,6 +187,11 @@ async fn bind(
 					.map_err(DisplayError::WaylandError)
 			})
 		);
+	} else {
+		wayland::Wayland::unbind(&env)
+			.await
+			.map_err(DisplayError::WaylandError)
+			?;
 	};
 
 	let mut ret = vec![];
