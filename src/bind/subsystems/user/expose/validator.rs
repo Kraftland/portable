@@ -1,16 +1,11 @@
+mod file_exposure;
+
 /**
-	Validates if the permission can be restored without calling user consent.
+	Validates if permission allows current file exposure intents.
 
-	It does not overwrite with new permissions, but appends in place.
-
-	Also returns Ok(true) when the list is empty.
-
-	It only validates a specific kind, MountPath. As Passthrough is handled via
-	Dynamic Permission.
-
-	If not then update the permission store and return false.
+	Returns owned references of FileExposurePreference.
 */
-pub async fn validate_stored_permission(
+pub async fn validate(
 	dbus_conn:	&zbus::Connection,
 	logger:		&crate::logger::LogSender,
 	app_id:		&str,
@@ -18,62 +13,88 @@ pub async fn validate_stored_permission(
 
 	// Whether file forwarding is allowed by the user
 	file_forward:	&bool,
-) -> Result<bool, zbus::Error> {
-	if expose_list.len() == 0 {
-		return Ok(true);
-	};
+) -> Result<Vec<crate::pref::runtime::options::FileExposurePreference>, super::ExposeError> {
+	let mut ret = vec![];
 
-	let (rw, ro, device) = crate::ipc::portals::permission_store::expose::get(
-		app_id,
-		dbus_conn,
-		logger,
-	).await?;
+	let (
+		// Raw PathBufs
+		file_forwarding_list,
+		expose_rw,
+		expose_ro,
+		expose_dev,
+	) = {
+		use crate::pref::runtime::options::FileExposurePreference;
 
-	if super::contain::permission_contained(&rw, &ro, &device, &expose_list) {
-		Ok(true)
-	} else {
-		let (rw, ro, device) = {
-			let mut rw = vec![];
-			let mut ro = vec![];
-			let mut dev = vec![];
+		let mut ff = vec![];
+		let mut expose_rw = vec![];
+		let mut expose_ro = vec![];
+		let mut expose_dev = vec![];
 
-			use crate::pref::runtime::options::FileExposurePreference;
-
-			for expose in expose_list {
-				match expose {
-					FileExposurePreference::MountPath { host, dest: _, class }
-					=> {
-						match class {
-							crate::bind::types::BindType::Device	=> {
-								dev.push(host.to_path_buf());
-							}
-							crate::bind::types::BindType::ReadOnly	=> {
-								ro.push(host.to_path_buf());
-							}
-							crate::bind::types::BindType::ReadWrite	=> {
-								rw.push(host.to_path_buf());
-							}
+		for item in expose_list {
+			match item {
+				FileExposurePreference::MountPath {
+					host,
+					dest,
+					class,
+				}
+				=> {
+					match class {
+						crate::bind::types::BindType::Device	=> {
+							expose_dev.push(
+								(host, dest)
+							);
+						}
+						crate::bind::types::BindType::ReadOnly	=> {
+							expose_ro.push(
+								(host, dest)
+							)
+						}
+						crate::bind::types::BindType::ReadWrite	=> {
+							expose_rw.push(
+								(host, dest)
+							);
 						}
 					}
-					FileExposurePreference::Passthrough { host: _ }		=> {
-						continue;
-					}
 				}
-			};
-
-			(rw, ro, dev)
+				FileExposurePreference::Passthrough { host: v }
+				=> {
+					ff.push(v);
+				}
+			}
 		};
 
+		(
+			ff,
 
-		crate::ipc::portals::permission_store::expose::update(
-			app_id,
-			dbus_conn,
-			Some(rw),
-			Some(ro),
-			Some(device),
+			expose_rw,
+			expose_ro,
+			expose_dev,
 		)
-			.await
-			?;
-		Ok(false)
-	}
+	};
+
+	/*
+		Append file forwarding if allowed
+	*/
+	if *file_forward && file_forwarding_list.len() > 0 {
+		use crate::pref::runtime::options::FileExposurePreference;
+		for file in file_forwarding_list {
+			ret.push(
+				FileExposurePreference::Passthrough { host: file.to_path_buf() }
+			);
+		};
+	};
+
+	file_exposure::validate(
+		dbus_conn,
+		expose_rw,
+		expose_ro,
+		expose_dev,
+		app_id,
+		&mut ret,
+	)
+		.await
+		?;
+
+	Ok(ret)
 }
+
