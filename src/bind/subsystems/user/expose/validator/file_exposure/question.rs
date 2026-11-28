@@ -8,7 +8,8 @@ async fn question(
 	device:		&Vec<super::MountPathPreference>,
 )
 -> Result<bool, QuestionError> {
-	let title = gettextrs::gettext("Designated the following list of path to mount");
+	let title = gettextrs::gettext("File Exposure");
+	let subtitle = gettextrs::gettext("Designated the following list of path to mount");
 
 	let mut cmd_args = vec![
 		"--title",
@@ -19,7 +20,7 @@ async fn question(
 	];
 
 	let text = {
-		let mut string = String::new();
+		let mut string = subtitle;
 		string.push_str("--text=Exposing the following path: \n");
 		for path in rw {
 			string.push('\n');
