@@ -10,8 +10,6 @@ pub async fn parse(logger: crate::logger::LogSender)
 	use crate::pref::runtime::options::FileExposurePreference;
 	use crate::pref::runtime::options::Action;
 
-
-	let mut file_forwarding: bool = false;
 	let mut bus_activate: bool = false;
 	let mut expose_files: Vec<FileExposurePreference> = vec![];
 	let mut start_mode: Action = Action::Normal;
@@ -33,9 +31,6 @@ pub async fn parse(logger: crate::logger::LogSender)
 				if let Some(v) = args.get(i + 1..) {
 					application_args.extend(v.to_vec());
 				}
-			}
-			"--file-forwarding" | "--forward-file"	=> {
-				file_forwarding = true
 			}
 			"--help" | "-h"				=> {
 				start_mode = Action::Help
@@ -114,19 +109,17 @@ pub async fn parse(logger: crate::logger::LogSender)
 		}
 	};
 
-	if file_forwarding {
-		expose_files.extend(
-			handle_file_forwarding(&application_args).await
-		);
-	}
+	expose_files.extend(
+		handle_file_forwarding(&application_args).await
+	);
 
 	Ok(
 		crate::pref::runtime::options::RuntimeOpts {
-			file_expose: 	expose_files,
-			action:		start_mode,
-			app_args:	application_args,
-			bus_activation:	bus_activate,
-			debug_shell:	debug_shell,
+			file_expose_intent: 	expose_files,
+			action:			start_mode,
+			app_args:		application_args,
+			bus_activation:		bus_activate,
+			debug_shell:		debug_shell,
 		},
 	)
 }

@@ -1,79 +1,14 @@
 use crate::bind::types::BindRules;
 use std::collections::HashMap;
-mod contain;
+mod validator;
 
-/**
-	Validates if the permission can be restored without calling user consent.
+#[derive(Debug, thiserror::Error)]
+pub enum ExposeError {
+	#[error("Could not contact PermissionStore: {0}")]
+	PermissionStoreBusError(zbus::Error),
 
-	It does not overwrite with new permissions, but appends in place.
-
-	Also returns Ok(true) when the list is empty
-
-	If not then update the permission store and return false.
-*/
-async fn validate_stored_permission(
-	dbus_conn:	&zbus::Connection,
-	logger:		&crate::logger::LogSender,
-	app_id:		&str,
-	expose_list:	&Vec<crate::pref::runtime::options::FileExposurePreference>,
-) -> Result<bool, zbus::Error> {
-	if expose_list.len() == 0 {
-		return Ok(true);
-	};
-
-	let (rw, ro, device) = crate::ipc::portals::permission_store::expose::get(
-		app_id,
-		dbus_conn,
-		logger,
-	).await?;
-
-	if contain::permission_contained(&rw, &ro, &device, &expose_list) {
-		Ok(true)
-	} else {
-		let (rw, ro, device) = {
-			let mut rw = vec![];
-			let mut ro = vec![];
-			let mut dev = vec![];
-
-			use crate::pref::runtime::options::FileExposurePreference;
-
-			for expose in expose_list {
-				match expose {
-					FileExposurePreference::MountPath { host, dest: _, class }
-					=> {
-						match class {
-							crate::bind::types::BindType::Device	=> {
-								dev.push(host.to_path_buf());
-							}
-							crate::bind::types::BindType::ReadOnly	=> {
-								ro.push(host.to_path_buf());
-							}
-							crate::bind::types::BindType::ReadWrite	=> {
-								rw.push(host.to_path_buf());
-							}
-						}
-					}
-					FileExposurePreference::Passthrough { host }		=> {
-						rw.push(host.to_path_buf());
-					}
-				}
-			};
-
-			(rw, ro, dev)
-		};
-
-
-		crate::ipc::portals::permission_store::expose::update(
-			app_id,
-			dbus_conn,
-			Some(rw),
-			Some(ro),
-			Some(device),
-		)
-			.await
-			?;
-		Ok(false)
-	}
+	#[error("Could not spawn zenity for user consent check: {0}")]
+	ExposeZenityError(validator::file_exposure::question::QuestionError),
 }
 
 /**
@@ -86,59 +21,18 @@ pub async fn forward_file(
 	dbus_conn:	&zbus::Connection,
 	app_id:		&str,
 	logger:		crate::logger::LogSender,
-) -> (BindRules, HashMap<String, String>) {
-	match validate_stored_permission(dbus_conn, &logger, app_id, expose_list).await {
-		Ok(true)	=> {}
-		Ok(false)	=> {
-			match question(&expose_list).await {
-				Ok(true)	=> {}
-				Ok(false)	=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Info(
-							crate::logger::messages::info::InfoMessage::ExposeDenied,
-						)
-					).await;
 
-					return (vec![], std::collections::HashMap::new());
-				}
-				Err(e)		=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Warn(
-							crate::logger::messages::warn::WarnMessage::BindConsentError(e)
-						)
-					).await;
-					return (vec![], std::collections::HashMap::new());
-				}
-			}
-		}
-		Err(e)		=> {
-			let _ = logger.send(
-				crate::logger::messages::LogMessage::Warn(
-					crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
-				)
-			).await;
-			match question(&expose_list).await {
-				Ok(true)	=> {}
-				Ok(false)	=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Info(
-							crate::logger::messages::info::InfoMessage::ExposeDenied,
-						)
-					).await;
-
-					return (vec![], std::collections::HashMap::new());
-				}
-				Err(e)		=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Warn(
-							crate::logger::messages::warn::WarnMessage::BindConsentError(e)
-						)
-					).await;
-					return (vec![], std::collections::HashMap::new());
-				}
-			}
-		}
-	}
+	// Whether file forwarding is allowed by the user
+	file_forward:	&bool,
+) -> Result<(BindRules, HashMap<String, String>), ExposeError> {
+	let expose_list = validator::validate(
+		dbus_conn,
+		app_id,
+		expose_list,
+		file_forward,
+	)
+		.await
+		?;
 
 
 	use crate::pref::runtime::options::FileExposurePreference;
@@ -197,7 +91,7 @@ pub async fn forward_file(
 						WarnMessage::ForwardAddFullError(e)
 					)
 				).await;
-				return (rules, pass_map);
+				return Ok((rules, pass_map));
 			}
 		};
 		for (doc, host_path) in doc_ids.iter().zip(path_list) {
@@ -208,60 +102,5 @@ pub async fn forward_file(
 		};
 	};
 
-	(rules, pass_map)
-}
-
-/**
-	Ask the user for consent of exposing files. Currently uses Zenity but we want to natively
-		do that in the future.
-*/
-async fn question(paths: &Vec<crate::pref::runtime::options::FileExposurePreference>)
--> Result<bool, super::UserBindError> {
-	let mut cmd_args = vec![
-		"--title",
-		"Permission Control",
-		"--icon=folder-open-symbolic",
-		"--question",
-		"--default-cancel",
-	];
-
-	let text = {
-		use crate::pref::runtime::options::FileExposurePreference;
-		let mut string = String::new();
-		string.push_str("--text=Exposing the following path: \n");
-		for path in paths {
-			match path {
-				FileExposurePreference::Passthrough { host }	=> {
-					string.push_str(&host.to_string_lossy());
-				}
-				FileExposurePreference::MountPath { host, dest: _, class: _ }
-										=> {
-					string.push_str(&host.to_string_lossy());
-				}
-			}
-		};
-		string
-	};
-
-	cmd_args.push(&text);
-
-	let mut command = tokio::process::Command::new("zenity");
-
-	let mut command = command.kill_on_drop(true);
-	command = command.args(cmd_args);
-
-	let mut child = match command.spawn() {
-		Ok(v)	=> v,
-		Err(e)	=> {
-			return Err(
-				super::UserBindError::ZenitySpawnError(e)
-			);
-		}
-	};
-
-	if child.wait().await.map_err(super::UserBindError::ZenitySpawnError)?.success() {
-		Ok(true)
-	} else {
-		Ok(false)
-	}
+	Ok((rules, pass_map))
 }

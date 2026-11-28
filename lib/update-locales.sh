@@ -5,6 +5,7 @@
 xgettext \
 	lib/config/src/definitions/consent.rs \
 	src/pref/permissions/consent/impls/ask/zenity.rs \
+	src/bind/subsystems/user/expose/validator/file_exposure/question.rs \
 	src/ipc/init/aux_start/version.rs \
 	src/pref/runtime/cmdline/help.rs \
 	--package-name="org.kraftland.portable" \

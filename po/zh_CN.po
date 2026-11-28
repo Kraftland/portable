@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-24 19:47+0800\n"
+"POT-Creation-Date: 2026-11-28 14:34+0800\n"
 "PO-Revision-Date: 2026-11-24 19:55+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (China) <kraftland.org@icloud.com>\n"
@@ -18,41 +18,45 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Gtranslator 51.0\n"
 
-#: lib/config/src/definitions/consent.rs:83
+#: lib/config/src/definitions/consent.rs:87
 msgid "Send notifications"
 msgstr "发送桌面通知"
 
-#: lib/config/src/definitions/consent.rs:88
+#: lib/config/src/definitions/consent.rs:92
 msgid "Inhibit system suspend and shutdown"
 msgstr "阻止系统自动睡眠与关机"
 
-#: lib/config/src/definitions/consent.rs:94
+#: lib/config/src/definitions/consent.rs:98
 msgid "Render on Discrete GPU"
 msgstr "使用非默认显卡渲染"
 
-#: lib/config/src/definitions/consent.rs:101
+#: lib/config/src/definitions/consent.rs:105
 msgid "Run a Kernel Virtual Machine"
 msgstr "运行内核虚拟机"
 
-#: lib/config/src/definitions/consent.rs:108
+#: lib/config/src/definitions/consent.rs:112
 msgid "Access and manage Input Devices"
 msgstr "使用并管理输入设备"
 
-#: lib/config/src/definitions/consent.rs:114
+#: lib/config/src/definitions/consent.rs:118
 msgid "Access Camera"
 msgstr "使用相机"
 
-#: lib/config/src/definitions/consent.rs:122
+#: lib/config/src/definitions/consent.rs:126
 msgid "Mount namespace"
 msgstr "挂载命名空间"
 
-#: lib/config/src/definitions/consent.rs:131
+#: lib/config/src/definitions/consent.rs:135
 msgid "Control Media Players"
 msgstr "控制媒体播放"
 
-#: lib/config/src/definitions/consent.rs:139
+#: lib/config/src/definitions/consent.rs:143
 msgid "Perform debugging"
 msgstr "使用调试功能"
+
+#: lib/config/src/definitions/consent.rs:150
+msgid "Read and write selected external files"
+msgstr ""
 
 #: src/pref/permissions/consent/impls/ask/zenity.rs:74
 msgid "This permission may be required for application to function"
@@ -65,7 +69,8 @@ msgid ""
 "permissions</small>"
 msgstr ""
 "请求以下权限...\n"
-"<small>选中权限将被保留，您可以通过 --revoke-permissions 命令行参数撤销</small>"
+"<small>选中权限将被保留，您可以通过 --revoke-permissions 命令行参数撤销</"
+"small>"
 
 #: src/pref/permissions/consent/impls/ask/zenity.rs:129
 msgid "Allow While in Use"
@@ -74,6 +79,14 @@ msgstr "运行时允许"
 #: src/pref/permissions/consent/impls/ask/zenity.rs:134
 msgid "Permission Description"
 msgstr "权限描述"
+
+#: src/bind/subsystems/user/expose/validator/file_exposure/question.rs:11
+msgid "File Exposure"
+msgstr ""
+
+#: src/bind/subsystems/user/expose/validator/file_exposure/question.rs:12
+msgid "Designated the following list of path to mount"
+msgstr ""
 
 #: src/ipc/init/aux_start/version.rs:50
 msgid "Restart required"

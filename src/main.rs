@@ -275,6 +275,29 @@ async fn run(
 		}
 	}
 
+	#[cfg(feature = "desktop-file")]
+	let desktop_file: std::sync::Arc<freedesktop_desktop_entry::DesktopEntry> = desktop_file
+		.await
+		.map_err(StartError::SpawnError)
+		?
+		.map_err(StartError::DesktopFileError)
+		?
+		.into();
+
+	// Fire the consent checker right away, to avoid delaying startup
+	let dynamic_permissions = {
+		tokio::spawn(
+			pref::permissions::consent::get(
+				log_tx.clone(),
+				config.clone(),
+				dbus_conn.clone(),
+
+				#[cfg(feature = "desktop-file")]
+				desktop_file,
+			)
+		)
+	};
+
 	match bus_spawn
 		.await
 		.map_err(StartError::SpawnError)?
@@ -289,6 +312,7 @@ async fn run(
 					&dbus_conn,
 					log_tx.clone(),
 					stop_obj.clone(),
+					dynamic_permissions,
 				)
 					.await
 					.map_err(StartError::AuxStartError)
@@ -312,29 +336,6 @@ async fn run(
 
 			return Ok(());
 		}
-	};
-
-	#[cfg(feature = "desktop-file")]
-	let desktop_file: std::sync::Arc<freedesktop_desktop_entry::DesktopEntry> = desktop_file
-		.await
-		.map_err(StartError::SpawnError)
-		?
-		.map_err(StartError::DesktopFileError)
-		?
-		.into();
-
-	// Fire the consent checker right away, to avoid delaying startup
-	let dynamic_permissions = {
-		tokio::spawn(
-			pref::permissions::consent::get(
-				log_tx.clone(),
-				config.clone(),
-				dbus_conn.clone(),
-
-				#[cfg(feature = "desktop-file")]
-				desktop_file,
-			)
-		)
 	};
 
 	let instance_id = std::sync::Arc::new(

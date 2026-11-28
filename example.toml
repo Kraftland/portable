@@ -87,6 +87,12 @@ enable = true
 
 # The privacy section defines several security and privacy preference.
 [privacy]
+# When enabled, transparently forwards files specified on the command line to
+# the application.
+# Path must be absolute for file forwarding to work.
+# Requires the XDG Desktop Portal to be functional.
+file_forwarding = false
+
 # When false, prevents application from connecting to X server on Wayland. Defaults to false.
 # Previously x11.
 x11_compat = true

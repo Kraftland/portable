@@ -32,11 +32,12 @@ trait IPC {
 
 
 pub async fn start(
-	runtime_opts:	std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
-	config:		std::sync::Arc<crate::config::Config>,
-	bus:		&zbus::Connection,
-	logger:		crate::logger::LogSender,
-	stop:		std::sync::Arc<crate::stop::Stop>,
+	runtime_opts:		std::sync::Arc<crate::pref::runtime::options::RuntimeOpts>,
+	config:			std::sync::Arc<crate::config::Config>,
+	bus:			&zbus::Connection,
+	logger:			crate::logger::LogSender,
+	stop:			std::sync::Arc<crate::stop::Stop>,
+	dynamic_permissions:	tokio::task::JoinHandle<Result<std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>, crate::pref::permissions::consent::ConsentError>>,
 ) -> Result<(), AuxStartError> {
 	let args = {
 		if runtime_opts.debug_shell {
@@ -80,16 +81,30 @@ pub async fn start(
 		.map_err(AuxStartError::CreateProxyError)
 		?;
 
-	use crate::bind::subsystems::user;
+
+
+	let dynamic_permissions = dynamic_permissions
+		.await
+		.map_err(AuxStartError::SpawnError)
+		?
+		.map_err(AuxStartError::DynamicPermissionsError)
+		?;
 
 	let (_expose_rules, forward_map) = {
+		use crate::bind::subsystems::user;
+
 		user::forward_file(
-			&runtime_opts.file_expose,
+			&runtime_opts.file_expose_intent,
 			&bus,
 			&config.metadata.sandbox_id,
 			logger.clone(),
+			dynamic_permissions
+				.get(&portable_config::definitions::consent::DynamicPermission::FileForwarding)
+				.unwrap_or(&false)
 		)
-		.await
+			.await
+			.map_err(AuxStartError::FileForwardError)
+			?
 	};
 
 	let env_var = crate::envs::forward::get();
@@ -139,20 +154,29 @@ pub async fn start(
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuxStartError {
-	#[error("Create Proxy error: {0:#?}")]
+	#[error("Could not spawn tokio thread: {0}")]
+	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not retrieve dynamic permissions: {0}")]
+	DynamicPermissionsError(crate::pref::permissions::consent::ConsentError),
+
+	#[error("Could not forward file: {0}")]
+	FileForwardError(crate::bind::subsystems::user::ExposeError),
+
+	#[error("Create Proxy error: {0}")]
 	CreateProxyError(zbus::Error),
 
-	#[error("Create console error: {0:#?}")]
+	#[error("Create console error: {0}")]
 	ConsoleError(crate::spawn::stream::StreamError),
 
-	#[error("Remote error: {0:#?}")]
+	#[error("Remote error: {0}")]
 	RemoteError(zbus::Error),
 
-	#[error("Failed determine if Init is alive: {0:#?}")]
+	#[error("Failed determine if Init is alive: {0}")]
 	AliveError(zbus::Error),
-	#[error("Failed determine if Init is alive: {0:#?}")]
+	#[error("Failed determine if Init is alive: {0}")]
 	AliveFdoError(zbus::fdo::Error),
-	#[error("Error creating init name: {0:#?}")]
+	#[error("Error creating init name: {0}")]
 	InitNameError(zbus::names::Error),
 
 	#[error("Init died")]

@@ -88,7 +88,6 @@ pub async fn update(
 pub async fn get(
 	sandbox_id:	&str,
 	bus:		&zbus::Connection,
-	logger:		&crate::logger::LogSender,
 )
 	-> Result<(Vec<std::path::PathBuf>, Vec<std::path::PathBuf>, Vec<std::path::PathBuf>), zbus::Error>
 {
@@ -98,25 +97,14 @@ pub async fn get(
 		?;
 
 	let rw = {
-		let raw_rw_permissions = match proxy
+		let raw_rw_permissions = proxy
 			.get_permission(
 				"top.kimiblock.Portable",
 				"expose-rw",
 				sandbox_id,
 			)
 			.await
-		{
-			Ok(v)	=> v,
-			Err(e)	=> {
-				let _ = logger.send(
-					crate::logger::messages::LogMessage::Warn(
-						crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
-					)
-				).await;
-
-				vec![]
-			}
-		};
+			?;
 
 		let mut ret = vec![];
 
@@ -139,25 +127,14 @@ pub async fn get(
 	};
 
 	let ro = {
-		let raw_rw_permissions = match proxy
+		let raw_rw_permissions = proxy
 			.get_permission(
 				"top.kimiblock.Portable",
 				"expose-ro",
 				sandbox_id,
 			)
 			.await
-		{
-			Ok(v)	=> v,
-			Err(e)	=> {
-				let _ = logger.send(
-					crate::logger::messages::LogMessage::Warn(
-						crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
-					)
-				).await;
-
-				vec![]
-			}
-		};
+			?;
 
 		let mut ret = vec![];
 
@@ -180,25 +157,14 @@ pub async fn get(
 	};
 
 	let device = {
-		let raw_rw_permissions = match proxy
+		let raw_rw_permissions = proxy
 			.get_permission(
 				"top.kimiblock.Portable",
 				"expose-device",
 				sandbox_id,
 			)
 			.await
-		{
-			Ok(v)	=> v,
-			Err(e)	=> {
-				let _ = logger.send(
-					crate::logger::messages::LogMessage::Warn(
-						crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
-					)
-				).await;
-
-				vec![]
-			}
-		};
+			?;
 
 		let mut ret = vec![];
 

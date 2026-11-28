@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.kraftland.portable 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-24 19:47+0800\n"
+"POT-Creation-Date: 2026-11-28 14:34+0800\n"
 "PO-Revision-Date: 2026-11-21 17:08+0800\n"
 "Last-Translator: Kimiblock Moe <kimiblock@icloud.com>\n"
 "Language-Team: Chinese (Hong Kong) <(nothing)>\n"
@@ -16,40 +16,44 @@ msgstr ""
 "Content-Type: text/plain; charset=ASCII\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/config/src/definitions/consent.rs:83
+#: lib/config/src/definitions/consent.rs:87
 msgid "Send notifications"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:88
+#: lib/config/src/definitions/consent.rs:92
 msgid "Inhibit system suspend and shutdown"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:94
+#: lib/config/src/definitions/consent.rs:98
 msgid "Render on Discrete GPU"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:101
+#: lib/config/src/definitions/consent.rs:105
 msgid "Run a Kernel Virtual Machine"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:108
+#: lib/config/src/definitions/consent.rs:112
 msgid "Access and manage Input Devices"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:114
+#: lib/config/src/definitions/consent.rs:118
 msgid "Access Camera"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:122
+#: lib/config/src/definitions/consent.rs:126
 msgid "Mount namespace"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:131
+#: lib/config/src/definitions/consent.rs:135
 msgid "Control Media Players"
 msgstr ""
 
-#: lib/config/src/definitions/consent.rs:139
+#: lib/config/src/definitions/consent.rs:143
 msgid "Perform debugging"
+msgstr ""
+
+#: lib/config/src/definitions/consent.rs:150
+msgid "Read and write selected external files"
 msgstr ""
 
 #: src/pref/permissions/consent/impls/ask/zenity.rs:74
@@ -69,6 +73,14 @@ msgstr ""
 
 #: src/pref/permissions/consent/impls/ask/zenity.rs:134
 msgid "Permission Description"
+msgstr ""
+
+#: src/bind/subsystems/user/expose/validator/file_exposure/question.rs:11
+msgid "File Exposure"
+msgstr ""
+
+#: src/bind/subsystems/user/expose/validator/file_exposure/question.rs:12
+msgid "Designated the following list of path to mount"
 msgstr ""
 
 #: src/ipc/init/aux_start/version.rs:50
