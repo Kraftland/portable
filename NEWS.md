@@ -20,6 +20,7 @@ Next generation of sandboxing is nigh.
 - The `/etc` directory is now isolated from the system
 - Portable is now internationalised. Some UI elements may've already been translated to your locale, while others are in progress.
 - A transparent file passthrough experience has come. File forwarding is now a capability gated behind user consent and option `privacy.file_forwarding`. When enabled and allowed, it allows for a distraction-free experience of file passthrough.
+- Applications no longer emit "Authorization required, but no authorization protocol specified" and `vulkaninfo` will not coredump when X11 is disabled.
 
 # 20.2
 
