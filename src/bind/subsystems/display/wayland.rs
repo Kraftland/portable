@@ -14,6 +14,7 @@ pub enum DisplayBindError {
 }
 
 mod find_socket;
+mod unbind;
 pub mod security_context;
 
 pub struct Wayland {
@@ -26,6 +27,13 @@ pub struct Wayland {
 }
 
 impl super::BindDisplay for Wayland {
+	async fn unbind(
+			env:	&crate::envs::holder::HoldChannel,
+		) -> Result<(), Self::DisplayBindError>
+	{
+		unbind::unbind(env).await
+	}
+
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::DisplayBindError> {
 		let display = {
 			let host_socket = find_socket::find(self.runtime_dir)
