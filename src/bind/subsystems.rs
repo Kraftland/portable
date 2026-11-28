@@ -218,7 +218,9 @@ pub async fn generate_bindrules(
 			dynamic_permissions.get(&DynamicPermission::FileForwarding)
 				.unwrap_or(&false)
 		)
-		.await
+			.await
+			.map_err(BindError::ExposeError)
+			?
 	};
 
 	// Previously in miscEnvs
@@ -409,6 +411,9 @@ pub async fn generate_bindrules(
 
 #[derive(thiserror::Error, Debug)]
 pub enum BindError {
+	#[error("Could not expose files: {0}")]
+	ExposeError(user::ExposeError),
+
 	#[error("Could not bind system paths: {0:#?}")]
 	SystemBindError(system::SystemBindError),
 

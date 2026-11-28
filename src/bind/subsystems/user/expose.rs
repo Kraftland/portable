@@ -1,7 +1,15 @@
 use crate::bind::types::BindRules;
 use std::collections::HashMap;
-mod contain;
 mod validator;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExposeError {
+	#[error("Could not contact PermissionStore: {0}")]
+	PermissionStoreBusError(zbus::Error),
+
+	#[error("Could not spawn zenity for user consent check: {0}")]
+	ExposeZenityError(validator::file_exposure::question::QuestionError),
+}
 
 /**
 	Takes a vector of FileExposurePreference and returns the following:
@@ -16,65 +24,15 @@ pub async fn forward_file(
 
 	// Whether file forwarding is allowed by the user
 	file_forward:	&bool,
-) -> (BindRules, HashMap<String, String>) {
-	match validator::validate_stored_permission(
+) -> Result<(BindRules, HashMap<String, String>), ExposeError> {
+	let expose_list = validator::validate(
 		dbus_conn,
-		&logger,
 		app_id,
 		expose_list,
 		file_forward,
-	).await {
-		Ok(true)	=> {}
-		Ok(false)	=> {
-			match question(&expose_list).await {
-				Ok(true)	=> {}
-				Ok(false)	=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Info(
-							crate::logger::messages::info::InfoMessage::ExposeDenied,
-						)
-					).await;
-
-					return (vec![], std::collections::HashMap::new());
-				}
-				Err(e)		=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Warn(
-							crate::logger::messages::warn::WarnMessage::BindConsentError(e)
-						)
-					).await;
-					return (vec![], std::collections::HashMap::new());
-				}
-			}
-		}
-		Err(e)		=> {
-			let _ = logger.send(
-				crate::logger::messages::LogMessage::Warn(
-					crate::logger::messages::warn::WarnMessage::ExposePermissionRetrieve(e)
-				)
-			).await;
-			match question(&expose_list).await {
-				Ok(true)	=> {}
-				Ok(false)	=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Info(
-							crate::logger::messages::info::InfoMessage::ExposeDenied,
-						)
-					).await;
-
-					return (vec![], std::collections::HashMap::new());
-				}
-				Err(e)		=> {
-					let _ = logger.send(
-						crate::logger::messages::LogMessage::Warn(
-							crate::logger::messages::warn::WarnMessage::BindConsentError(e)
-						)
-					).await;
-					return (vec![], std::collections::HashMap::new());
-				}
-			}
-		}
-	}
+	)
+		.await
+		?;
 
 
 	use crate::pref::runtime::options::FileExposurePreference;
@@ -133,7 +91,7 @@ pub async fn forward_file(
 						WarnMessage::ForwardAddFullError(e)
 					)
 				).await;
-				return (rules, pass_map);
+				return Ok((rules, pass_map));
 			}
 		};
 		for (doc, host_path) in doc_ids.iter().zip(path_list) {
@@ -144,7 +102,7 @@ pub async fn forward_file(
 		};
 	};
 
-	(rules, pass_map)
+	Ok((rules, pass_map))
 }
 
 /**

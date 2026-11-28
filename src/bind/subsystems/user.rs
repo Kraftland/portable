@@ -4,6 +4,7 @@ mod create_state_dir;
 mod expose;
 
 pub use expose::forward_file;
+pub use expose::ExposeError;
 
 /**
 	The user bind subsystem exposes several paths under the user home. As opposed to system
