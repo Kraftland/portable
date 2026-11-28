@@ -37,7 +37,7 @@ pub async fn start(
 	bus:			&zbus::Connection,
 	logger:			crate::logger::LogSender,
 	stop:			std::sync::Arc<crate::stop::Stop>,
-	dynamic_permissions:	std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>,
+	dynamic_permissions:	tokio::task::JoinHandle<Result<std::sync::Arc<crate::pref::permissions::consent::DynamicPermissionsResult>, crate::pref::permissions::consent::ConsentError>>,
 ) -> Result<(), AuxStartError> {
 	let args = {
 		if runtime_opts.debug_shell {
@@ -81,9 +81,18 @@ pub async fn start(
 		.map_err(AuxStartError::CreateProxyError)
 		?;
 
-	use crate::bind::subsystems::user;
+
+
+	let dynamic_permissions = dynamic_permissions
+		.await
+		.map_err(AuxStartError::SpawnError)
+		?
+		.map_err(AuxStartError::DynamicPermissionsError)
+		?;
 
 	let (_expose_rules, forward_map) = {
+		use crate::bind::subsystems::user;
+
 		user::forward_file(
 			&runtime_opts.file_expose_intent,
 			&bus,
@@ -145,6 +154,12 @@ pub async fn start(
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuxStartError {
+	#[error("Could not spawn tokio thread: {0}")]
+	SpawnError(tokio::task::JoinError),
+
+	#[error("Could not retrieve dynamic permissions: {0}")]
+	DynamicPermissionsError(crate::pref::permissions::consent::ConsentError),
+
 	#[error("Could not forward file: {0}")]
 	FileForwardError(crate::bind::subsystems::user::ExposeError),
 
