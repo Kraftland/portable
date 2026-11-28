@@ -108,10 +108,10 @@ pub async fn get(
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConsentError {
-	#[error("Could not retrieve stored permissions: {0:?}")]
+	#[error("Could not retrieve stored permissions: {0}")]
 	RetrievePortalError(impls::store::portal::PortalPermissionStoreError),
 
-	#[error("Could not store permissions: {0:?}")]
+	#[error("Could not store permissions: {0}")]
 	StorePortalError(impls::store::portal::PortalPermissionStoreError),
 
 	#[error("Could not query user consent via Zenity: {0}")]
