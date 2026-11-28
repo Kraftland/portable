@@ -19,8 +19,16 @@ pub struct X11 {
 
 pub mod xauth;
 pub mod im;
+pub mod unbind;
 
 impl super::BindDisplay for X11 {
+	async fn unbind(
+			env:	&crate::envs::holder::HoldChannel,
+		) -> Result<(), Self::DisplayBindError>
+	{
+		unbind::unbind(env).await
+	}
+
 	async fn bind(self) -> Result<crate::bind::types::BindRules, Self::DisplayBindError> {
 		let mut ret = vec![];
 
