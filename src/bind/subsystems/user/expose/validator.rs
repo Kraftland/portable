@@ -1,4 +1,4 @@
-mod file_exposure;
+pub mod file_exposure;
 
 /**
 	Validates if permission allows current file exposure intents.
@@ -41,17 +41,26 @@ pub async fn validate(
 					match class {
 						crate::bind::types::BindType::Device	=> {
 							expose_dev.push(
-								(host, dest)
+								(
+									host.to_path_buf(),
+									dest.to_path_buf(),
+								)
 							);
 						}
 						crate::bind::types::BindType::ReadOnly	=> {
 							expose_ro.push(
-								(host, dest)
+								(
+									host.to_path_buf(),
+									dest.to_path_buf(),
+								)
 							)
 						}
 						crate::bind::types::BindType::ReadWrite	=> {
 							expose_rw.push(
-								(host, dest)
+								(
+									host.to_path_buf(),
+									dest.to_path_buf(),
+								)
 							);
 						}
 					}
