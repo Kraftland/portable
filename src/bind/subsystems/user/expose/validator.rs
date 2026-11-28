@@ -7,7 +7,6 @@ pub mod file_exposure;
 */
 pub async fn validate(
 	dbus_conn:	&zbus::Connection,
-	logger:		&crate::logger::LogSender,
 	app_id:		&str,
 	expose_list:	&Vec<crate::pref::runtime::options::FileExposurePreference>,
 
