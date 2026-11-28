@@ -1,4 +1,5 @@
 mod contains;
+pub mod question;
 
 /**
 	This async function validates if current permissions allow exposing user selected files,
@@ -41,39 +42,57 @@ pub async fn validate(
 		&ro_stored,
 		&device_stored,
 	) {
-		for item in rw {
-			append_dest.push(
-				crate::pref::runtime::options::FileExposurePreference::MountPath {
-					host:	item.0,
-					dest:	item.1,
-					class:	crate::bind::types::BindType::ReadWrite,
-				}
-			);
-		};
-
-		for item in ro {
-			append_dest.push(
-				crate::pref::runtime::options::FileExposurePreference::MountPath {
-					host:	item.0,
-					dest:	item.1,
-					class:	crate::bind::types::BindType::ReadOnly,
-				}
-			);
-		};
-
-		for item in device {
-			append_dest.push(
-				crate::pref::runtime::options::FileExposurePreference::MountPath {
-					host:	item.0,
-					dest:	item.1,
-					class:	crate::bind::types::BindType::Device,
-				}
-			);
-		};
+		append(append_dest, rw, ro, device);
+		return Ok(());
+	} else {
+		if
+			question::question(&rw, &ro, &device)
+				.await
+				.map_err(ExposeError::ExposeZenityError)
+				?
+		{
+			append(append_dest, rw, ro, device);
+			return Ok(());
+		}
 	};
 
 	Ok(())
 
+}
+
+fn append(
+	append_dest:	&mut Vec<crate::pref::runtime::options::FileExposurePreference>,
+	rw:		Vec<MountPathPreference>,
+	ro:		Vec<MountPathPreference>,
+	device:		Vec<MountPathPreference>,
+) {
+	for item in rw {
+		append_dest.push(
+			crate::pref::runtime::options::FileExposurePreference::MountPath {
+				host:	item.0,
+				dest:	item.1,
+				class:	crate::bind::types::BindType::ReadWrite,
+			}
+		);
+	};
+	for item in ro {
+		append_dest.push(
+			crate::pref::runtime::options::FileExposurePreference::MountPath {
+				host:	item.0,
+				dest:	item.1,
+				class:	crate::bind::types::BindType::ReadOnly,
+			}
+		);
+	};
+	for item in device {
+		append_dest.push(
+			crate::pref::runtime::options::FileExposurePreference::MountPath {
+				host:	item.0,
+				dest:	item.1,
+				class:	crate::bind::types::BindType::Device,
+			}
+		);
+	};
 }
 
 /**

@@ -2,7 +2,7 @@
 	Ask the user for consent of exposing files. Currently uses Zenity but we want to natively
 		do that in the future.
 */
-async fn question(
+pub async fn question(
 	rw:		&Vec<super::MountPathPreference>,
 	ro:		&Vec<super::MountPathPreference>,
 	device:		&Vec<super::MountPathPreference>,
