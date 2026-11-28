@@ -58,6 +58,15 @@ pub trait BindDisplay {
 	fn bind(self) -> impl std::future::Future<Output = Result<crate::bind::types::BindRules, Self::DisplayBindError>> + Send;
 
 	/**
+		The unbind function performs actions to unbind the display server from sandbox
+
+		For example, it unsets DISPLAY and XAUTHORITY if X11 is disabled.
+	*/
+	fn unbind(
+		env:	&crate::envs::holder::HoldChannel,
+	) -> impl Future<Output = Result<(), Self::DisplayBindError>>;
+
+	/**
 		ime is for Input Method Editor workarounds
 	*/
 	fn ime(self) -> impl std::future::Future<Output = Result<crate::bind::types::BindRules, Self::DisplayBindError>> + Send;
