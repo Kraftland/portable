@@ -414,22 +414,22 @@ pub enum BindError {
 	#[error("Could not expose files: {0}")]
 	ExposeError(user::ExposeError),
 
-	#[error("Could not bind system paths: {0:#?}")]
+	#[error("Could not bind system paths: {0}")]
 	SystemBindError(system::SystemBindError),
 
-	#[error("Could not bind devices: {0:#?}")]
+	#[error("Could not bind devices: {0}")]
 	DeviceBindError(devices::DeviceError),
 
-	#[error("Could not bind audio service: {0:#?}")]
+	#[error("Could not bind audio service: {0}")]
 	AudioError(audio::PulseError),
 
-	#[error("Could not bind display sockets: {0:#?}")]
+	#[error("Could not bind display sockets: {0}")]
 	DisplayBindError(display::DisplayError),
 
-	#[error("Could not mask certain paths: {0:#?}")]
+	#[error("Could not mask certain paths: {0}")]
 	MaskError(mask::MaskError),
 
-	#[error("Could not bind user paths: {0:#?}")]
+	#[error("Could not bind user paths: {0}")]
 	UserBindError(user::UserBindError),
 
 	#[error("D-Bus activation was requested while not enabled in configuration")]
@@ -438,10 +438,10 @@ pub enum BindError {
 	#[error("Subsystem called on non-normal action")]
 	ActionError,
 
-	#[error("Could not spawn bind task: {0:#?}")]
+	#[error("Could not spawn bind task: {0}")]
 	SpawnError(tokio::task::JoinError),
 
-	#[error("Could not send environment variables: {0:#?}")]
+	#[error("Could not send environment variables: {0}")]
 	EnvError(tokio::sync::mpsc::error::SendError<crate::envs::holder::EnvMessage>),
 }
 
